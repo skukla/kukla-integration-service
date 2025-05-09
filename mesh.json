@@ -1,0 +1,22 @@
+{
+  "meshConfig": {
+    "sources": [
+      {
+        "name": "REST",
+        "handler": {
+          "openapi": {
+            "source": "https://com774.adobedemo.com/rest/all/schema?services=all"
+          }
+        }
+      },
+      {
+        "name": "GraphQL",
+        "handler": {
+          "graphql": {
+            "endpoint": "https://com774.adobedemo.com/graphql"
+          }
+        }
+      }
+    ]
+  }
+}
