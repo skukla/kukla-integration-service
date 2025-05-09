@@ -41,4 +41,5 @@ coverage
 logs
 
 # workspace
+# Contains sensitive information like API keys and client secrets that should not be committed
 workspace.json
