@@ -60,28 +60,19 @@ function getMissingKeys (obj, required) {
  *
  */
 function checkMissingRequestInputs (params, requiredParams = [], requiredHeaders = []) {
-  let errorMessage = null
-
   // input headers are always lowercase
   requiredHeaders = requiredHeaders.map(h => h.toLowerCase())
-  // check for missing headers
+  
+  // check for missing headers and parameters
   const missingHeaders = getMissingKeys(params.__ow_headers || {}, requiredHeaders)
-  if (missingHeaders.length > 0) {
-    errorMessage = `missing header(s) '${missingHeaders}'`
-  }
-
-  // check for missing parameters
   const missingParams = getMissingKeys(params, requiredParams)
-  if (missingParams.length > 0) {
-    if (errorMessage) {
-      errorMessage += ' and '
-    } else {
-      errorMessage = ''
-    }
-    errorMessage += `missing parameter(s) '${missingParams}'`
-  }
-
-  return errorMessage
+  
+  // combine error messages if any missing inputs
+  const missingInputs = []
+  if (missingHeaders.length > 0) missingInputs.push(`header(s) '${missingHeaders}'`)
+  if (missingParams.length > 0) missingInputs.push(`parameter(s) '${missingParams}'`)
+  
+  return missingInputs.length > 0 ? `missing ${missingInputs.join(' and ')}` : null
 }
 
 /**
@@ -143,31 +134,56 @@ function buildHeaders(token) {
 const fetch = require('node-fetch');
 
 /**
- * Fetches an admin token from Magento using admin credentials.
- * @returns {Promise<string>} The admin Bearer token.
+ * Validates admin credentials and throws if they're invalid.
+ * @param {string} username - Admin username
+ * @param {string} password - Admin password
+ * @throws {Error} If credentials are missing
+ */
+function validateAdminCredentials(username, password) {
+  if (!username || !password) {
+    throw new Error('Missing required credentials: username and password must be provided');
+  }
+}
+
+/**
+ * Logs admin token request parameters (safely).
+ * @param {object} params - Request parameters
+ */
+function logAdminTokenRequest(params) {
+  console.log('[fetchAdminToken] Debugging params:', {
+    COMMERCE_URL: params.COMMERCE_URL,
+    COMMERCE_ADMIN_USERNAME: params.COMMERCE_ADMIN_USERNAME,
+    COMMERCE_ADMIN_PASSWORD: params.COMMERCE_ADMIN_PASSWORD ? '***' : undefined
+  });
+}
+
+/**
+ * Fetches an admin token from Adobe Commerce using admin credentials.
+ * @param {object} params - Request parameters containing credentials
+ * @returns {Promise<string>} The admin Bearer token
+ * @throws {Error} If the request fails or credentials are invalid
  */
 async function fetchAdminToken(params = {}) {
-  const username = params.MAGENTO_ADMIN_USERNAME;
-  const password = params.MAGENTO_ADMIN_PASSWORD;
-  const apiBaseUrl = params.MAGENTO_API_BASE_URL || 'https://com774.adobedemo.com';
-  const url = `${apiBaseUrl}/rest/V1/integration/admin/token`;
-  console.log('[fetchAdminToken] Fetching admin token from:', url);
-  console.log('[fetchAdminToken] Using username:', username);
-  console.log('[fetchAdminToken] params.MAGENTO_ADMIN_USERNAME:', params.MAGENTO_ADMIN_USERNAME);
-  console.log('[fetchAdminToken] params.MAGENTO_ADMIN_PASSWORD:', params.MAGENTO_ADMIN_PASSWORD ? '***' : undefined);
+  logAdminTokenRequest(params);
+  
+  const username = params.COMMERCE_ADMIN_USERNAME;
+  const password = params.COMMERCE_ADMIN_PASSWORD;
+  const url = `${params.COMMERCE_URL}/rest/V1/integration/admin/token`;
+  
+  validateAdminCredentials(username, password);
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      username,
-      password
-    })
+    body: JSON.stringify({ username, password })
   });
+
   const text = await res.text();
   if (!res.ok) {
     console.log('[fetchAdminToken] Admin token fetch failed:', text);
     throw new Error(`Failed to fetch admin token: ${res.status} ${text}`);
   }
+
   return JSON.parse(text);
 }
 

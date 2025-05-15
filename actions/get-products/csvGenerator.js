@@ -1,4 +1,4 @@
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const csvWriter = require('csv-writer');
 
 const csvHeaders = [
   'entity.name', 'entity.category', 'entity.message', 'entity.entity.value',
@@ -31,14 +31,16 @@ function mapProductToCsvRow(product) {
   };
 }
 
-async function generateCsv(products, filePath) {
-  const csvWriter = createCsvWriter({
-    path: filePath,
+async function generateCsv(products) {
+  const csvStringifier = csvWriter.createObjectCsvStringifier({
     header: csvHeaders.map(h => ({ id: h, title: h }))
   });
+  
   const rows = products.map(mapProductToCsvRow);
-  await csvWriter.writeRecords(rows);
-  return filePath;
+  const headerString = csvStringifier.getHeaderString();
+  const rowString = csvStringifier.stringifyRecords(rows);
+  
+  return headerString + rowString;
 }
 
 module.exports = { generateCsv }; 
