@@ -1,9 +1,9 @@
 const path = require('path');
 const { generateCsv } = require('../csvGenerator');
 
+const FIXED_FILENAME = 'products.csv';
+
 module.exports = async function createCsv(productsWithCategories) {
-  const fileName = `products-${Date.now()}.csv`;
-  const filePath = path.join('/tmp', fileName);
-  await generateCsv(productsWithCategories, filePath);
-  return { fileName, filePath };
+  const csvContent = await generateCsv(productsWithCategories);
+  return { fileName: FIXED_FILENAME, content: csvContent };
 }; 
