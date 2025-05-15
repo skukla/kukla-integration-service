@@ -94,21 +94,25 @@ function getBearerToken (params) {
 }
 /**
  *
- * Returns an error response object and attempts to log.info the status code and error message
+ * Returns an error response object and logs the error appropriately
  *
  * @param {number} statusCode the error status code.
  *        e.g. 400
  * @param {string} message the error message.
  *        e.g. 'missing xyz parameter'
- * @param {*} [logger] an optional logger instance object with an `info` method
+ * @param {*} [logger] an optional logger instance object with error/warn methods
  *        e.g. `new require('@adobe/aio-sdk').Core.Logger('name')`
  *
  * @returns {object} the error object, ready to be returned from the action main's function.
  *
  */
 function errorResponse (statusCode, message, logger) {
-  if (logger && typeof logger.info === 'function') {
-    logger.info(`${statusCode}: ${message}`)
+  if (logger) {
+    // Use warn for 4xx client errors and error for 5xx server errors
+    const logMethod = statusCode >= 500 ? 'error' : 'warn';
+    if (typeof logger[logMethod] === 'function') {
+      logger[logMethod](`${statusCode}: ${message}`);
+    }
   }
   return {
     error: {
@@ -146,26 +150,12 @@ function validateAdminCredentials(username, password) {
 }
 
 /**
- * Logs admin token request parameters (safely).
- * @param {object} params - Request parameters
- */
-function logAdminTokenRequest(params) {
-  console.log('[fetchAdminToken] Debugging params:', {
-    COMMERCE_URL: params.COMMERCE_URL,
-    COMMERCE_ADMIN_USERNAME: params.COMMERCE_ADMIN_USERNAME,
-    COMMERCE_ADMIN_PASSWORD: params.COMMERCE_ADMIN_PASSWORD ? '***' : undefined
-  });
-}
-
-/**
  * Fetches an admin token from Adobe Commerce using admin credentials.
  * @param {object} params - Request parameters containing credentials
  * @returns {Promise<string>} The admin Bearer token
  * @throws {Error} If the request fails or credentials are invalid
  */
 async function fetchAdminToken(params = {}) {
-  logAdminTokenRequest(params);
-  
   const username = params.COMMERCE_ADMIN_USERNAME;
   const password = params.COMMERCE_ADMIN_PASSWORD;
   const url = `${params.COMMERCE_URL}/rest/V1/integration/admin/token`;
@@ -180,7 +170,6 @@ async function fetchAdminToken(params = {}) {
 
   const text = await res.text();
   if (!res.ok) {
-    console.log('[fetchAdminToken] Admin token fetch failed:', text);
     throw new Error(`Failed to fetch admin token: ${res.status} ${text}`);
   }
 

@@ -42,23 +42,88 @@ Kukla Integration Service is an Adobe App Builder application designed to integr
 
 ```plaintext
 kukla-integration-service/
-├── actions/                  # Serverless action implementations
-│   ├── get-products/        # Product retrieval action code
-│   └── utils.js            # Shared utilities and helpers
-├── web-src/                 # Frontend code
-├── test/                    # Unit tests
-├── e2e/                     # End-to-end tests
-├── dist/                    # Build output directory
-├── .github/                 # GitHub workflows and configuration
-├── app.config.yaml          # App Builder configuration
-├── .env                     # Environment variables
-├── .env.example            # Example environment configuration
-├── .eslintrc.json          # ESLint configuration
-├── jest.setup.js           # Jest test setup
-├── package.json            # Project dependencies and scripts
-└── package-lock.json       # Locked dependency versions
-
+├── actions/
+│   ├── get-products/
+│   │   ├── lib/
+│   │   │   ├── api/
+│   │   │   │   ├── categories.js
+│   │   │   │   └── products.js
+│   │   │   ├── storage/
+│   │   │   │   ├── config.js
+│   │   │   │   └── index.js
+│   │   │   ├── commerce-endpoints.js
+│   │   │   ├── auth.js
+│   │   │   ├── product-transformer.js
+│   │   │   └── utils.js
+│   │   ├── steps/
+│   │   │   ├── validateInput.js
+│   │   │   ├── fetchAndEnrichProducts.js
+│   │   │   ├── buildProducts.js
+│   │   │   ├── createCsv.js
+│   │   │   └── storeCsv.js
+│   │   └── index.js
+│   ├── download-file/
+│   │   └── index.js
+│   └── utils.js
+├── web-src/
+├── test/
+├── e2e/
+├── dist/
+├── .github/
+├── app.config.yaml
+├── .env
+├── .env.example
+├── .eslintrc.json
+├── jest.setup.js
+├── package.json
+└── package-lock.json
 ```
+
+### Directory Structure Details
+
+#### Root Level
+- `actions/` - Serverless action implementations
+- `web-src/` - Frontend code
+- `test/` - Unit tests
+- `e2e/` - End-to-end tests
+- `dist/` - Build output directory
+- `.github/` - GitHub workflows and configuration
+- `app.config.yaml` - App Builder configuration
+- `.env` - Environment variables
+- `.env.example` - Example environment configuration
+- `.eslintrc.json` - ESLint configuration
+- `jest.setup.js` - Jest test setup
+- `package.json` - Project dependencies and scripts
+- `package-lock.json` - Locked dependency versions
+
+#### Get Products Action (`actions/get-products/`)
+Main action for product data export functionality:
+
+**Library Modules** (`lib/`):
+- `api/` - API integration modules
+  - `categories.js` - Category-related API calls
+  - `products.js` - Product-related API calls
+- `storage/` - File storage functionality
+  - `config.js` - Storage configuration
+  - `index.js` - Storage operations
+- `commerce-endpoints.js` - API endpoint definitions
+- `auth.js` - Authentication handling
+- `product-transformer.js` - Product data transformation
+- `utils.js` - Utility functions
+
+**Processing Steps** (`steps/`):
+- `validateInput.js` - Input validation
+- `fetchAndEnrichProducts.js` - Data fetching
+- `buildProducts.js` - Product building
+- `createCsv.js` - CSV generation
+- `storeCsv.js` - CSV storage
+- `index.js` - Main action handler
+
+#### Download File Action (`actions/download-file/`)
+- `index.js` - Download handler for serving stored files
+
+#### Shared Utilities
+- `actions/utils.js` - Common utilities shared across actions
 
 ## Detailed Setup Instructions
 
@@ -125,8 +190,9 @@ kukla-integration-service/
      "body": {
        "message": "Product export completed successfully.",
        "file": {
-         "fileName": "<generated-file-name>",
-         "location": "<file-store-url>"
+         "fileName": "products.csv",
+         "location": "filestore",
+         "downloadUrl": "https://285361-188maroonwallaby-stage.adobeioruntime.net/api/v1/web/kukla-integration-service/download-file?fileName=products.csv"
        },
        "steps": [
          "Input validation passed.",
@@ -134,15 +200,20 @@ kukla-integration-service/
          "Enriched products with inventory data.",
          "Built category map with Y categories.",
          "Generated CSV content in memory.",
-         "Stored CSV file in <location>"
+         "Stored CSV file in filestore"
        ]
      }
    }
    ```
 
-3. **Download Results:**
-   - Use the returned `file.location` URL to download the generated CSV
-   - Files are automatically stored in Adobe App Builder's File Store
+3. **Downloading Files:**
+   - Use the returned `file.downloadUrl` to download the generated CSV file
+   - The download endpoint will serve the file with proper headers for downloading
+   - Authentication: Add the `Authorization` header with your bearer token:
+     ```bash
+     curl -H "Authorization: Bearer <your-token>" "<download-url>"
+     ```
+   - For S3 storage: Use the provided S3 URI with appropriate AWS credentials
 
 ## Adobe Commerce REST API Integration
 
