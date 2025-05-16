@@ -1,31 +1,24 @@
 /**
- * Storage configuration for file operations
+ * Storage configuration utilities
  * @module storage/config
  */
 
-const FilesLib = require('@adobe/aio-lib-files');
+const { Files: FilesLib } = require('@adobe/aio-sdk');
 
 /**
- * Gets the storage configuration for file operations
+ * Gets the configured storage client
  * @returns {Promise<Object>} Storage configuration object
- * @property {string} location - Storage location (e.g., 'filestore')
- * @property {Object} files - Files SDK instance
- * @throws {Error} If Files SDK initialization fails
+ * @property {string} location - Storage location ('filestore')
+ * @property {Object} files - Files SDK client
  */
 async function getStorageConfig() {
-  try {
-    // Initialize the Files SDK
     const files = await FilesLib.init();
-    
     return {
-      location: 'filestore',
-      files
+        location: 'filestore',
+        files
     };
-  } catch (error) {
-    throw new Error(`Failed to initialize Files SDK: ${error.message}`);
-  }
 }
 
 module.exports = {
-  getStorageConfig
+    getStorageConfig
 }; 

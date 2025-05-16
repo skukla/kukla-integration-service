@@ -1,11 +1,10 @@
 /**
- * Download file action for retrieving stored CSV files
+ * Download file action for retrieving files from storage
  * @module download-file
  * @description Handles secure file downloads from Adobe I/O Files storage
  */
 
-const { Core } = require('@adobe/aio-sdk');
-const FilesLib = require('@adobe/aio-lib-files');
+const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
 
 /**
  * Main function that handles file download requests
@@ -32,27 +31,31 @@ async function main(params) {
     if (!params.fileName) {
       return {
         statusCode: 400,
-        body: { error: 'Missing required parameter: fileName' }
+        body: 'File name is required'
       };
     }
 
-    // Construct the full file path in the public directory
-    const publicFileName = `public/${params.fileName}`;
-    logger.info(`Attempting to download file: ${publicFileName}`);
-    
-    // Initialize Files SDK and read file
+    // Initialize Files SDK
+    logger.info('Initializing Files SDK');
     const files = await FilesLib.init();
-    const content = await files.read(publicFileName);
-    
-    // Return file content with appropriate headers
+
+    // Read file
+    logger.info(`Reading file: ${params.fileName}`);
+    const buffer = await files.read(params.fileName);
+
+    // Get file properties
+    const props = await files.getProperties(params.fileName);
+    const contentType = props.contentType || 'application/octet-stream';
+    const fileName = params.fileName.split('/').pop();
+
+    // Return file content
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="${params.fileName}"`,
-        'Cache-Control': 'no-cache'
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${fileName}"`
       },
-      body: content.toString()
+      body: buffer.toString('base64')
     };
   } catch (error) {
     logger.error('Error in download-file action:', error);
@@ -67,9 +70,11 @@ async function main(params) {
     
     return {
       statusCode: 500,
-      body: { error: 'Failed to download file' }
+      body: `Failed to download file: ${error.message}`
     };
   }
 }
 
-exports.main = main; 
+module.exports = {
+  main
+}; 
