@@ -27,3 +27,12 @@ application:
             annotations:
               require-adobe-auth: false
               final: true
+          export-browser:
+            function: actions/export-browser/index.js
+            web: "yes"
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+            annotations:
+              require-adobe-auth: false
+              final: true
