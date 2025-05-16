@@ -6,9 +6,10 @@
     width: 100%;
     overflow: visible;
     background-color: var(--color-white);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     min-height: 160px;
     border: 1px solid var(--color-gray-200);
+    box-shadow: var(--shadow-md);
 }
 
 /* Base Table */
@@ -20,6 +21,7 @@
     position: relative;
     table-layout: fixed;
     font-size: var(--font-size-sm);
+    background-color: var(--color-gray-50);
 }
 
 /* Table Header */
@@ -28,51 +30,91 @@
     position: sticky;
     top: 0;
     z-index: 2;
+    border-bottom: 2px solid var(--color-gray-200);
 }
 
 .table-header {
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     font-weight: var(--font-weight-bold);
-    color: var(--color-gray-800);
+    color: var(--color-gray-900);
     text-align: left;
     white-space: nowrap;
     border: none;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-size: var(--font-size-xs);
-    border-bottom: 1px solid var(--color-gray-300);
+    background-color: var(--color-gray-100);
+}
+
+/* Add bottom shadow for sticky header */
+.table-head::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 4px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
 }
 
 .table-header:first-child {
-    border-top-left-radius: var(--radius-sm);
+    border-top-left-radius: var(--radius-md);
+    padding-left: var(--spacing-xl);
+    position: relative;
 }
 
 .table-header:last-child {
-    border-top-right-radius: var(--radius-sm);
+    border-top-right-radius: var(--radius-md);
+    padding-right: var(--spacing-xl);
+    position: relative;
+}
+
+/* Ensure header maintains distinction when table is empty */
+.table-wrapper:empty .table-head {
+    border-radius: var(--radius-md);
+    border-bottom: none;
 }
 
 /* Table Body */
 .table-body {
     position: relative;
-    background-color: var(--color-white);
+    background-color: transparent;
 }
 
 .table-row {
-    transition: background-color var(--transition-normal);
+    transition: all var(--transition-normal);
     background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-gray-100);
+    margin: var(--spacing-xs) 0;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+    margin-bottom: var(--spacing-xs);
 }
 
 .table-row:not(.is-skeleton):hover {
     background-color: var(--color-row-hover-background);
     cursor: pointer;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-xs);
 }
 
 .table-cell {
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     color: var(--color-gray-900);
-    border-bottom: 1px solid var(--color-gray-200);
     line-height: 1.5;
     vertical-align: middle;
+}
+
+/* First and last cells get extra padding for better spacing */
+.table-cell:first-child {
+    padding-left: var(--spacing-xl);
+}
+
+.table-cell:last-child {
+    padding-right: var(--spacing-xl);
 }
 
 /* Column Widths */
@@ -90,16 +132,34 @@
 }
 
 .skeleton-cell {
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     border-bottom: none;
+}
+
+.skeleton-cell:first-child {
+    padding-left: var(--spacing-xl);
+}
+
+.skeleton-cell:last-child {
+    padding-right: var(--spacing-xl);
 }
 
 .skeleton-block {
     display: block;
-    background: var(--color-gray-300);
+    background: var(--color-gray-200);
     border-radius: var(--radius-sm);
     animation: pulse 2s infinite;
     height: var(--spacing-lg);
+}
+
+/* Empty State */
+.empty-state {
+    background-color: var(--color-white);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.empty-state .table-cell {
+    padding: var(--spacing-2xl) var(--spacing-xl);
 }
 
 /* Loading States */
@@ -165,6 +225,12 @@
     .table-wrapper {
         margin: 0 calc(-1 * var(--spacing-md));
         width: calc(100% + (2 * var(--spacing-md)));
+        border-radius: 0;
+    }
+    
+    .table-header:first-child,
+    .table-header:last-child {
+        border-radius: 0;
     }
 }
 
