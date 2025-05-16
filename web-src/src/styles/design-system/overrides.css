@@ -14,37 +14,6 @@
 
 /* Application-specific overrides */
 
-/* Table overrides */
-.table-container {
-    border: 1px solid var(--spectrum-global-color-gray-200);
-}
-
-.table tbody tr:hover {
-    background-color: var(--spectrum-global-color-gray-75);
-}
-
-/* Column-specific widths */
-.table th:nth-child(1),
-.table td:nth-child(1) {
-    width: 40%;
-}
-
-.table th:nth-child(2),
-.table td:nth-child(2) {
-    width: 15%;
-}
-
-.table th:nth-child(3),
-.table td:nth-child(3) {
-    width: 25%;
-}
-
-.table th:nth-child(4),
-.table td:nth-child(4) {
-    width: 20%;
-    text-align: center;
-}
-
 /* Empty state customization */
 .empty-state {
     padding: var(--spectrum-global-dimension-size-800) var(--spectrum-global-dimension-size-200);

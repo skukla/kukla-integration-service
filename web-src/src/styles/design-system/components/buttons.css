@@ -1,16 +1,16 @@
 /* Button Components */
 
 /* Base Button */
-.spectrum-Button {
+.btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-full);
     padding: 0 var(--spacing-md);
-    min-width: 64px;
+    min-width: 72px;
     min-height: 32px;
-    font-family: adobe-clean, var(--font-family-primary);
+    font-family: var(--font-family-primary);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-bold);
     text-decoration: none;
@@ -27,95 +27,78 @@
 }
 
 /* Focus States */
-.spectrum-Button:focus-visible {
+.btn:focus-visible {
     outline: 2px solid var(--color-blue-primary);
     outline-offset: 2px;
 }
 
 /* Primary Button */
-.spectrum-Button--primary {
+.btn-primary {
     background-color: var(--color-blue-primary);
     color: var(--color-white);
 }
 
-.spectrum-Button--primary:hover {
+.btn-primary:hover {
     background-color: var(--color-blue-hover);
 }
 
-.spectrum-Button--primary:active {
+.btn-primary:active {
     background-color: var(--color-blue-active);
 }
 
-.spectrum-Button--primary:disabled {
+.btn-primary:disabled {
     background-color: var(--color-gray-200);
     color: var(--color-gray-500);
 }
 
 /* Secondary Button */
-.spectrum-Button--secondary {
+.btn-secondary {
     background-color: var(--color-gray-100);
     color: var(--color-gray-800);
     border: 1px solid var(--color-gray-300);
 }
 
-.spectrum-Button--secondary:hover {
+.btn-secondary:hover {
     background-color: var(--color-gray-200);
 }
 
-.spectrum-Button--secondary:active {
+.btn-secondary:active {
     background-color: var(--color-gray-300);
 }
 
-.spectrum-Button--secondary:disabled {
+.btn-secondary:disabled {
     background-color: var(--color-gray-100);
     color: var(--color-gray-500);
     border-color: var(--color-gray-200);
 }
 
-/* Negative Button */
-.spectrum-Button--negative {
+/* Danger Button */
+.btn-danger {
+    background-color: transparent;
+    color: var(--color-danger);
+    border: 2px solid var(--color-danger);
+}
+
+.btn-danger:hover {
     background-color: var(--color-danger);
     color: var(--color-white);
 }
 
-.spectrum-Button--negative:hover {
-    background-color: var(--color-danger-hover);
-}
-
-.spectrum-Button--negative:active {
+.btn-danger:active {
     background-color: var(--color-danger-active);
-}
-
-.spectrum-Button--negative:disabled {
-    background-color: var(--color-gray-200);
-    color: var(--color-gray-500);
+    border-color: var(--color-danger-active);
+    color: var(--color-white);
 }
 
 /* Outline Variant */
-.spectrum-Button--outline {
+.btn-outline {
     background-color: transparent;
     border: 2px solid currentColor;
     padding: 0 calc(var(--spacing-lg) - 2px);
 }
 
-.spectrum-Button--outline.spectrum-Button--negative {
-    color: var(--color-danger);
-    border-color: var(--color-danger);
-}
-
-.spectrum-Button--outline.spectrum-Button--negative:hover {
-    background-color: var(--color-danger);
-    color: var(--color-white);
-}
-
-.spectrum-Button--outline:disabled {
-    border-color: var(--color-gray-300);
-    color: var(--color-gray-500);
-    background-color: transparent;
-}
-
 /* Button Label */
-.spectrum-Button-label {
+.btn-label {
     font-size: inherit;
     font-weight: inherit;
     line-height: 1.3;
@@ -127,30 +110,58 @@
 }
 
 /* Button Group */
-.spectrum-ButtonGroup {
+.btn-group {
     display: inline-flex;
     gap: var(--spacing-xs);
 }
 
-/* Table-specific button adjustments */
-.table .spectrum-Button {
-    padding: 0 var(--spacing-sm);
-    min-width: 56px;
+/* Button Sizes */
+.btn-sm {
+    min-height: 24px;
+    padding: 0 var(--spacing-md);
+    font-size: var(--font-size-xs);
+}
+
+.btn-lg {
+    min-height: 40px;
+    padding: 0 var(--spacing-xl);
+    font-size: var(--font-size-md);
+}
+
+/* Icon Button */
+.btn-icon {
+    padding: var(--spacing-sm);
+    min-width: unset;
+    border-radius: var(--radius-full);
+}
+
+/* Quiet Variant */
+.btn-quiet {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.btn-quiet:hover {
+    background-color: var(--color-gray-100);
+}
+
+.btn-quiet:active {
+    background-color: var(--color-gray-200);
 }
 
 /* Loading State */
-.spectrum-Button.loading {
+.btn.is-loading {
     pointer-events: none;
     position: relative;
     opacity: 0.7;
     cursor: not-allowed;
 }
 
-.spectrum-Button.loading .spectrum-Button-label {
+.btn.is-loading .btn-label {
     visibility: hidden;
 }
 
-.spectrum-Button.loading::after {
+.btn.is-loading::after {
     content: '';
     position: absolute;
     width: 16px;
@@ -162,7 +173,7 @@
 }
 
 /* Disabled State */
-.spectrum-Button:disabled {
+.btn:disabled {
     cursor: not-allowed;
     pointer-events: none;
 }
@@ -173,41 +184,10 @@
     }
 }
 
-/* Button Sizes */
-.spectrum-Button--small {
-    min-height: 24px;
-    padding: 0 var(--spacing-md);
-    font-size: var(--font-size-xs);
-}
-
-.spectrum-Button--large {
-    min-height: 40px;
-    padding: 0 var(--spacing-xl);
-    font-size: var(--font-size-md);
-}
-
-/* Icon Button */
-.spectrum-Button--icon {
-    padding: var(--spacing-sm);
+/* Table-specific button adjustments */
+.table .btn {
+    min-height: var(--spectrum-global-dimension-size-300);
     min-width: unset;
-    border-radius: var(--radius-full);
-}
-
-/* Quiet Variant */
-.spectrum-Button--quiet {
-    background-color: transparent;
-    border-color: transparent;
-}
-
-.spectrum-Button--quiet:hover {
-    background-color: var(--color-gray-100);
-}
-
-.spectrum-Button--quiet:active {
-    background-color: var(--color-gray-200);
-}
-
-.spectrum-Button--quiet:disabled {
-    background-color: transparent;
-    color: var(--color-gray-500);
+    padding: var(--spectrum-global-dimension-size-50) var(--spectrum-global-dimension-size-200);
+    font-size: var(--spectrum-global-dimension-font-size-75);
 } 

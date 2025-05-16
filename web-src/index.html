@@ -11,6 +11,11 @@
     <!-- External Dependencies -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     
+    <!-- HTMX Configuration -->
+    <script>
+        htmx.config.defaultSwapStyle = 'innerHTML';
+    </script>
+    
     <!-- Application Entry Point -->
     <script type="module" src="./src/js/main.js"></script>
     <link rel="stylesheet" href="./src/main.css">
@@ -39,49 +44,54 @@
             </div>
 
             <!-- File list table -->
-            <div class="table-container">
-                <div id="table-loading" class="htmx-indicator">
-                    <div class="loading-container">
-                        <div class="loading-spinner"></div>
-                    </div>
-                </div>
+            <div class="table-wrapper">
                 <table class="table">
-                    <thead>
+                    <thead class="table-head">
                         <tr>
-                            <th>File Name</th>
-                            <th>Size</th>
-                            <th>Last Modified</th>
-                            <th class="text-center">Actions</th>
+                            <th class="table-header col-file">File Name</th>
+                            <th class="table-header col-size">Size</th>
+                            <th class="table-header col-date">Last Modified</th>
+                            <th class="table-header col-actions">Actions</th>
                         </tr>
                     </thead>
-                    <tbody 
-                        hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser"
-                        hx-trigger="load"
-                        hx-indicator="#table-loading"
-                        hx-swap="innerHTML">
+                    <tbody class="table-body">
+                        <tr class="table-row is-skeleton">
+                            <td class="table-cell skeleton-cell skeleton-file">
+                                <div class="skeleton-block"></div>
+                            </td>
+                            <td class="table-cell skeleton-cell skeleton-size">
+                                <div class="skeleton-block"></div>
+                            </td>
+                            <td class="table-cell skeleton-cell skeleton-date">
+                                <div class="skeleton-block"></div>
+                            </td>
+                            <td class="table-cell skeleton-cell skeleton-actions">
+                                <div class="skeleton-actions-group">
+                                    <div class="skeleton-block skeleton-button skeleton-button-primary"></div>
+                                    <div class="skeleton-block skeleton-button skeleton-button-secondary"></div>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
+
+                <!-- Hidden loader -->
+                <div id="content-loader"></div>
             </div>
+
+            <script>
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        const loader = document.getElementById('content-loader');
+                        loader.setAttribute('hx-get', 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser');
+                        loader.setAttribute('hx-trigger', 'load');
+                        loader.setAttribute('hx-target', 'tbody');
+                        loader.setAttribute('hx-swap', 'innerHTML');
+                        htmx.process(loader);
+                    }, 2000);
+                });
+            </script>
         </section>
     </div>
-
-    <script>
-        // Simple debug logging
-        document.body.addEventListener('htmx:beforeRequest', e => {
-            console.log('Request starting:', e.detail.requestConfig);
-        });
-        
-        document.body.addEventListener('htmx:afterRequest', e => {
-            console.log('Request finished:', {
-                successful: e.detail.successful,
-                failed: e.detail.failed,
-                response: e.detail.xhr.responseText
-            });
-        });
-
-        document.body.addEventListener('htmx:responseError', e => {
-            console.error('Request error:', e.detail);
-        });
-    </script>
 </body>
 </html>
