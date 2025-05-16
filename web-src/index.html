@@ -9,81 +9,79 @@
     <title>File Browser</title>
     
     <!-- External Dependencies -->
-    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
-    <script src="https://unpkg.com/hyperscript.org@0.9.12" defer></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     
     <!-- Application Entry Point -->
-    <script type="module" src="./src/bundle.js"></script>
-    
-    <!-- Styles -->
+    <script type="module" src="./src/js/main.js"></script>
+    <link rel="stylesheet" href="./src/main.css">
     <link rel="icon" href="data:,">
 </head>
-<body class="spectrum spectrum-Typography">
-    <div class="spectrum-Page spectrum-Page--center">
-        <div class="app-container">
-            <!-- App Header -->
-            <header class="app-header">
-                <h1 class="spectrum-Heading spectrum-Heading--sizeXXL spectrum-Heading--heavy">File Browser</h1>
-                <p class="spectrum-Body spectrum-Body--sizeL">A tool for managing your exported files</p>
-            </header>
+<body>
+    <div class="app-container">
+        <!-- App Header -->
+        <header class="app-header">
+            <h1>File Browser</h1>
+        </header>
 
-            <!-- Modal container -->
-            <div id="modal-backdrop" class="modal-backdrop">
-                <div id="modal-container" class="modal-container">
-                    <!-- Modal content will be loaded here -->
-                </div>
+        <!-- Modal container -->
+        <div id="modal-backdrop" class="modal-backdrop">
+            <div id="modal-container" class="modal-container">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Table section -->
+        <section class="content-section">
+            <!-- Section header -->
+            <div class="section-header">
+                <h2 class="section-title">Exported Files</h2>
+                <p class="section-description">View and manage your exported CSV files</p>
             </div>
 
-            <!-- Table section -->
-            <section class="content-section">
-                <!-- Section header -->
-                <div class="section-header">
-                    <h2 class="spectrum-Heading spectrum-Heading--sizeL section-title">Exported Files</h2>
-                    <p class="spectrum-Body spectrum-Body--sizeM section-description">View and manage your exported CSV files</p>
-                </div>
-
-                <!-- File list table -->
-                <div class="spectrum-Table spectrum-Table--sizeM"
-                     hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser"
-                     hx-trigger="load"
-                     hx-indicator="#custom-spinner">
-                    <div class="spectrum-Table-head">
-                        <div class="spectrum-Table-row">
-                            <div class="spectrum-Table-headCell" style="width: 40%">Name</div>
-                            <div class="spectrum-Table-headCell" style="width: 15%">Size</div>
-                            <div class="spectrum-Table-headCell" style="width: 25%">Last Modified</div>
-                            <div class="spectrum-Table-headCell" style="width: 20%">Actions</div>
-                        </div>
-                    </div>
-                    <div class="spectrum-Table-body">
-                        <!-- HTMX will load content here -->
-                    </div>
-                    <!-- Loading indicator -->
-                    <div id="custom-spinner" class="htmx-indicator">
-                        <div class="loading-backdrop">
-                            <div class="loading-container">
-                                <div class="spectrum-ProgressCircle spectrum-ProgressCircle--indeterminate spectrum-ProgressCircle--large">
-                                    <div class="spectrum-ProgressCircle-track"></div>
-                                    <div class="spectrum-ProgressCircle-fills">
-                                        <div class="spectrum-ProgressCircle-fillMask1">
-                                            <div class="spectrum-ProgressCircle-fillSubMask1">
-                                                <div class="spectrum-ProgressCircle-fill"></div>
-                                            </div>
-                                        </div>
-                                        <div class="spectrum-ProgressCircle-fillMask2">
-                                            <div class="spectrum-ProgressCircle-fillSubMask2">
-                                                <div class="spectrum-ProgressCircle-fill"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="spectrum-Body spectrum-Body--sizeS loading-text">Loading files...</div>
-                            </div>
-                        </div>
+            <!-- File list table -->
+            <div class="table-container">
+                <div id="table-loading" class="htmx-indicator">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
                     </div>
                 </div>
-            </section>
-        </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Size</th>
+                            <th>Last Modified</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody 
+                        hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser"
+                        hx-trigger="load"
+                        hx-indicator="#table-loading"
+                        hx-swap="innerHTML">
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
+
+    <script>
+        // Simple debug logging
+        document.body.addEventListener('htmx:beforeRequest', e => {
+            console.log('Request starting:', e.detail.requestConfig);
+        });
+        
+        document.body.addEventListener('htmx:afterRequest', e => {
+            console.log('Request finished:', {
+                successful: e.detail.successful,
+                failed: e.detail.failed,
+                response: e.detail.xhr.responseText
+            });
+        });
+
+        document.body.addEventListener('htmx:responseError', e => {
+            console.error('Request error:', e.detail);
+        });
+    </script>
 </body>
 </html>

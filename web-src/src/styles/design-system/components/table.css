@@ -1,0 +1,179 @@
+/* Table Components */
+
+/* Base Table Container */
+.table-container {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--spectrum-global-color-gray-50);
+    border-radius: var(--spectrum-global-dimension-size-50);
+}
+
+/* Base Table */
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+    position: relative;
+    table-layout: fixed;
+    font-size: var(--spectrum-global-dimension-font-size-100);
+}
+
+/* Table Header */
+.table thead {
+    background-color: var(--spectrum-global-color-gray-100);
+    border-bottom: 1px solid var(--spectrum-global-color-gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.table th:first-child {
+    border-top-left-radius: calc(var(--spectrum-global-dimension-size-50) - 1px);
+}
+
+.table th:last-child {
+    border-top-right-radius: calc(var(--spectrum-global-dimension-size-50) - 1px);
+}
+
+.table th {
+    padding: var(--spectrum-global-dimension-size-200) var(--spectrum-global-dimension-size-300);
+    font-weight: var(--spectrum-global-font-weight-bold);
+    color: var(--spectrum-global-color-gray-800);
+    text-align: left;
+    white-space: nowrap;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: var(--spectrum-global-dimension-font-size-75);
+}
+
+/* Table Body */
+.table tbody {
+    position: relative;
+}
+
+.table tbody::after {
+    content: '';
+    display: block;
+    min-height: var(--spectrum-global-dimension-size-100);
+}
+
+.table tbody tr {
+    transition: all 0.13s ease-in-out;
+}
+
+.table td {
+    padding: var(--spectrum-global-dimension-size-150) var(--spectrum-global-dimension-size-300);
+    color: var(--spectrum-global-color-gray-900);
+    border-bottom: 1px solid var(--spectrum-global-color-gray-200);
+    line-height: 1.4;
+    vertical-align: middle;
+}
+
+.table td:first-child {
+    font-weight: var(--spectrum-global-font-weight-medium);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Table Cell Alignments */
+.table .text-left {
+    text-align: left;
+}
+
+.table .text-center {
+    text-align: center;
+}
+
+.table .text-right {
+    text-align: right;
+}
+
+/* Table Cell Types */
+.table .cell-numeric {
+    font-family: monospace;
+    text-align: right;
+}
+
+.table .cell-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Actions Column */
+.table td:last-child {
+    text-align: center;
+}
+
+.table td:last-child .spectrum-ButtonGroup {
+    display: inline-flex;
+    justify-content: center;
+    gap: var(--spectrum-global-dimension-size-100);
+    flex-wrap: nowrap;
+}
+
+/* Empty State */
+.table .empty-state {
+    text-align: center;
+}
+
+.table .empty-state td {
+    padding: var(--spectrum-global-dimension-size-800);
+}
+
+.table .empty-state h2 {
+    margin: 0;
+    margin-bottom: var(--spectrum-global-dimension-size-200);
+    color: var(--spectrum-global-color-gray-800);
+}
+
+.table .empty-state p {
+    margin: 0;
+    color: var(--spectrum-global-color-gray-600);
+}
+
+/* Table Responsive */
+@media (max-width: 768px) {
+    .table-container {
+        margin: 0 calc(-1 * var(--spectrum-global-dimension-size-200));
+        width: calc(100% + (2 * var(--spectrum-global-dimension-size-200)));
+    }
+}
+
+/* Loading State */
+.table-loading {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 10;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-loading.htmx-request {
+    display: flex;
+}
+
+.loading-spinner {
+    width: var(--spectrum-global-dimension-size-600);
+    height: var(--spectrum-global-dimension-size-600);
+    border: var(--spectrum-global-dimension-size-50) solid var(--spectrum-global-color-gray-200);
+    border-radius: 50%;
+    border-top-color: var(--spectrum-global-color-blue-500);
+    border-left-color: var(--spectrum-global-color-blue-500);
+    animation: spectrum-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spectrum-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+} 

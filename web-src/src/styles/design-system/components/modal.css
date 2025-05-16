@@ -1,0 +1,87 @@
+/* Modal Components */
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--spectrum-global-z-index-modal);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--spectrum-global-animation-duration-200) ease-in-out,
+                visibility var(--spectrum-global-animation-duration-200) ease-in-out;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modal Container */
+.modal {
+    background: var(--spectrum-global-color-gray-50);
+    border-radius: var(--spectrum-global-dimension-size-50);
+    box-shadow: var(--spectrum-global-shadow-large);
+    width: 100%;
+    max-width: var(--spectrum-global-dimension-size-3400);
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(-20px);
+    transition: transform var(--spectrum-global-animation-duration-200) ease-in-out;
+}
+
+.modal-overlay.active .modal {
+    transform: translateY(0);
+}
+
+/* Modal Header */
+.modal-header {
+    padding: var(--spectrum-global-dimension-size-400);
+    border-bottom: 1px solid var(--spectrum-global-color-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    font-size: var(--spectrum-global-dimension-font-size-400);
+    font-weight: var(--spectrum-global-font-weight-bold);
+    color: var(--spectrum-global-color-gray-900);
+    margin: 0;
+}
+
+/* Modal Content */
+.modal-content {
+    padding: var(--spectrum-global-dimension-size-400);
+}
+
+.modal-warning {
+    color: var(--spectrum-semantic-negative-color-text);
+    font-style: italic;
+    margin-top: var(--spectrum-global-dimension-size-100);
+}
+
+/* Modal Footer */
+.modal-footer {
+    padding: var(--spectrum-global-dimension-size-400);
+    border-top: 1px solid var(--spectrum-global-color-gray-200);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spectrum-global-dimension-size-200);
+}
+
+/* Modal Open State */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .modal {
+        width: 95%;
+        margin: var(--spectrum-global-dimension-size-200);
+    }
+} 

@@ -2,31 +2,34 @@ import { defineConfig } from 'vite';
 import legacy from '@vitejs/plugin-legacy';
 import { resolve } from 'path';
 
-export default defineConfig(({ command }) => ({
+export default defineConfig(({ command, mode }) => ({
   root: 'web-src',
   base: './',
   
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: mode === 'development',
     rollupOptions: {
       input: {
-        bundle: resolve(__dirname, 'web-src/index.html')
+        index: resolve(__dirname, 'web-src/index.html')
       },
       output: {
-        manualChunks: {
-          spectrum: [
-            '@spectrum-css/tokens',
-            '@spectrum-css/page',
-            '@spectrum-css/button',
-            '@spectrum-css/table',
-            '@spectrum-css/typography',
-            '@spectrum-css/icon',
-            '@spectrum-css/dialog',
-            '@spectrum-css/buttongroup',
-            '@spectrum-css/progresscircle'
-          ]
+        manualChunks(id) {
+          if (id.includes('design-system')) {
+            return 'design-system';
+          }
+        },
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: ({ name }) => {
+          if (/\.(css)$/.test(name ?? '')) {
+            return 'assets/css/[name]-[hash][extname]';
+          }
+          if (/\.(png|jpe?g|gif|svg|ico)$/.test(name ?? '')) {
+            return 'assets/images/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
         }
       }
     },
@@ -42,10 +45,19 @@ export default defineConfig(({ command }) => ({
   css: {
     devSourcemap: true,
     modules: {
-      scopeBehaviour: 'local'
-    },
-    postcss: {
-      plugins: []
+      localsConvention: 'camelCase',
+      generateScopedName: mode === 'production' 
+        ? '[hash:base64:8]' 
+        : '[name]__[local]__[hash:base64:5]'
+    }
+  },
+
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'web-src/src'),
+      '@styles': resolve(__dirname, 'web-src/src/styles'),
+      '@js': resolve(__dirname, 'web-src/src/js'),
+      '@components': resolve(__dirname, 'web-src/src/components')
     }
   },
 
@@ -56,6 +68,12 @@ export default defineConfig(({ command }) => ({
     open: true,
     hmr: {
       overlay: true
+    },
+    watch: {
+      include: [
+        'web-src/src/**',
+        'web-src/index.html'
+      ]
     }
   },
 
@@ -68,11 +86,17 @@ export default defineConfig(({ command }) => ({
   plugins: [
     legacy({
       targets: ['defaults', 'not IE 11'],
-      modernPolyfills: true
+      modernPolyfills: true,
+      additionalLegacyPolyfills: [
+        'regenerator-runtime/runtime'
+      ]
     })
   ],
 
   optimizeDeps: {
-    include: ['htmx.org']
+    include: [
+      'htmx.org',
+      'hyperscript.org'
+    ]
   }
 })); 

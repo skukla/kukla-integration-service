@@ -33,7 +33,7 @@ function errorResponse(error, statusCode = 500) {
             'Content-Type': 'text/html'
         },
         body: `
-            <div class="spectrum-Well spectrum-Well--error">
+            <div class="error-message">
                 ${errorMessage}
             </div>
         `

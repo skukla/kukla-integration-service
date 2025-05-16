@@ -1,0 +1,62 @@
+/* Layout Components */
+
+/* Base Layout */
+body {
+    font-family: var(--font-family-primary);
+    background-color: #f1f1f1;
+    color: var(--color-gray-800);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding: 0;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+    background-color: #f1f1f1;
+    min-height: 100vh;
+}
+
+/* App Header */
+.app-header {
+    margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-lg) 0;
+}
+
+.app-header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+/* Content Section */
+.content-section {
+    margin-top: var(--spacing-2xl);
+    padding: var(--spacing-xl);
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04),
+                0 4px 8px rgba(0, 0, 0, 0.03);
+}
+
+/* Section Header */
+.section-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.section-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+    margin: 0;
+    margin-bottom: var(--spacing-xs);
+}
+
+.section-description {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-700);
+    margin: 0;
+} 
