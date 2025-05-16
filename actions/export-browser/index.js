@@ -28,36 +28,30 @@ function formatFileSize(bytes) {
  */
 function getDeleteModalHtml(fileName, fullPath) {
     return `
-        <div class="spectrum-Dialog spectrum-Dialog--small">
-            <div class="spectrum-Dialog-grid">
-                <div class="spectrum-Dialog-header">
-                    <h2 class="spectrum-Dialog-title">Delete File</h2>
-                </div>
-                <div class="spectrum-Dialog-content">
-                    <div class="spectrum-Dialog-contentContainer">
-                        <p class="spectrum-Body spectrum-Body--sizeM">Are you sure you want to delete "${fileName}"?</p>
-                        <p class="spectrum-Body spectrum-Body--sizeS spectrum-Body--serif" style="color: var(--spectrum-global-color-gray-700)">This action cannot be undone.</p>
-                    </div>
-                </div>
-                <div class="spectrum-Dialog-footer">
-                    <div class="spectrum-ButtonGroup spectrum-ButtonGroup--sizeM spectrum-Dialog-buttonGroup" style="gap: var(--spectrum-global-dimension-size-100)">
-                        <button type="button"
-                                class="spectrum-Button spectrum-Button--fill spectrum-Button--secondary spectrum-Button--sizeM"
-                                hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser"
-                                hx-target="#modal-backdrop"
-                                hx-swap="outerHTML"
-                                aria-label="Cancel deletion">
-                            <span class="spectrum-Button-label">Cancel</span>
-                        </button>
-                        <button type="button"
-                                class="spectrum-Button spectrum-Button--fill spectrum-Button--negative spectrum-Button--sizeM"
-                                hx-delete="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/delete-file?fileName=${encodeURIComponent(fullPath)}"
-                                hx-target="closest .spectrum-Table-row"
-                                hx-swap="outerHTML swap:1s"
-                                aria-label="Confirm deletion of ${fileName}">
-                            <span class="spectrum-Button-label">Delete</span>
-                        </button>
-                    </div>
+        <div class="modal-content">
+            <h2>Delete File</h2>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "${fileName}"?</p>
+                <p class="modal-warning">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <div class="spectrum-ButtonGroup">
+                    <button type="button"
+                            class="spectrum-Button spectrum-Button--secondary"
+                            hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser"
+                            hx-target="#modal-backdrop"
+                            hx-swap="outerHTML"
+                            aria-label="Cancel deletion">
+                        <span class="spectrum-Button-label">Cancel</span>
+                    </button>
+                    <button type="button"
+                            class="spectrum-Button spectrum-Button--negative spectrum-Button--outline"
+                            hx-delete="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/delete-file?fileName=${encodeURIComponent(fullPath)}"
+                            hx-target="closest .spectrum-Table-row"
+                            hx-swap="outerHTML swap:1s"
+                            aria-label="Confirm deletion of ${fileName}">
+                        <span class="spectrum-Button-label">Delete</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -116,40 +110,38 @@ async function main(params) {
 
                     if (fileDetails.length === 0) {
                         return htmlResponse(`
-                            <div class="spectrum-Table-row spectrum-Table-row--empty">
-                                <div class="spectrum-Table-cell" colspan="4">
-                                    <div style="margin: var(--spectrum-global-dimension-size-800) 0; text-align: center">
-                                        <h2 class="spectrum-Heading spectrum-Heading--sizeM">No Files Found</h2>
-                                        <p class="spectrum-Body spectrum-Body--sizeS">No CSV files are currently available in storage.<br>Files will appear here once they are exported.</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <tr class="empty-state">
+                                <td colspan="4" class="text-center">
+                                    <h2>No Files Found</h2>
+                                    <p>No CSV files are currently available in storage.<br>Files will appear here once they are exported.</p>
+                                </td>
+                            </tr>
                         `);
                     }
 
                     // Return HTML list items for HTMX to inject
                     const items = fileDetails.map(file => `
-                        <div class="spectrum-Table-row">
-                            <div class="spectrum-Table-cell" style="width: 40%">
-                                <span class="spectrum-Body spectrum-Body--sizeM">${file.name}</span>
-                            </div>
-                            <div class="spectrum-Table-cell" style="width: 15%">
-                                <span class="spectrum-Body spectrum-Body--sizeM">${file.size}</span>
-                            </div>
-                            <div class="spectrum-Table-cell" style="width: 25%">
-                                <span class="spectrum-Body spectrum-Body--sizeM">${file.lastModified}</span>
-                            </div>
-                            <div class="spectrum-Table-cell" style="width: 20%">
-                                <div class="spectrum-ButtonGroup spectrum-ButtonGroup--sizeM" style="gap: var(--spectrum-global-dimension-size-100)">
+                        <tr>
+                            <td style="width: 40%">
+                                <span>${file.name}</span>
+                            </td>
+                            <td style="width: 15%">
+                                <span>${file.size}</span>
+                            </td>
+                            <td style="width: 25%">
+                                <span>${file.lastModified}</span>
+                            </td>
+                            <td style="width: 20%">
+                                <div class="spectrum-ButtonGroup">
                                     <button type="button" 
-                                            class="spectrum-Button spectrum-Button--fill spectrum-Button--primary spectrum-Button--sizeM"
+                                            class="spectrum-Button spectrum-Button--primary"
                                             hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/download-file?fileName=${file.fullPath}`)}"
                                             hx-swap="none"
                                             aria-label="Download ${file.name}">
                                         <span class="spectrum-Button-label">Download</span>
                                     </button>
                                     <button type="button"
-                                            class="spectrum-Button spectrum-Button--outline spectrum-Button--negative spectrum-Button--sizeM"
+                                            class="spectrum-Button spectrum-Button--negative spectrum-Button--outline"
                                             hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
                                             hx-target="#modal-container"
                                             hx-swap="innerHTML show:top"
@@ -157,23 +149,11 @@ async function main(params) {
                                         <span class="spectrum-Button-label">Delete</span>
                                     </button>
                                 </div>
-                            </div>
-                        </div>
+                            </td>
+                        </tr>
                     `).join('');
 
-                    return htmlResponse(`
-                        <div class="spectrum-Table-head">
-                            <div class="spectrum-Table-row">
-                                <div class="spectrum-Table-headCell" style="width: 40%">Name</div>
-                                <div class="spectrum-Table-headCell" style="width: 15%">Size</div>
-                                <div class="spectrum-Table-headCell" style="width: 25%">Last Modified</div>
-                                <div class="spectrum-Table-headCell" style="width: 20%">Actions</div>
-                            </div>
-                        </div>
-                        <div class="spectrum-Table-body">
-                            ${items}
-                        </div>
-                    `);
+                    return htmlResponse(items);
                 } catch (error) {
                     logger.error('Error listing files:', error);
                     return errorResponse(`Failed to list files: ${error.message}`, 500);
