@@ -1,62 +1,133 @@
 /* Layout Components */
 
+/* Layout-specific tokens */
+:root {
+    /* Colors */
+    --layout-background: var(--color-gray-50);
+    --layout-text-color: var(--color-gray-800);
+    --layout-title-color: var(--color-gray-900);
+    --layout-description-color: var(--color-gray-700);
+    --layout-section-background: var(--color-white);
+    
+    /* Typography */
+    --layout-title-size: var(--font-size-2xl);
+    --layout-section-title-size: var(--font-size-xl);
+    --layout-description-size: var(--font-size-sm);
+    
+    /* Spacing */
+    --layout-container-padding: var(--size-container-padding);
+    --layout-section-padding: var(--spacing-xl);
+    --layout-header-padding: var(--spacing-lg) 0;
+    --layout-header-margin: var(--spacing-2xl);
+    --layout-section-margin: var(--spacing-2xl);
+    
+    /* Responsive */
+    --layout-container-padding-md: var(--spacing-md);
+    --layout-container-padding-sm: var(--spacing-sm);
+    --layout-section-padding-md: var(--spacing-lg);
+    --layout-section-padding-sm: var(--spacing-md);
+    --layout-section-margin-md: var(--spacing-xl);
+    --layout-section-margin-sm: var(--spacing-lg);
+    --layout-section-title-size-sm: var(--font-size-lg);
+}
+
 /* Base Layout */
 body {
     font-family: var(--font-family-primary);
-    background-color: #f1f1f1;
-    color: var(--color-gray-800);
-    line-height: 1.5;
+    background-color: var(--layout-background);
+    color: var(--layout-text-color);
+    line-height: var(--line-height-normal);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
 }
 
 .app-container {
-    max-width: 1200px;
+    max-width: var(--size-container-max-width);
     margin: 0 auto;
-    padding: var(--spacing-xl);
-    background-color: #f1f1f1;
-    min-height: 100vh;
+    padding: var(--layout-container-padding);
+    background-color: var(--layout-background);
+    min-height: inherit;
+    display: flex;
+    flex-direction: column;
 }
 
 /* App Header */
 .app-header {
-    margin-bottom: var(--spacing-2xl);
-    padding: var(--spacing-lg) 0;
+    margin-bottom: var(--layout-header-margin);
+    padding: var(--layout-header-padding);
 }
 
 .app-header h1 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--layout-title-size);
     font-weight: var(--font-weight-bold);
-    color: var(--color-gray-900);
+    color: var(--layout-title-color);
     margin: 0;
+    line-height: var(--line-height-tight);
 }
 
 /* Content Section */
 .content-section {
-    margin-top: var(--spacing-2xl);
-    padding: var(--spacing-xl);
-    background: var(--color-white);
+    margin-top: var(--layout-section-margin);
+    padding: var(--layout-section-padding);
+    background: var(--layout-section-background);
     border-radius: var(--radius-lg);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04),
-                0 4px 8px rgba(0, 0, 0, 0.03);
+    box-shadow: var(--shadow-md);
+    flex: 1;
 }
 
 /* Section Header */
 .section-header {
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--layout-section-padding);
 }
 
 .section-title {
-    font-size: var(--font-size-xl);
+    font-size: var(--layout-section-title-size);
     font-weight: var(--font-weight-bold);
-    color: var(--color-gray-900);
-    margin: 0;
-    margin-bottom: var(--spacing-xs);
+    color: var(--layout-title-color);
+    margin: 0 0 var(--spacing-xs);
+    line-height: var(--line-height-tight);
 }
 
 .section-description {
-    font-size: var(--font-size-sm);
-    color: var(--color-gray-700);
+    font-size: var(--layout-description-size);
+    color: var(--layout-description-color);
     margin: 0;
+    line-height: var(--line-height-normal);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .app-container {
+        padding: var(--layout-container-padding-md);
+    }
+
+    .content-section {
+        padding: var(--layout-section-padding-md);
+        margin-top: var(--layout-section-margin-md);
+    }
+
+    .app-header {
+        margin-bottom: var(--layout-section-margin-md);
+        padding: var(--layout-container-padding-md) 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .app-container {
+        padding: var(--layout-container-padding-sm);
+    }
+
+    .content-section {
+        padding: var(--layout-section-padding-sm);
+        margin-top: var(--layout-section-margin-sm);
+        border-radius: var(--radius-md);
+    }
+
+    .section-title {
+        font-size: var(--layout-section-title-size-sm);
+    }
 } 

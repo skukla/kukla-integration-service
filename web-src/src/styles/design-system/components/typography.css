@@ -1,0 +1,98 @@
+/* Typography Styles */
+
+/* Headings */
+h1, .h1 {
+  font-size: calc(var(--base-font-size) * var(--font-scale) * var(--font-scale) * var(--font-scale));
+  line-height: 1.2;
+  font-weight: 700;
+  margin-bottom: 1em;
+}
+
+h2, .h2 {
+  font-size: calc(var(--base-font-size) * var(--font-scale) * var(--font-scale));
+  line-height: 1.25;
+  font-weight: 700;
+  margin-bottom: 0.8em;
+}
+
+h3, .h3 {
+  font-size: calc(var(--base-font-size) * var(--font-scale));
+  line-height: 1.3;
+  font-weight: 600;
+  margin-bottom: 0.6em;
+}
+
+/* Body Text */
+p, .body-text {
+  font-size: var(--base-font-size);
+  line-height: 1.5;
+  margin-bottom: 1em;
+}
+
+.body-text-sm {
+  font-size: calc(var(--base-font-size) / var(--font-scale));
+  line-height: 1.4;
+}
+
+.body-text-lg {
+  font-size: calc(var(--base-font-size) * var(--font-scale));
+  line-height: 1.6;
+}
+
+/* Text Utilities */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-break {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+.text-nowrap {
+  white-space: nowrap !important;
+}
+
+/* Font Weights */
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Text Alignment */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-justify { text-align: justify; }
+
+/* Text Decoration */
+.text-underline { text-decoration: underline; }
+.text-line-through { text-decoration: line-through; }
+.text-no-decoration { text-decoration: none; }
+
+/* Text Transform */
+.text-uppercase { text-transform: uppercase; }
+.text-lowercase { text-transform: lowercase; }
+.text-capitalize { text-transform: capitalize; }
+
+/* Font Style */
+.text-italic { font-style: italic; }
+
+/* Letter Spacing */
+.tracking-tight { letter-spacing: -0.05em; }
+.tracking-normal { letter-spacing: 0; }
+.tracking-wide { letter-spacing: 0.05em; }
+
+/* Print Optimizations */
+@media print {
+  body {
+    font-size: 12pt;
+  }
+  
+  h1, .h1 { font-size: 24pt; }
+  h2, .h2 { font-size: 20pt; }
+  h3, .h3 { font-size: 16pt; }
+} 

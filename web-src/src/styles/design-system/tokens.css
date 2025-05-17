@@ -1,80 +1,12 @@
 /* Design Tokens - Foundation of our design system */
 
 :root {
-    /* Spectrum Global Colors */
-    --spectrum-global-color-gray-50: var(--color-white);
-    --spectrum-global-color-gray-75: #FAFAFA;
-    --spectrum-global-color-gray-100: var(--color-gray-100);
-    --spectrum-global-color-gray-200: var(--color-gray-200);
-    --spectrum-global-color-gray-300: var(--color-gray-300);
-    --spectrum-global-color-gray-400: var(--color-gray-400);
-    --spectrum-global-color-gray-500: var(--color-gray-500);
-    --spectrum-global-color-gray-600: var(--color-gray-600);
-    --spectrum-global-color-gray-700: var(--color-gray-700);
-    --spectrum-global-color-gray-800: var(--color-gray-800);
-    --spectrum-global-color-gray-900: var(--color-gray-800);
-    
-    --spectrum-global-color-blue-500: var(--color-blue-primary);
-    
-    /* Spectrum Semantic Colors */
-    --spectrum-semantic-negative-color-text: var(--color-danger);
-    --spectrum-semantic-negative-color-background: #FFEBE7;
-    --spectrum-semantic-positive-color-text: #2D9D78;
-    --spectrum-semantic-positive-color-background: #E8FAF3;
-    --spectrum-semantic-notice-color-text: #E68619;
-    --spectrum-semantic-notice-color-background: #FFF5E6;
-    --spectrum-semantic-informative-color-text: var(--color-blue-primary);
-    --spectrum-semantic-informative-color-background: #E5F4FF;
-
-    /* Spectrum Dimensions */
-    --spectrum-global-dimension-size-50: 4px;
-    --spectrum-global-dimension-size-75: 6px;
-    --spectrum-global-dimension-size-100: 8px;
-    --spectrum-global-dimension-size-150: 12px;
-    --spectrum-global-dimension-size-200: 16px;
-    --spectrum-global-dimension-size-300: 24px;
-    --spectrum-global-dimension-size-400: 32px;
-    --spectrum-global-dimension-size-500: 40px;
-    --spectrum-global-dimension-size-600: 48px;
-    --spectrum-global-dimension-size-800: 64px;
-    --spectrum-global-dimension-size-3400: 500px;
-
-    /* Spectrum Font Weights */
-    --spectrum-global-font-weight-regular: var(--font-weight-regular);
-    --spectrum-global-font-weight-medium: var(--font-weight-medium);
-    --spectrum-global-font-weight-bold: var(--font-weight-bold);
-
-    /* Spectrum Font Sizes */
-    --spectrum-global-dimension-font-size-50: 0.625rem;  /* 10px */
-    --spectrum-global-dimension-font-size-75: 0.6875rem; /* 11px */
-    --spectrum-global-dimension-font-size-100: 0.75rem;  /* 12px */
-    --spectrum-global-dimension-font-size-150: 0.8125rem;/* 13px */
-    --spectrum-global-dimension-font-size-200: 0.875rem; /* 14px */
-    --spectrum-global-dimension-font-size-300: 1rem;     /* 16px */
-    --spectrum-global-dimension-font-size-400: 1.125rem; /* 18px */
-    --spectrum-global-dimension-font-size-500: 1.25rem;  /* 20px */
-    --spectrum-global-dimension-font-size-600: 1.5rem;   /* 24px */
-
-    /* Spectrum Animation */
-    --spectrum-global-animation-duration-100: 130ms;
-    --spectrum-global-animation-duration-200: 160ms;
-    --spectrum-global-animation-duration-300: 190ms;
-    --spectrum-global-animation-duration-400: 220ms;
-
-    /* Spectrum Z-Index */
-    --spectrum-global-z-index-modal: var(--z-index-modal);
-
-    /* Spectrum Shadows */
-    --spectrum-global-shadow-small: var(--shadow-sm);
-    --spectrum-global-shadow-medium: var(--shadow-md);
-    --spectrum-global-shadow-large: var(--shadow-lg);
-
     /* Base Colors */
     --color-white: #FFFFFF;
     --color-black: #000000;
 
     /* Grayscale */
-    --color-gray-50: var(--color-white);
+    --color-gray-50: #FAFAFA;
     --color-gray-100: #F8F8F8;
     --color-gray-200: #E8E8E8;
     --color-gray-300: #D4D4D4;
@@ -83,8 +15,10 @@
     --color-gray-600: #4B4B4B;
     --color-gray-700: #2C2C2C;
     --color-gray-800: #1A1A1A;
+    --color-gray-900: #0F0F0F;
 
     /* Brand Colors */
+    --color-blue-50: #F5F9FF;
     --color-blue-primary: #1473E6;
     --color-blue-hover: #0D66D0;
     --color-blue-active: #095ABA;
@@ -93,6 +27,28 @@
     --color-danger: #E34850;
     --color-danger-hover: #C9252D;
     --color-danger-active: #B31B1B;
+    --color-success: #2D9D78;
+    --color-success-hover: #268E6C;
+    --color-success-active: #1F7355;
+    --color-warning: #E68619;
+    --color-warning-hover: #CB7714;
+    --color-warning-active: #A35F10;
+
+    /* Interactive States */
+    --color-focus-ring: var(--color-blue-primary);
+    --color-focus-ring-error: var(--color-danger);
+    --color-hover-overlay: rgba(0, 0, 0, 0.05);
+    --color-active-overlay: rgba(0, 0, 0, 0.1);
+    --color-disabled-background: var(--color-gray-200);
+    --color-disabled-text: var(--color-gray-500);
+    --color-disabled-border: var(--color-gray-300);
+
+    /* Semantic Background Colors */
+    --color-danger-background: #FFEBE7;
+    --color-success-background: #E8FAF3;
+    --color-warning-background: #FFF5E6;
+    --color-info-background: #E5F4FF;
+    --color-hover-background: #F5F9FF;  /* New dedicated color for hover states */
 
     /* Typography */
     --font-family-primary: -apple-system, BlinkMacSystemFont, 'Adobe Clean', 'Segoe UI', sans-serif;
@@ -119,27 +75,190 @@
     --spacing-2xl: 2.5rem;   /* 40px */
     --spacing-3xl: 3rem;     /* 48px */
 
+    /* Negative Spacing */
+    --spacing-md-negative: calc(-1 * var(--spacing-md));
+    --spacing-lg-negative: calc(-1 * var(--spacing-lg));
+    
+    /* Common Calculations */
+    --width-full-with-spacing-md: calc(100% + (2 * var(--spacing-md)));
+    --width-full-minus-spacing-lg: calc(100% - (2 * var(--spacing-lg)));
+    --modal-offset-negative: calc(-1 * var(--size-modal-offset));
+
     /* Border Radius */
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
     --radius-full: 9999px;
 
+    /* Shadow Opacity */
+    --shadow-opacity-sm: 0.05;
+    --shadow-opacity-md: 0.1;
+    --shadow-opacity-lg: 0.1;
+
     /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, var(--shadow-opacity-sm));
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, var(--shadow-opacity-md));
+    --shadow-lg: 0 4px 6px rgba(0, 0, 0, var(--shadow-opacity-lg));
+    --shadow-overlay-light: rgba(0, 0, 0, var(--shadow-opacity-sm));
+    --shadow-overlay-none: rgba(0, 0, 0, 0);
+
+    /* Layout */
+    --min-content-height: calc(var(--spacing-3xl) * 3);  /* 144px */
 
     /* Z-index */
     --z-index-dropdown: 1000;
     --z-index-modal: 2000;
     --z-index-toast: 3000;
 
-    /* Transitions */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    /* Animation Timing */
+    --duration-instant: 100ms;
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --duration-slower: 400ms;
+    --duration-spinner: 800ms;
+    --duration-notification: 300ms;
+    --duration-skeleton: 2000ms;
+
+    /* Easing Functions */
+    --ease-default: cubic-bezier(0.4, 0, 0.2, 1);  /* Material Design standard easing */
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);         /* Quick acceleration */
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);        /* Gentle deceleration */
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);   /* Smooth acceleration and deceleration */
+    --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);  /* Bouncy effect */
+    --ease-linear: linear;                          /* Constant speed */
+
+    /* Semantic Transitions */
+    --transition-hover: var(--duration-instant) var(--ease-out);
+    --transition-click: var(--duration-fast) var(--ease-in);
+    --transition-show: var(--duration-normal) var(--ease-out);
+    --transition-hide: var(--duration-fast) var(--ease-in);
+    --transition-expand: var(--duration-normal) var(--ease-in-out);
+    --transition-move: var(--duration-normal) var(--ease-default);
+    --transition-fade: var(--duration-normal) var(--ease-default);
+    --transition-bounce: var(--duration-slow) var(--ease-bounce);
+    --transition-spinner: var(--duration-spinner) var(--ease-linear);
+    --transition-notification: var(--duration-notification) var(--ease-out);
+    --transition-skeleton: var(--duration-skeleton) var(--ease-in-out);
+    --transition-button: background-color var(--duration-instant) var(--ease-out),
+                        border-color var(--duration-instant) var(--ease-out),
+                        color var(--duration-instant) var(--ease-out),
+                        box-shadow var(--duration-instant) var(--ease-out);
 
     /* Row Hover Colors */
-    --color-row-hover-background: #E5F4FF;  /* Light blue for row hovers */
+    --color-row-hover-background: var(--color-hover-background);
+
+    /* Overlay Colors */
+    --color-overlay-dark: var(--color-black-50);
+    --color-overlay-light: var(--color-white-95);
+
+    /* Layout Dimensions */
+    --size-modal-max-width: 800px;
+    --size-modal-mobile-width: 95%;
+    --size-modal-max-height: 90vh;
+    --size-modal-offset: var(--spacing-lg);
+    --size-notification-min-width: 300px;
+    --size-notification-max-width: 400px;
+    --size-button-min-width: 72px;
+    --size-button-min-height: 32px;
+    --size-loading-min-height: 100px;
+    --size-container-max-width: 1200px;
+    --size-container-padding: var(--spacing-xl);
+
+    /* Breakpoints */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+
+    /* Media Query Breakpoints */
+    --breakpoint-sm-max: 640px;
+    --breakpoint-md-max: 768px;
+    --breakpoint-lg-max: 1024px;
+    --breakpoint-xl-max: 1280px;
+
+    /* Transform Values */
+    --transform-none: none;
+    --transform-initial: 0;
+    --transform-scale-up: scale(1.05);
+    --transform-scale-down: scale(0.95);
+    --transform-slide-up: translateY(calc(-1 * var(--spacing-md)));
+    --transform-slide-down: translateY(var(--spacing-md));
+    --transform-slide-left: translateX(calc(-1 * var(--spacing-md)));
+    --transform-slide-right: translateX(var(--spacing-md));
+    --transform-slide-in: translateY(var(--transform-initial));
+    --transform-slide-out: translateY(var(--modal-offset-negative));
+
+    /* Border Widths */
+    --border-xs: 1px;
+    --border-sm: 2px;
+    --border-md: 4px;
+
+    /* Border Styles */
+    --border-solid: solid;
+    --border-base: var(--border-xs) var(--border-solid);
+    --border-thick: var(--border-sm) var(--border-solid);
+    --border-accent: var(--border-md) var(--border-solid);
+
+    /* Shadow Dimensions */
+    --shadow-height-sm: 2px;
+    --shadow-height-md: 4px;
+    --shadow-height-lg: 6px;
+
+    /* Line Heights */
+    --line-height-tight: 1.3;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.7;
+
+    /* Focus Styles */
+    --focus-outline-width: 2px;
+    --focus-outline-offset: 2px;
+    --focus-outline-color: var(--color-focus-ring);
+    --focus-outline: var(--focus-outline-width) solid var(--focus-outline-color);
+    --focus-outline-error: var(--focus-outline-width) solid var(--color-focus-ring-error);
+
+    /* Button Sizes */
+    --button-height-sm: 24px;
+    --button-height-md: var(--size-button-min-height); /* 32px */
+    --button-height-lg: 40px;
+
+    /* Skeleton Widths */
+    --skeleton-width-sm: 45%;
+    --skeleton-width-md: 65%;
+    --skeleton-width-lg: 85%;
+
+    /* Typography Spacing */
+    --letter-spacing-tight: -0.01em;
+    --letter-spacing-normal: 0;
+    --letter-spacing-wide: 0.06em;
+
+    /* Opacity Levels */
+    --opacity-0: 0;
+    --opacity-20: 0.2;
+    --opacity-50: 0.5;
+    --opacity-70: 0.7;
+    --opacity-95: 0.95;
+    --opacity-100: 1;
+
+    /* Color with Opacity */
+    --color-white-20: rgba(255, 255, 255, var(--opacity-20));
+    --color-black-50: rgba(0, 0, 0, var(--opacity-50));
+    --color-black-5: rgba(0, 0, 0, 0.05);
+    --color-white-95: rgba(255, 255, 255, var(--opacity-95));
+
+    /* Animation Patterns */
+    --animation-spin: spin var(--transition-spinner) infinite;
+    --animation-pulse: pulse var(--transition-skeleton) infinite;
+}
+
+/* Shared Animations */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.45; }
+    50% { opacity: 0.25; }
+    100% { opacity: 0.45; }
 } 

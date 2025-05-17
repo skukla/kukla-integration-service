@@ -110,47 +110,49 @@ async function main(params) {
 
                     if (fileDetails.length === 0) {
                         return htmlResponse(`
-                            <tr class="table-row empty-state">
-                                <td colspan="4" class="table-cell text-center">
+                            <div class="table-row empty-state">
+                                <div class="table-cell text-center" style="grid-column: 1 / -1">
                                     <h2>No Files Found</h2>
                                     <p>No CSV files are currently available in storage.<br>Files will appear here once they are exported.</p>
-                                </td>
-                            </tr>
+                                </div>
+                            </div>
                         `);
                     }
 
                     // Return HTML list items for HTMX to inject
                     const items = fileDetails.map(file => `
-                        <tr class="table-row">
-                            <td class="table-cell col-file">
+                        <div class="table-row">
+                            <div class="table-cell">
                                 <span>${file.name}</span>
-                            </td>
-                            <td class="table-cell col-size">
+                            </div>
+                            <div class="table-cell">
                                 <span>${file.size}</span>
-                            </td>
-                            <td class="table-cell col-date">
+                            </div>
+                            <div class="table-cell">
                                 <span>${file.lastModified}</span>
-                            </td>
-                            <td class="table-cell col-actions">
-                                <div class="btn-group">
-                                    <button type="button" 
-                                            class="btn btn-primary"
-                                            hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/download-file?fileName=${file.fullPath}`)}"
-                                            hx-swap="none"
-                                            aria-label="Download ${file.name}">
-                                        <span class="btn-label">Download</span>
-                                    </button>
-                                    <button type="button"
-                                            class="btn btn-danger btn-outline"
-                                            hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
-                                            hx-target="#modal-container"
-                                            hx-swap="innerHTML show:top"
-                                            aria-label="Delete ${file.name}">
-                                        <span class="btn-label">Delete</span>
-                                    </button>
+                            </div>
+                            <div class="table-cell">
+                                <div class="actions-container">
+                                    <div class="btn-group">
+                                        <button type="button" 
+                                                class="btn btn-primary"
+                                                hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/download-file?fileName=${file.fullPath}`)}"
+                                                hx-swap="none"
+                                                aria-label="Download ${file.name}">
+                                            <span class="btn-label">Download</span>
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-danger btn-outline"
+                                                hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
+                                                hx-target="#modal-container"
+                                                hx-swap="innerHTML show:top"
+                                                aria-label="Delete ${file.name}">
+                                            <span class="btn-label">Delete</span>
+                                        </button>
+                                    </div>
                                 </div>
-                            </td>
-                        </tr>
+                            </div>
+                        </div>
                     `).join('');
 
                     return htmlResponse(items);

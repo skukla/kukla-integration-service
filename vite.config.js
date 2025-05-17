@@ -48,7 +48,8 @@ export default defineConfig(({ command, mode }) => ({
       localsConvention: 'camelCase',
       generateScopedName: mode === 'production' 
         ? '[hash:base64:8]' 
-        : '[name]__[local]__[hash:base64:5]'
+        : '[name]__[local]__[hash:base64:5]',
+      exclude: '**/design-system/**'
     }
   },
 

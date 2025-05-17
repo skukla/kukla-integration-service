@@ -1,8 +1,5 @@
 /* Main JavaScript Entry Point */
 
-// Import styles
-import '../main.css';
-
 // Import utilities
 import { showNotification } from './utils/notifications.js';
 
@@ -11,12 +8,12 @@ const modalBackdrop = document.getElementById('modal-backdrop');
 const modalContainer = document.getElementById('modal-container');
 
 function showModal() {
-    modalBackdrop.classList.add('show');
+    modalBackdrop.classList.add('active');
     document.body.classList.add('modal-open');
 }
 
 function hideModal() {
-    modalBackdrop.classList.remove('show');
+    modalBackdrop.classList.remove('active');
     document.body.classList.remove('modal-open');
     modalContainer.innerHTML = '';
 }
@@ -31,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modalBackdrop.classList.contains('show')) {
+        if (e.key === 'Escape' && modalBackdrop.classList.contains('active')) {
             hideModal();
         }
     });
@@ -44,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.body.addEventListener('htmx:beforeSwap', (e) => {
-        if (e.detail.target.closest('.spectrum-Table-row')) {
+        if (e.detail.target.closest('.table-row')) {
             hideModal();
         }
     });

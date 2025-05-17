@@ -1,0 +1,49 @@
+            <!-- File list table -->
+            <div class="table-wrapper">
+                <div class="table">
+                    <!-- Header Row -->
+                    <div class="table-row header">
+                        <div class="table-header">File Name</div>
+                        <div class="table-header">Size</div>
+                        <div class="table-header">Last Modified</div>
+                        <div class="table-header">Actions</div>
+                    </div>
+                    
+                    <!-- Skeleton Row -->
+                    <div class="table-row is-skeleton">
+                        <div class="table-cell">
+                            <div class="skeleton-block file-name-skeleton"></div>
+                        </div>
+                        <div class="table-cell">
+                            <div class="skeleton-block size-skeleton"></div>
+                        </div>
+                        <div class="table-cell">
+                            <div class="skeleton-block date-skeleton"></div>
+                        </div>
+                        <div class="table-cell">
+                            <div class="actions-container">
+                                <div class="btn-group">
+                                    <div class="action-button-skeleton"></div>
+                                    <div class="action-button-skeleton"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden loader -->
+                <div id="content-loader"></div>
+            </div>
+
+            <script>
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        const loader = document.getElementById('content-loader');
+                        loader.setAttribute('hx-get', 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser');
+                        loader.setAttribute('hx-trigger', 'load');
+                        loader.setAttribute('hx-target', '.table');
+                        loader.setAttribute('hx-swap', 'innerHTML');
+                        htmx.process(loader);
+                    }, 2000);
+                });
+            </script> 

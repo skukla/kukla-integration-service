@@ -1,0 +1,231 @@
+/* File Browser Component */
+
+/* File Browser specific tokens */
+:root {
+    /* Grid Layout */
+    --file-browser-grid-columns: 30% 15% 25% 30%;
+    --file-browser-cell-padding: var(--spacing-md) var(--spacing-xl);
+    
+    /* Colors */
+    --file-browser-header-bg: var(--color-gray-100);
+    --file-browser-row-bg: var(--color-white);
+    --file-browser-border: var(--color-gray-200);
+    
+    /* Typography */
+    --file-browser-header-font: var(--font-size-xs);
+    --file-browser-header-spacing: var(--letter-spacing-wide);
+    --file-browser-header-weight: var(--font-weight-bold);
+    
+    /* Skeleton Loading */
+    --skeleton-bg: var(--color-gray-200);
+    --skeleton-shine: var(--color-gray-100);
+    --skeleton-animation-duration: 2s;
+}
+
+/* Table Wrapper */
+.table-wrapper {
+    background: var(--color-white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--file-browser-border);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+/* Table Base */
+.table {
+    width: 100%;
+    background: var(--color-white);
+}
+
+/* Grid Layout */
+.table-row {
+    display: grid;
+    grid-template-columns: var(--file-browser-grid-columns);
+    border-bottom: 1px solid var(--file-browser-border);
+    align-items: center;
+}
+
+/* Header Row */
+.table-row.header {
+    background: var(--file-browser-header-bg);
+    border-bottom: 2px solid var(--file-browser-border);
+}
+
+/* Header Cells */
+.table-header {
+    padding: var(--file-browser-cell-padding);
+    font-size: var(--file-browser-header-font);
+    font-weight: var(--file-browser-header-weight);
+    letter-spacing: var(--file-browser-header-spacing);
+    text-transform: uppercase;
+    color: var(--color-gray-900);
+}
+
+/* Table Cells */
+.table-cell {
+    padding: var(--file-browser-cell-padding);
+    background: var(--file-browser-row-bg);
+    display: flex;
+    align-items: center;
+}
+
+/* Actions Cell */
+.table-cell:last-child {
+    padding: var(--spacing-md);
+}
+
+/* Actions Container */
+.actions-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+/* Button Group */
+.btn-group {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-sm);
+    width: auto;
+}
+
+/* Action Button Skeletons */
+.action-button-skeleton {
+    height: var(--button-height-md);
+    background: var(--skeleton-bg);
+    border-radius: var(--radius-full);
+    flex: 0 0 auto;
+}
+
+.action-button-skeleton:first-child {
+    width: calc(var(--size-button-min-width) * 1.4); /* Download button */
+}
+
+.action-button-skeleton:last-child {
+    width: calc(var(--size-button-min-width) * 1.1); /* Delete button */
+}
+
+/* Skeleton Block Base */
+.skeleton-block {
+    height: var(--spacing-lg);
+    background: var(--skeleton-bg);
+    border-radius: var(--radius-sm);
+    animation: pulse var(--skeleton-animation-duration) infinite;
+    min-height: var(--button-height-md);
+}
+
+/* Specific Skeleton Blocks */
+.file-name-skeleton {
+    width: 85%;
+}
+
+.size-skeleton {
+    width: 45%;
+}
+
+.date-skeleton {
+    width: 65%;
+}
+
+/* Empty State */
+.empty-state {
+    padding: var(--spacing-3xl) var(--spacing-md);
+    text-align: center;
+}
+
+.empty-state h2 {
+    color: var(--color-gray-700);
+    margin-bottom: var(--spacing-md);
+}
+
+.empty-state p {
+    color: var(--color-gray-600);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .table-row {
+        grid-template-columns: 1fr;
+        padding: var(--spacing-md);
+        gap: var(--spacing-xs);
+    }
+
+    .table-row.header {
+        display: none;
+    }
+
+    .table-cell {
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+
+    .actions-container {
+        justify-content: flex-start;
+    }
+    
+    .is-skeleton .table-cell {
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+}
+
+/* High Contrast Mode */
+@media (forced-colors: active) {
+    .table-wrapper {
+        border: 2px solid CanvasText;
+    }
+    
+    .table-row {
+        border-color: CanvasText;
+    }
+    
+    .skeleton-block {
+        background-color: GrayText;
+        opacity: 0.5;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .table-wrapper {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .actions-container {
+        display: none;
+    }
+    
+    .is-skeleton {
+        display: none;
+    }
+}
+
+.is-skeleton .table-cell:last-child {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Skeleton Actions */
+.skeleton-actions-group {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.skeleton-button {
+    height: var(--button-height-md);
+    background: var(--skeleton-bg);
+    border-radius: var(--radius-full);
+    flex: 0 0 auto;
+}
+
+.skeleton-button-primary {
+    width: calc(var(--size-button-min-width) * 1.4); /* Download button */
+}
+
+.skeleton-button-secondary {
+    width: calc(var(--size-button-min-width) * 1.1); /* Delete button */
+} 
