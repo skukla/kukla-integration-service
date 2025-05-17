@@ -1,0 +1,56 @@
+/* CSS Variables */
+
+/* Base Variables */
+:root {
+  /* Spacing */
+  --spacing-unit: 0.25rem;
+  --spacing-scale: 1.5;
+  
+  /* Typography */
+  --font-scale: 1.25;
+  --base-font-size: 1rem;
+  
+  /* Z-index */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal: 1040;
+  --z-index-popover: 1050;
+  --z-index-tooltip: 1060;
+  
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-medium: 300ms;
+  --transition-slow: 500ms;
+  
+  /* Containers */
+  --container-max-width: 1200px;
+  --container-padding: 1rem;
+  
+  /* Borders */
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 1rem;
+  --border-width: 1px;
+}
+
+/* Dark Mode Variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark mode specific variables */
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    /* High contrast specific variables */
+  }
+}
+
+/* Print Mode */
+@media print {
+  :root {
+    /* Print specific variables */
+  }
+} 
