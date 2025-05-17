@@ -97,8 +97,6 @@
 .table-row:not(.is-skeleton):hover {
     background-color: var(--color-row-hover-background);
     cursor: pointer;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-xs);
 }
 
 .table-cell {
