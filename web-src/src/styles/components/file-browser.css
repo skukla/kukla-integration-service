@@ -24,7 +24,6 @@
 
 /* Table Wrapper */
 .table-wrapper {
-    background: var(--color-white);
     border-radius: var(--radius-md);
     border: 1px solid var(--file-browser-border);
     overflow: hidden;
@@ -34,7 +33,6 @@
 /* Table Base */
 .table {
     width: 100%;
-    background: var(--color-white);
 }
 
 /* Grid Layout */
@@ -64,14 +62,18 @@
 /* Table Cells */
 .table-cell {
     padding: var(--file-browser-cell-padding);
-    background: var(--file-browser-row-bg);
     display: flex;
     align-items: center;
+    box-sizing: border-box;
 }
 
 /* Actions Cell */
 .table-cell:last-child {
     padding: var(--spacing-md);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
 }
 
 /* Actions Container */
@@ -90,29 +92,40 @@
     width: auto;
 }
 
-/* Action Button Skeletons */
-.action-button-skeleton {
-    height: var(--button-height-md);
-    background: var(--skeleton-bg);
-    border-radius: var(--radius-full);
-    flex: 0 0 auto;
-}
-
-.action-button-skeleton:first-child {
-    width: calc(var(--size-button-min-width) * 1.4); /* Download button */
-}
-
-.action-button-skeleton:last-child {
-    width: calc(var(--size-button-min-width) * 1.1); /* Delete button */
-}
-
 /* Skeleton Block Base */
 .skeleton-block {
-    height: var(--spacing-lg);
     background: var(--skeleton-bg);
     border-radius: var(--radius-sm);
     animation: pulse var(--skeleton-animation-duration) infinite;
-    min-height: var(--button-height-md);
+    height: var(--spacing-lg);
+}
+
+/* Skeleton Actions */
+.skeleton-actions-group {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    box-sizing: border-box;
+}
+
+/* Skeleton Button */
+.skeleton-button {
+    width: var(--size-button-min-width);
+    height: var(--spacing-lg);
+    background: var(--skeleton-bg);
+    border-radius: var(--radius-full);
+    flex: 0 0 auto;
+    box-sizing: border-box;
+}
+
+.skeleton-button:first-child {
+    width: calc(var(--size-button-min-width) * 1.4); /* Download button */
+}
+
+.skeleton-button:last-child {
+    width: calc(var(--size-button-min-width) * 1.1); /* Delete button */
 }
 
 /* Specific Skeleton Blocks */
@@ -206,26 +219,4 @@
     align-items: center;
 }
 
-/* Skeleton Actions */
-.skeleton-actions-group {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.skeleton-button {
-    height: var(--button-height-md);
-    background: var(--skeleton-bg);
-    border-radius: var(--radius-full);
-    flex: 0 0 auto;
-}
-
-.skeleton-button-primary {
-    width: calc(var(--size-button-min-width) * 1.4); /* Download button */
-}
-
-.skeleton-button-secondary {
-    width: calc(var(--size-button-min-width) * 1.1); /* Delete button */
-} 
+/* Remove the debug outline block entirely */ 
