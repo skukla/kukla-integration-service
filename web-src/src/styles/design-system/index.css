@@ -1,17 +1,19 @@
-/* Adobe-inspired Design System */
+/* Design System Entry Point */
 
-/* Design Tokens */
+/* Base Styles */
+@import './reset.css';
+@import './variables.css';
 @import './tokens.css';
 
-/* Layout */
-@import './layout.css';
-
 /* Components */
+@import './components/typography.css';
 @import './components/buttons.css';
 @import './components/table.css';
 @import './components/modal.css';
 @import './components/loading.css';
 @import './components/notifications.css';
+@import '../components/file-browser.css';
 
-/* Custom Overrides */
-@import './overrides.css'; 
+/* Layout and Utilities */
+@import './layout.css';
+@import './utilities.css'; 
