@@ -2,6 +2,7 @@
 
 // Import utilities
 import { showNotification } from './utils/notifications.js';
+import { initializeDelayedLoader } from './utils/content-loader.js';
 
 // Modal handling
 const modalBackdrop = document.getElementById('modal-backdrop');
@@ -20,6 +21,13 @@ function hideModal() {
 
 // Initialize event listeners
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize content loader with delay
+    initializeDelayedLoader('content-loader', {
+        url: 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser',
+        target: '.table-content',
+        delay: 2000
+    });
+
     // Modal event listeners
     modalBackdrop.addEventListener('click', (e) => {
         if (e.target === modalBackdrop) {
@@ -48,16 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // HTMX event logging and error handling
     document.body.addEventListener('htmx:beforeRequest', e => {
-        console.log('Request starting:', e.detail.requestConfig);
+        // Request is starting
     });
     
     document.body.addEventListener('htmx:afterRequest', e => {
-        console.log('Request finished:', {
-            successful: e.detail.successful,
-            failed: e.detail.failed,
-            response: e.detail.xhr.responseText
-        });
-
         // Show success notification for delete operations
         if (e.detail.successful && e.detail.requestConfig.method === 'DELETE') {
             showNotification('File deleted successfully', 'success');

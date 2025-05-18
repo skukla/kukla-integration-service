@@ -9,10 +9,11 @@
     --color-gray-25: #FCFCFC;
     --color-gray-50: #FAFAFA;
     --color-gray-100: #F8F8F8;
-    --color-gray-150: #F0F0F0;  /* New token - halfway between gray-100 and gray-200 */
+    --color-gray-150: #ECECEC;
+    --color-gray-175: #EAEAEA;
     --color-gray-200: #E8E8E8;
-    --color-gray-300: #D4D4D4;
-    --color-gray-400: #A0A0A0;
+    --color-gray-300: #D1D1D1;
+    --color-gray-400: #BABABA;
     --color-gray-500: #6E6E6E;
     --color-gray-600: #4B4B4B;
     --color-gray-700: #2C2C2C;

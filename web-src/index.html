@@ -82,19 +82,6 @@
                     <div id="content-loader"></div>
                 </div>
             </div>
-
-            <script>
-                window.addEventListener('load', function() {
-                    setTimeout(function() {
-                        const loader = document.getElementById('content-loader');
-                        loader.setAttribute('hx-get', 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser');
-                        loader.setAttribute('hx-trigger', 'load');
-                        loader.setAttribute('hx-target', '.table-content');
-                        loader.setAttribute('hx-swap', 'innerHTML');
-                        htmx.process(loader);
-                    }, 2000);
-                });
-            </script>
         </section>
     </div>
 </body>
