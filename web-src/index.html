@@ -44,41 +44,43 @@
             </div>
 
             <!-- File list table -->
-            <div class="table-wrapper">
-                <div class="table">
-                    <!-- Header Row -->
-                    <div class="table-row header">
-                        <div class="table-header">File Name</div>
-                        <div class="table-header">Size</div>
-                        <div class="table-header">Last Modified</div>
-                        <div class="table-header">Actions</div>
-                    </div>
-                    
-                    <!-- Content Area -->
-                    <div class="table-content">
-                        <!-- Skeleton Row -->
-                        <div class="table-row is-skeleton">
-                            <div class="table-cell skeleton-cell skeleton-file">
-                                <div class="skeleton-block"></div>
-                            </div>
-                            <div class="table-cell skeleton-cell skeleton-size">
-                                <div class="skeleton-block"></div>
-                            </div>
-                            <div class="table-cell skeleton-cell skeleton-date">
-                                <div class="skeleton-block"></div>
-                            </div>
-                            <div class="table-cell skeleton-cell skeleton-actions">
-                                <div class="skeleton-actions-group">
-                                    <div class="skeleton-block skeleton-button skeleton-button-primary"></div>
-                                    <div class="skeleton-block skeleton-button skeleton-button-secondary"></div>
+            <div class="file-browser">
+                <div class="table-wrapper">
+                    <div class="table">
+                        <!-- Header Row -->
+                        <div class="table-row header">
+                            <div class="table-header">File Name</div>
+                            <div class="table-header">Size</div>
+                            <div class="table-header">Last Modified</div>
+                            <div class="table-header">Actions</div>
+                        </div>
+                        
+                        <!-- Content Area -->
+                        <div class="table-content">
+                            <!-- Skeleton Row -->
+                            <div class="table-row is-skeleton">
+                                <div class="table-cell">
+                                    <div class="skeleton-block file-name-skeleton"></div>
+                                </div>
+                                <div class="table-cell">
+                                    <div class="skeleton-block size-skeleton"></div>
+                                </div>
+                                <div class="table-cell">
+                                    <div class="skeleton-block date-skeleton"></div>
+                                </div>
+                                <div class="table-cell">
+                                    <div class="skeleton-actions-group">
+                                        <div class="skeleton-block skeleton-button skeleton-button-primary"></div>
+                                        <div class="skeleton-block skeleton-button skeleton-button-secondary"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Hidden loader -->
-                <div id="content-loader"></div>
+                    <!-- Hidden loader -->
+                    <div id="content-loader"></div>
+                </div>
             </div>
 
             <script>

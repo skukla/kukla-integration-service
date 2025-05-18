@@ -5,7 +5,9 @@
     /* Grid Layout */
     --file-browser-grid-columns: 30% 15% 25% 30%;
     --file-browser-cell-padding: var(--spacing-md) var(--spacing-xl);
-    --file-browser-min-height: 200px;
+    --file-browser-min-height: 300px;
+    --file-browser-row-height: 48px;
+    --file-browser-content-height: 32px; /* Match button height */
     
     /* Colors */
     --file-browser-header-bg: var(--color-gray-100);
@@ -21,6 +23,7 @@
     --skeleton-bg: var(--color-gray-300);
     --skeleton-shine: var(--color-gray-200);
     --skeleton-animation-duration: 2s;
+    --skeleton-height: var(--file-browser-content-height);
 }
 
 /* Table Wrapper */
@@ -31,13 +34,24 @@
     box-shadow: var(--shadow-md);
     min-height: var(--file-browser-min-height);
     background-color: var(--file-browser-row-bg);
+    display: flex;
+    flex-direction: column;
 }
 
 /* Table Base */
 .file-browser .table {
     width: 100%;
-    min-height: var(--file-browser-min-height);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     background-color: var(--file-browser-row-bg);
+}
+
+/* Table Content */
+.file-browser .table-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Grid Layout */
@@ -46,7 +60,7 @@
     grid-template-columns: var(--file-browser-grid-columns);
     border-bottom: 1px solid var(--file-browser-border);
     align-items: center;
-    height: 48px;
+    min-height: var(--file-browser-row-height);
     background-color: var(--file-browser-row-bg);
 }
 
@@ -73,12 +87,16 @@
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    height: 100%;
+    min-height: var(--file-browser-row-height);
     background-color: var(--file-browser-row-bg);
 }
 
 .file-browser .table-cell span {
     color: var(--color-gray-900);
+    line-height: var(--file-browser-content-height);
+    min-height: var(--file-browser-content-height);
+    display: flex;
+    align-items: center;
 }
 
 /* Actions Cell */
@@ -100,7 +118,7 @@
     background: var(--skeleton-bg);
     border-radius: var(--radius-sm);
     animation: pulse var(--skeleton-animation-duration) infinite;
-    height: var(--spacing-md);
+    height: var(--skeleton-height);
 }
 
 /* Actions Container */
@@ -116,18 +134,21 @@
     display: flex;
     flex-direction: row;
     gap: var(--spacing-sm);
-    width: auto;
+    height: var(--file-browser-content-height);
 }
 
 /* Action Buttons */
 .actions-container .btn {
+    height: var(--file-browser-content-height);
     width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button */
     transition: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .actions-container .btn-primary {
     width: calc(var(--size-button-min-width) * 1.5); /* Wider width for Download button */
-    transition: none;
 }
 
 /* Skeleton Actions */
@@ -138,13 +159,13 @@
     align-items: center;
     gap: var(--spacing-sm);
     box-sizing: border-box;
-    height: var(--button-height-md);
+    height: var(--file-browser-content-height);
 }
 
 /* Skeleton Button */
 .skeleton-block.skeleton-button {
     width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button skeleton */
-    height: calc(var(--spacing-md) * 1.5); /* Increase height to match content skeletons */
+    height: var(--file-browser-content-height);
     background: var(--skeleton-bg);
     border-radius: var(--radius-sm);
     animation: pulse var(--skeleton-animation-duration) infinite;
@@ -175,9 +196,15 @@
 }
 
 /* Empty State */
-.empty-state {
+.file-browser .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     padding: var(--spacing-3xl) var(--spacing-md);
     text-align: center;
+    min-height: calc(var(--file-browser-min-height) - var(--file-browser-row-height));
 }
 
 .empty-state h2 {
