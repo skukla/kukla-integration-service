@@ -110,11 +110,9 @@ async function main(params) {
 
                     if (fileDetails.length === 0) {
                         return htmlResponse(`
-                            <div class="table-row empty-state">
-                                <div class="table-cell text-center" style="grid-column: 1 / -1">
-                                    <h2>No Files Found</h2>
-                                    <p>No CSV files are currently available in storage.<br>Files will appear here once they are exported.</p>
-                                </div>
+                            <div class="empty-state">
+                                <h2>No Files Found</h2>
+                                <p>There are no exported files to display.</p>
                             </div>
                         `);
                     }
@@ -145,7 +143,7 @@ async function main(params) {
                                                 class="btn btn-danger btn-outline"
                                                 hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
                                                 hx-target="#modal-container"
-                                                hx-swap="innerHTML show:top"
+                                                hx-swap="innerHTML"
                                                 aria-label="Delete ${file.name}">
                                             <span class="btn-label">Delete</span>
                                         </button>
@@ -155,6 +153,7 @@ async function main(params) {
                         </div>
                     `).join('');
 
+                    // Return the file list
                     return htmlResponse(items);
                 } catch (error) {
                     logger.error('Error listing files:', error);
