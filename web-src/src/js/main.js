@@ -3,6 +3,7 @@
 // Import utilities
 import { showNotification } from './utils/notifications.js';
 import { initializeDelayedLoader } from './utils/content-loader.js';
+import { getActionUrl } from './utils/url-utils.js';
 
 // Modal handling
 const modalBackdrop = document.getElementById('modal-backdrop');
@@ -23,7 +24,7 @@ function hideModal() {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize content loader with delay
     initializeDelayedLoader('content-loader', {
-        url: 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/browse-files',
+        url: getActionUrl('browseFiles'),
         target: '.table-content',
         delay: 2000
     });
