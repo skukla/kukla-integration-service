@@ -20,8 +20,8 @@
   "scripts": {
     "build": "vite build",
     "clean": "rm -rf dist",
-    "clean-deploy": "npm run clean && npm run build && aio app deploy",
-    "deploy-web": "npm run build && aio app deploy --no-actions"
+    "deploy:full": "npm run clean && npm run build && aio app deploy",
+    "deploy:web": "npm run build && aio app deploy --no-actions"
   },
   "engines": {
     "node": ">=18"

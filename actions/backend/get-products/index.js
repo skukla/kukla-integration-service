@@ -6,6 +6,7 @@
 const dotenv = require('dotenv');
 const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
+const { errorResponse, successResponse } = require('../../utils/shared/http/response');
 const validateInput = require('./steps/validateInput');
 const fetchAndEnrichProducts = require('./steps/fetchAndEnrichProducts');
 const buildProducts = require('./steps/buildProducts');
@@ -64,27 +65,17 @@ async function main(params) {
     const storageResult = await storeCsv(content, fileName);
     steps.push(`Stored CSV file as "${storageResult.fileName}"`);
 
-    return {
-      statusCode: 200,
-      body: {
-        message: 'Product export completed successfully.',
-        file: {
-          downloadUrl: storageResult.downloadUrl
-        },
-        steps
-      }
-    };
+    return successResponse({
+      message: 'Product export completed successfully.',
+      file: {
+        downloadUrl: storageResult.downloadUrl
+      },
+      steps
+    });
   } catch (error) {
     logger.error('Error in main action:', error);
     steps.push(`Error: ${error.message || error.toString()}`);
-    return { 
-      statusCode: 500, 
-      body: { 
-        error: 'server error',
-        details: error.message || error.toString(),
-        steps
-      } 
-    };
+    return errorResponse(500, error.message || error.toString(), { steps });
   }
 }
 

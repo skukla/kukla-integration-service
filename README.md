@@ -43,28 +43,49 @@ Kukla Integration Service is an Adobe App Builder application designed to integr
 ```plaintext
 kukla-integration-service/
 ├── actions/
-│   ├── get-products/
-│   │   ├── lib/
-│   │   │   ├── api/
-│   │   │   │   ├── categories.js
-│   │   │   │   └── products.js
-│   │   │   ├── storage/
-│   │   │   │   ├── config.js
-│   │   │   │   └── index.js
-│   │   │   ├── commerce-endpoints.js
-│   │   │   ├── auth.js
-│   │   │   ├── product-transformer.js
-│   │   │   └── utils.js
-│   │   ├── steps/
-│   │   │   ├── validateInput.js
-│   │   │   ├── fetchAndEnrichProducts.js
-│   │   │   ├── buildProducts.js
-│   │   │   ├── createCsv.js
-│   │   │   └── storeCsv.js
-│   │   └── index.js
-│   ├── download-file/
-│   │   └── index.js
-│   └── utils.js
+│   ├── backend/
+│   │   ├── get-products/
+│   │   │   ├── lib/
+│   │   │   │   ├── api/
+│   │   │   │   │   ├── categories.js
+│   │   │   │   │   └── products.js
+│   │   │   │   ├── storage/
+│   │   │   │   │   ├── config.js
+│   │   │   │   │   └── index.js
+│   │   │   │   ├── commerce-endpoints.js
+│   │   │   │   ├── auth.js
+│   │   │   │   └── product-transformer.js
+│   │   │   ├── steps/
+│   │   │   │   ├── validateInput.js
+│   │   │   │   ├── fetchAndEnrichProducts.js
+│   │   │   │   ├── buildProducts.js
+│   │   │   │   ├── createCsv.js
+│   │   │   │   └── storeCsv.js
+│   │   │   └── index.js
+│   │   └── download-file/
+│   │       └── index.js
+│   ├── utils/
+│   │   ├── shared/
+│   │   │   ├── http/
+│   │   │   │   ├── response.js
+│   │   │   │   └── headers.js
+│   │   │   ├── file/
+│   │   │   │   ├── size.js
+│   │   │   │   └── format.js
+│   │   │   └── validation/
+│   │   │       └── input.js
+│   │   ├── backend/
+│   │   │   └── auth/
+│   │   │       └── commerce.js
+│   │   └── frontend/
+│   │       ├── ui/
+│   │       │   └── htmx.js
+│   │       └── file/
+│   │           └── display.js
+│   └── frontend/
+│       └── browse-files/
+│           ├── templates.js
+│           └── index.js
 ├── web-src/
 ├── test/
 ├── e2e/
@@ -96,7 +117,38 @@ kukla-integration-service/
 - `package.json` - Project dependencies and scripts
 - `package-lock.json` - Locked dependency versions
 
-#### Get Products Action (`actions/get-products/`)
+#### Actions Directory (`actions/`)
+The actions directory is organized into three main sections:
+
+**Backend** (`backend/`):
+- `get-products/` - Product data export functionality
+  - `lib/` - Core libraries and utilities
+  - `steps/` - Processing steps
+  - `index.js` - Main action handler
+- `download-file/` - File download handler
+
+**Frontend** (`frontend/`):
+- `browse-files/` - File browser interface
+  - `templates.js` - HTMX templates
+  - `index.js` - Main action handler
+
+**Utilities** (`utils/`):
+- `shared/` - Common utilities used across the application
+  - `http/` - HTTP-related utilities
+    - `response.js` - Common HTTP response formatting
+    - `headers.js` - Header management and authentication
+  - `file/` - File handling utilities
+    - `size.js` - File size formatting
+  - `validation/` - Input validation
+    - `input.js` - Request parameter validation
+- `backend/` - Backend-specific utilities
+  - `auth/` - Authentication utilities
+    - `commerce.js` - Adobe Commerce authentication
+- `frontend/` - Frontend-specific utilities
+  - `ui/` - UI-related utilities
+    - `htmx.js` - HTMX response formatting
+
+#### Get Products Action (`actions/backend/get-products/`)
 Main action for product data export functionality:
 
 **Library Modules** (`lib/`):
@@ -109,7 +161,6 @@ Main action for product data export functionality:
 - `commerce-endpoints.js` - API endpoint definitions
 - `auth.js` - Authentication handling
 - `product-transformer.js` - Product data transformation
-- `utils.js` - Utility functions
 
 **Processing Steps** (`steps/`):
 - `validateInput.js` - Input validation
@@ -117,13 +168,45 @@ Main action for product data export functionality:
 - `buildProducts.js` - Product building
 - `createCsv.js` - CSV generation
 - `storeCsv.js` - CSV storage
+
+#### Browse Files Action (`actions/frontend/browse-files/`)
+Frontend action for browsing and managing exported files:
+- `templates.js` - HTMX templates for UI
 - `index.js` - Main action handler
 
-#### Download File Action (`actions/download-file/`)
-- `index.js` - Download handler for serving stored files
+#### Utility Organization
+The utilities are organized into a clear hierarchy under `actions/utils/`:
 
-#### Shared Utilities
-- `actions/utils.js` - Common utilities shared across actions
+```plaintext
+actions/utils/
+├── shared/
+│   ├── http/
+│   │   ├── response.js  # Common HTTP response formatting
+│   │   └── headers.js   # Header management and authentication
+│   ├── file/
+│   │   ├── size.js      # File size formatting
+│   │   └── format.js    # Common file formatting utilities
+│   └── validation/
+│       └── input.js     # Request parameter validation
+├── backend/
+│   └── auth/
+│       └── commerce.js  # Adobe Commerce authentication
+└── frontend/
+    ├── ui/
+    │   └── htmx.js     # HTMX response formatting
+    └── file/
+        └── display.js   # File display formatting for UI
+```
+
+This organization provides:
+- Clear separation of concerns between shared, backend, and frontend utilities
+- Easy discovery of utilities through logical grouping
+- Prevention of code duplication through shared utilities
+- Consistent patterns across the application
+- Hierarchical organization of file-related utilities:
+  - Shared file utilities for common operations
+  - Frontend-specific file display formatting
+  - Clear dependency chain from UI to shared utilities
 
 ## Detailed Setup Instructions
 

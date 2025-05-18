@@ -4,7 +4,8 @@
  */
 
 const fetch = require('node-fetch');
-const { buildHeaders } = require('../../../utils');
+const { buildHeaders } = require('../../../../utils/shared/http/headers');
+const { errorResponse } = require('../../../../utils/shared/http/response');
 const endpoints = require('../commerce-endpoints');
 
 /**
