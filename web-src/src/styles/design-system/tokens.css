@@ -140,10 +140,6 @@
     --transition-spinner: var(--duration-spinner) var(--ease-linear);
     --transition-notification: var(--duration-notification) var(--ease-out);
     --transition-skeleton: var(--duration-skeleton) var(--ease-in-out);
-    --transition-button: background-color var(--duration-instant) var(--ease-out),
-                        border-color var(--duration-instant) var(--ease-out),
-                        color var(--duration-instant) var(--ease-out),
-                        box-shadow var(--duration-instant) var(--ease-out);
 
     /* Row Hover Colors */
     --color-row-hover-background: var(--color-hover-background);
@@ -258,7 +254,7 @@
 }
 
 @keyframes pulse {
-    0% { opacity: 0.45; }
-    50% { opacity: 0.25; }
-    100% { opacity: 0.45; }
+    0% { opacity: 0.8; }
+    50% { opacity: 0.4; }
+    100% { opacity: 0.8; }
 } 

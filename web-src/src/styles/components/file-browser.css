@@ -5,6 +5,7 @@
     /* Grid Layout */
     --file-browser-grid-columns: 30% 15% 25% 30%;
     --file-browser-cell-padding: var(--spacing-md) var(--spacing-xl);
+    --file-browser-min-height: 200px;
     
     /* Colors */
     --file-browser-header-bg: var(--color-gray-100);
@@ -17,63 +18,89 @@
     --file-browser-header-weight: var(--font-weight-bold);
     
     /* Skeleton Loading */
-    --skeleton-bg: var(--color-gray-200);
-    --skeleton-shine: var(--color-gray-100);
+    --skeleton-bg: var(--color-gray-300);
+    --skeleton-shine: var(--color-gray-200);
     --skeleton-animation-duration: 2s;
 }
 
 /* Table Wrapper */
-.table-wrapper {
+.file-browser .table-wrapper {
     border-radius: var(--radius-md);
     border: 1px solid var(--file-browser-border);
     overflow: hidden;
     box-shadow: var(--shadow-md);
+    min-height: var(--file-browser-min-height);
+    background-color: var(--file-browser-row-bg);
 }
 
 /* Table Base */
-.table {
+.file-browser .table {
     width: 100%;
+    min-height: var(--file-browser-min-height);
+    background-color: var(--file-browser-row-bg);
 }
 
 /* Grid Layout */
-.table-row {
+.file-browser .table-row {
     display: grid;
     grid-template-columns: var(--file-browser-grid-columns);
     border-bottom: 1px solid var(--file-browser-border);
     align-items: center;
+    height: 48px;
+    background-color: var(--file-browser-row-bg);
 }
 
 /* Header Row */
-.table-row.header {
-    background: var(--file-browser-header-bg);
+.file-browser .table-row.header {
+    background-color: var(--file-browser-header-bg);
     border-bottom: 2px solid var(--file-browser-border);
 }
 
 /* Header Cells */
-.table-header {
+.file-browser .table-header {
     padding: var(--file-browser-cell-padding);
     font-size: var(--file-browser-header-font);
     font-weight: var(--file-browser-header-weight);
     letter-spacing: var(--file-browser-header-spacing);
     text-transform: uppercase;
     color: var(--color-gray-900);
+    background-color: transparent;
 }
 
 /* Table Cells */
-.table-cell {
-    padding: var(--file-browser-cell-padding);
+.file-browser .table-cell {
+    padding: var(--spacing-md) var(--spacing-xl);
     display: flex;
     align-items: center;
     box-sizing: border-box;
+    height: 100%;
+    background-color: var(--file-browser-row-bg);
+}
+
+.file-browser .table-cell span {
+    color: var(--color-gray-900);
 }
 
 /* Actions Cell */
-.table-cell:last-child {
+.file-browser .table-cell:last-child {
     padding: var(--spacing-md);
     display: flex;
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
+    background-color: var(--file-browser-row-bg);
+}
+
+/* Skeleton State */
+.file-browser.is-skeleton .table-cell {
+    background-color: var(--file-browser-row-bg);
+}
+
+.file-browser .skeleton-block {
+    background: var(--skeleton-bg);
+    border-radius: var(--radius-sm);
+    animation: pulse var(--skeleton-animation-duration) infinite;
+    height: var(--spacing-md);
 }
 
 /* Actions Container */
@@ -92,12 +119,15 @@
     width: auto;
 }
 
-/* Skeleton Block Base */
-.skeleton-block {
-    background: var(--skeleton-bg);
-    border-radius: var(--radius-sm);
-    animation: pulse var(--skeleton-animation-duration) infinite;
-    height: var(--spacing-lg);
+/* Action Buttons */
+.actions-container .btn {
+    width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button */
+    transition: none;
+}
+
+.actions-container .btn-primary {
+    width: calc(var(--size-button-min-width) * 1.5); /* Wider width for Download button */
+    transition: none;
 }
 
 /* Skeleton Actions */
@@ -108,24 +138,27 @@
     align-items: center;
     gap: var(--spacing-sm);
     box-sizing: border-box;
+    height: var(--button-height-md);
 }
 
 /* Skeleton Button */
-.skeleton-button {
-    width: var(--size-button-min-width);
-    height: var(--spacing-lg);
+.skeleton-block.skeleton-button {
+    width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button skeleton */
+    height: calc(var(--spacing-md) * 1.5); /* Increase height to match content skeletons */
     background: var(--skeleton-bg);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-sm);
+    animation: pulse var(--skeleton-animation-duration) infinite;
     flex: 0 0 auto;
     box-sizing: border-box;
 }
 
-.skeleton-button:first-child {
-    width: calc(var(--size-button-min-width) * 1.4); /* Download button */
+/* Different widths for primary/secondary buttons */
+.skeleton-block.skeleton-button.skeleton-button-primary {
+    width: calc(var(--size-button-min-width) * 1.5); /* Wider width for Download button skeleton */
 }
 
-.skeleton-button:last-child {
-    width: calc(var(--size-button-min-width) * 1.1); /* Delete button */
+.skeleton-block.skeleton-button.skeleton-button-secondary {
+    width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button skeleton */
 }
 
 /* Specific Skeleton Blocks */
@@ -158,17 +191,17 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .table-row {
+    .file-browser .table-row {
         grid-template-columns: 1fr;
         padding: var(--spacing-md);
         gap: var(--spacing-xs);
     }
 
-    .table-row.header {
+    .file-browser .table-row.header {
         display: none;
     }
 
-    .table-cell {
+    .file-browser .table-cell {
         padding: var(--spacing-xs) var(--spacing-md);
     }
 
@@ -176,22 +209,22 @@
         justify-content: flex-start;
     }
     
-    .is-skeleton .table-cell {
+    .file-browser.is-skeleton .table-cell {
         padding: var(--spacing-xs) var(--spacing-md);
     }
 }
 
 /* High Contrast Mode */
 @media (forced-colors: active) {
-    .table-wrapper {
+    .file-browser .table-wrapper {
         border: 2px solid CanvasText;
     }
     
-    .table-row {
+    .file-browser .table-row {
         border-color: CanvasText;
     }
     
-    .skeleton-block {
+    .file-browser .skeleton-block {
         background-color: GrayText;
         opacity: 0.5;
     }
@@ -199,7 +232,7 @@
 
 /* Print Styles */
 @media print {
-    .table-wrapper {
+    .file-browser .table-wrapper {
         box-shadow: none;
         border: 1px solid #000;
     }
@@ -208,15 +241,30 @@
         display: none;
     }
     
-    .is-skeleton {
+    .file-browser.is-skeleton {
         display: none;
     }
 }
 
-.is-skeleton .table-cell:last-child {
+.file-browser .table-cell:last-child {
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Remove the debug outline block entirely */ 
+/* Debug Styles */
+.file-browser .table-row {
+    background: none;
+    outline: none;
+}
+
+.file-browser .table-cell {
+    background: none;
+    outline: none;
+}
+
+.actions-container,
+.skeleton-actions-group {
+    background: none;
+    outline: none;
+} 
