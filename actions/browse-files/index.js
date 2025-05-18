@@ -38,7 +38,7 @@ function getDeleteModalHtml(fileName, fullPath) {
                 <div class="btn-group">
                     <button type="button"
                             class="btn btn-secondary"
-                            hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/browse-files"
+                            hx-get="/api/v1/web/kukla-integration-service/browse-files"
                             hx-target="#modal-backdrop"
                             hx-swap="outerHTML"
                             aria-label="Cancel deletion">
@@ -46,12 +46,54 @@ function getDeleteModalHtml(fileName, fullPath) {
                     </button>
                     <button type="button"
                             class="btn btn-danger btn-outline"
-                            hx-delete="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/delete-file?fileName=${encodeURIComponent(fullPath)}"
+                            hx-delete="/api/v1/web/kukla-integration-service/delete-file?fileName=${encodeURIComponent(fullPath)}"
                             hx-target="closest .table-row"
                             hx-swap="outerHTML swap:1s"
                             aria-label="Confirm deletion of ${fileName}">
                         <span class="btn-label">Delete</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generates HTML for a file row
+ * @param {Object} file - File details object
+ * @returns {string} HTML for the file row
+ */
+function getFileRowHtml(file) {
+    return `
+        <div class="table-row" role="row">
+            <div class="table-cell" role="cell">
+                <span>${file.name}</span>
+            </div>
+            <div class="table-cell" role="cell">
+                <span>${file.size}</span>
+            </div>
+            <div class="table-cell" role="cell">
+                <span>${file.lastModified}</span>
+            </div>
+            <div class="table-cell" role="cell">
+                <div class="actions-container">
+                    <div class="btn-group">
+                        <button type="button" 
+                                class="btn btn-primary"
+                                hx-get="/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(file.fullPath)}"
+                                hx-swap="none"
+                                aria-label="Download ${file.name}">
+                            <span class="btn-label">Download</span>
+                        </button>
+                        <button type="button"
+                                class="btn btn-danger btn-outline"
+                                hx-get="/api/v1/web/kukla-integration-service/browse-files?modal=delete&fileName=${encodeURIComponent(file.name)}&fullPath=${encodeURIComponent(file.fullPath)}"
+                                hx-target="#modal-container"
+                                hx-swap="innerHTML"
+                                aria-label="Delete ${file.name}">
+                            <span class="btn-label">Delete</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -118,40 +160,7 @@ async function main(params) {
                     }
 
                     // Return HTML list items for HTMX to inject
-                    const items = fileDetails.map(file => `
-                        <div class="table-row" role="row">
-                            <div class="table-cell" role="cell">
-                                <span>${file.name}</span>
-                            </div>
-                            <div class="table-cell" role="cell">
-                                <span>${file.size}</span>
-                            </div>
-                            <div class="table-cell" role="cell">
-                                <span>${file.lastModified}</span>
-                            </div>
-                            <div class="table-cell" role="cell">
-                                <div class="actions-container">
-                                    <div class="btn-group">
-                                        <button type="button" 
-                                                class="btn btn-primary"
-                                                hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/download-file?fileName=${file.fullPath}`)}"
-                                                hx-swap="none"
-                                                aria-label="Download ${file.name}">
-                                            <span class="btn-label">Download</span>
-                                        </button>
-                                        <button type="button"
-                                                class="btn btn-danger btn-outline"
-                                                hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/browse-files?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
-                                                hx-target="#modal-container"
-                                                hx-swap="innerHTML"
-                                                aria-label="Delete ${file.name}">
-                                            <span class="btn-label">Delete</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
+                    const items = fileDetails.map(file => getFileRowHtml(file)).join('');
 
                     // Return the file list
                     return htmlResponse(items);
