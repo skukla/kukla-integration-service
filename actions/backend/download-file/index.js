@@ -5,6 +5,8 @@
  */
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
+const { errorResponse } = require('../../utils/shared/http/response');
+const { checkMissingRequestInputs } = require('../../utils/shared/validation/input');
 
 /**
  * Main function that handles file download requests
@@ -28,11 +30,9 @@ async function main(params) {
 
   try {
     // Validate required parameters
-    if (!params.fileName) {
-      return {
-        statusCode: 400,
-        body: 'File name is required'
-      };
+    const missingInputs = checkMissingRequestInputs(params, ['fileName']);
+    if (missingInputs) {
+      return errorResponse(400, missingInputs);
     }
 
     // Initialize Files SDK
@@ -62,16 +62,10 @@ async function main(params) {
     
     // If file is not found, FilesLib will throw an error
     if (error.message.includes('not found') || error.message.includes('does not exist')) {
-      return {
-        statusCode: 404,
-        body: { error: 'File not found' }
-      };
+      return errorResponse(404, 'File not found');
     }
     
-    return {
-      statusCode: 500,
-      body: `Failed to download file: ${error.message}`
-    };
+    return errorResponse(500, `Failed to download file: ${error.message}`);
   }
 }
 
