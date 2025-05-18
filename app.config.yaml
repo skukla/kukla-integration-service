@@ -11,7 +11,6 @@ application:
             web: "yes"
             runtime: nodejs:22
             inputs:
-              LOG_LEVEL: debug
               COMMERCE_URL: $COMMERCE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
@@ -22,8 +21,6 @@ application:
             function: actions/download-file/index.js
             web: "yes"
             runtime: nodejs:22
-            inputs:
-              LOG_LEVEL: debug
             annotations:
               require-adobe-auth: false
               final: true
@@ -31,8 +28,6 @@ application:
             function: actions/export-browser/index.js
             web: "yes"
             runtime: nodejs:22
-            inputs:
-              LOG_LEVEL: debug
             annotations:
               require-adobe-auth: false
               final: true
