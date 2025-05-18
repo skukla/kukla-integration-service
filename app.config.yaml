@@ -24,8 +24,8 @@ application:
             annotations:
               require-adobe-auth: false
               final: true
-          export-browser:
-            function: actions/export-browser/index.js
+          browse-files:
+            function: actions/browse-files/index.js
             web: "yes"
             runtime: nodejs:22
             annotations:

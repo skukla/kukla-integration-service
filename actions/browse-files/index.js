@@ -1,6 +1,6 @@
 /**
  * Export browser action for managing product export files
- * @module export-browser
+ * @module browse-files
  */
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
@@ -38,7 +38,7 @@ function getDeleteModalHtml(fileName, fullPath) {
                 <div class="btn-group">
                     <button type="button"
                             class="btn btn-secondary"
-                            hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser"
+                            hx-get="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/browse-files"
                             hx-target="#modal-backdrop"
                             hx-swap="outerHTML"
                             aria-label="Cancel deletion">
@@ -141,7 +141,7 @@ async function main(params) {
                                         </button>
                                         <button type="button"
                                                 class="btn btn-danger btn-outline"
-                                                hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
+                                                hx-get="${encodeURIComponent(`https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/browse-files?modal=delete&fileName=${file.name}&fullPath=${file.fullPath}`)}"
                                                 hx-target="#modal-container"
                                                 hx-swap="innerHTML"
                                                 aria-label="Delete ${file.name}">
@@ -179,7 +179,7 @@ async function main(params) {
                 return errorResponse('Method not allowed', 405);
         }
     } catch (error) {
-        logger.error('Error in export-browser action:', error);
+        logger.error('Error in browse-files action:', error);
         return errorResponse(`Failed to initialize file system: ${error.message}`, 500);
     }
 }
