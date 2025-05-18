@@ -7,11 +7,13 @@
     --file-browser-cell-padding: var(--spacing-md) var(--spacing-xl);
     --file-browser-min-height: 300px;
     --file-browser-row-height: 48px;
-    --file-browser-content-height: 32px; /* Match button height */
+    --file-browser-content-height: 28px;
     
     /* Colors */
     --file-browser-header-bg: var(--color-gray-100);
+    --file-browser-table-bg: var(--color-gray-25);
     --file-browser-row-bg: var(--color-white);
+    --file-browser-row-hover-bg: var(--color-row-hover);
     --file-browser-border: var(--color-gray-200);
     
     /* Typography */
@@ -33,7 +35,7 @@
     overflow: hidden;
     box-shadow: var(--shadow-md);
     min-height: var(--file-browser-min-height);
-    background-color: var(--file-browser-row-bg);
+    background-color: var(--file-browser-table-bg);
     display: flex;
     flex-direction: column;
 }
@@ -44,7 +46,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: var(--file-browser-row-bg);
+    background-color: var(--file-browser-table-bg);
 }
 
 /* Table Content */
@@ -52,22 +54,38 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 0;
 }
 
 /* Grid Layout */
-.file-browser .table-row {
+.file-browser .table-content .table-row {
     display: grid;
     grid-template-columns: var(--file-browser-grid-columns);
-    border-bottom: 1px solid var(--file-browser-border);
     align-items: center;
     min-height: var(--file-browser-row-height);
     background-color: var(--file-browser-row-bg);
+    transition: background-color 0.15s ease-in-out;
+    position: relative;
+    margin: 0;
+}
+
+/* Content Row Hover */
+.file-browser .table-content .table-row:hover,
+.file-browser .table-content .table-row:focus-within {
+    background-color: var(--file-browser-row-hover-bg) !important;
+    cursor: pointer;
+}
+
+/* Ensure cells don't override row background */
+.file-browser .table-cell {
+    background: transparent;
 }
 
 /* Header Row */
 .file-browser .table-row.header {
     background-color: var(--file-browser-header-bg);
-    border-bottom: 2px solid var(--file-browser-border);
+    position: relative;
+    cursor: default;
 }
 
 /* Header Cells */
@@ -78,7 +96,6 @@
     letter-spacing: var(--file-browser-header-spacing);
     text-transform: uppercase;
     color: var(--color-gray-900);
-    background-color: transparent;
 }
 
 /* Table Cells */
@@ -86,9 +103,7 @@
     padding: var(--spacing-md) var(--spacing-xl);
     display: flex;
     align-items: center;
-    box-sizing: border-box;
     min-height: var(--file-browser-row-height);
-    background-color: var(--file-browser-row-bg);
 }
 
 .file-browser .table-cell span {
@@ -105,13 +120,11 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    box-sizing: border-box;
-    background-color: var(--file-browser-row-bg);
 }
 
 /* Skeleton State */
 .file-browser.is-skeleton .table-cell {
-    background-color: var(--file-browser-row-bg);
+    background: none;
 }
 
 .file-browser .skeleton-block {
@@ -140,7 +153,7 @@
 /* Action Buttons */
 .actions-container .btn {
     height: var(--file-browser-content-height);
-    width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button */
+    width: calc(var(--size-button-min-width) * 1.25);
     transition: none;
     display: flex;
     align-items: center;
@@ -148,7 +161,7 @@
 }
 
 .actions-container .btn-primary {
-    width: calc(var(--size-button-min-width) * 1.5); /* Wider width for Download button */
+    width: calc(var(--size-button-min-width) * 1.5);
 }
 
 /* Skeleton Actions */
@@ -205,6 +218,7 @@
     padding: var(--spacing-3xl) var(--spacing-md);
     text-align: center;
     min-height: calc(var(--file-browser-min-height) - var(--file-browser-row-height));
+    background-color: var(--file-browser-row-bg);
 }
 
 .empty-state h2 {
@@ -234,10 +248,6 @@
 
     .actions-container {
         justify-content: flex-start;
-    }
-    
-    .file-browser.is-skeleton .table-cell {
-        padding: var(--spacing-xs) var(--spacing-md);
     }
 }
 
@@ -271,27 +281,4 @@
     .file-browser.is-skeleton {
         display: none;
     }
-}
-
-.file-browser .table-cell:last-child {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-/* Debug Styles */
-.file-browser .table-row {
-    background: none;
-    outline: none;
-}
-
-.file-browser .table-cell {
-    background: none;
-    outline: none;
-}
-
-.actions-container,
-.skeleton-actions-group {
-    background: none;
-    outline: none;
 } 

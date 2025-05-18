@@ -6,6 +6,14 @@
     --notification-background: var(--color-white);
     --notification-text-color: var(--color-gray-700);
     --notification-close-hover: var(--color-gray-900);
+    --notification-border-color: var(--color-gray-100);
+    
+    /* Shadow */
+    --notification-shadow-close: rgba(0, 0, 0, 0.05);
+    --notification-shadow-far: rgba(0, 0, 0, 0.1);
+    --notification-shadow: 
+        0 4px 6px var(--notification-shadow-close),
+        0 10px 15px var(--notification-shadow-far);
     
     /* Dimensions */
     --notification-padding-inline: var(--spacing-lg);
@@ -30,13 +38,9 @@
     --notification-transform-out: translateX(100%);
     
     /* Type-specific colors */
-    --notification-success-bg: var(--color-success-background);
     --notification-success-border: var(--color-success);
-    --notification-error-bg: var(--color-danger-background);
     --notification-error-border: var(--color-danger);
-    --notification-warning-bg: var(--color-warning-background);
     --notification-warning-border: var(--color-warning);
-    --notification-info-bg: var(--color-info-background);
     --notification-info-border: var(--color-blue-primary);
     
     /* Touch target size */
@@ -44,7 +48,7 @@
 }
 
 /* Notification Container */
-#notification-container {
+body > #notification-container {
     position: fixed;
     inset-block-start: var(--notification-offset);
     inset-inline-end: var(--notification-offset);
@@ -54,43 +58,26 @@
     gap: var(--notification-spacing);
     max-inline-size: var(--size-notification-max-width);
     inline-size: var(--width-full-minus-spacing-lg);
-    pointer-events: none; /* Allow clicking through the container */
-    
-    /* Performance optimizations */
-    contain: content;
-    will-change: transform;
-    
-    /* Container queries for responsive design */
-    container-type: inline-size;
-    container-name: notifications;
+    pointer-events: none;
 }
 
 /* Base Notification */
-.notification {
+body > #notification-container > .notification {
     display: flex;
     align-items: center;
     justify-content: space-between;
     min-inline-size: var(--size-notification-min-width);
     margin-block-end: var(--notification-spacing);
-    padding-block: var(--notification-padding-block);
-    padding-inline: var(--notification-padding-inline);
+    padding: var(--notification-padding-block) var(--notification-padding-inline);
     border-radius: var(--radius-md);
-    background-color: var(--notification-background);
-    box-shadow: var(--shadow-md);
+    background: var(--notification-background);
+    border: var(--border-xs) solid var(--notification-border-color);
+    box-shadow: var(--notification-shadow);
     animation: slide-in var(--notification-duration) var(--notification-timing);
     transform: var(--notification-transform-in);
     opacity: 1;
     transition: var(--notification-transition);
-    pointer-events: auto; /* Re-enable pointer events for notifications */
-    
-    /* Performance optimizations */
-    contain: content;
-    will-change: transform, opacity;
-    
-    @media (prefers-reduced-motion: reduce) {
-        animation: none;
-        transition: opacity var(--notification-duration) linear;
-    }
+    pointer-events: auto;
 }
 
 .notification-content {
@@ -130,29 +117,25 @@
     }
 }
 
-/* Notification Types */
-.notification-success {
-    background-color: var(--notification-success-bg);
-    color: var(--notification-success-border);
-    border-inline-start: var(--notification-border-width) solid var(--notification-success-border);
-}
-
-.notification-error {
-    background-color: var(--notification-error-bg);
-    color: var(--notification-error-border);
+/* Notification Types with increased specificity */
+body > #notification-container > .notification.notification-error {
     border-inline-start: var(--notification-border-width) solid var(--notification-error-border);
+    background: var(--notification-background);
 }
 
-.notification-warning {
-    background-color: var(--notification-warning-bg);
-    color: var(--notification-warning-border);
+body > #notification-container > .notification.notification-success {
+    border-inline-start: var(--notification-border-width) solid var(--notification-success-border);
+    background: var(--notification-background);
+}
+
+body > #notification-container > .notification.notification-warning {
     border-inline-start: var(--notification-border-width) solid var(--notification-warning-border);
+    background: var(--notification-background);
 }
 
-.notification-info {
-    background-color: var(--notification-info-bg);
-    color: var(--notification-info-border);
+body > #notification-container > .notification.notification-info {
     border-inline-start: var(--notification-border-width) solid var(--notification-info-border);
+    background: var(--notification-background);
 }
 
 /* Animation States */

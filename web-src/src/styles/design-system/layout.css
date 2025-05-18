@@ -71,7 +71,7 @@ body {
 
 /* Content Section */
 .content-section {
-    margin-top: var(--layout-section-margin);
+    margin-top: var(--spacing-lg);
     padding: var(--layout-section-padding);
     background: var(--layout-section-background);
     border-radius: var(--radius-lg);
