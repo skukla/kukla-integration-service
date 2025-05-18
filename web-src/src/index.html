@@ -1,38 +1,43 @@
             <!-- File list table -->
-            <div class="table-wrapper">
-                <div class="table">
-                    <!-- Header Row -->
-                    <div class="table-row header">
-                        <div class="table-header">File Name</div>
-                        <div class="table-header">Size</div>
-                        <div class="table-header">Last Modified</div>
-                        <div class="table-header">Actions</div>
-                    </div>
-                    
-                    <!-- Skeleton Row -->
-                    <div class="table-row is-skeleton">
-                        <div class="table-cell">
-                            <div class="skeleton-block file-name-skeleton"></div>
+            <div class="file-browser">
+                <div class="table-wrapper">
+                    <div class="table">
+                        <!-- Header Row -->
+                        <div class="table-row header">
+                            <div class="table-header">File Name</div>
+                            <div class="table-header">Size</div>
+                            <div class="table-header">Last Modified</div>
+                            <div class="table-header">Actions</div>
                         </div>
-                        <div class="table-cell">
-                            <div class="skeleton-block size-skeleton"></div>
-                        </div>
-                        <div class="table-cell">
-                            <div class="skeleton-block date-skeleton"></div>
-                        </div>
-                        <div class="table-cell">
-                            <div class="actions-container">
-                                <div class="btn-group">
-                                    <div class="action-button-skeleton"></div>
-                                    <div class="action-button-skeleton"></div>
+                        
+                        <!-- Table Content -->
+                        <div class="table-content">
+                            <!-- Skeleton Row -->
+                            <div class="table-row is-skeleton">
+                                <div class="table-cell">
+                                    <div class="skeleton-block file-name-skeleton"></div>
+                                </div>
+                                <div class="table-cell">
+                                    <div class="skeleton-block size-skeleton"></div>
+                                </div>
+                                <div class="table-cell">
+                                    <div class="skeleton-block date-skeleton"></div>
+                                </div>
+                                <div class="table-cell">
+                                    <div class="actions-container">
+                                        <div class="btn-group">
+                                            <div class="skeleton-block skeleton-button skeleton-button-primary"></div>
+                                            <div class="skeleton-block skeleton-button skeleton-button-secondary"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Hidden loader -->
-                <div id="content-loader"></div>
+                    <!-- Hidden loader -->
+                    <div id="content-loader"></div>
+                </div>
             </div>
 
             <script>
@@ -41,7 +46,7 @@
                         const loader = document.getElementById('content-loader');
                         loader.setAttribute('hx-get', 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser');
                         loader.setAttribute('hx-trigger', 'load');
-                        loader.setAttribute('hx-target', '.table');
+                        loader.setAttribute('hx-target', '.table-content');
                         loader.setAttribute('hx-swap', 'innerHTML');
                         htmx.process(loader);
                     }, 2000);

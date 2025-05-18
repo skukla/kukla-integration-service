@@ -6,8 +6,10 @@
     --color-black: #000000;
 
     /* Grayscale */
+    --color-gray-25: #FCFCFC;
     --color-gray-50: #FAFAFA;
     --color-gray-100: #F8F8F8;
+    --color-gray-150: #F0F0F0;  /* New token - halfway between gray-100 and gray-200 */
     --color-gray-200: #E8E8E8;
     --color-gray-300: #D4D4D4;
     --color-gray-400: #A0A0A0;
@@ -19,6 +21,8 @@
 
     /* Brand Colors */
     --color-blue-50: #F5F9FF;
+    --color-blue-100: #E5F4FF;  /* Light blue for subtle backgrounds */
+    --color-blue-200: #CCE9FF;  /* Stronger blue for hover states */
     --color-blue-primary: #1473E6;
     --color-blue-hover: #0D66D0;
     --color-blue-active: #095ABA;
@@ -42,6 +46,7 @@
     --color-disabled-background: var(--color-gray-200);
     --color-disabled-text: var(--color-gray-500);
     --color-disabled-border: var(--color-gray-300);
+    --color-row-hover: var(--color-blue-50);
 
     /* Semantic Background Colors */
     --color-danger-background: #FFEBE7;

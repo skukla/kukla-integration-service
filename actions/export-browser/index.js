@@ -119,17 +119,17 @@ async function main(params) {
 
                     // Return HTML list items for HTMX to inject
                     const items = fileDetails.map(file => `
-                        <div class="table-row">
-                            <div class="table-cell">
+                        <div class="table-row" role="row">
+                            <div class="table-cell" role="cell">
                                 <span>${file.name}</span>
                             </div>
-                            <div class="table-cell">
+                            <div class="table-cell" role="cell">
                                 <span>${file.size}</span>
                             </div>
-                            <div class="table-cell">
+                            <div class="table-cell" role="cell">
                                 <span>${file.lastModified}</span>
                             </div>
-                            <div class="table-cell">
+                            <div class="table-cell" role="cell">
                                 <div class="actions-container">
                                     <div class="btn-group">
                                         <button type="button" 

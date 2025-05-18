@@ -7,7 +7,7 @@
     --table-border-color: var(--color-gray-200);
     --table-header-background: var(--color-gray-100);
     --table-body-background: var(--color-gray-50);
-    --table-row-border: var(--color-gray-100);
+    --table-row-border: var(--color-gray-25);
     --table-text-color: var(--color-gray-900);
     --table-selected-background: var(--color-blue-50);
     --table-hover-background: var(--color-hover-background);
@@ -75,7 +75,7 @@
 tr {
     display: grid;
     grid-template-columns: 30% 15% 25% 30%;
-    border-bottom: var(--border-base) var(--table-row-border);
+    border-bottom: 1px solid var(--color-gray-150);
     align-items: center;
 }
 
