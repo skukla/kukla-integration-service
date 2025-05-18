@@ -45,37 +45,37 @@
 
             <!-- File list table -->
             <div class="table-wrapper">
-                <table class="table">
-                    <thead class="table-head">
-                        <tr>
-                            <th class="table-header col-file">File Name</th>
-                            <th class="table-header col-size">Size</th>
-                            <th class="table-header col-date">Last Modified</th>
-                            <th class="table-header col-actions">
-                                <div class="actions-container">Actions</div>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="table-body">
-                        <tr class="table-row is-skeleton">
-                            <td class="table-cell skeleton-cell skeleton-file">
+                <div class="table">
+                    <!-- Header Row -->
+                    <div class="table-row header">
+                        <div class="table-header">File Name</div>
+                        <div class="table-header">Size</div>
+                        <div class="table-header">Last Modified</div>
+                        <div class="table-header">Actions</div>
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="table-content">
+                        <!-- Skeleton Row -->
+                        <div class="table-row is-skeleton">
+                            <div class="table-cell skeleton-cell skeleton-file">
                                 <div class="skeleton-block"></div>
-                            </td>
-                            <td class="table-cell skeleton-cell skeleton-size">
+                            </div>
+                            <div class="table-cell skeleton-cell skeleton-size">
                                 <div class="skeleton-block"></div>
-                            </td>
-                            <td class="table-cell skeleton-cell skeleton-date">
+                            </div>
+                            <div class="table-cell skeleton-cell skeleton-date">
                                 <div class="skeleton-block"></div>
-                            </td>
-                            <td class="table-cell skeleton-cell skeleton-actions">
+                            </div>
+                            <div class="table-cell skeleton-cell skeleton-actions">
                                 <div class="skeleton-actions-group">
                                     <div class="skeleton-block skeleton-button skeleton-button-primary"></div>
                                     <div class="skeleton-block skeleton-button skeleton-button-secondary"></div>
                                 </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Hidden loader -->
                 <div id="content-loader"></div>
@@ -87,7 +87,7 @@
                         const loader = document.getElementById('content-loader');
                         loader.setAttribute('hx-get', 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser');
                         loader.setAttribute('hx-trigger', 'load');
-                        loader.setAttribute('hx-target', 'tbody');
+                        loader.setAttribute('hx-target', '.table-content');
                         loader.setAttribute('hx-swap', 'innerHTML');
                         htmx.process(loader);
                     }, 2000);

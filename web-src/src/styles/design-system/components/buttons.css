@@ -35,7 +35,6 @@
     text-decoration: none;
     vertical-align: middle;
     cursor: pointer;
-    transition: var(--transition-button);
     position: relative;
     overflow: hidden;
     height: auto;
@@ -71,7 +70,6 @@
 
 .btn.btn-primary:hover {
     background-color: var(--color-blue-hover);
-    transform: translateY(-1px);
 }
 
 .btn.btn-primary:active {
@@ -88,7 +86,6 @@
 
 .btn.btn-secondary:hover {
     background-color: var(--color-gray-200);
-    transform: translateY(-1px);
 }
 
 .btn.btn-secondary:active {
@@ -107,7 +104,6 @@
     background-color: var(--color-danger-hover);
     border-color: var(--color-danger-hover);
     color: var(--color-white);
-    transform: translateY(-1px);
 }
 
 .btn.btn-danger:active {
