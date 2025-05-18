@@ -7,7 +7,7 @@ application:
         license: Apache-2.0
         actions:
           get-products:
-            function: actions/get-products/index.js
+            function: actions/backend/get-products/index.js
             web: "yes"
             runtime: nodejs:22
             inputs:
@@ -18,14 +18,14 @@ application:
               require-adobe-auth: false
               final: true
           download-file:
-            function: actions/download-file/index.js
+            function: actions/backend/download-file/index.js
             web: "yes"
             runtime: nodejs:22
             annotations:
               require-adobe-auth: false
               final: true
           browse-files:
-            function: actions/browse-files/index.js
+            function: actions/frontend/browse-files/index.js
             web: "yes"
             runtime: nodejs:22
             annotations:
