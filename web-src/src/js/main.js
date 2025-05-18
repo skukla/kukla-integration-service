@@ -23,7 +23,7 @@ function hideModal() {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize content loader with delay
     initializeDelayedLoader('content-loader', {
-        url: 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/export-browser',
+        url: 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/browse-files',
         target: '.table-content',
         delay: 2000
     });

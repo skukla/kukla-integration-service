@@ -5,7 +5,8 @@ const BASE_URL = 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v
 export const API_ENDPOINTS = {
     getProducts: `${BASE_URL}/get-products`,
     downloadFile: `${BASE_URL}/download-file`,
-    exportBrowser: `${BASE_URL}/export-browser`
+    exportBrowser: `${BASE_URL}/export-browser`,
+    browseFiles: `${BASE_URL}/browse-files`
 };
 
 export default API_ENDPOINTS; 
