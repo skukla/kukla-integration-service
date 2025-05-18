@@ -3,7 +3,7 @@
 /* Layout-specific tokens */
 :root {
     /* Colors */
-    --layout-background: var(--color-gray-50);
+    --layout-background: var(--color-gray-175);
     --layout-text-color: var(--color-gray-800);
     --layout-title-color: var(--color-gray-900);
     --layout-description-color: var(--color-gray-700);
@@ -71,7 +71,7 @@ body {
 
 /* Content Section */
 .content-section {
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-md);
     padding: var(--layout-section-padding);
     background: var(--layout-section-background);
     border-radius: var(--radius-lg);
