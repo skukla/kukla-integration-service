@@ -307,6 +307,18 @@ For issues and feature requests:
 - Contact the project maintainers
 - Check Adobe App Builder documentation for platform-specific questions
 
+## Documentation
+
+### Design System
+For detailed information about our design system, including colors, typography, components, and usage guidelines, please see our [Design System Documentation](docs/design-system.md).
+
+The design system documentation covers:
+- Design tokens (colors, typography, spacing, etc.)
+- Component specifications
+- Layout patterns
+- Accessibility guidelines
+- Best practices
+
 ---
 
 For more details, see the inline documentation in each module or contact the project maintainers.
