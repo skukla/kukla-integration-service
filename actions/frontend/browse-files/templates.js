@@ -3,7 +3,16 @@
  * @module browse-files/templates
  */
 
-const { buildFullUrl } = require('../../../core/http');
+const { APP_PREFIX } = require('../../core/http');
+
+/**
+ * Build a download URL for a file
+ * @param {string} fileName - Name of the file
+ * @returns {string} Download URL
+ */
+function buildDownloadUrl(fileName) {
+    return `https://285361-188maroonwallaby-stage.adobeio-static.net${APP_PREFIX}/download-file?fileName=${encodeURIComponent(fileName)}`;
+}
 
 /**
  * Generates HTML for an empty state when no files are found
@@ -24,25 +33,29 @@ function getEmptyStateHtml() {
  * @returns {string} HTML content
  */
 function getActionButtonsHtml(file) {
-    const modalUrl = buildFullUrl('browse-files', {
-        modal: 'delete',
-        fileName: file.name,
-        fullPath: file.fullPath
-    });
+    const modalUrl = `${APP_PREFIX}/browse-files?modal=delete&fileName=${encodeURIComponent(file.name)}&fullPath=${encodeURIComponent(file.fullPath)}`;
+    const downloadUrl = buildDownloadUrl(file.fullPath);
 
     return `
         <div class="actions-container">
             <div class="btn-group">
                 <button type="button" 
                         class="btn btn-primary download-button"
-                        data-loading-class="is-loading"
-                        data-download-url="${encodeURIComponent(file.fullPath)}"
                         data-file-name="${file.name}"
+                        hx-get="${downloadUrl}"
+                        hx-trigger="click"
+                        hx-swap="none"
+                        hx-ext="loading-states"
+                        data-loading-states
+                        data-loading-class="is-loading"
+                        data-loading-delay="100"
+                        data-loading-target="this"
                         aria-label="Download ${file.name}">
                     <span class="btn-label">Download</span>
                 </button>
                 <button type="button"
-                        class="btn btn-danger btn-outline delete-button"
+                        class="btn btn-danger btn-outline"
+                        data-action="delete"
                         data-loading-class="is-loading"
                         data-modal-url="${modalUrl}"
                         data-file-name="${file.name}"
@@ -97,7 +110,7 @@ function getFileListHtml(files) {
  * @returns {string} HTML content
  */
 function getDeleteModalHtml(fileName, fullPath) {
-    const deleteUrl = buildFullUrl('delete-file', { fileName: fullPath });
+    const deleteUrl = `${APP_PREFIX}/delete-file?fileName=${encodeURIComponent(fullPath)}`;
 
     return `
         <div class="modal-content">

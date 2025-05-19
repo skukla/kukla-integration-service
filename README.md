@@ -9,7 +9,7 @@ A streamlined Adobe App Builder application that integrates with Adobe Commerce 
 📚 [Architecture Guide](docs/architecture.md) - System design and components  
 🛠️ [Development Guide](docs/development.md) - Setup and workflow  
 🔒 [Security Guide](docs/security.md) - Security practices  
-❓ [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+🐛 [Debugging Guide](docs/debugging.md) - Debugging process and tools
 
 ## Key Features
 
@@ -74,6 +74,7 @@ Our documentation is organized into focused guides:
   - [Development](docs/development.md) - Development workflow
   - [Security](docs/security.md) - Security practices
   - [Deployment](docs/deployment.md) - Deployment process
+  - [Debugging](docs/debugging.md) - Debugging workflow and tools
 
 - **Technical Guides**
   - [API Reference](docs/api-reference.md) - API endpoints

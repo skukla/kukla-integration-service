@@ -15,7 +15,7 @@
     
     /* Loading States */
     --loading-background: var(--color-overlay-light);
-    --loading-opacity: 0.5;
+    --loading-opacity: var(--opacity-50);
     --loading-min-block-size: calc(var(--spacing-3xl) * 2);
     --loading-z-index: var(--z-index-dropdown);
     --loading-transition: opacity var(--transition-fade);
@@ -25,9 +25,12 @@
     --loading-text-margin-block: var(--spacing-md);
     
     /* Skeleton Loading */
-    --skeleton-background: var(--color-gray-200);
+    --skeleton-background: var(--color-gray-100);
+    --skeleton-shine: var(--color-gray-50);
     --skeleton-row-background: var(--color-gray-50);
-    --skeleton-animation: var(--animation-pulse);
+    --skeleton-animation-duration: 2.5s;
+    --skeleton-animation-timing: var(--ease-in-out);
+    --skeleton-animation: shine var(--skeleton-animation-duration) var(--skeleton-animation-timing) infinite;
     --skeleton-block-size: var(--spacing-lg);
     --skeleton-border-radius: var(--radius-sm);
     --skeleton-cell-padding-block: var(--spacing-md);
@@ -49,7 +52,9 @@
     
     /* Performance optimizations */
     contain: strict;
-    will-change: opacity;
+    will-change: opacity, transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
     pointer-events: none;
 }
 
@@ -160,19 +165,41 @@
 /* Skeleton Block Base */
 .skeleton-block {
     display: block;
-    background: var(--skeleton-background);
+    background-color: var(--skeleton-background);
     border-radius: var(--skeleton-border-radius);
-    animation: var(--skeleton-animation);
     block-size: var(--skeleton-block-size);
+    position: relative;
+    overflow: hidden;
     
     /* Performance optimizations */
     contain: strict;
-    will-change: opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
     
     @media (prefers-reduced-motion: reduce) {
         animation: none;
-        opacity: 0.7;
     }
+}
+
+.skeleton-block::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        var(--skeleton-background) 0%,
+        var(--skeleton-shine) 50%,
+        var(--skeleton-background) 100%
+    );
+    background-size: 200% 100%;
+    background-position: 200% 0;
+    animation: var(--skeleton-animation);
+    
+    /* Performance optimizations */
+    will-change: background-position;
 }
 
 /* Column-specific skeleton widths */
@@ -204,7 +231,7 @@
 
 .skeleton-button {
     block-size: var(--skeleton-block-size);
-    border-radius: var(--skeleton-border-radius);
+    border-radius: var(--radius-sm);
     background: var(--skeleton-background);
     animation: var(--skeleton-animation);
     
@@ -218,8 +245,14 @@
     }
 }
 
-.skeleton-button-primary { inline-size: var(--spacing-3xl); }
-.skeleton-button-secondary { inline-size: var(--spacing-2xl); }
+/* Using the same button width tokens as defined in the design system */
+.skeleton-button-primary { 
+    inline-size: var(--table-button-primary-width, calc(var(--size-button-min-width) * 1.4));
+}
+
+.skeleton-button-secondary { 
+    inline-size: var(--table-button-secondary-width, calc(var(--size-button-min-width) * 1.1));
+}
 
 /* High Contrast Mode */
 @media (forced-colors: active) {
@@ -247,5 +280,12 @@
     
     .loading-text {
         color: #000;
+    }
+}
+
+/* Skeleton Loading */
+@keyframes shine {
+    to {
+        background-position: -200% 0;
     }
 } 

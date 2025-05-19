@@ -21,11 +21,9 @@
     --file-browser-header-spacing: var(--letter-spacing-wide);
     --file-browser-header-weight: var(--font-weight-bold);
     
-    /* Skeleton Loading */
-    --skeleton-bg: var(--color-gray-300);
-    --skeleton-shine: var(--color-gray-200);
-    --skeleton-animation-duration: 2s;
-    --skeleton-height: var(--file-browser-content-height);
+    /* Custom Skeleton Colors */
+    --file-browser-skeleton-background: var(--color-gray-200);
+    --file-browser-skeleton-shine: var(--color-gray-100);
 }
 
 /* Table Wrapper */
@@ -122,16 +120,19 @@
     align-items: center;
 }
 
-/* Skeleton State */
+/* Skeleton State - Using Design System Implementation */
 .file-browser.is-skeleton .table-cell {
     background: none;
 }
 
 .file-browser .skeleton-block {
-    background: var(--skeleton-bg);
-    border-radius: var(--radius-sm);
-    animation: pulse var(--skeleton-animation-duration) infinite;
-    height: var(--skeleton-height);
+    --skeleton-background: var(--file-browser-skeleton-background);
+    --skeleton-shine: var(--file-browser-skeleton-shine);
+}
+
+.file-browser .skeleton-button {
+    --skeleton-background: var(--file-browser-skeleton-background);
+    --skeleton-shine: var(--file-browser-skeleton-shine);
 }
 
 /* Actions Container */
@@ -162,50 +163,6 @@
 
 .actions-container .btn-primary {
     width: calc(var(--size-button-min-width) * 1.5);
-}
-
-/* Skeleton Actions */
-.skeleton-actions-group {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: var(--spacing-sm);
-    box-sizing: border-box;
-    height: var(--file-browser-content-height);
-}
-
-/* Skeleton Button */
-.skeleton-block.skeleton-button {
-    width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button skeleton */
-    height: var(--file-browser-content-height);
-    background: var(--skeleton-bg);
-    border-radius: var(--radius-sm);
-    animation: pulse var(--skeleton-animation-duration) infinite;
-    flex: 0 0 auto;
-    box-sizing: border-box;
-}
-
-/* Different widths for primary/secondary buttons */
-.skeleton-block.skeleton-button.skeleton-button-primary {
-    width: calc(var(--size-button-min-width) * 1.5); /* Wider width for Download button skeleton */
-}
-
-.skeleton-block.skeleton-button.skeleton-button-secondary {
-    width: calc(var(--size-button-min-width) * 1.25); /* Base width for Delete button skeleton */
-}
-
-/* Specific Skeleton Blocks */
-.file-name-skeleton {
-    width: 85%;
-}
-
-.size-skeleton {
-    width: 45%;
-}
-
-.date-skeleton {
-    width: 65%;
 }
 
 /* Empty State */
@@ -260,11 +217,6 @@
     .file-browser .table-row {
         border-color: CanvasText;
     }
-    
-    .file-browser .skeleton-block {
-        background-color: GrayText;
-        opacity: 0.5;
-    }
 }
 
 /* Print Styles */
@@ -281,4 +233,19 @@
     .file-browser.is-skeleton {
         display: none;
     }
+}
+
+/* Content Loader */
+#content-loader {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: var(--loading-background);
+    opacity: var(--loading-opacity);
+    z-index: var(--loading-z-index);
+    transition: var(--loading-transition);
+}
+
+#content-loader.is-loading {
+    display: block;
 } 

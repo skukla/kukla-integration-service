@@ -4,7 +4,8 @@
  */
 
 const fetch = require('node-fetch');
-const { request, headers, response, buildFullUrl, buildCommerceUrl } = require('../../../../core/http');
+const { headers } = require('../../../../core/http');
+const { buildCommerceUrl } = require('../../../../commerce/integration');
 
 /**
  * Fetch all products from the Adobe Commerce REST API with pagination.
@@ -66,15 +67,19 @@ async function fetchProductQty(sku, token, params) {
  * @returns {Promise<Object>} Products data
  */
 async function getProducts(params) {
-  const url = buildCommerceUrl(params.baseUrl, '/V1/products');
+  const url = buildCommerceUrl(params.COMMERCE_URL, '/V1/products');
   
   try {
-    const response = await request(url, {
+    const res = await fetch(url, {
       method: 'GET',
       headers: headers.commerce(params.token)
     });
 
-    return response.json();
+    if (!res.ok) {
+      throw new Error(`Failed to fetch products: ${res.status} ${await res.text()}`);
+    }
+
+    return res.json();
   } catch (error) {
     throw new Error(`Failed to fetch products: ${error.message}`);
   }

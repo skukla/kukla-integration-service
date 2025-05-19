@@ -151,18 +151,6 @@ const response = {
 
 const APP_PREFIX = '/api/v1/web/kukla-integration-service';
 
-/**
- * Builds a full URL by combining base URL and path
- * @param {string} baseUrl - The base URL
- * @param {string} path - The path to append
- * @returns {string} The complete URL
- */
-function buildFullUrl(baseUrl, path) {
-    const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `${base}${cleanPath}`;
-}
-
 module.exports = {
     // Headers utilities
     headers,
@@ -176,7 +164,6 @@ module.exports = {
     response,
     
     // URL utilities
-    buildFullUrl,
     APP_PREFIX,
 
     // Performance middleware
