@@ -14,36 +14,55 @@ This application follows a clear separation between client-side and server-side 
 kukla-integration-service/
 ├── actions/                                  # Server-side code
 │   ├── backend/
-│   │   ├── get-products/                     # Product export functionality
-│   │   │   ├── lib/                          # Core libraries
-│   │   │   │   ├── api/                      # API integration
-│   │   │   │   └── product-transformer.js    # Data transformation
-│   │   │   ├── steps/                        # Processing steps
-│   │   │   └── index.js                      # Main handler
-│   │   └── download-file/                    # File download handling
+│   │   ├── download-file/                    # File download handling
+│   │   └── get-products/                     # Product export functionality
+│   │       ├── lib/                          # Core libraries
+│   │       │   ├── api/                      # API integration
+│   │       │   ├── csv/                      # CSV handling
+│   │       │   ├── storage/                  # Storage operations
+│   │       │   ├── auth.js                   # Authentication
+│   │       │   └── product-transformer.js    # Data transformation
+│   │       ├── steps/                        # Processing steps
+│   │       ├── utils/                        # Utility functions
+│   │       │   └── url/                      # URL handling
+│   │       │       ├── download.js           # Download utilities
+│   │       │       └── index.js              # URL utilities
+│   │       └── index.js                      # Main handler
 │   ├── frontend/
 │   │   └── browse-files/                     # File browsing interface
 │   │       ├── utils/                        # UI utilities
-│   │       │   ├── file/                     # File-related utilities
-│   │       │   └── ui/                       # UI helpers
-│   │       ├── templates.js                  # HTML templates
-│   │       └── index.js                      # Main handler
+│   │       │   ├── file/                     # File operations
+│   │       │   └── ui/                       # UI components
+│   │       ├── index.js                      # Main handler
+│   │       └── templates.js                  # HTML templates
 │   └── shared/                               # Common utilities
-│       ├── http/                             # HTTP utilities
+│       ├── commerce/                         # Commerce utilities
 │       ├── file/                             # File operations
-│       ├── validation/                       # Input validation
-│       └── commerce/                         # Commerce utilities
+│       ├── http/                             # HTTP utilities
+│       └── validation/                       # Input validation
 ├── web-src/                                  # Client-side code
 │   ├── index.html                            # Main HTML template
 │   └── src/
 │       ├── styles/                           # Style organization
 │       │   ├── components/                   # Component-specific styles
 │       │   └── design-system/                # Design system styles
+│       ├── main.css                          # Main stylesheet
 │       └── js/                               # JavaScript code
 │           ├── main.js                       # Main entry point
-│           └── utils/                        # Utility functions
+│           ├── utils/                        # Utility functions
+│           │   ├── url-utils.js              # URL manipulation utilities
+│           │   ├── content-loader.js         # Content loading functions
+│           │   └── notifications.js          # Notification handling
+│           └── config/                       # Configuration modules
+│               ├── api.js                    # API configuration
+│               └── htmx.js                   # HTMX configuration
 ├── docs/                                     # Documentation
-└── test/                                     # Test files
+├── test/                                     # Test files
+├── e2e/                                      # End-to-end tests
+├── .github/                                  # GitHub workflows and configuration
+├── app.config.yaml                           # Adobe App Builder configuration
+├── vite.config.js                            # Frontend build configuration
+└── package.json                              # Project dependencies and scripts
 ```
 
 ## Application Components
