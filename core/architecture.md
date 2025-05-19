@@ -102,13 +102,25 @@ web-src/src/js/
 │   ├── http.js              # HTTP client handling
 │   ├── urls.js              # URL management
 │   ├── notifications.js     # Notification system
-│   └── modal.js             # Modal management
+│   ├── modal.js             # Modal management
+│   ├── downloads.js         # Download handling
+│   ├── loading.js          # Loading state management
+│   └── error-handler.js    # Error handling utilities
 ├── htmx/                    # HTMX integration
 │   ├── config.js            # HTMX configuration
 │   └── events.js            # Event handling
 ├── browser/                 # UI components
 │   └── file-browser.js      # File browser component
 └── main.js                  # Application entry point
+
+web-src/src/styles/design-system/
+└── components/             # Component styles
+    ├── notifications.css   # Notification system styles
+    ├── table.css          # Table component styles
+    ├── buttons.css        # Button styles
+    ├── loading.css        # Loading indicators
+    ├── modal.css          # Modal styles
+    └── typography.css     # Typography styles
 ```
 
 #### Core Features
@@ -119,22 +131,52 @@ web-src/src/js/
   - Error management
 
 - **URL Module** (`core/urls.js`)
-  - URL construction
-  - Route management
-  - Path validation
-  - Navigation handling
+  - Centralized URL construction
+  - Action-based routing
+  - Commerce API URL handling
+  - Clean separation between frontend and Commerce URLs
 
 - **Notifications** (`core/notifications.js`)
   - User notifications
   - Toast messages
   - Status updates
   - Error presentation
+  - Type-specific styling (success, error, warning, info)
+  - Accessibility support
+  - Animation handling
 
 - **Modal System** (`core/modal.js`)
   - Modal management
   - Focus handling
   - Accessibility features
   - Event coordination
+
+- **Download System** (`core/downloads.js`)
+  - Base64 response processing
+  - File download handling
+  - Download status notifications
+  - Error handling for downloads
+  - HTMX integration for download events
+
+- **Loading States** (`core/loading.js`)
+  - Loading indicator management
+  - State transitions
+  - HTMX loading integration
+  - Progress feedback
+
+- **Error Handler** (`core/error-handler.js`)
+  - Centralized error processing
+  - Error type management
+  - User-friendly error messages
+  - Error recovery options
+
+#### Design System Components
+- **Notifications** (`components/notifications.css`)
+  - Toast notification styling
+  - Type-specific themes
+  - Animation and transitions
+  - Responsive design
+  - Accessibility styles
 
 #### HTMX Integration
 - **Configuration** (`htmx/config.js`)
@@ -193,6 +235,30 @@ File operations follow a secure, validated flow:
    - Status updates through `core/notifications.js`
    - Progress indicators via HTMX
    - Error presentation using modal system
+
+## Documentation Structure
+
+```
+docs/
+├── core/                    # Core architecture and development
+│   ├── architecture.md     # System design and patterns
+│   ├── development.md      # Development workflow
+│   ├── security.md         # Security guidelines
+│   └── deployment.md       # Deployment procedures
+├── frontend/               # Frontend documentation
+├── backend/                # Backend API and services
+├── process/                # Development processes
+├── project/                # Project-specific docs
+├── README.md               # Main entry point
+└── testing-verification.md # Testing guidelines
+```
+
+Each directory serves a specific purpose:
+- **core/** - Core system documentation, architecture, and development guides
+- **frontend/** - Frontend-specific documentation and component guides
+- **backend/** - Backend services, API documentation, and integration guides
+- **process/** - Development processes, workflows, and procedures
+- **project/** - Project-specific documentation and requirements
 
 ## Security Model
 

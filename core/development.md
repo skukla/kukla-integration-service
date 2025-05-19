@@ -55,6 +55,25 @@ web-src/
 
 ### 3. Implementation Patterns
 
+#### URL Handling
+```javascript
+// Frontend actions use getActionUrl
+const url = getActionUrl('browse-files', { page: 1 });
+
+// Commerce API calls use buildCommerceUrl
+const url = buildCommerceUrl(baseUrl, '/V1/products');
+
+// Base paths are configured in their respective modules
+const URL_CONFIG = {
+    BASE_PATH: '/api/v1/web/kukla-integration-service',
+    ACTIONS: {
+        'browse-files': '/browse-files',
+        'delete-file': '/delete-file'
+        // ... other actions
+    }
+};
+```
+
 #### Backend Actions
 ```javascript
 // Example action structure
