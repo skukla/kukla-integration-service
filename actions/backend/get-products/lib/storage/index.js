@@ -4,14 +4,22 @@
  */
 
 const { getStorageConfig } = require('./config');
-
-const { buildFullUrl } = require('../../../../core/http');
+const { APP_PREFIX } = require('../../../../core/http');
 const {
     writeFile,
     getFileProperties,
     FileOperationError,
     FileErrorType
 } = require('../../../../core/files');
+
+/**
+ * Builds a download URL for a file
+ * @param {string} fileName - Name of the file
+ * @returns {string} Download URL
+ */
+function buildDownloadUrl(fileName) {
+    return `${APP_PREFIX}/download-file?fileName=${encodeURIComponent(fileName)}`;
+}
 
 /**
  * Stores a file in the configured storage location
@@ -40,7 +48,7 @@ async function storeFile(content, fileName) {
         await getFileProperties(files, publicFileName);
         
         // Get the download URL for the file
-        const downloadUrl = buildDownloadUrl(fileName);
+        const downloadUrl = buildDownloadUrl(publicFileName);
         
         return {
             fileName: publicFileName,

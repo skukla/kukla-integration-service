@@ -4,7 +4,7 @@
  */
 
 const fetch = require('node-fetch');
-const { request, headers, response, buildFullUrl } = require('../../../../core/http');
+const { headers } = require('../../../../core/http');
 const { buildCommerceUrl } = require('../../../../commerce/integration');
 
 
@@ -101,15 +101,19 @@ async function buildCategoryMap(products, token, params) {
  * @returns {Promise<Object>} Categories data
  */
 async function getCategories(params) {
-  const url = buildUrl(params.baseUrl, endpoints.categories.list);
+  const url = buildCommerceUrl(params.COMMERCE_URL, '/V1/categories');
   
   try {
-    const response = await request(url, {
+    const res = await fetch(url, {
       method: 'GET',
       headers: headers.commerce(params.token)
     });
 
-    return response.json();
+    if (!res.ok) {
+      throw new Error(`Failed to fetch categories: ${res.status} ${await res.text()}`);
+    }
+
+    return res.json();
   } catch (error) {
     throw new Error(`Failed to fetch categories: ${error.message}`);
   }

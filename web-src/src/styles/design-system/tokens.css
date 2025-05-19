@@ -124,7 +124,7 @@
     --duration-slower: 400ms;
     --duration-spinner: 800ms;
     --duration-notification: 300ms;
-    --duration-skeleton: 2000ms;
+    --duration-skeleton: 2500ms;  /* Updated to 2.5s for smoother skeleton animations */
 
     /* Easing Functions */
     --ease-default: cubic-bezier(0.4, 0, 0.2, 1);  /* Material Design standard easing */

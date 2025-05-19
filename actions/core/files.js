@@ -3,6 +3,8 @@
  * @module actions/core/files
  */
 
+const { createResponse, createHtmxError } = require('../htmx/responses');
+
 /**
  * File operation error types
  * @enum {string}
@@ -15,6 +17,10 @@ const FileErrorType = {
     UNKNOWN: 'UNKNOWN_ERROR'
 };
 
+// Size formatting constants
+const BYTES_PER_UNIT = 1024;
+const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+
 /**
  * Error class for file operations
  */
@@ -25,6 +31,64 @@ class FileOperationError extends Error {
         this.type = type;
         this.originalError = originalError;
     }
+}
+
+/**
+ * Creates a file operation error based on the error code
+ * @private
+ * @param {Error} error - Original error
+ * @param {string} operation - Operation description for the error message
+ * @param {Object} [context] - Additional debug context
+ * @returns {FileOperationError} Wrapped error
+ */
+function createFileError(error, operation, context = {}) {
+    // Determine error type and retry capability
+    let errorType = FileErrorType.UNKNOWN;
+    let canRetry = false;
+
+    // Map common error codes to types
+    switch (error.code) {
+        case 'FILE_NOT_FOUND':
+            errorType = FileErrorType.NOT_FOUND;
+            canRetry = false;
+            break;
+        case 'PERMISSION_DENIED':
+            errorType = FileErrorType.PERMISSION_DENIED;
+            canRetry = true;
+            break;
+        case 'EEXIST':
+            errorType = FileErrorType.ALREADY_EXISTS;
+            canRetry = false;
+            break;
+        default:
+            errorType = FileErrorType.UNKNOWN;
+            canRetry = true;
+    }
+
+    // Create user-friendly message with action
+    const userMessage = `Failed to ${operation}: ${error.message}`;
+    const userAction = canRetry ? 'Please try again or contact support if the issue persists.' : 'Please contact support for assistance.';
+
+    return new FileOperationError(
+        errorType,
+        `${userMessage} ${userAction}`,
+        {
+            originalError: error,
+            operation,
+            canRetry,
+            ...context
+        }
+    );
+}
+
+/**
+ * Gets content type with fallback
+ * @private
+ * @param {Object} properties - File properties from SDK
+ * @returns {string} Content type
+ */
+function getContentType(properties) {
+    return properties.contentType || 'application/octet-stream';
 }
 
 /**
@@ -66,10 +130,12 @@ function removePublicPrefix(filePath) {
  */
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    
+    const exponent = Math.floor(Math.log(bytes) / Math.log(BYTES_PER_UNIT));
+    const value = parseFloat((bytes / Math.pow(BYTES_PER_UNIT, exponent)).toFixed(2));
+    const unit = SIZE_UNITS[exponent];
+    
+    return `${value} ${unit}`;
 }
 
 /**
@@ -82,6 +148,27 @@ function formatFileDate(date) {
 }
 
 /**
+ * Gets metadata for a single file
+ * @private
+ * @async
+ * @param {Object} files - Files SDK instance
+ * @param {Object} fileEntry - File entry from list operation
+ * @returns {Promise<Object>} Processed file metadata
+ */
+async function getFileMetadata(files, fileEntry) {
+    const properties = await files.getProperties(fileEntry.name);
+    const fileContent = await files.read(fileEntry.name);
+    
+    return {
+        name: removePublicPrefix(fileEntry.name),
+        fullPath: fileEntry.name,
+        size: formatFileSize(fileContent.length),
+        lastModified: formatFileDate(properties.lastModified),
+        contentType: getContentType(properties)
+    };
+}
+
+/**
  * Reads a file
  * @async
  * @param {Object} files - Files SDK instance
@@ -91,14 +178,11 @@ function formatFileDate(date) {
  */
 async function readFile(files, path) {
     validatePath(path);
+    
     try {
         return await files.read(path);
     } catch (error) {
-        throw new FileOperationError(
-            error.code === 'FILE_NOT_FOUND' ? FileErrorType.NOT_FOUND : FileErrorType.UNKNOWN,
-            `Failed to read file: ${error.message}`,
-            error
-        );
+        throw createFileError(error, 'read file');
     }
 }
 
@@ -113,14 +197,11 @@ async function readFile(files, path) {
  */
 async function writeFile(files, path, content) {
     validatePath(path);
+    
     try {
         await files.write(path, content);
     } catch (error) {
-        throw new FileOperationError(
-            FileErrorType.UNKNOWN,
-            `Failed to write file: ${error.message}`,
-            error
-        );
+        throw createFileError(error, 'write file');
     }
 }
 
@@ -134,14 +215,11 @@ async function writeFile(files, path, content) {
  */
 async function deleteFile(files, path) {
     validatePath(path);
+    
     try {
         await files.delete(path);
     } catch (error) {
-        throw new FileOperationError(
-            error.code === 'FILE_NOT_FOUND' ? FileErrorType.NOT_FOUND : FileErrorType.UNKNOWN,
-            `Failed to delete file: ${error.message}`,
-            error
-        );
+        throw createFileError(error, 'delete file');
     }
 }
 
@@ -155,33 +233,24 @@ async function deleteFile(files, path) {
  */
 async function listFiles(files, directory) {
     validatePath(directory);
+    
     try {
         const filesList = await files.list(directory);
-        const results = [];
+        const processedFiles = [];
 
-        for (const file of filesList) {
+        for (const fileEntry of filesList) {
             try {
-                const props = await files.getProperties(file.name);
-                results.push({
-                    name: removePublicPrefix(file.name),
-                    fullPath: file.name,
-                    size: formatFileSize(props.size),
-                    lastModified: formatFileDate(props.lastModified),
-                    contentType: props.contentType || 'application/octet-stream'
-                });
+                const fileMetadata = await getFileMetadata(files, fileEntry);
+                processedFiles.push(fileMetadata);
             } catch (error) {
-                console.warn(`Failed to get properties for ${file.name}:`, error);
-                // Continue with next file
+                console.warn(`Failed to get metadata for ${fileEntry.name}:`, error);
+                // Continue processing other files
             }
         }
 
-        return results;
+        return processedFiles;
     } catch (error) {
-        throw new FileOperationError(
-            FileErrorType.UNKNOWN,
-            `Failed to list files: ${error.message}`,
-            error
-        );
+        throw createFileError(error, 'list files');
     }
 }
 
@@ -195,22 +264,55 @@ async function listFiles(files, directory) {
  */
 async function getFileProperties(files, path) {
     validatePath(path);
+    
     try {
-        const props = await files.getProperties(path);
+        const properties = await files.getProperties(path);
+        const fileContent = await files.read(path);
+        
         return {
             name: removePublicPrefix(path),
             fullPath: path,
-            size: formatFileSize(props.size),
-            lastModified: formatFileDate(props.lastModified),
-            contentType: props.contentType || 'application/octet-stream'
+            size: formatFileSize(fileContent.length),
+            lastModified: formatFileDate(properties.lastModified),
+            contentType: getContentType(properties)
         };
     } catch (error) {
-        throw new FileOperationError(
-            error.code === 'FILE_NOT_FOUND' ? FileErrorType.NOT_FOUND : FileErrorType.UNKNOWN,
-            `Failed to get file properties: ${error.message}`,
-            error
-        );
+        throw createFileError(error, 'get file properties');
     }
+}
+
+/**
+ * Creates an HTMX-compatible error response for file operations
+ * @private
+ * @param {FileOperationError} error - File operation error
+ * @param {Object} [options] - Additional response options
+ * @returns {Promise<Object>} HTMX error response
+ */
+async function createFileErrorResponse(error, options = {}) {
+    return createHtmxError(
+        error.type,
+        error.message,
+        {
+            retryable: error.originalError?.canRetry,
+            context: error.originalError,
+            ...options
+        }
+    );
+}
+
+/**
+ * Creates an HTMX-compatible success response for file operations
+ * @private
+ * @param {string} html - HTML content
+ * @param {Object} [options] - Additional response options
+ * @returns {Promise<Object>} HTMX success response
+ */
+async function createFileSuccessResponse(html, options = {}) {
+    return createResponse({
+        html,
+        status: 200,
+        ...options
+    });
 }
 
 module.exports = {
@@ -228,5 +330,7 @@ module.exports = {
     
     // Error handling
     FileOperationError,
-    FileErrorType
+    FileErrorType,
+    createFileErrorResponse,
+    createFileSuccessResponse
 }; 

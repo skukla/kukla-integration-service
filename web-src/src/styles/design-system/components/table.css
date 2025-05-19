@@ -30,7 +30,6 @@
     --table-col-actions-width: 30%;
     
     /* Button Dimensions */
-    --table-actions-container-width: calc(var(--size-button-min-width) * 2.5);
     --table-button-primary-width: calc(var(--size-button-min-width) * 1.4);
     --table-button-secondary-width: calc(var(--size-button-min-width) * 1.1);
     --table-actions-gap: var(--spacing-sm);

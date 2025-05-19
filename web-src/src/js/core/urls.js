@@ -1,40 +1,37 @@
 /**
- * URL Utilities
+ * URL utilities for the application
  * @module core/urls
  */
 
-// URL configuration
-const URL_CONFIG = {
-    BASE_PATH: '/api',
-    ACTIONS: {
-        'browse-files': '/files/browse',
-        'delete-file': '/files/delete',
-        'upload-file': '/files/upload',
-        'download-file': '/files/download',
-        'file-info': '/files/info'
-    }
+import { showNotification } from './notifications.js';
+
+// Base API path
+const API_PREFIX = '/api/v1/web/kukla-integration-service';
+
+// Action URL configuration
+const ACTION_URLS = {
+    'browse-files': `${API_PREFIX}/browse-files`,
+    'download-file': `${API_PREFIX}/download-file`,
+    'upload-file': `${API_PREFIX}/upload-file`,
+    'delete-file': `${API_PREFIX}/delete-file`
 };
 
 /**
- * Build a URL for an action with optional parameters
- * @param {string} action - The action identifier
+ * Get the URL for an action
+ * @param {string} action - The action name
  * @param {Object} [params] - URL parameters
- * @returns {string} The complete URL
+ * @returns {string} The action URL
+ * @throws {Error} If the action is unknown
  */
 export function getActionUrl(action, params = {}) {
-    const path = URL_CONFIG.ACTIONS[action];
-    if (!path) {
-        console.warn(`Unknown action: ${action}`);
-        return '';
+    const baseUrl = ACTION_URLS[action];
+    if (!baseUrl) {
+        throw new Error(`Unknown action: ${action}`);
     }
 
-    const url = new URL(URL_CONFIG.BASE_PATH + path, window.location.origin);
-    
-    // Add parameters
+    const url = new URL(baseUrl, window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-            url.searchParams.append(key, value);
-        }
+        url.searchParams.append(key, value);
     });
 
     return url.toString();
@@ -51,28 +48,6 @@ export function getDownloadUrl(fileName, path) {
         fileName,
         path
     });
-}
-
-/**
- * Get the file info URL
- * @param {string} fileName - The name of the file
- * @param {string} [path] - Optional path to the file
- * @returns {string} The file info URL
- */
-export function getFileInfoUrl(fileName, path) {
-    return getActionUrl('file-info', {
-        fileName,
-        path
-    });
-}
-
-/**
- * Get the upload URL for a file
- * @param {string} [path] - Optional target path
- * @returns {string} The upload URL
- */
-export function getUploadUrl(path) {
-    return getActionUrl('upload-file', { path });
 }
 
 /**

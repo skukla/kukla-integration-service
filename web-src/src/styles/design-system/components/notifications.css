@@ -8,84 +8,100 @@
     --notification-close-hover: var(--color-gray-900);
     --notification-border-color: var(--color-gray-100);
     
+    /* Type-specific colors */
+    --notification-success-border: var(--color-success, #2D9D78);
+    --notification-error-border: var(--color-danger, #E34850);
+    --notification-warning-border: var(--color-warning, #E68619);
+    --notification-info-border: var(--color-blue-primary, #1473E6);
+    
     /* Shadow */
-    --notification-shadow-close: rgba(0, 0, 0, 0.05);
-    --notification-shadow-far: rgba(0, 0, 0, 0.1);
-    --notification-shadow: 
-        0 4px 6px var(--notification-shadow-close),
-        0 10px 15px var(--notification-shadow-far);
+    --notification-shadow: var(--shadow-lg);
     
     /* Dimensions */
     --notification-padding-inline: var(--spacing-lg);
     --notification-padding-block: var(--spacing-md);
     --notification-spacing: var(--spacing-sm);
     --notification-border-width: var(--border-md);
-    --notification-close-padding: var(--spacing-xs);
     --notification-close-size: var(--font-size-xl);
+    --notification-min-width: var(--size-notification-min-width, 300px);
+    --notification-max-width: var(--size-notification-max-width, 400px);
     
     /* Positions */
     --notification-offset: var(--spacing-lg);
-    --notification-mobile-offset: 0;
     
     /* Transitions */
-    --notification-duration: var(--duration-notification);
+    --notification-duration: var(--duration-notification, 300ms);
     --notification-timing: var(--ease-out);
-    --notification-transition: transform var(--notification-duration) var(--notification-timing),
-                             opacity var(--notification-duration) var(--notification-timing);
-    
-    /* Transforms */
-    --notification-transform-in: translateX(0);
-    --notification-transform-out: translateX(100%);
-    
-    /* Type-specific colors */
-    --notification-success-border: var(--color-success);
-    --notification-error-border: var(--color-danger);
-    --notification-warning-border: var(--color-warning);
-    --notification-info-border: var(--color-blue-primary);
-    
-    /* Touch target size */
-    --notification-touch-target-size: 44px;
 }
 
 /* Notification Container */
-body > #notification-container {
+.notification-container {
     position: fixed;
-    inset-block-start: var(--notification-offset);
-    inset-inline-end: var(--notification-offset);
-    z-index: var(--z-index-toast);
+    top: var(--notification-offset);
+    right: var(--notification-offset);
+    z-index: var(--z-index-toast, 9999);
     display: flex;
     flex-direction: column;
     gap: var(--notification-spacing);
-    max-inline-size: var(--size-notification-max-width);
-    inline-size: var(--width-full-minus-spacing-lg);
+    max-width: var(--notification-max-width);
+    width: calc(100% - var(--spacing-lg) * 2);
     pointer-events: none;
 }
 
 /* Base Notification */
-body > #notification-container > .notification {
+.notification {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-inline-size: var(--size-notification-min-width);
-    margin-block-end: var(--notification-spacing);
+    min-width: var(--notification-min-width);
+    margin-bottom: var(--notification-spacing);
     padding: var(--notification-padding-block) var(--notification-padding-inline);
     border-radius: var(--radius-md);
     background: var(--notification-background);
     border: var(--border-xs) solid var(--notification-border-color);
     box-shadow: var(--notification-shadow);
-    animation: slide-in var(--notification-duration) var(--notification-timing);
-    transform: var(--notification-transform-in);
-    opacity: 1;
-    transition: var(--notification-transition);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: transform var(--notification-duration) var(--notification-timing),
+                opacity var(--notification-duration) var(--notification-timing);
     pointer-events: auto;
 }
 
+/* Content Layout */
 .notification-content {
     flex: 1;
-    margin-inline-end: var(--notification-spacing);
+    margin-right: var(--notification-spacing);
     font-size: var(--font-size-sm);
     color: var(--notification-text-color);
     line-height: var(--line-height-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.notification-icon {
+    font-size: var(--font-size-lg);
+}
+
+.notification-message {
+    flex: 1;
+}
+
+/* Type-specific Styles */
+.notification.notification-success {
+    border-left: var(--notification-border-width) solid var(--notification-success-border);
+}
+
+.notification.notification-error {
+    border-left: var(--notification-border-width) solid var(--notification-error-border);
+}
+
+.notification.notification-warning {
+    border-left: var(--notification-border-width) solid var(--notification-warning-border);
+}
+
+.notification.notification-info {
+    border-left: var(--notification-border-width) solid var(--notification-info-border);
 }
 
 /* Close Button */
@@ -94,82 +110,50 @@ body > #notification-container > .notification {
     border: none;
     font-size: var(--notification-close-size);
     cursor: pointer;
-    padding-inline: var(--notification-close-padding);
+    padding: var(--spacing-xs);
     color: var(--notification-text-color);
-    transition: color var(--transition-hover);
+    transition: color var(--duration-fast) var(--ease-out);
     display: grid;
     place-items: center;
-    min-inline-size: var(--notification-touch-target-size);
-    min-block-size: var(--notification-touch-target-size);
-    
-    /* Accessibility */
-    aria-label: "Close notification";
-    
-    @media (hover: hover) {
-        &:hover {
-            color: var(--notification-close-hover);
-        }
-    }
-    
-    &:focus-visible {
-        outline: var(--focus-outline);
-        outline-offset: var(--focus-outline-offset);
-    }
+    min-width: var(--touch-target-size, 44px);
+    min-height: var(--touch-target-size, 44px);
 }
 
-/* Notification Types with increased specificity */
-body > #notification-container > .notification.notification-error {
-    border-inline-start: var(--notification-border-width) solid var(--notification-error-border);
-    background: var(--notification-background);
+.notification-close:hover {
+    color: var(--notification-close-hover);
 }
 
-body > #notification-container > .notification.notification-success {
-    border-inline-start: var(--notification-border-width) solid var(--notification-success-border);
-    background: var(--notification-background);
-}
-
-body > #notification-container > .notification.notification-warning {
-    border-inline-start: var(--notification-border-width) solid var(--notification-warning-border);
-    background: var(--notification-background);
-}
-
-body > #notification-container > .notification.notification-info {
-    border-inline-start: var(--notification-border-width) solid var(--notification-info-border);
-    background: var(--notification-background);
+.notification-close:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
 }
 
 /* Animation States */
-.notification-fade-out {
+.notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.notification.hide {
+    transform: translateX(100%);
     opacity: 0;
-    transform: var(--notification-transform-out);
-    pointer-events: none;
 }
 
-/* Animations */
-@keyframes slide-in {
-    from {
-        opacity: 0;
-        transform: var(--notification-transform-out);
-    }
-    to {
-        opacity: 1;
-        transform: var(--notification-transform-in);
-    }
-}
-
-/* Container Query Based Responsive Design */
-@container notifications (max-width: 768px) {
-    #notification-container {
-        inset-block-end: var(--notification-mobile-offset);
-        inset-inline: var(--notification-mobile-offset);
+/* Responsive Design */
+@media (max-width: 768px) {
+    .notification-container {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
         padding: var(--notification-spacing);
-        max-inline-size: none;
-        inline-size: 100%;
+        max-width: none;
+        width: 100%;
     }
 
     .notification {
-        margin-block-end: 0;
-        inline-size: 100%;
+        width: 100%;
+        margin-bottom: 0;
     }
 }
 

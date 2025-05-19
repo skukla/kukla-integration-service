@@ -62,42 +62,47 @@ export function showNotification(message, options = {}) {
     let container = document.getElementById(NOTIFICATION_CONFIG.CONTAINER_ID);
     if (!container) {
         container = createNotificationContainer();
+        document.body.appendChild(container);
+        // Add notification directly after container is added
+        addNotificationToContainer(container, message, {
+            type,
+            duration,
+            action,
+            canRetry,
+            onAction,
+            onClose
+        });
+        return;
     }
 
-    // Create notification element
-    const notification = createNotificationElement(message, {
+    // If container exists, add notification directly
+    addNotificationToContainer(container, message, {
         type,
+        duration,
         action,
         canRetry,
         onAction,
         onClose
     });
-    container.appendChild(notification);
-
-    // Animate in
-    requestAnimationFrame(() => {
-        notification.classList.add('show');
-    });
-
-    // Set up removal if not an error with retry
-    if (!(type === 'error' && canRetry)) {
-        const timeout = setTimeout(() => {
-            removeNotification(notification);
-        }, duration);
-        notification.dataset.timeout = timeout;
-    }
 }
 
 /**
- * Create the notification container
- * @returns {HTMLElement} The notification container
+ * Add a notification to the container
+ * @param {HTMLElement} container - The notification container
+ * @param {string} message - The message to display
+ * @param {Object} options - Notification options
  */
-function createNotificationContainer() {
-    const container = document.createElement('div');
-    container.id = NOTIFICATION_CONFIG.CONTAINER_ID;
-    container.className = 'notification-container';
-    document.body.appendChild(container);
-    return container;
+function addNotificationToContainer(container, message, options) {
+    const notification = createNotificationElement(message, options);
+    container.appendChild(notification);
+
+    // Set up removal if not an error with retry
+    if (!(options.type === 'error' && options.canRetry)) {
+        const timeout = setTimeout(() => {
+            removeNotification(notification);
+        }, options.duration);
+        notification.dataset.timeout = timeout;
+    }
 }
 
 /**
@@ -164,7 +169,25 @@ function createNotificationElement(message, options) {
     notification.appendChild(messageContainer);
     notification.appendChild(buttonsContainer);
 
+    // Add show class in the next frame to trigger animation
+    requestAnimationFrame(() => {
+        notification.classList.add('show');
+    });
+
     return notification;
+}
+
+/**
+ * Create the notification container
+ * @returns {HTMLElement} The notification container
+ */
+function createNotificationContainer() {
+    const container = document.createElement('div');
+    container.id = NOTIFICATION_CONFIG.CONTAINER_ID;
+    container.className = 'notification-container';
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+    return container;
 }
 
 /**

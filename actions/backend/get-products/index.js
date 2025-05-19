@@ -22,8 +22,7 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
  * 
  * @param {Object} params - Action parameters
  * @param {string} params.COMMERCE_URL - Adobe Commerce instance URL
- * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username for authentication
- * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password for authentication
+ * @param {string} params.token - Authentication token for Commerce API
  * @param {string} [params.LOG_LEVEL='info'] - Logging level
  * @param {Array<string>} [params.fields] - Optional array of fields to include in the export
  * 

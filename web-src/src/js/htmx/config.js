@@ -2,33 +2,40 @@
 import { initializeHtmxEvents } from './events.js';
 import { showNotification } from '../core/notifications.js';
 import { getActionUrl } from '../core/urls.js';
-import { showLoading, hideLoading } from '../core/loading.js';
+import { initializeDownloadHandlers } from '../core/downloads.js';
 
 // Component configuration
 const COMPONENT_CONFIG = {
     'file-list': {
         'hx-get': () => getActionUrl('browse-files'),
-        'hx-trigger': 'load',
+        'hx-trigger': 'load once',  // Only load once on initial page load
         'hx-swap': 'innerHTML',
-        'hx-indicator': '.table-row.is-skeleton'
+        'hx-indicator': '#content-loader',
+        'data-loading-states': 'true'
     },
     'content-loader': {
-        'hx-get': () => getActionUrl('browse-files'),
-        'hx-trigger': 'load delay:2s',
         'hx-target': '.table-content',
         'hx-swap': 'innerHTML',
-        'hx-indicator': '.table-row.is-skeleton',
-        'data-loading-class': 'is-loading'
+        'hx-indicator': '#content-loader',
+        'data-loading-class': 'is-loading',
+        'data-loading-states': 'true'
+    },
+    'modal': {
+        'hx-swap-oob': 'true',
+        'data-loading-states': 'true',
+        'data-loading-class': 'is-loading',
+        'role': 'dialog',
+        'aria-modal': 'true'
     },
     'delete-button': {
-        'hx-get': (el) => getActionUrl('browse-files', {
-            modal: 'delete',
+        'hx-get': (el) => getActionUrl('delete-file', {
             fileName: el.dataset.fileName,
             fullPath: el.dataset.downloadUrl
         }),
         'hx-target': '#modal-container',
         'hx-swap': 'innerHTML',
         'data-loading-class': 'is-loading',
+        'data-loading-states': 'true',
         'data-success-message': 'File deleted successfully'
     }
 };
@@ -39,6 +46,7 @@ const HTMX_CONFIG = {
     historyCacheSize: 10,            // Keep last 10 pages in cache
     defaultSwapStyle: 'innerHTML',   // Default swap style
     defaultSettleDelay: 20,          // Small delay for smooth transitions
+    defaultSwapDelay: 2000,          // Extended delay for testing animation smoothness
     includeIndicatorStyles: false,   // We use our own indicators
     globalViewTransitions: true,     // Enable view transitions API
     allowScriptTags: false,          // Security: don't allow script tags
@@ -51,6 +59,35 @@ const HTMX_CONFIG = {
     progressiveLoadDistance: 200  // Pixels from bottom to trigger load
 };
 
+// Loading states extension configuration
+const LOADING_STATES_CONFIG = {
+    class: 'is-loading',
+    indicatorClass: 'loading-indicator',
+    requestClass: 'loading-request',
+    addedClass: 'loading-added',
+    removedClass: 'loading-removed',
+    additiveClass: 'loading-additive',
+    onEvent: function(name, evt) {
+        let elt = evt.detail.elt;
+        let loadingClass = elt.getAttribute('data-loading-class') || this.class;
+        
+        if (name === 'htmx:beforeRequest' && loadingClass) {
+            elt.classList.add(loadingClass);
+        }
+        
+        if ((name === 'htmx:afterRequest' || name === 'htmx:timeout') && loadingClass) {
+            elt.classList.remove(loadingClass);
+        }
+    }
+};
+
+// Class tools extension configuration
+const CLASS_TOOLS_CONFIG = {
+    addedClass: 'class-added',
+    removedClass: 'class-removed',
+    additiveClass: 'class-additive'
+};
+
 /**
  * Initialize HTMX configuration and extensions
  */
@@ -61,92 +98,28 @@ export function initializeHtmx() {
     }
 
     // Configure HTMX
-    window.htmx.config = HTMX_CONFIG;
+    window.htmx.config = {
+        ...HTMX_CONFIG,
+        defaultSwapStyle: 'innerHTML',
+        withCredentials: true,
+        timeout: 30000,
+        wsReconnectDelay: 'full-jitter',
+        defaultSwapDelay: HTMX_CONFIG.defaultSwapDelay // Ensure swap delay is applied
+    };
 
-    // Add custom attributes
-    window.htmx.defineAttribute('loading-class', {
-        onEvent: function(name, evt) {
-            const elt = evt.detail.elt;
-            if (name === 'htmx:beforeRequest') {
-                elt.classList.add(HTMX_CONFIG.loadingClass);
-            } else if (name === 'htmx:afterRequest') {
-                elt.classList.remove(HTMX_CONFIG.loadingClass);
-            }
-        }
-    });
+    // Initialize extensions
+    window.htmx.defineExtension('loading-states', LOADING_STATES_CONFIG);
+    window.htmx.defineExtension('class-tools', CLASS_TOOLS_CONFIG);
 
-    // Add progressive loading support
-    setupProgressiveLoading();
-
-    // Add loading state handlers
-    setupLoadingHandlers();
-
-    // Initialize loading states extension
-    window.htmx.defineExtension('loading-states', {
-        onEvent: function(name, evt) {
-            const target = evt.detail.elt;
-            const loadingClass = target.getAttribute('data-loading-class') || 'loading';
-            
-            if (name === "htmx:beforeRequest") {
-                target.classList.add(loadingClass);
-                
-                // Handle loading text if specified
-                const loadingText = target.getAttribute('data-loading-text');
-                if (loadingText) {
-                    target.dataset.originalText = target.innerText;
-                    target.innerText = loadingText;
-                }
-            }
-            
-            if (name === "htmx:afterRequest") {
-                target.classList.remove(loadingClass);
-                
-                // Restore original text
-                if (target.dataset.originalText) {
-                    target.innerText = target.dataset.originalText;
-                    delete target.dataset.originalText;
-                }
-            }
-        }
-    });
-
-    // Initialize focus management extension
-    window.htmx.defineExtension('focus-management', {
-        onEvent: function(name, evt) {
-            if (name === "htmx:afterSettle") {
-                // Find and focus the first focusable element
-                const focusable = evt.detail.target.querySelector(
-                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                );
-                if (focusable) {
-                    focusable.focus();
-                }
-            }
-        }
-    });
-
-    // Add security headers to all requests
-    window.htmx.on('htmx:configRequest', (evt) => {
-        evt.detail.headers = evt.detail.headers || {};
-        evt.detail.headers['X-Requested-With'] = 'XMLHttpRequest';
-        
-        // Add CSRF token if available
-        const csrfToken = document.querySelector('meta[name="csrf-token"]');
-        if (csrfToken) {
-            evt.detail.headers['X-CSRF-Token'] = csrfToken.content;
-        }
-    });
-
-    // Initialize all HTMX event handlers
+    // Initialize event handlers
     initializeHtmxEvents();
+    initializeDownloadHandlers(window.htmx);
 
     // Initialize components
     initializeComponents();
 
-    // Enable debug logging in development
-    if (process.env.NODE_ENV === 'development') {
-        window.htmx.logAll();
-    }
+    // Set up progressive loading
+    setupProgressiveLoading();
 }
 
 /**
@@ -159,7 +132,7 @@ function initializeComponents() {
         const config = COMPONENT_CONFIG[componentType];
         
         if (!config) {
-            console.warn(`No configuration found for component type: ${componentType}`);
+            showNotification(`Component type "${componentType}" not configured`, 'warning');
             return;
         }
 
@@ -200,25 +173,18 @@ export function configureComponent(element, componentType) {
  * Set up progressive loading functionality
  */
 function setupProgressiveLoading() {
-    // Check if more content should be loaded
     function shouldLoadMore(trigger) {
-        if (!trigger) return false;
-
+        if (!trigger || !trigger.hasAttribute('data-progressive-load')) return false;
         const rect = trigger.getBoundingClientRect();
         const bottomPosition = rect.bottom;
         const windowHeight = window.innerHeight;
-
         return bottomPosition - windowHeight <= HTMX_CONFIG.progressiveLoadDistance;
     }
 
-    // Handle progressive loading check
     window.htmx.on('htmx:afterSettle', function(evt) {
         const trigger = evt.detail.target;
-        
-        // Check if this is a progressive load target
-        if (!trigger || !trigger.hasAttribute('hx-trigger')) return;
+        if (!trigger || !trigger.hasAttribute('data-progressive-load')) return;
 
-        // Delay check to avoid rapid requests
         setTimeout(() => {
             if (shouldLoadMore(trigger)) {
                 window.htmx.trigger(trigger, 'revealed');
@@ -226,44 +192,14 @@ function setupProgressiveLoading() {
         }, HTMX_CONFIG.progressiveLoadDelay);
     });
 
-    // Add scroll handler for progressive loading
     window.addEventListener('scroll', function() {
-        const triggers = document.querySelectorAll('[hx-trigger="revealed"]');
+        const triggers = document.querySelectorAll('[data-progressive-load][hx-trigger*="revealed"]');
         triggers.forEach(trigger => {
             if (shouldLoadMore(trigger)) {
                 window.htmx.trigger(trigger, 'revealed');
             }
         });
     }, { passive: true });
-}
-
-/**
- * Set up loading state handlers
- */
-function setupLoadingHandlers() {
-    // Show loading state
-    window.htmx.on('htmx:beforeRequest', function(evt) {
-        const target = evt.detail.target;
-        showLoading(target);
-    });
-
-    // Hide loading state
-    window.htmx.on('htmx:afterRequest', function(evt) {
-        const target = evt.detail.target;
-        hideLoading(target);
-    });
-
-    // Handle errors
-    window.htmx.on('htmx:responseError', function(evt) {
-        const target = evt.detail.target;
-        hideLoading(target);
-    });
-
-    // Handle timeouts
-    window.htmx.on('htmx:timeout', function(evt) {
-        const target = evt.detail.target;
-        hideLoading(target);
-    });
 }
 
 export default {
