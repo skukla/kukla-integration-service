@@ -4,13 +4,7 @@
  */
 
 const fetch = require('node-fetch');
-const { getHeaders } = require('../../../../shared/http/headers');
-const { getClient } = require('../../../../shared/http/client');
-const { errorResponse } = require('../../../../shared/http/response');
-const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints');
-const { request } = require('../../../../shared/http/client');
-const { headers } = require('../../../../shared/http/headers');
-const { response } = require('../../../../shared/http/response');
+const { request, headers, response, buildFullUrl, buildCommerceUrl } = require('../../../../core/http');
 
 /**
  * Fetch all products from the Adobe Commerce REST API with pagination.
@@ -26,12 +20,12 @@ async function fetchAllProducts(token, params) {
   const pageSize = 200;
   let allProducts = [];
   let totalCount = 0;
-  const restEndpoint = endpoints.products(params.COMMERCE_URL);
+  const restEndpoint = buildCommerceUrl(params.COMMERCE_URL, '/V1/products');
 
   do {
     const url = `${restEndpoint}?searchCriteria[currentPage]=${currentPage}&searchCriteria[pageSize]=${pageSize}`;
     const res = await fetch(url, {
-      headers: getHeaders(token)
+      headers: headers.commerce(token)
     });
     if (!res.ok) {
       throw new Error(`Failed to fetch products: ${res.status} ${await res.text()}`);
@@ -55,9 +49,9 @@ async function fetchAllProducts(token, params) {
  * @returns {Promise<number|undefined>} The quantity or undefined if not found
  */
 async function fetchProductQty(sku, token, params) {
-  const url = endpoints.stockItem(params.COMMERCE_URL, sku);
+  const url = buildCommerceUrl(params.COMMERCE_URL, `/V1/stockItems/${sku}`);
   const res = await fetch(url, {
-    headers: getHeaders(token)
+    headers: headers.commerce(token)
   });
   if (!res.ok) {
     return undefined;
@@ -72,7 +66,7 @@ async function fetchProductQty(sku, token, params) {
  * @returns {Promise<Object>} Products data
  */
 async function getProducts(params) {
-  const url = buildUrl(params.baseUrl, endpoints.products.list);
+  const url = buildCommerceUrl(params.baseUrl, '/V1/products');
   
   try {
     const response = await request(url, {

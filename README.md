@@ -2,16 +2,30 @@
 
 ## Overview
 
-Kukla Integration Service is an Adobe App Builder application designed to integrate with Adobe Commerce (Magento) and provide product data and related functionality via secure, scalable APIs. The project leverages Adobe App Builder's serverless actions and File Store to deliver a robust backend for commerce and integration scenarios.
+A streamlined Adobe App Builder application that integrates with Adobe Commerce to provide product data management and file operations through a simple, maintainable architecture.
 
-## Quick Start
+## Quick Links
+
+📚 [Architecture Guide](docs/architecture.md) - System design and components  
+🛠️ [Development Guide](docs/development.md) - Setup and workflow  
+🔒 [Security Guide](docs/security.md) - Security practices  
+❓ [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+
+## Key Features
+
+- **Product Management** - Export and manage Adobe Commerce product data
+- **File Operations** - Secure file storage and handling
+- **Simple Architecture** - Clear separation of concerns with focused components
+- **HTMX Integration** - Dynamic UI updates without complex JavaScript
+- **Performance Optimized** - Caching, compression, and efficient resource usage
+
+## Getting Started
 
 1. **Prerequisites**
    - Node.js 18+
-   - Adobe Developer Console Access
-   - Adobe Commerce Instance
-   - Adobe I/O CLI (`npm install -g @adobe/aio-cli`)
-   - App Builder CLI Plugin (`aio plugins:install @adobe/aio-cli-plugin-app`)
+   - Adobe Developer Console access
+   - Adobe Commerce instance
+   - Adobe I/O CLI
 
 2. **Installation**
    ```bash
@@ -23,66 +37,51 @@ Kukla Integration Service is an Adobe App Builder application designed to integr
 3. **Configuration**
    ```bash
    cp .env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your settings
    ```
 
 4. **Development**
    ```bash
-   npm run dev           # Start development server
-   npm run build        # Build the application
-   npm run deploy:full  # Build and deploy everything
-   npm run deploy:web   # Deploy web assets only
-   npm run deploy:actions # Deploy actions only
-   npm run test         # Run tests
+   npm run dev      # Start development
+   npm run build    # Build the app
+   npm run deploy   # Deploy to App Builder
    ```
-
-## Key Features
-
-- **Product Data Export** - Fetch, enrich, and export product data as CSV
-- **File Store Integration** - Secure file storage and management
-- **Secure Credential Management** - Environment-based configuration
-
-## Documentation
-
-- [Architecture Guide](docs/architecture.md) - Application structure and design
-- [Development Guide](docs/development.md) - Setup, workflow, and best practices
-- [API Reference](docs/api-reference.md) - API endpoints and usage
-- [Design System](docs/design-system.md) - UI components and styling
-- [Deployment Guide](docs/deployment.md) - Deployment process and environments
-- [Security Guide](docs/security.md) - Security practices and considerations
-- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
 
 ## Project Structure
 
 ```
-/
-├── actions/              # Server-side code
-│   ├── frontend/        # UI-supporting actions
-│   │   └── browse-files/  # File browsing interface
-│   ├── backend/         # Business logic actions
-│   │   ├── get-products/  # Product export functionality
-│   │   └── download-file/ # File download handling
-│   └── shared/          # Common utilities
-│       ├── http/         # HTTP utilities
-│       ├── file/         # File operations
-│       ├── validation/   # Input validation
-│       └── commerce/     # Commerce utilities
-├── web-src/             # Client-side application
-│   ├── index.html       # Main HTML template
-│   └── src/             # Frontend source code
-├── docs/                # Documentation
-└── test/                # Test files
+kukla-integration-service/
+├── actions/              # Backend actions
+│   ├── core/            # Core utilities
+│   ├── commerce/        # Commerce integration
+│   ├── htmx/           # HTMX utilities
+│   ├── frontend/       # Frontend handlers
+│   └── backend/        # Backend handlers
+└── web-src/            # Frontend source
+    └── src/
+        └── js/
+            ├── core/   # Core utilities
+            ├── htmx/   # HTMX setup
+            └── browser/ # UI components
 ```
 
-For detailed documentation about each directory, see the [Architecture Guide](docs/architecture.md).
+## Documentation
 
-## Contributing
+Our documentation is organized into focused guides:
 
-See our [Contributing Guide](docs/contributing.md) for details about development workflow and submitting pull requests.
+- **Core Guides**
+  - [Architecture](docs/architecture.md) - System design and patterns
+  - [Development](docs/development.md) - Development workflow
+  - [Security](docs/security.md) - Security practices
+  - [Deployment](docs/deployment.md) - Deployment process
+
+- **Technical Guides**
+  - [API Reference](docs/api-reference.md) - API endpoints
+  - [Error Handling](docs/error-handling.md) - Error patterns
+  - [File Operations](docs/file-operations.md) - File handling
+  - [Performance](docs/performance.md) - Optimization guide
 
 ## Support
 
-For issues and feature requests:
-- Submit [GitHub Issues](https://github.com/your-repo/issues)
-- Contact the project maintainers
+- Submit issues via [GitHub Issues](https://github.com/your-repo/issues)
 - Check [Adobe App Builder Documentation](https://developer.adobe.com/app-builder/)

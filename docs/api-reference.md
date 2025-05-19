@@ -1,191 +1,179 @@
 # API Reference
 
-[← Back to README](../README.md) | Documentation: API Reference
-
----
+[← Back to README](../README.md)
 
 ## Overview
 
-This document provides detailed information about all available API endpoints in the Adobe Commerce Integration Service.
+This guide documents the API endpoints and integration patterns. For implementation details, see:
+- [Development Guide](development.md)
+- [Error Handling](error-handling.md)
+- [Performance Guide](performance.md)
 
-## Backend Actions
+## Core APIs
 
-### Product Export API
+### Product Management
 
-#### `GET /api/get-products`
-Retrieves products from Adobe Commerce.
+#### `GET /api/products`
+Retrieves product data from Adobe Commerce.
 
 **Parameters:**
-- `page` (optional): Page number for pagination
-- `limit` (optional): Number of items per page
-- `filters` (optional): Product filtering criteria
-
-**Response:**
-```json
+```javascript
 {
-  "success": true,
-  "data": {
-    "items": [...],
-    "total_count": 100,
-    "page_info": {
-      "current_page": 1,
-      "page_size": 20,
-      "total_pages": 5
-    }
+  page: number,      // Page number (default: 1)
+  limit: number,     // Items per page (default: 20)
+  filters: {         // Optional filters
+    sku: string,
+    status: string
   }
 }
 ```
 
-#### `POST /api/download-file`
-Initiates file download process.
-
-**Request Body:**
-```json
+**Response:**
+```javascript
 {
-  "file_id": "string",
-  "format": "csv|json"
+  success: true,
+  data: {
+    items: Product[],
+    total: number,
+    page: number
+  }
+}
+```
+
+**Error Handling:**
+See [Error Types](error-handling.md#error-types) for details.
+
+#### `POST /api/products/export`
+Exports products to a file.
+
+**Request:**
+```javascript
+{
+  format: 'csv' | 'json',
+  filters: {
+    sku: string,
+    status: string
+  }
 }
 ```
 
 **Response:**
-```json
+```javascript
 {
-  "success": true,
-  "download_url": "string",
-  "expires_at": "ISO8601 timestamp"
+  success: true,
+  data: {
+    fileId: string,
+    downloadUrl: string,
+    expiresAt: string
+  }
 }
 ```
 
-## Frontend Actions
+### File Operations
 
-### File Management API
-
-#### `GET /api/browse-files`
+#### `GET /api/files`
 Lists available files.
 
 **Parameters:**
-- `type` (optional): Filter by file type
-- `sort` (optional): Sort criteria
-
-**Response:** HTML fragment for HTMX integration
-
-#### `POST /api/delete-file`
-Deletes specified file.
-
-**Request Body:**
-```json
+```javascript
 {
-  "file_id": "string"
+  type: string,      // File type filter
+  sort: string       // Sort criteria
 }
 ```
 
-**Response:** HTML fragment confirming deletion
-
-## Shared Utilities
-
-### Authentication
-
-All API endpoints require authentication via Adobe App Builder. Include the following headers:
-
-```
-Authorization: Bearer <jwt_token>
-x-gw-ims-org-id: <org_id>
-```
-
-### Error Responses
-
-Standard error format:
-```json
+**Response:**
+```javascript
 {
-  "success": false,
-  "error": {
-    "code": "string",
-    "message": "string",
-    "details": {}
+  success: true,
+  data: {
+    files: File[],
+    total: number
   }
 }
 ```
 
-Common error codes:
-- `AUTH_ERROR`: Authentication failed
-- `INVALID_REQUEST`: Invalid parameters
-- `NOT_FOUND`: Resource not found
-- `RATE_LIMITED`: Too many requests
-- `SERVER_ERROR`: Internal server error
+#### `POST /api/files/upload`
+Uploads a new file.
 
-### Rate Limiting
+**Request:**
+```javascript
+// multipart/form-data
+{
+  file: File,
+  type: string,
+  metadata: object
+}
+```
 
-- Default: 100 requests per minute
-- Bulk operations: 10 requests per minute
-- Headers:
-  - `X-RateLimit-Limit`
-  - `X-RateLimit-Remaining`
-  - `X-RateLimit-Reset`
+**Response:**
+```javascript
+{
+  success: true,
+  data: {
+    fileId: string,
+    url: string
+  }
+}
+```
 
 ## HTMX Integration
 
-### Response Types
+### Response Format
 
-Frontend actions return HTML fragments with specific HTMX attributes:
-
+All HTMX responses follow this pattern:
 ```html
-<div hx-swap-oob="true" id="file-list">
-  <!-- Updated content -->
+<div id="target-id" 
+     data-context="operation-context">
+  <!-- Response content -->
 </div>
 ```
 
-### Event Triggers
+### Response Headers
 
-Common HTMX events used:
-- `htmx:beforeRequest`
-- `htmx:afterRequest`
-- `htmx:responseError`
+```javascript
+{
+  'HX-Trigger': string,     // Client event to trigger
+  'HX-Redirect': string,    // Redirect URL
+  'HX-Refresh': boolean,    // Page refresh flag
+  'HX-Retarget': string     // New target selector
+}
+```
 
-## Adobe Commerce Integration
+For header usage, see [HTMX Guide](htmx.md#response-headers).
 
-### Authentication Flow
+### Error Responses
 
-1. OAuth2 token acquisition
-2. Commerce API integration
-3. Token refresh handling
+Error responses include:
+```html
+<div class="error-container"
+     data-error-type="validation">
+  <div class="error-message">
+    <!-- Error details -->
+  </div>
+  <div class="error-action">
+    <!-- Action buttons -->
+  </div>
+</div>
+```
 
-### Data Synchronization
+For error patterns, see [Error Handling](error-handling.md#error-patterns).
 
-- Real-time updates
-- Batch processing
-- Error handling and retries
+## Security
 
-## Development Guidelines
+All endpoints require:
+- Adobe App Builder authentication
+- Valid API tokens
+- CSRF protection
 
-### Testing Endpoints
+For security details, see [Security Guide](security.md).
 
-1. Use provided Postman collection
-2. Test with mock data
-3. Validate responses
-4. Check error scenarios
+## Performance
 
-### Security Considerations
-
-- Input validation
-- Output sanitization
+APIs implement:
+- Response caching
+- Compression
 - Rate limiting
-- Authentication checks
+- Timeout handling
 
-## Monitoring and Logging
-
-### Request Logging
-
-All API requests are logged with:
-- Timestamp
-- Endpoint
-- Request parameters
-- Response status
-- Execution time
-
-### Error Tracking
-
-Errors are logged with:
-- Stack traces
-- Context data
-- User information
-- System state 
+For optimization details, see [Performance Guide](performance.md). 

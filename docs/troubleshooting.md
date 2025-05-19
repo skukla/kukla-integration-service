@@ -258,3 +258,150 @@ aio runtime action get <action-name>
 - Security Team
 - Development Team
 - Operations Team
+
+## App Builder Deployment
+
+### Viewing Action Logs
+To debug issues in deployed actions:
+
+```bash
+# View all activations
+aio runtime activation list
+
+# Get detailed logs for a specific activation
+aio runtime activation get <activation_id>
+
+# Watch logs in real-time
+aio runtime activation poll
+```
+
+### Common Deployment Issues
+
+#### 1. Action Timeout
+**Symptoms:**
+- Request times out
+- Action terminates unexpectedly
+- "Activation timeout" error
+
+**Solutions:**
+1. Check action timeout limit in `app.config.yaml`
+2. Review long-running operations
+3. Consider breaking into smaller actions
+4. Add timeout handling in code
+
+#### 2. Memory Issues
+**Symptoms:**
+- "Memory limit exceeded" error
+- Action fails under load
+- Inconsistent behavior
+
+**Solutions:**
+1. Monitor memory usage with:
+   ```javascript
+   const used = process.memoryUsage();
+   console.log('Memory:', {
+     heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)} MB`,
+     heapTotal: `${Math.round(used.heapTotal / 1024 / 1024)} MB`
+   });
+   ```
+2. Review data processing patterns
+3. Implement pagination
+4. Clean up resources properly
+
+#### 3. Commerce Integration Issues
+**Symptoms:**
+- Commerce API errors
+- Authentication failures
+- Rate limiting errors
+
+**Solutions:**
+1. Check credentials in App Builder settings
+2. Verify Commerce instance status
+3. Review rate limits and implement backoff
+4. Use error context for debugging:
+   ```javascript
+   if (error.context?.response) {
+     console.error('Commerce API Error:', {
+       status: error.context.status,
+       message: error.context.response.message,
+       trace: error.context.response.trace
+     });
+   }
+   ```
+
+### Debugging Best Practices
+
+1. **Structured Logging**
+   ```javascript
+   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
+   logger.info('Starting operation', { params });
+   try {
+     // Operation
+   } catch (error) {
+     logger.error('Operation failed', { error, context });
+   }
+   ```
+
+2. **Error Context**
+   - Always include relevant context in errors
+   - Add request/response details
+   - Include operation parameters
+   - Add timestamps for timing issues
+
+3. **Health Checks**
+   - Implement status endpoints
+   - Monitor Commerce connectivity
+   - Check resource availability
+   - Validate configurations
+
+4. **Deployment Verification**
+   ```bash
+   # Verify action deployment
+   aio runtime action get kukla-integration-service/get-products
+
+   # Test action with parameters
+   aio runtime action invoke kukla-integration-service/get-products -p key value
+
+   # Check action logs
+   aio runtime activation logs
+   ```
+
+### Monitoring and Alerts
+
+1. **Action Performance**
+   - Monitor activation duration
+   - Track memory usage
+   - Watch error rates
+   - Check response times
+
+2. **Commerce Integration**
+   - Monitor API response times
+   - Track rate limit usage
+   - Watch for auth failures
+   - Check data sync status
+
+3. **Resource Usage**
+   - Monitor action concurrency
+   - Track storage usage
+   - Watch memory consumption
+   - Check network usage
+
+### Recovery Procedures
+
+1. **Action Failures**
+   - Review error logs
+   - Check configuration
+   - Verify dependencies
+   - Test with minimal params
+
+2. **Commerce Issues**
+   - Verify credentials
+   - Check API access
+   - Test connectivity
+   - Review rate limits
+
+3. **Data Sync Problems**
+   - Check consistency
+   - Verify mappings
+   - Test transformations
+   - Review error logs
