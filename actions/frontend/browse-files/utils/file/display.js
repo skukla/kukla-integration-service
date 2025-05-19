@@ -3,8 +3,9 @@
  * @module utils/frontend/file/display
  */
 
-const { formatFileSize } = require('../../shared/file/size');
-const { removePublicPrefix, formatFileDate } = require('../../shared/file/format');
+require('../../../setup-aliases');
+const { formatFileSize } = require('@shared/file/size');
+const { removePublicPrefix, formatFileDate } = require('@shared/file/format');
 
 /**
  * Gets formatted file details for display in the UI

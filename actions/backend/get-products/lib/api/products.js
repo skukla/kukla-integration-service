@@ -3,10 +3,12 @@
  * @module api/products
  */
 
+require('../../../setup-aliases');
 const fetch = require('node-fetch');
-const { buildHeaders } = require('../../../../utils/shared/http/headers');
-const { errorResponse } = require('../../../../utils/shared/http/response');
-const endpoints = require('../commerce-endpoints');
+const { getHeaders } = require('@shared/http/headers');
+const { getClient } = require('@shared/http/client');
+const { errorResponse } = require('@shared/http/response');
+const endpoints = require('@shared/commerce/endpoints');
 
 /**
  * Fetch all products from the Adobe Commerce REST API with pagination.
@@ -27,7 +29,7 @@ async function fetchAllProducts(token, params) {
   do {
     const url = `${restEndpoint}?searchCriteria[currentPage]=${currentPage}&searchCriteria[pageSize]=${pageSize}`;
     const res = await fetch(url, {
-      headers: buildHeaders(token)
+      headers: getHeaders(token)
     });
     if (!res.ok) {
       throw new Error(`Failed to fetch products: ${res.status} ${await res.text()}`);
@@ -53,7 +55,7 @@ async function fetchAllProducts(token, params) {
 async function fetchProductQty(sku, token, params) {
   const url = endpoints.stockItem(params.COMMERCE_URL, sku);
   const res = await fetch(url, {
-    headers: buildHeaders(token)
+    headers: getHeaders(token)
   });
   if (!res.ok) {
     return undefined;

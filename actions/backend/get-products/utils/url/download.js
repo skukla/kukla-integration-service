@@ -1,6 +1,6 @@
 /**
- * Utility functions for the get-products action
- * @module utils
+ * URL utilities for the get-products action
+ * @module utils/url/download
  */
 
 /**

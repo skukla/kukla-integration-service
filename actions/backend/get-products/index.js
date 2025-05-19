@@ -3,10 +3,11 @@
  * @module get-products
  */
 
+require('../../setup-aliases');
 const dotenv = require('dotenv');
 const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
-const { errorResponse, successResponse } = require('../../utils/shared/http/response');
+const { errorResponse, successResponse } = require('@shared/http/response');
 const validateInput = require('./steps/validateInput');
 const fetchAndEnrichProducts = require('./steps/fetchAndEnrichProducts');
 const buildProducts = require('./steps/buildProducts');

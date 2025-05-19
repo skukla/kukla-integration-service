@@ -3,10 +3,12 @@
  * @module api/categories
  */
 
+require('../../../setup-aliases');
 const fetch = require('node-fetch');
-const { buildHeaders } = require('../../../../utils/shared/http/headers');
-const { errorResponse } = require('../../../../utils/shared/http/response');
-const endpoints = require('../commerce-endpoints');
+const { getHeaders } = require('@shared/http/headers');
+const { getClient } = require('@shared/http/client');
+const { errorResponse } = require('@shared/http/response');
+const endpoints = require('@shared/commerce/endpoints');
 
 /**
  * Fetch category details for a given category ID from the REST API.
@@ -21,7 +23,7 @@ async function fetchCategory(categoryId, token, params) {
   const url = endpoints.category(params.COMMERCE_URL, categoryId);
   
   const res = await fetch(url, {
-    headers: buildHeaders(token)
+    headers: getHeaders(token)
   });
   
   if (!res.ok) {
