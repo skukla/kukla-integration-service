@@ -1,198 +1,142 @@
 # Development Guide
 
-[← Back to README](../README.md) | Documentation: Development
-
----
-
-## Overview
-
-This guide covers the development workflow and best practices for the Kukla Integration Service.
+[← Back to README](../README.md)
 
 ## Setup
 
-1. **Environment Setup**
-   ```bash
-   # Copy environment template
-   cp .env.example .env
-
-   # Configure variables
-   COMMERCE_URL=<your-commerce-instance-url>
-   COMMERCE_ADMIN_USERNAME=<your-commerce-admin-username>
-   COMMERCE_ADMIN_PASSWORD=<your-commerce-admin-password>
-   ```
-
-2. **Adobe Developer Console Setup**
-   - Create a new project
-   - Enable App Builder
-   - Download configuration
-   - Run `aio app use <config-file>`
-
-3. **Development Dependencies**
-   ```bash
-   npm install
-   ```
-
-## Available Scripts
-
+### 1. Environment
 ```bash
-# Development
-npm run dev          # Start development server
-npm run test        # Run tests
+# Copy environment template
+cp .env.example .env
 
-# Build and Deploy
-npm run build       # Build with Vite
-npm run clean       # Clean dist directory
-npm run deploy      # Deploy everything
-npm run deploy:web  # Deploy web assets only
-npm run deploy:actions # Deploy actions only
+# Required variables:
+COMMERCE_URL=<commerce-url>
+COMMERCE_ADMIN_USERNAME=<username>
+COMMERCE_ADMIN_PASSWORD=<password>
 ```
 
-## Module Organization
+### 2. Adobe Developer Console
+1. Create new project
+2. Enable App Builder
+3. Download configuration
+4. Run `aio app use <config>`
 
-The project uses standard Node.js module resolution with relative paths for clear and maintainable imports.
-
-### Best Practices
-
-1. **Use Clear Relative Paths**
-   ```javascript
-   // Instead of complex paths like:
-   const { headers } = require('../../../../shared/http/headers');
-
-   // Break it down into steps:
-   const { headers } = require('../../shared/http/headers');
-   const { validateInput } = require('./steps/validateInput');
-   ```
-
-2. **Import Organization**
-   ```javascript
-   // External packages first
-   const { Core } = require('@adobe/aio-sdk');
-   
-   // Shared utilities next
-   const { response } = require('../../shared/http/response');
-   
-   // Local imports last
-   const { validateInput } = require('./steps/validateInput');
-   ```
-
-3. **Path Structure**
-   - Use `./` for files in the same directory
-   - Use `../` to move up one directory
-   - Keep paths as shallow as possible
-   - Consider refactoring if paths become too deep
-
-4. **Refactoring Tips**
-   - Move commonly used code to shared utilities
-   - Keep related files close together
-   - Use clear directory names
-   - Document complex paths
-
-### Example Usage
-
-```javascript
-// HTTP utilities from shared
-const { request } = require('../../shared/http/client');
-const { headers } = require('../../shared/http/headers');
-const { response } = require('../../shared/http/response');
-
-// Local utilities
-const { validateInput } = require('./steps/validateInput');
-const { buildProducts } = require('./steps/buildProducts');
-```
-
-### Client-Side Structure
-
-The frontend uses Vite for building and serving:
-
-```html
-<!-- HTML Components -->
-<div hx-get="/api/files" hx-trigger="load">
-  <!-- Content will be replaced by server response -->
-</div>
-
-<!-- Styles -->
-<link href="./styles/main.css" rel="stylesheet">
-
-<!-- JavaScript -->
-<script src="./js/utils.js"></script>
+### 3. Dependencies
+```bash
+npm install
 ```
 
 ## Development Workflow
 
-1. **Feature Development**
-   - Create feature branch
-   - Implement server-side actions
-   - Create HTML templates
-   - Add HTMX attributes
-   - Test interactions
-   - Submit PR
+### 1. Local Development
+```bash
+npm run dev          # Start development server
+npm run build       # Build the application
+npm run deploy      # Deploy to App Builder
+```
 
-2. **Testing**
-   - Unit tests in `test/`
-   - Run `npm test` before commits
-   - Test HTMX interactions manually
+### 2. Code Organization
 
-3. **Code Style**
-   - Follow ESLint config
-   - Keep imports organized
-   - Use consistent path patterns
-   - Keep HTML templates clean
+```
+actions/
+├── core/           # Shared utilities
+├── commerce/       # Commerce integration
+├── htmx/          # HTMX responses
+├── frontend/       # UI handlers
+└── backend/        # Data processing
 
-4. **Documentation**
-   - Update relevant docs
-   - Document complex paths
-   - Update README if needed
+web-src/
+└── src/
+    └── js/
+        ├── core/  # Frontend utilities
+        ├── htmx/  # HTMX setup
+        └── browser/ # UI components
+```
+
+### 3. Implementation Patterns
+
+#### Backend Actions
+```javascript
+// Example action structure
+const { response } = require('../../core/http');
+const { validateInput } = require('../../core/validation');
+
+async function main(params) {
+  // 1. Validate input
+  const input = validateInput(params);
+  
+  // 2. Process request
+  const result = await processRequest(input);
+  
+  // 3. Return response
+  return response.success(result);
+}
+```
+
+#### Frontend Components
+```html
+<!-- Example HTMX component -->
+<div hx-get="/api/data"
+     hx-trigger="load"
+     hx-target="#content">
+  <div id="content">
+    <!-- Dynamic content -->
+  </div>
+</div>
+```
+
+### 4. Error Handling
+
+```javascript
+try {
+  const result = await someOperation();
+  return response.success(result);
+} catch (error) {
+  return response.error(error);
+}
+```
+
+## Deployment
+
+### 1. Build and Deploy
+```bash
+# Full deployment
+npm run deploy
+
+# Frontend only
+npm run deploy:web
+
+# Actions only
+npm run deploy:actions
+```
+
+### 2. Verify Deployment
+1. Check App Builder console
+2. Verify endpoints
+3. Test functionality
+4. Monitor logs
 
 ## Best Practices
 
-1. **HTMX Patterns**
-   - Use semantic HTML
-   - Keep JavaScript minimal
-   - Leverage HTMX attributes
-   - Return focused HTML fragments
-   - Use progressive enhancement
+### 1. Code Style
+- Follow ESLint config
+- Use consistent patterns
+- Keep functions focused
+- Document complex logic
 
-2. **Server-Side Actions**
-   - Keep actions focused
-   - Use shared utilities
-   - Handle errors gracefully
-   - Return appropriate responses
+### 2. Error Handling
+- Use core error utilities
+- Include context
+- Log appropriately
+- Handle edge cases
 
-3. **Error Handling**
-   - Return error HTML fragments
-   - Use HTMX error triggers
-   - Log errors appropriately
-   - Provide user feedback
+### 3. Performance
+- Use caching appropriately
+- Optimize responses
+- Monitor metrics
+- Handle timeouts
 
-4. **Performance**
-   - Keep dependencies minimal
-   - Use appropriate caching
-   - Optimize HTML responses
-   - Monitor action performance
-
-## Debugging
-
-1. **Local Development**
-   ```bash
-   aio app run
-   ```
-
-2. **HTMX Debugging**
-   - Use `htmx.logAll()` in console
-   - Check network tab for requests
-   - Inspect HTML responses
-   - Use HTMX debug attributes
-
-3. **Server-Side Logs**
-   - Check Adobe I/O Runtime logs
-   - Use `Core.Logger` for actions
-   - Monitor HTML response codes
-
-4. **Common Issues**
-   See [Troubleshooting Guide](troubleshooting.md)
-
-## Additional Resources
-
-- [Adobe App Builder Docs](https://developer.adobe.com/app-builder/)
-- [HTMX Documentation](https://htmx.org/)
-- [HTML Best Practices](https://www.w3.org/TR/html-best-practices/) 
+For detailed guides, see:
+- [Architecture](architecture.md)
+- [API Reference](api-reference.md)
+- [Error Handling](error-handling.md) 
