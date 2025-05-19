@@ -1,82 +1,28 @@
 /* Main JavaScript Entry Point */
 
 // Import utilities
-import { showNotification } from './utils/notifications.js';
-import { initializeDelayedLoader } from './utils/content-loader.js';
-import { getActionUrl } from './utils/url-utils.js';
+import { showNotification } from './core/notifications.js';
+import { getActionUrl } from './core/urls.js';
+import { handleDeleteResult } from './core/notifications.js';
+import { initializeModal } from './core/modal.js';
+import { initializeFileBrowser } from './browser/file-browser.js';
+import { initializeHtmx } from './htmx/config.js';
 
-// Modal handling
-const modalBackdrop = document.getElementById('modal-backdrop');
-const modalContainer = document.getElementById('modal-container');
+// Make utilities available globally
+window.showNotification = showNotification;
+window.handleDeleteResult = handleDeleteResult;
+window.getActionUrl = getActionUrl;
 
-function showModal() {
-    modalBackdrop.classList.add('active');
-    document.body.classList.add('modal-open');
-}
-
-function hideModal() {
-    modalBackdrop.classList.remove('active');
-    document.body.classList.remove('modal-open');
-    modalContainer.innerHTML = '';
-}
-
-// Make modal functions available globally
-window.hideModal = hideModal;
-window.showModal = showModal;
-
-// Initialize event listeners
+// Initialize application
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize content loader with delay
-    initializeDelayedLoader('content-loader', {
-        url: getActionUrl('browseFiles'),
-        target: '.table-content',
-        delay: 2000
-    });
-
-    // Modal event listeners
-    modalBackdrop.addEventListener('click', (e) => {
-        if (e.target === modalBackdrop) {
-            hideModal();
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modalBackdrop.classList.contains('active')) {
-            hideModal();
-        }
-    });
-
-    // HTMX event listeners for modal
-    document.body.addEventListener('htmx:afterSwap', (e) => {
-        if (e.detail.target.id === 'modal-container') {
-            showModal();
-        }
-    });
-
-    document.body.addEventListener('htmx:beforeSwap', (e) => {
-        if (e.detail.target.closest('.table-row')) {
-            hideModal();
-        }
-    });
-
-    // HTMX event logging and error handling
-    document.body.addEventListener('htmx:beforeRequest', e => {
-        // Request is starting
-    });
+    // Initialize HTMX first
+    initializeHtmx();
     
-    document.body.addEventListener('htmx:afterRequest', e => {
-        // Show success notification for delete operations
-        if (e.detail.successful && e.detail.requestConfig.method === 'DELETE') {
-            showNotification('File deleted successfully', 'success');
-        }
-    });
-
-    document.body.addEventListener('htmx:responseError', e => {
-        console.error('Request error:', e.detail);
-        showNotification('Failed to load content. Please try again.', 'error');
-    });
-
-    // Add network error handling
+    // Initialize other modules that depend on HTMX
+    initializeModal();
+    initializeFileBrowser();
+    
+    // Network error handling
     window.addEventListener('offline', () => {
         showNotification('You are offline. Some features may be unavailable.', 'warning');
     });

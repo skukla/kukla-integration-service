@@ -5,8 +5,9 @@
  */
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
-const { error: errorResponse } = require('../../shared/http/response');
-const { checkMissingRequestInputs } = require('../../shared/validation/input');
+const { response: { error: errorResponse } } = require('../../core/http');
+const { checkMissingRequestInputs } = require('../../core/validation');
+const { readFile, getFileProperties, FileOperationError, FileErrorType } = require('../../core/files');
 
 /**
  * Main function that handles file download requests
@@ -26,49 +27,66 @@ const { checkMissingRequestInputs } = require('../../shared/validation/input');
  * @throws {Error} If file operations fail
  */
 async function main(params) {
-  const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
+    const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
-  try {
-    // Validate required parameters
-    const missingInputs = checkMissingRequestInputs(params, ['fileName']);
-    if (missingInputs) {
-      return errorResponse(400, missingInputs);
+    try {
+        // Validate required parameters
+        const missingInputs = checkMissingRequestInputs(params, ['fileName']);
+        if (missingInputs) {
+            return errorResponse({
+                message: missingInputs
+            }, 400);
+        }
+
+        // Initialize Files SDK
+        logger.info('Initializing Files SDK');
+        const files = await FilesLib.init();
+
+        // Get file properties first to verify existence and get content type
+        logger.info(`Getting properties for file: ${params.fileName}`);
+        const fileProps = await getFileProperties(files, params.fileName);
+
+        // Read file content
+        logger.info(`Reading file: ${params.fileName}`);
+        const buffer = await readFile(files, params.fileName);
+
+        // Return file content with proper headers
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': fileProps.contentType,
+                'Content-Disposition': `attachment; filename="${fileProps.name}"`,
+                'Cache-Control': 'no-cache'
+            },
+            body: buffer.toString('base64')
+        };
+    } catch (error) {
+        logger.error('Error in download-file action:', error);
+
+        // Handle specific file operation errors
+        if (error instanceof FileOperationError) {
+            switch (error.type) {
+                case FileErrorType.NOT_FOUND:
+                    return errorResponse({
+                        message: `File not found: ${params.fileName}`
+                    }, 404);
+                case FileErrorType.INVALID_PATH:
+                    return errorResponse({
+                        message: error.message
+                    }, 400);
+                default:
+                    return errorResponse({
+                        message: `Failed to download file: ${error.message}`
+                    }, 500);
+            }
+        }
+
+        return errorResponse({
+            message: `Failed to download file: ${error.message}`
+        }, 500);
     }
-
-    // Initialize Files SDK
-    logger.info('Initializing Files SDK');
-    const files = await FilesLib.init();
-
-    // Read file
-    logger.info(`Reading file: ${params.fileName}`);
-    const buffer = await files.read(params.fileName);
-
-    // Get file properties
-    const props = await files.getProperties(params.fileName);
-    const contentType = props.contentType || 'application/octet-stream';
-    const fileName = params.fileName.split('/').pop();
-
-    // Return file content
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${fileName}"`
-      },
-      body: buffer.toString('base64')
-    };
-  } catch (error) {
-    logger.error('Error in download-file action:', error);
-    
-    // If file is not found, FilesLib will throw an error
-    if (error.message.includes('not found') || error.message.includes('does not exist')) {
-      return errorResponse(404, 'File not found');
-    }
-    
-    return errorResponse(500, `Failed to download file: ${error.message}`);
-  }
 }
 
 module.exports = {
-  main
+    main
 }; 

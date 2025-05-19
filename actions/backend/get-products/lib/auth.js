@@ -1,6 +1,5 @@
-const { request } = require('../../../../shared/http/client');
-const { headers } = require('../../../../shared/http/headers');
-const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints');
+const { request, headers, buildCommerceUrl } = require('../../../../core/http');
+const { validateAdminCredentials } = require('../../../../commerce/integration');
 
 /**
  * Get authentication token from Adobe Commerce
@@ -11,7 +10,7 @@ const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints')
  * @returns {Promise<string>} Authentication token
  */
 async function getAuthToken({ username, password, baseUrl }) {
-  const url = buildUrl(baseUrl, endpoints.auth.token);
+  const url = buildCommerceUrl(baseUrl, '/V1/integration/admin/token');
   const response = await request(url, {
     method: 'POST',
     headers: headers.json,

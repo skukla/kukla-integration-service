@@ -4,10 +4,43 @@
  */
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
-const { htmlResponse } = require('./utils/ui/htmx');
-const { errorResponse } = require('../../shared/http/response');
-const { getFileDisplayDetails } = require('./utils/file/display');
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
+const { 
+    listFiles, 
+    deleteFile, 
+    FileOperationError, 
+    FileErrorType 
+} = require('../../core/files');
+
+/**
+ * Creates a simple HTML response
+ * @param {string} html - HTML content
+ * @param {number} [status=200] - HTTP status code
+ * @returns {Object} Response object
+ */
+function createHtmlResponse(html, status = 200) {
+    return {
+        statusCode: status,
+        headers: {
+            'Content-Type': 'text/html'
+        },
+        body: html
+    };
+}
+
+/**
+ * Creates an error response
+ * @param {string} message - Error message
+ * @param {number} [status=500] - HTTP status code
+ * @returns {Object} Response object
+ */
+function createErrorResponse(message, status = 500) {
+    return createHtmlResponse(`
+        <div class="error-message" role="alert">
+            <p>${message}</p>
+        </div>
+    `, status);
+}
 
 /**
  * Handles GET requests for file browsing and modal operations
@@ -20,32 +53,44 @@ async function handleGetRequest(params, files, logger) {
     try {
         // Handle modal requests
         if (params.modal === 'delete' && params.fileName) {
-            return htmlResponse(getDeleteModalHtml(params.fileName, params.fullPath));
+            return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath));
         }
 
         // List and process files
-        logger.info('Listing files from public directory');
-        const filesList = await files.list('public');
-        logger.info(`Found ${filesList.length} total files`);
+        logger.info('Checking public directory');
+        try {
+            await files.createDirectory('public');
+            logger.info('Public directory ensured');
+        } catch (error) {
+            // Ignore error if directory already exists
+            logger.info('Public directory already exists');
+        }
 
-        // Filter for CSV files and get their details
-        const csvFiles = filesList.filter(file => file.name.endsWith('.csv'));
+        // Get file list with metadata using shared operations
+        logger.info('Listing files from public directory');
+        const allFiles = await listFiles(files, 'public');
+        
+        // Filter for CSV files
+        const csvFiles = allFiles.filter(file => file.name.endsWith('.csv'));
         logger.info(`Found ${csvFiles.length} CSV files`);
 
-        const fileDetails = await Promise.all(
-            csvFiles.map(async file => {
-                logger.info(`Getting properties for file: ${file.name}`);
-                const props = await files.getProperties(file.name);
-                logger.info('File properties:', JSON.stringify(props, null, 2));
-                return getFileDisplayDetails(file, props);
-            })
-        );
-
         // Return the file list HTML
-        return htmlResponse(getFileListHtml(fileDetails));
+        return createHtmlResponse(getFileListHtml(csvFiles));
     } catch (error) {
         logger.error('Error in GET request:', error);
-        return errorResponse(500, `Failed to list files: ${error.message}`);
+        
+        if (error instanceof FileOperationError) {
+            switch (error.type) {
+                case FileErrorType.PERMISSION_DENIED:
+                    return createErrorResponse('File storage credentials not configured properly', 400);
+                case FileErrorType.INVALID_PATH:
+                    return createErrorResponse(error.message, 400);
+                default:
+                    return createErrorResponse(`Failed to list files: ${error.message}`);
+            }
+        }
+
+        return createErrorResponse(error.message);
     }
 }
 
@@ -60,15 +105,27 @@ async function handleDeleteRequest(params, files, logger) {
     try {
         const fileName = params.fileName;
         if (!fileName) {
-            return errorResponse(400, 'File name is required');
+            return createErrorResponse('File name is required', 400);
         }
 
         logger.info(`Deleting file: ${fileName}`);
-        await files.delete(fileName);
-        return htmlResponse('');
+        await deleteFile(files, fileName);
+        return createHtmlResponse('');
     } catch (error) {
         logger.error('Error in DELETE request:', error);
-        return errorResponse(500, `Failed to delete file: ${error.message}`);
+
+        if (error instanceof FileOperationError) {
+            switch (error.type) {
+                case FileErrorType.NOT_FOUND:
+                    return createErrorResponse(`File not found: ${params.fileName}`, 404);
+                case FileErrorType.INVALID_PATH:
+                    return createErrorResponse(error.message, 400);
+                default:
+                    return createErrorResponse(`Failed to delete file: ${error.message}`);
+            }
+        }
+
+        return createErrorResponse(error.message);
     }
 }
 
@@ -91,11 +148,11 @@ async function main(params) {
             case 'delete':
                 return handleDeleteRequest(params, files, logger);
             default:
-                return errorResponse(405, 'Method not allowed');
+                return createErrorResponse('Method not allowed', 405);
         }
     } catch (error) {
         logger.error('Error initializing Files SDK:', error);
-        return errorResponse(500, `Failed to initialize file system: ${error.message}`);
+        return createErrorResponse(error.message);
     }
 }
 

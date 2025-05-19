@@ -3,9 +3,11 @@
  * @module browse-files/templates
  */
 
+const { buildFullUrl } = require('../../../core/http');
+
 /**
  * Generates HTML for an empty state when no files are found
- * @returns {string} HTML for empty state
+ * @returns {string} HTML content
  */
 function getEmptyStateHtml() {
     return `
@@ -17,63 +19,33 @@ function getEmptyStateHtml() {
 }
 
 /**
- * Generates HTML for the delete confirmation modal
- * @param {string} fileName - Name of the file to delete
- * @param {string} fullPath - Full path of the file
- * @returns {string} HTML for the modal
- */
-function getDeleteModalHtml(fileName, fullPath) {
-    return `
-        <div class="modal-content">
-            <h2>Delete File</h2>
-            <div class="modal-body">
-                <p>Are you sure you want to delete "${fileName}"?</p>
-                <p class="modal-warning">This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <div class="btn-group">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            hx-on:click="hideModal()"
-                            aria-label="Cancel deletion">
-                        <span class="btn-label">Cancel</span>
-                    </button>
-                    <button type="button"
-                            class="btn btn-danger btn-outline"
-                            hx-delete="/api/v1/web/kukla-integration-service/delete-file?fileName=${encodeURIComponent(fullPath)}"
-                            hx-target="closest .table-row"
-                            hx-swap="outerHTML swap:1s"
-                            aria-label="Confirm deletion of ${fileName}">
-                        <span class="btn-label">Delete</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Generates HTML for action buttons in a file row
+ * Generates HTML for a file row's action buttons
  * @param {Object} file - File details object
- * @returns {string} HTML for action buttons
+ * @returns {string} HTML content
  */
 function getActionButtonsHtml(file) {
+    const modalUrl = buildFullUrl('browse-files', {
+        modal: 'delete',
+        fileName: file.name,
+        fullPath: file.fullPath
+    });
+
     return `
         <div class="actions-container">
             <div class="btn-group">
                 <button type="button" 
-                        class="btn btn-primary"
-                        hx-get="/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(file.fullPath)}"
-                        hx-swap="none"
-                        onclick="window.showNotification('Download started for ' + '${file.name}', 'info')"
+                        class="btn btn-primary download-button"
+                        data-loading-class="is-loading"
+                        data-download-url="${encodeURIComponent(file.fullPath)}"
+                        data-file-name="${file.name}"
                         aria-label="Download ${file.name}">
                     <span class="btn-label">Download</span>
                 </button>
                 <button type="button"
-                        class="btn btn-danger btn-outline"
-                        hx-get="/api/v1/web/kukla-integration-service/browse-files?modal=delete&fileName=${encodeURIComponent(file.name)}&fullPath=${encodeURIComponent(file.fullPath)}"
-                        hx-target="#modal-container"
-                        hx-swap="innerHTML"
+                        class="btn btn-danger btn-outline delete-button"
+                        data-loading-class="is-loading"
+                        data-modal-url="${modalUrl}"
+                        data-file-name="${file.name}"
                         aria-label="Delete ${file.name}">
                     <span class="btn-label">Delete</span>
                 </button>
@@ -85,11 +57,11 @@ function getActionButtonsHtml(file) {
 /**
  * Generates HTML for a single file row
  * @param {Object} file - File details object
- * @returns {string} HTML for the file row
+ * @returns {string} HTML content
  */
 function getFileRowHtml(file) {
     return `
-        <div class="table-row" role="row">
+        <div class="table-row" role="row" data-file-name="${file.name}">
             <div class="table-cell" role="cell">
                 <span>${file.name}</span>
             </div>
@@ -109,16 +81,56 @@ function getFileRowHtml(file) {
 /**
  * Generates HTML for a list of files
  * @param {Array<Object>} files - Array of file details
- * @returns {string} HTML for the file list
+ * @returns {string} HTML content
  */
 function getFileListHtml(files) {
-    if (files.length === 0) {
+    if (!files || files.length === 0) {
         return getEmptyStateHtml();
     }
     return files.map(file => getFileRowHtml(file)).join('');
 }
 
+/**
+ * Generates HTML for the delete confirmation modal
+ * @param {string} fileName - Name of the file to delete
+ * @param {string} fullPath - Full path of the file
+ * @returns {string} HTML content
+ */
+function getDeleteModalHtml(fileName, fullPath) {
+    const deleteUrl = buildFullUrl('delete-file', { fileName: fullPath });
+
+    return `
+        <div class="modal-content">
+            <h2>Delete File</h2>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "${fileName}"?</p>
+                <p class="modal-warning">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <div class="btn-group">
+                    <button type="button"
+                            class="btn btn-secondary modal-close"
+                            aria-label="Cancel deletion">
+                        <span class="btn-label">Cancel</span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-danger btn-outline"
+                            data-loading-class="is-loading"
+                            data-delete-url="${deleteUrl}"
+                            data-file-name="${fileName}"
+                            aria-label="Confirm deletion of ${fileName}">
+                        <span class="btn-label">Delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 module.exports = {
-    getDeleteModalHtml,
-    getFileListHtml
+    getEmptyStateHtml,
+    getActionButtonsHtml,
+    getFileRowHtml,
+    getFileListHtml,
+    getDeleteModalHtml
 }; 
