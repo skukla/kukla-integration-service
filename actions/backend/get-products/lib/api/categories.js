@@ -3,12 +3,11 @@
  * @module api/categories
  */
 
-require('../../../setup-aliases');
 const fetch = require('node-fetch');
-const { getHeaders } = require('@shared/http/headers');
-const { getClient } = require('@shared/http/client');
-const { errorResponse } = require('@shared/http/response');
-const endpoints = require('@shared/commerce/endpoints');
+const { request } = require('../../../../shared/http/client');
+const { headers } = require('../../../../shared/http/headers');
+const { response } = require('../../../../shared/http/response');
+const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints');
 
 /**
  * Fetch category details for a given category ID from the REST API.
@@ -23,7 +22,7 @@ async function fetchCategory(categoryId, token, params) {
   const url = endpoints.category(params.COMMERCE_URL, categoryId);
   
   const res = await fetch(url, {
-    headers: getHeaders(token)
+    headers: headers(token)
   });
   
   if (!res.ok) {
@@ -97,9 +96,30 @@ async function buildCategoryMap(products, token, params) {
   return categoryMap;
 }
 
+/**
+ * Get categories from Adobe Commerce
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object>} Categories data
+ */
+async function getCategories(params) {
+  const url = buildUrl(params.baseUrl, endpoints.categories.list);
+  
+  try {
+    const response = await request(url, {
+      method: 'GET',
+      headers: headers.commerce(params.token)
+    });
+
+    return response.json();
+  } catch (error) {
+    throw new Error(`Failed to fetch categories: ${error.message}`);
+  }
+}
+
 module.exports = {
   fetchCategory,
   getCategoryIds,
   getUniqueCategoryIds,
-  buildCategoryMap
+  buildCategoryMap,
+  getCategories
 }; 
