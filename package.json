@@ -21,14 +21,13 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/generate-actions.js && vite build",
+    "build": "vite build",
     "clean": "rm -rf dist",
     "test": "jest",
     "deploy": "npm run deploy:full",
     "deploy:full": "npm run clean && npm run build && aio app deploy",
     "deploy:web": "npm run build && aio app deploy --no-actions",
-    "deploy:actions": "aio app deploy --no-web-assets",
-    "generate:actions": "node scripts/generate-actions.js"
+    "deploy:actions": "aio app deploy --no-web-assets"
   },
   "engines": {
     "node": ">=18"

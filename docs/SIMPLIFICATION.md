@@ -468,3 +468,56 @@ docs/
    - Setup steps link to requirements
    - Workflow links to tools
    - Troubleshooting links to solutions 
+
+### Phase 8: Cleanup of Unused Files
+**Status**: 🟢 Completed
+**Priority**: Low
+**Completed**: March 22, 2024
+
+#### Goals
+- Remove unused files and directories ✓
+- Clean up legacy artifacts ✓
+- Maintain only necessary files ✓
+- Update documentation accordingly ✓
+
+#### Files and Directories to Remove
+
+1. E2E Testing Directory (`e2e/`) ✓
+   - Contains outdated E2E tests
+   - Basic auth tests now covered by runtime's built-in auth system
+   - Tests not actively used in Jest test suite
+   - Files:
+     - `publish-events.e2e.test.js`
+     - `generic.e2e.test.js`
+
+2. Build Cache (`.parcel-cache/`) ✓
+   - Legacy build cache from Parcel
+   - No longer needed as we use Vite
+   - Already in .gitignore
+
+3. Temporary Files ✓
+   - `.aws.tmp.creds.json` (temporary AWS credentials)
+   - Already in .gitignore
+   - Should not be in version control
+
+#### Validation Checklist
+- [x] Verified E2E tests are not referenced in npm scripts
+- [x] Confirmed Parcel cache is not used
+- [x] Checked .gitignore patterns are correct
+- [x] Verified no active dependencies on removed files
+- [x] Documentation updated to reflect removals
+- [x] Build process still works after cleanup
+- [x] Test suite runs successfully
+
+#### Notes
+- All removed files are either outdated or temporary
+- No impact on current functionality
+- Improved repository cleanliness
+- Reduced confusion for new developers
+- Simplified project structure
+
+## Next Steps
+1. Monitor build process for any issues
+2. Update documentation if needed
+3. Review for any additional cleanup opportunities
+4. Consider automating cleanup of temporary files 
