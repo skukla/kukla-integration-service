@@ -251,99 +251,27 @@ This organization provides:
    aio app run
    ```
 
+## Available Scripts
+
+The following npm scripts are available for development and deployment:
+
+```bash
+# Build the application
+npm run build         # Builds the application using Vite
+
+# Clean the build directory
+npm run clean         # Removes the dist directory
+
+# Deployment scripts
+npm run deploy:full   # Cleans, builds, and deploys both web assets and actions
+npm run deploy:web    # Builds and deploys only web assets (no actions)
+
+# Development
+npm run test         # Runs the test suite
+npm run lint         # Runs ESLint to check code quality
+```
+
 ## Usage Guide
-
-### Product Export Action
-
-1. **Trigger Export:**
-   ```bash
-   curl -X POST <your-action-url>/api/v1/web/kukla-integration-service/get-products \
-     -H "Content-Type: application/json" \
-     -d '{
-       "COMMERCE_URL": "<your-commerce-instance-url>",
-       "COMMERCE_ADMIN_USERNAME": "<your-admin-username>",
-       "COMMERCE_ADMIN_PASSWORD": "<your-admin-password>"
-     }'
-   ```
-
-2. **Response Format:**
-   ```json
-   {
-     "statusCode": 200,
-     "body": {
-       "message": "Product export completed successfully.",
-       "file": {
-         "fileName": "products.csv",
-         "location": "filestore",
-         "downloadUrl": "https://285361-188maroonwallaby-stage.adobeioruntime.net/api/v1/web/kukla-integration-service/download-file?fileName=products.csv"
-       },
-       "steps": [
-         "Input validation passed.",
-         "Fetched X products from the external API.",
-         "Enriched products with inventory data.",
-         "Built category map with Y categories.",
-         "Generated CSV content in memory.",
-         "Stored CSV file in filestore"
-       ]
-     }
-   }
-   ```
-
-3. **Downloading Files:**
-   - Use the returned `file.downloadUrl` to download the generated CSV file
-   - The download endpoint will serve the file with proper headers for downloading
-   - Authentication: Add the `Authorization` header with your bearer token:
-     ```bash
-     curl -H "Authorization: Bearer <your-token>" "<download-url>"
-     ```
-   - For S3 storage: Use the provided S3 URI with appropriate AWS credentials
-
-## Adobe Commerce REST API Integration
-
-The service integrates with Adobe Commerce using the following REST endpoints:
-
-### Authentication
-- **Admin Token Generation**
-  ```
-  POST /rest/V1/integration/admin/token
-  ```
-  Used to generate an admin access token for subsequent API calls.
-
-### Product Data Retrieval
-- **Product List with Pagination**
-  ```
-  GET /rest/V1/products?searchCriteria[currentPage]={page}&searchCriteria[pageSize]={size}
-  ```
-  Fetches paginated product data including:
-  - Basic product information (SKU, name, price)
-  - Media gallery entries
-  - Extension attributes
-  - Custom attributes
-
-- **Stock Item Information**
-  ```
-  GET /rest/V1/stockItems/{sku}
-  ```
-  Retrieves inventory data for each product, including:
-  - Quantity (qty)
-  - Stock status
-
-- **Category Details**
-  ```
-  GET /rest/V1/categories/{categoryId}
-  ```
-  Fetches category information for product categorization:
-  - Category ID
-  - Category name
-
-### Data Processing
-The service performs the following data enrichment steps:
-1. Fetches base product data with pagination (200 items per page)
-2. Enriches each product with its current inventory level
-3. Extracts category IDs from both extension attributes and custom attributes
-4. Resolves category names for all referenced categories
-5. Builds a final product object with the requested fields
-6. Generates and stores the CSV file with the enriched data
 
 ## Development Guidelines
 
