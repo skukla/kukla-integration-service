@@ -17,6 +17,10 @@
     </script>
     
     <!-- Application Entry Point -->
+    <script type="module">
+        import { showNotification } from './src/js/utils/notifications.js';
+        window.showNotification = showNotification;
+    </script>
     <script type="module" src="./src/js/main.js"></script>
     <link rel="stylesheet" href="./src/main.css">
     <link rel="icon" href="data:,">
