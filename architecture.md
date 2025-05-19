@@ -12,39 +12,38 @@ This application follows a clear separation between client-side and server-side 
 
 ```plaintext
 kukla-integration-service/
-├── actions/
+├── actions/                                  # Server-side code
 │   ├── backend/
-│   │   ├── get-products/        # Product export functionality
-│   │   │   ├── lib/            # Core libraries
-│   │   │   ├── utils/          # Utilities
-│   │   │   ├── steps/          # Processing steps
-│   │   │   └── index.js        # Main handler
-│   │   └── download-file/      # File download handling
+│   │   ├── get-products/                     # Product export functionality
+│   │   │   ├── lib/                          # Core libraries
+│   │   │   │   ├── api/                      # API integration
+│   │   │   │   └── product-transformer.js    # Data transformation
+│   │   │   ├── steps/                        # Processing steps
+│   │   │   └── index.js                      # Main handler
+│   │   └── download-file/                    # File download handling
 │   ├── frontend/
-│   │   └── browse-files/       # File browsing interface
-│   │       ├── utils/          # UI utilities
-│   │       ├── templates.js    # HTML templates
-│   │       └── index.js        # Main handler
-│   └── shared/                 # Common utilities
-│       ├── http/              # HTTP utilities
-│       ├── file/             # File operations
-│       ├── validation/       # Input validation
-│       └── commerce/         # Commerce utilities
-├── web-src/                   # Client-side code
-│   ├── index.html            # Main HTML template
+│   │   └── browse-files/                     # File browsing interface
+│   │       ├── utils/                        # UI utilities
+│   │       │   ├── file/                     # File-related utilities
+│   │       │   └── ui/                       # UI helpers
+│   │       ├── templates.js                  # HTML templates
+│   │       └── index.js                      # Main handler
+│   └── shared/                               # Common utilities
+│       ├── http/                             # HTTP utilities
+│       ├── file/                             # File operations
+│       ├── validation/                       # Input validation
+│       └── commerce/                         # Commerce utilities
+├── web-src/                                  # Client-side code
+│   ├── index.html                            # Main HTML template
 │   └── src/
-│       ├── config.json       # Frontend configuration
-│       ├── index.html        # Application shell
-│       ├── main.css         # Global styles
-│       ├── styles/          # Style organization
-│       │   ├── components/  # Component-specific styles
-│       │   └── design-system/ # Design system styles
-│       └── js/             # JavaScript code
-│           ├── main.js     # Main entry point
-│           ├── utils/      # Utility functions
-│           └── config/     # JS configuration
-├── docs/                      # Documentation
-└── test/                      # Test files
+│       ├── styles/                           # Style organization
+│       │   ├── components/                   # Component-specific styles
+│       │   └── design-system/                # Design system styles
+│       └── js/                               # JavaScript code
+│           ├── main.js                       # Main entry point
+│           └── utils/                        # Utility functions
+├── docs/                                     # Documentation
+└── test/                                     # Test files
 ```
 
 ## Application Components
@@ -54,19 +53,9 @@ kukla-integration-service/
 - Browser-executed code
 - HTMX-powered dynamic UI updates
 - Minimal JavaScript for enhanced interactions
-- Uses Vite's alias system:
-  - `@/` → `web-src/src`
-  - `@styles/` → `web-src/src/styles`
-  - `@js/` → `web-src/src/js`
-  - `@components/` → `web-src/src/styles/components`
+- Built with Vite
 
 ### Server-Side Actions (`/actions`)
-
-All server-side code uses the module-alias system with these aliases:
-
-- `@shared` → Common utilities
-- `@frontend-actions` → UI-supporting actions
-- `@backend-actions` → Business logic actions
 
 #### Frontend Actions (`/actions/frontend`)
 
@@ -134,4 +123,20 @@ Benefits of this approach:
 - Adobe App Builder authentication
 - File access control
 
-For more details about security practices, see the [Security Guide](security.md). 
+For more details about security practices, see the [Security Guide](security.md).
+
+## Build Configuration
+
+The project uses Vite for frontend builds and Adobe App Builder's built-in build process for actions:
+
+```plaintext
+/
+├── vite.config.js       # Frontend build configuration
+└── app.config.yaml      # Adobe App Builder configuration
+```
+
+This structure provides:
+- Simple, standard configuration
+- Fast builds with Vite
+- Native Adobe App Builder support
+- Clear separation of concerns 
