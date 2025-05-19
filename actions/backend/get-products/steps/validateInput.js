@@ -8,7 +8,7 @@
  * @returns {Promise<string>} A success message if validation passes
  * @throws {Error} If any required parameter is missing
  */
-const { checkMissingRequestInputs } = require('../../../utils/shared/validation/input');
+const { checkMissingRequestInputs } = require('@shared/validation/input');
 
 module.exports = async function validateInput(params) {
   const requiredParams = [

@@ -1,6 +1,6 @@
 /**
- * Shared HTTP headers utilities
- * @module utils/shared/http/headers
+ * Shared HTTP headers utilities for actions
+ * @module actions/shared/http/headers
  */
 
 /**

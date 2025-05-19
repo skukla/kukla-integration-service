@@ -1,10 +1,10 @@
 /**
- * Adobe Commerce authentication utilities
- * @module utils/backend/auth/commerce
+ * Adobe Commerce authentication utilities for actions
+ * @module actions/shared/commerce/auth
  */
 
 const fetch = require('node-fetch');
-const { buildHeaders } = require('../../shared/http/headers');
+const { buildHeaders } = require('../http/headers');
 
 /**
  * Validates Adobe Commerce admin credentials
