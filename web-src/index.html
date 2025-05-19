@@ -10,6 +10,9 @@
     
     <!-- External Dependencies -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- HTMX Extensions -->
+    <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/class-tools.js"></script>
     
     <!-- Application Entry Point -->
     <script type="module" src="./src/js/main.js"></script>
@@ -47,19 +50,19 @@
                         <div class="table-content" data-component="file-list">
                             <!-- Skeleton Row -->
                             <div class="table-row is-skeleton">
-                                <div class="table-cell">
-                                    <div class="skeleton-block file-name-skeleton"></div>
+                                <div class="table-cell skeleton-cell">
+                                    <div class="skeleton-block" style="--skeleton-width: var(--skeleton-width-lg);"></div>
                                 </div>
-                                <div class="table-cell">
-                                    <div class="skeleton-block size-skeleton"></div>
+                                <div class="table-cell skeleton-cell">
+                                    <div class="skeleton-block" style="--skeleton-width: var(--skeleton-width-sm);"></div>
                                 </div>
-                                <div class="table-cell">
-                                    <div class="skeleton-block date-skeleton"></div>
+                                <div class="table-cell skeleton-cell">
+                                    <div class="skeleton-block" style="--skeleton-width: var(--skeleton-width-md);"></div>
                                 </div>
-                                <div class="table-cell">
-                                    <div class="skeleton-actions-group">
-                                        <div class="skeleton-block skeleton-button skeleton-button-primary"></div>
-                                        <div class="skeleton-block skeleton-button skeleton-button-secondary"></div>
+                                <div class="table-cell skeleton-cell">
+                                    <div class="skeleton-actions">
+                                        <div class="skeleton-button skeleton-button-primary"></div>
+                                        <div class="skeleton-button skeleton-button-secondary"></div>
                                     </div>
                                 </div>
                             </div>
@@ -81,7 +84,12 @@
         </div>
 
         <!-- Notification Container -->
-        <div id="notification-container" role="status" aria-live="polite"></div>
+        <div id="notification-container" 
+             class="notification-container" 
+             role="status" 
+             aria-live="polite"
+             style="position: fixed; top: var(--notification-offset, 16px); right: var(--notification-offset, 16px); z-index: var(--z-index-toast, 9999); display: flex; flex-direction: column; gap: var(--notification-spacing, 8px); pointer-events: none;">
+        </div>
     </div>
 </body>
 </html>

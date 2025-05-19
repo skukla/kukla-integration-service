@@ -30,9 +30,12 @@ async function main(params) {
     const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
     try {
+        logger.info('Starting download request:', { fileName: params.fileName });
+
         // Validate required parameters
         const missingInputs = checkMissingRequestInputs(params, ['fileName']);
         if (missingInputs) {
+            logger.error('Missing required inputs:', { missingInputs });
             return errorResponse({
                 message: missingInputs
             }, 400);
@@ -45,18 +48,29 @@ async function main(params) {
         // Get file properties first to verify existence and get content type
         logger.info(`Getting properties for file: ${params.fileName}`);
         const fileProps = await getFileProperties(files, params.fileName);
+        logger.info('File properties retrieved:', {
+            name: fileProps.name,
+            size: fileProps.size,
+            contentType: fileProps.contentType
+        });
 
         // Read file content
-        logger.info(`Reading file: ${params.fileName}`);
+        logger.info(`Reading file content: ${params.fileName}`);
         const buffer = await readFile(files, params.fileName);
+        logger.info('File content read successfully', {
+            contentLength: buffer.length,
+            fileName: params.fileName
+        });
 
         // Return file content with proper headers
+        logger.info('Sending file response');
         return {
             statusCode: 200,
             headers: {
                 'Content-Type': fileProps.contentType,
                 'Content-Disposition': `attachment; filename="${fileProps.name}"`,
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache',
+                'X-Download-Success': 'true' // Add header to indicate success
             },
             body: buffer.toString('base64')
         };
@@ -67,20 +81,27 @@ async function main(params) {
         if (error instanceof FileOperationError) {
             switch (error.type) {
                 case FileErrorType.NOT_FOUND:
+                    logger.warn('File not found:', { fileName: params.fileName });
                     return errorResponse({
                         message: `File not found: ${params.fileName}`
                     }, 404);
                 case FileErrorType.INVALID_PATH:
+                    logger.warn('Invalid file path:', { fileName: params.fileName });
                     return errorResponse({
                         message: error.message
                     }, 400);
                 default:
+                    logger.error('File operation error:', { 
+                        type: error.type,
+                        message: error.message
+                    });
                     return errorResponse({
                         message: `Failed to download file: ${error.message}`
                     }, 500);
             }
         }
 
+        logger.error('Unexpected error:', error);
         return errorResponse({
             message: `Failed to download file: ${error.message}`
         }, 500);

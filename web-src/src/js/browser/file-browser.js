@@ -3,14 +3,14 @@
  * @module browser/file-browser
  */
 
-import { getActionUrl, getDownloadUrl } from '../core/urls.js';
+import { getActionUrl } from '../core/urls.js';
 import { showNotification } from '../core/notifications.js';
 import { createModal } from '../core/modal.js';
 
 // File browser configuration
 const FILE_BROWSER_CONFIG = {
     CONTAINER_ID: 'file-browser',
-    FILE_LIST_ID: 'file-list',
+    FILE_LIST_CLASS: 'table-content',
     UPLOAD_FORM_ID: 'upload-form',
     DRAG_ACTIVE_CLASS: 'drag-active'
 };
@@ -27,9 +27,6 @@ export function initializeFileBrowser() {
 
     // Initialize upload form
     initializeUploadForm();
-
-    // Initialize file list
-    initializeFileList();
 }
 
 /**
@@ -71,23 +68,6 @@ function initializeUploadForm() {
         if (files.length > 0) {
             await handleFileUpload(files);
             form.reset();
-        }
-    });
-}
-
-/**
- * Initialize the file list
- */
-function initializeFileList() {
-    const fileList = document.getElementById(FILE_BROWSER_CONFIG.FILE_LIST_ID);
-    if (!fileList) return;
-
-    // Add click handler for delete buttons
-    fileList.addEventListener('click', (e) => {
-        const deleteButton = e.target.closest('[data-action="delete"]');
-        if (deleteButton) {
-            const fileName = deleteButton.dataset.fileName;
-            confirmDelete(fileName);
         }
     });
 }
@@ -157,4 +137,4 @@ async function deleteFile(fileName) {
     } catch (error) {
         showNotification(`Failed to delete ${fileName}: ${error.message}`, 'error');
     }
-} 
+}

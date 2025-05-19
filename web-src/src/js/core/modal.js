@@ -211,4 +211,23 @@ export function createModal({ content, title, onConfirm, onCancel }) {
     }
 
     showModal();
+}
+
+/**
+ * Initialize the modal system
+ * Sets up event listeners and creates the modal container if needed
+ */
+export function initializeModal() {
+    // Create modal container if it doesn't exist
+    let container = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = MODAL_CONFIG.CONTAINER_ID;
+        container.className = MODAL_CONFIG.MODAL_CLASS;
+        document.body.appendChild(container);
+    }
+
+    // Set up HTMX event listeners
+    document.body.addEventListener('htmx:afterSwap', handleModalContentSwap);
+    document.body.addEventListener('htmx:beforeSwap', handleModalBeforeSwap);
 } 
