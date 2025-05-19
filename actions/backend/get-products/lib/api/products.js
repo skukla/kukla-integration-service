@@ -3,12 +3,14 @@
  * @module api/products
  */
 
-require('../../../setup-aliases');
 const fetch = require('node-fetch');
-const { getHeaders } = require('@shared/http/headers');
-const { getClient } = require('@shared/http/client');
-const { errorResponse } = require('@shared/http/response');
-const endpoints = require('@shared/commerce/endpoints');
+const { getHeaders } = require('../../../../shared/http/headers');
+const { getClient } = require('../../../../shared/http/client');
+const { errorResponse } = require('../../../../shared/http/response');
+const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints');
+const { request } = require('../../../../shared/http/client');
+const { headers } = require('../../../../shared/http/headers');
+const { response } = require('../../../../shared/http/response');
 
 /**
  * Fetch all products from the Adobe Commerce REST API with pagination.
@@ -64,7 +66,28 @@ async function fetchProductQty(sku, token, params) {
   return data.qty;
 }
 
+/**
+ * Get products from Adobe Commerce
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object>} Products data
+ */
+async function getProducts(params) {
+  const url = buildUrl(params.baseUrl, endpoints.products.list);
+  
+  try {
+    const response = await request(url, {
+      method: 'GET',
+      headers: headers.commerce(params.token)
+    });
+
+    return response.json();
+  } catch (error) {
+    throw new Error(`Failed to fetch products: ${error.message}`);
+  }
+}
+
 module.exports = {
   fetchAllProducts,
-  fetchProductQty
+  fetchProductQty,
+  getProducts
 }; 

@@ -4,42 +4,42 @@
  */
 
 /**
- * Creates a standardized error response
- * @param {number} statusCode - HTTP status code
- * @param {string} message - Error message
- * @param {Object} [additionalInfo={}] - Additional error information
- * @returns {Object} Error response object
+ * Standard response format for API endpoints
  */
-function errorResponse(statusCode, message, additionalInfo = {}) {
-    return {
-        error: {
-            statusCode,
-            body: {
-                error: message,
-                ...additionalInfo
-            }
-        }
-    };
-}
+const response = {
+  success: (data = {}, message = 'Success') => ({
+    statusCode: 200,
+    body: {
+      success: true,
+      message,
+      data,
+    },
+  }),
 
-/**
- * Creates a standardized success response
- * @param {Object} body - Response body
- * @param {Object} [headers={}] - Optional response headers
- * @returns {Object} Success response object
- */
-function successResponse(body, headers = {}) {
-    return {
-        statusCode: 200,
-        body,
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers
-        }
-    };
-}
+  error: (error, statusCode = 500) => ({
+    statusCode,
+    body: {
+      success: false,
+      message: error.message || 'Internal server error',
+      error: error.stack,
+    },
+  }),
 
-module.exports = {
-    errorResponse,
-    successResponse
-}; 
+  notFound: (message = 'Resource not found') => ({
+    statusCode: 404,
+    body: {
+      success: false,
+      message,
+    },
+  }),
+
+  badRequest: (message = 'Invalid request') => ({
+    statusCode: 400,
+    body: {
+      success: false,
+      message,
+    },
+  }),
+};
+
+module.exports = response; 

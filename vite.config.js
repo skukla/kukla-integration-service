@@ -3,11 +3,11 @@ import legacy from '@vitejs/plugin-legacy';
 import { resolve } from 'path';
 
 export default defineConfig(({ command, mode }) => ({
-  root: 'web-src',
+  root: resolve(__dirname, 'web-src'),
   base: './',
   
   build: {
-    outDir: '../dist',
+    outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     sourcemap: mode === 'development',
     rollupOptions: {
@@ -55,10 +55,13 @@ export default defineConfig(({ command, mode }) => ({
 
   resolve: {
     alias: {
+      '@shared': resolve(__dirname, 'actions/shared'),
+      '@frontend': resolve(__dirname, 'actions/frontend'),
+      '@backend': resolve(__dirname, 'actions/backend'),
       '@': resolve(__dirname, 'web-src/src'),
       '@styles': resolve(__dirname, 'web-src/src/styles'),
       '@js': resolve(__dirname, 'web-src/src/js'),
-      '@components': resolve(__dirname, 'web-src/src/components')
+      '@components': resolve(__dirname, 'web-src/src/components'),
     }
   },
 
@@ -86,11 +89,7 @@ export default defineConfig(({ command, mode }) => ({
 
   plugins: [
     legacy({
-      targets: ['defaults', 'not IE 11'],
-      modernPolyfills: true,
-      additionalLegacyPolyfills: [
-        'regenerator-runtime/runtime'
-      ]
+      targets: ['defaults', 'not IE 11']
     })
   ],
 

@@ -4,10 +4,9 @@
  * @description Handles secure file downloads from Adobe I/O Files storage
  */
 
-require('../setup-aliases');
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
-const { errorResponse } = require('@shared/http/response');
-const { checkMissingRequestInputs } = require('@shared/validation/input');
+const { error: errorResponse } = require('../../shared/http/response');
+const { checkMissingRequestInputs } = require('../../shared/validation/input');
 
 /**
  * Main function that handles file download requests

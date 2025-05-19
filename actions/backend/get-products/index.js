@@ -3,13 +3,12 @@
  * @module get-products
  */
 
-require('../../setup-aliases');
 const dotenv = require('dotenv');
 const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
-const { errorResponse, successResponse } = require('@shared/http/response');
-const validateInput = require('./steps/validateInput');
-const fetchAndEnrichProducts = require('./steps/fetchAndEnrichProducts');
+const { response } = require('../../shared/http/response');
+const { validateInput } = require('./steps/validateInput');
+const { fetchAndEnrichProducts } = require('./steps/fetchAndEnrichProducts');
 const buildProducts = require('./steps/buildProducts');
 const createCsv = require('./steps/createCsv');
 const storeCsv = require('./steps/storeCsv');
@@ -66,7 +65,7 @@ async function main(params) {
     const storageResult = await storeCsv(content, fileName);
     steps.push(`Stored CSV file as "${storageResult.fileName}"`);
 
-    return successResponse({
+    return response.success({
       message: 'Product export completed successfully.',
       file: {
         downloadUrl: storageResult.downloadUrl
@@ -76,7 +75,7 @@ async function main(params) {
   } catch (error) {
     logger.error('Error in main action:', error);
     steps.push(`Error: ${error.message || error.toString()}`);
-    return errorResponse(500, error.message || error.toString(), { steps });
+    return response.error(500, error.message || error.toString(), { steps });
   }
 }
 
