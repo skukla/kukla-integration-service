@@ -8,19 +8,22 @@
  * @returns {Promise<string>} A success message if validation passes
  * @throws {Error} If any required parameter is missing
  */
-const { checkMissingRequestInputs } = require('@shared/validation/input');
+const { validateRequired, validateString } = require('../../../shared/validation/input');
 
-module.exports = async function validateInput(params) {
+/**
+ * Validate input parameters
+ * @param {Object} params - Input parameters
+ * @throws {Error} If any required parameter is missing
+ */
+async function validateInput(params) {
   const requiredParams = [
-    'COMMERCE_URL',
-    'COMMERCE_ADMIN_USERNAME',
-    'COMMERCE_ADMIN_PASSWORD'
+    'baseUrl',
+    'token'
   ];
-  
-  const errorMessage = checkMissingRequestInputs(params, requiredParams);
-  if (errorMessage) {
-    throw new Error(`Input validation failed: ${errorMessage}`);
-  }
-  
-  return 'Input validation passed.';
-}; 
+
+  validateRequired(params, requiredParams);
+  validateString(params.baseUrl, 'baseUrl');
+  validateString(params.token, 'token');
+}
+
+module.exports = validateInput; 

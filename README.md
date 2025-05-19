@@ -28,9 +28,12 @@ Kukla Integration Service is an Adobe App Builder application designed to integr
 
 4. **Development**
    ```bash
-   npm run build         # Build the application
-   npm run deploy:full   # Deploy everything
-   npm run deploy:web    # Deploy only web assets
+   npm run dev           # Start development server
+   npm run build        # Build the application
+   npm run deploy:full  # Build and deploy everything
+   npm run deploy:web   # Deploy web assets only
+   npm run deploy:actions # Deploy actions only
+   npm run test         # Run tests
    ```
 
 ## Key Features
@@ -55,21 +58,23 @@ Kukla Integration Service is an Adobe App Builder application designed to integr
 /
 ├── actions/              # Server-side code
 │   ├── frontend/        # UI-supporting actions
+│   │   └── browse-files/  # File browsing interface
 │   ├── backend/         # Business logic actions
+│   │   ├── get-products/  # Product export functionality
+│   │   └── download-file/ # File download handling
 │   └── shared/          # Common utilities
+│       ├── http/         # HTTP utilities
+│       ├── file/         # File operations
+│       ├── validation/   # Input validation
+│       └── commerce/     # Commerce utilities
 ├── web-src/             # Client-side application
+│   ├── index.html       # Main HTML template
+│   └── src/             # Frontend source code
 ├── docs/                # Documentation
 └── test/                # Test files
 ```
 
 For detailed documentation about each directory, see the [Architecture Guide](docs/architecture.md).
-
-## Import Aliases
-
-- Server-side: `@shared`, `@frontend-actions`, `@backend-actions`
-- Client-side: `@/`, `@styles/`, `@js/`, `@components/`
-
-See the [Development Guide](docs/development.md) for detailed usage.
 
 ## Contributing
 

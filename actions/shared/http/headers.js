@@ -4,6 +4,23 @@
  */
 
 /**
+ * Common HTTP headers used across the application
+ */
+const headers = {
+  json: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  auth: (token) => ({
+    'Authorization': `Bearer ${token}`,
+  }),
+  commerce: (token) => ({
+    ...headers.json,
+    ...headers.auth(token),
+  }),
+};
+
+/**
  * Builds standard headers for HTTP requests
  * @param {string} [token] - Optional bearer token
  * @param {Object} [additional={}] - Additional headers to include
@@ -47,8 +64,4 @@ function sanitizeHeaders(headers) {
     return sanitized;
 }
 
-module.exports = {
-    buildHeaders,
-    getBearerToken,
-    sanitizeHeaders
-}; 
+module.exports = headers; 

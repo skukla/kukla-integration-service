@@ -2,12 +2,11 @@
 * <license header>
 */
 
-require('../actions/setup-aliases');
 const { Core } = require('@adobe/aio-sdk');
-const { buildHeaders, getBearerToken } = require('@shared/http/headers');
-const { errorResponse } = require('@shared/http/response');
-const { checkMissingRequestInputs } = require('@shared/validation/input');
-const { validateAdminCredentials, fetchAdminToken } = require('@shared/commerce/auth');
+const { buildHeaders, getBearerToken } = require('../actions/shared/http/headers');
+const { errorResponse } = require('../actions/shared/http/response');
+const { checkMissingRequestInputs } = require('../actions/shared/validation/input');
+const { validateAdminCredentials, fetchAdminToken } = require('../actions/shared/commerce/auth');
 
 describe('shared utils', () => {
   test('interface', () => {

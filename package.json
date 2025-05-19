@@ -1,18 +1,13 @@
 {
-  "name": "188MaroonWallaby",
+  "name": "kukla-integration-service",
   "version": "0.0.1",
   "private": true,
-  "_moduleAliases": {
-    "@shared": "actions/shared",
-    "@backend": "actions",
-    "@frontend": "web-src"
-  },
+  "description": "Adobe Commerce integration service for product data export",
   "dependencies": {
     "@adobe/aio-sdk": "^6",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.5.0",
-    "module-alias": "^2.2.3",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "@openwhisk/wskdebug": "^1.3.0",
@@ -24,10 +19,14 @@
     "vite": "^6.3.5"
   },
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
     "clean": "rm -rf dist",
+    "test": "jest",
+    "deploy": "npm run deploy:full",
     "deploy:full": "npm run clean && npm run build && aio app deploy",
-    "deploy:web": "npm run build && aio app deploy --no-actions"
+    "deploy:web": "npm run build && aio app deploy --no-actions",
+    "deploy:actions": "aio app deploy --no-web-assets"
   },
   "engines": {
     "node": ">=18"

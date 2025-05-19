@@ -1,39 +1,33 @@
 /**
- * Adobe Commerce REST API endpoint definitions for actions
- * @module actions/shared/commerce/endpoints
+ * Adobe Commerce API endpoints
  */
+const endpoints = {
+  products: {
+    list: '/rest/V1/products',
+    search: '/rest/V1/products/search',
+    get: (sku) => `/rest/V1/products/${sku}`,
+  },
+  categories: {
+    list: '/rest/V1/categories',
+    get: (id) => `/rest/V1/categories/${id}`,
+  },
+  auth: {
+    token: '/rest/V1/integration/admin/token',
+  },
+};
 
 /**
- * Builds the products endpoint URL
- * @param {string} baseUrl - Adobe Commerce instance base URL
- * @returns {string} Complete products endpoint URL
+ * Build a full Commerce API URL
+ * @param {string} baseUrl - Commerce instance base URL
+ * @param {string} endpoint - API endpoint path
+ * @returns {string} Full API URL
  */
-function products(baseUrl) {
-  return `${baseUrl}/rest/V1/products`;
-}
-
-/**
- * Builds the stock item endpoint URL for a specific SKU
- * @param {string} baseUrl - Adobe Commerce instance base URL
- * @param {string} sku - Product SKU
- * @returns {string} Complete stock item endpoint URL
- */
-function stockItem(baseUrl, sku) {
-  return `${baseUrl}/rest/V1/stockItems/${encodeURIComponent(sku)}`;
-}
-
-/**
- * Builds the category endpoint URL for a specific category ID
- * @param {string} baseUrl - Adobe Commerce instance base URL
- * @param {string|number} categoryId - Category ID
- * @returns {string} Complete category endpoint URL
- */
-function category(baseUrl, categoryId) {
-  return `${baseUrl}/rest/V1/categories/${categoryId}`;
+function buildUrl(baseUrl, endpoint) {
+  const url = new URL(endpoint, baseUrl);
+  return url.toString();
 }
 
 module.exports = {
-  products,
-  stockItem,
-  category
+  endpoints,
+  buildUrl,
 }; 
