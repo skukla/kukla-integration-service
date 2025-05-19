@@ -34,9 +34,7 @@ function getDeleteModalHtml(fileName, fullPath) {
                 <div class="btn-group">
                     <button type="button"
                             class="btn btn-secondary"
-                            hx-get="/api/v1/web/kukla-integration-service/browse-files"
-                            hx-target="#modal-backdrop"
-                            hx-swap="outerHTML"
+                            hx-on:click="hideModal()"
                             aria-label="Cancel deletion">
                         <span class="btn-label">Cancel</span>
                     </button>
@@ -67,6 +65,7 @@ function getActionButtonsHtml(file) {
                         class="btn btn-primary"
                         hx-get="/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(file.fullPath)}"
                         hx-swap="none"
+                        onclick="window.showNotification('Download started for ' + '${file.name}', 'info')"
                         aria-label="Download ${file.name}">
                     <span class="btn-label">Download</span>
                 </button>

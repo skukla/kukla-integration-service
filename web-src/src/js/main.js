@@ -20,6 +20,10 @@ function hideModal() {
     modalContainer.innerHTML = '';
 }
 
+// Make modal functions available globally
+window.hideModal = hideModal;
+window.showModal = showModal;
+
 // Initialize event listeners
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize content loader with delay

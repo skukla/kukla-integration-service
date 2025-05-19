@@ -4,7 +4,7 @@
  */
 
 const { getStorageConfig } = require('./config');
-const { getDownloadUrl } = require('../utils');
+const { getDownloadUrl } = require('../../utils/url/download');
 
 /**
  * Stores a file in the configured storage location
