@@ -3,11 +3,12 @@
  * @module browse-files
  */
 
+require('../setup-aliases');
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
-const { htmlResponse } = require('../../utils/frontend/ui/htmx');
-const { errorResponse } = require('../../utils/shared/http/response');
-const { getFileDisplayDetails } = require('../../utils/frontend/file/display');
-const { getDeleteModalHtml, getFileListHtml } = require('./templates');
+const { htmlResponse } = require('@frontend-actions/browse-files/utils/ui/htmx');
+const { errorResponse } = require('@shared/http/response');
+const { getFileDisplayDetails } = require('@frontend-actions/browse-files/utils/file/display');
+const { getDeleteModalHtml, getFileListHtml } = require('@frontend-actions/browse-files/templates');
 
 /**
  * Handles GET requests for file browsing and modal operations

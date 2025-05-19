@@ -1,6 +1,6 @@
 /**
- * Adobe Commerce REST API endpoint definitions
- * @module commerce-endpoints
+ * Adobe Commerce REST API endpoint definitions for actions
+ * @module actions/shared/commerce/endpoints
  */
 
 /**
