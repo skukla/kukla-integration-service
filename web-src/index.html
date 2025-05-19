@@ -11,16 +11,7 @@
     <!-- External Dependencies -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     
-    <!-- HTMX Configuration -->
-    <script>
-        htmx.config.defaultSwapStyle = 'innerHTML';
-    </script>
-    
     <!-- Application Entry Point -->
-    <script type="module">
-        import { showNotification } from './src/js/utils/notifications.js';
-        window.showNotification = showNotification;
-    </script>
     <script type="module" src="./src/js/main.js"></script>
     <link rel="stylesheet" href="./src/main.css">
     <link rel="icon" href="data:,">
@@ -31,13 +22,6 @@
         <header class="app-header">
             <h1>File Browser</h1>
         </header>
-
-        <!-- Modal container -->
-        <div id="modal-backdrop" class="modal-backdrop">
-            <div id="modal-container" class="modal-container">
-                <!-- Modal content will be loaded here -->
-            </div>
-        </div>
 
         <!-- Table section -->
         <section class="content-section">
@@ -60,7 +44,7 @@
                         </div>
                         
                         <!-- Content Area -->
-                        <div class="table-content">
+                        <div class="table-content" data-component="file-list">
                             <!-- Skeleton Row -->
                             <div class="table-row is-skeleton">
                                 <div class="table-cell">
@@ -83,10 +67,21 @@
                     </div>
 
                     <!-- Hidden loader -->
-                    <div id="content-loader"></div>
+                    <div id="content-loader" data-component="content-loader"></div>
                 </div>
             </div>
         </section>
+
+        <!-- Modal System -->
+        <div class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title" data-component="modal">
+            <div class="modal-overlay" data-modal-close></div>
+            <div class="modal-container" id="modal-container">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Notification Container -->
+        <div id="notification-container" role="status" aria-live="polite"></div>
     </div>
 </body>
 </html>

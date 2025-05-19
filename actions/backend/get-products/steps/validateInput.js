@@ -8,7 +8,7 @@
  * @returns {Promise<string>} A success message if validation passes
  * @throws {Error} If any required parameter is missing
  */
-const { validateRequired, validateString } = require('../../../shared/validation/input');
+const { validateRequired, validateString } = require('../../../core/validation');
 
 /**
  * Validate input parameters

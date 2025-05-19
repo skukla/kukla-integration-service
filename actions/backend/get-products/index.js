@@ -6,7 +6,7 @@
 const dotenv = require('dotenv');
 const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
-const { response } = require('../../shared/http/response');
+const { response } = require('../../core/http');
 const { validateInput } = require('./steps/validateInput');
 const { fetchAndEnrichProducts } = require('./steps/fetchAndEnrichProducts');
 const buildProducts = require('./steps/buildProducts');

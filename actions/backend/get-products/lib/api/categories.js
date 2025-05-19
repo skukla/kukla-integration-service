@@ -4,10 +4,9 @@
  */
 
 const fetch = require('node-fetch');
-const { request } = require('../../../../shared/http/client');
-const { headers } = require('../../../../shared/http/headers');
-const { response } = require('../../../../shared/http/response');
-const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints');
+const { request, headers, response, buildFullUrl } = require('../../../../core/http');
+const { buildCommerceUrl } = require('../../../../commerce/integration');
+
 
 /**
  * Fetch category details for a given category ID from the REST API.
@@ -19,10 +18,10 @@ const { endpoints, buildUrl } = require('../../../../shared/commerce/endpoints')
  * @returns {Promise<{id: number, name: string}|undefined>} The category object or undefined if not found
  */
 async function fetchCategory(categoryId, token, params) {
-  const url = endpoints.category(params.COMMERCE_URL, categoryId);
+  const url = buildCommerceUrl(params.COMMERCE_URL, `/V1/categories/${categoryId}`);
   
   const res = await fetch(url, {
-    headers: headers(token)
+    headers: headers.commerce(token)
   });
   
   if (!res.ok) {

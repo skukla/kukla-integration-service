@@ -3,10 +3,10 @@
 */
 
 const { Core } = require('@adobe/aio-sdk');
-const { buildHeaders, getBearerToken } = require('../actions/shared/http/headers');
-const { errorResponse } = require('../actions/shared/http/response');
-const { checkMissingRequestInputs } = require('../actions/shared/validation/input');
-const { validateAdminCredentials, fetchAdminToken } = require('../actions/shared/commerce/auth');
+const { buildHeaders, getBearerToken } = require('../actions/core/http');
+const { response: { error: errorResponse } } = require('../actions/core/http');
+const { checkMissingRequestInputs } = require('../actions/core/validation');
+const { validateAdminCredentials } = require('../actions/commerce/integration');
 
 describe('shared utils', () => {
   test('interface', () => {
@@ -102,7 +102,7 @@ describe('shared utils', () => {
 describe('commerce utils', () => {
   test('interface', () => {
     expect(typeof validateAdminCredentials).toBe('function')
-    expect(typeof fetchAdminToken).toBe('function')
+    expect(typeof getBearerToken).toBe('function')
     expect(typeof buildHeaders).toBe('function')
   })
 

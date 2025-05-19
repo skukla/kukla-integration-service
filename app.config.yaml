@@ -9,7 +9,7 @@ application:
           get-products:
             function: actions/backend/get-products/index.js
             web: "yes"
-            runtime: nodejs:22
+            runtime: nodejs:18
             inputs:
               COMMERCE_URL: $COMMERCE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
@@ -20,7 +20,7 @@ application:
           download-file:
             function: actions/backend/download-file/index.js
             web: "yes"
-            runtime: nodejs:22
+            runtime: nodejs:18
             annotations:
               require-adobe-auth: false
               final: true
@@ -28,6 +28,15 @@ application:
             function: actions/frontend/browse-files/index.js
             web: "yes"
             runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+            annotations:
+              require-adobe-auth: false
+              final: true
+          delete-file:
+            function: actions/backend/delete-file/index.js
+            web: "yes"
+            runtime: nodejs:18
             annotations:
               require-adobe-auth: false
               final: true
