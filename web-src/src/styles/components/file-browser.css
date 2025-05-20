@@ -59,65 +59,44 @@
 .file-browser .table-content .table-row {
     display: grid;
     grid-template-columns: var(--file-browser-grid-columns);
-    align-items: center;
     min-height: var(--file-browser-row-height);
     background-color: var(--file-browser-row-bg);
     transition: background-color 0.15s ease-in-out;
     position: relative;
     margin: 0;
+    padding: var(--spacing-sm) 0;
 }
 
 /* Content Row Hover */
-.file-browser .table-content .table-row:hover,
-.file-browser .table-content .table-row:focus-within {
-    background-color: var(--file-browser-row-hover-bg) !important;
+.file-browser .table-content .table-row:hover {
+    background-color: var(--file-browser-row-hover-bg);
     cursor: pointer;
 }
 
 /* Ensure cells don't override row background */
 .file-browser .table-cell {
     background: transparent;
-}
-
-/* Header Row */
-.file-browser .table-row.header {
-    background-color: var(--file-browser-header-bg);
-    position: relative;
-    cursor: default;
-}
-
-/* Header Cells */
-.file-browser .table-header {
-    padding: var(--file-browser-cell-padding);
-    font-size: var(--file-browser-header-font);
-    font-weight: var(--file-browser-header-weight);
-    letter-spacing: var(--file-browser-header-spacing);
-    text-transform: uppercase;
-    color: var(--color-gray-900);
-}
-
-/* Table Cells */
-.file-browser .table-cell {
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 0 var(--spacing-xl);
     display: flex;
+    height: var(--file-browser-row-height);
     align-items: center;
-    min-height: var(--file-browser-row-height);
 }
 
 .file-browser .table-cell span {
     color: var(--color-gray-900);
     line-height: var(--file-browser-content-height);
-    min-height: var(--file-browser-content-height);
+    height: var(--file-browser-content-height);
     display: flex;
     align-items: center;
 }
 
 /* Actions Cell */
 .file-browser .table-cell:last-child {
-    padding: var(--spacing-md);
+    padding: 0 var(--spacing-md);
     display: flex;
     justify-content: center;
     align-items: center;
+    height: var(--file-browser-row-height);
 }
 
 /* Skeleton State - Using Design System Implementation */
@@ -140,7 +119,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
+    height: var(--file-browser-content-height);
 }
 
 /* Button Group */

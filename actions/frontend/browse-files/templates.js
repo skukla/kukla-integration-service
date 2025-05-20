@@ -50,6 +50,7 @@ function getActionButtonsHtml(file) {
                         data-loading-class="is-loading"
                         data-loading-delay="100"
                         data-loading-target="this"
+                        tabindex="-1"
                         aria-label="Download ${file.name}">
                     <span class="btn-label">Download</span>
                 </button>
@@ -59,6 +60,7 @@ function getActionButtonsHtml(file) {
                         data-loading-class="is-loading"
                         data-modal-url="${modalUrl}"
                         data-file-name="${file.name}"
+                        tabindex="-1"
                         aria-label="Delete ${file.name}">
                     <span class="btn-label">Delete</span>
                 </button>

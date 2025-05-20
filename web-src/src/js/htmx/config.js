@@ -11,12 +11,14 @@ const COMPONENT_CONFIG = {
         'hx-trigger': 'load once',  // Only load once on initial page load
         'hx-swap': 'innerHTML',
         'hx-indicator': '#content-loader',
+        'hx-disable-preserve-focus': 'true',
         'data-loading-states': 'true'
     },
     'content-loader': {
         'hx-target': '.table-content',
         'hx-swap': 'innerHTML',
         'hx-indicator': '#content-loader',
+        'hx-disable-preserve-focus': 'true',
         'data-loading-class': 'is-loading',
         'data-loading-states': 'true'
     },

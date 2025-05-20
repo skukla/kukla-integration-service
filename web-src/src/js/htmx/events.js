@@ -156,6 +156,11 @@ function handleBeforeSwap(event) {
  * @param {Event} event - HTMX event
  */
 function handleAfterSwap(event) {
+    // Remove focus from any focused elements
+    if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+    }
+    
     // Show modal if swapping modal content
     if (event.detail.target.id === 'modal-container') {
         showModal();
@@ -173,13 +178,19 @@ function handleAfterSwap(event) {
  * @param {Event} event - HTMX event
  */
 function handleAfterSettle(event) {
-    // Focus first focusable element in swapped content
-    const focusable = event.detail.target.querySelector(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable) {
-        focusable.focus();
+    // Only handle specific cases where we want to manage focus
+    const target = event.detail.target;
+    
+    // If it's a modal, we might want to focus the first interactive element
+    if (target.id === 'modal-container') {
+        const focusable = target.querySelector(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable) {
+            focusable.focus();
+        }
     }
+    // For all other cases, we don't automatically focus elements
 }
 
 /**
