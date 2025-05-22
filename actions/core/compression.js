@@ -38,13 +38,21 @@ const CompressionConfig = {
 
 /**
  * Checks if content should be compressed based on size and type
- * @param {string|Buffer|Object} content - Content to check
+ * @param {string|Buffer|Object|number} content - Content to check
  * @param {string} contentType - Content type
  * @returns {boolean} Whether content should be compressed
  */
 function shouldCompress(content, contentType) {
-  // Convert objects to JSON strings for compression check
-  const contentToCheck = typeof content === 'object' ? JSON.stringify(content) : content;
+  // Convert objects and numbers to strings for compression check
+  let contentToCheck;
+  if (typeof content === 'number') {
+    contentToCheck = content.toString();
+  } else if (typeof content === 'object') {
+    contentToCheck = JSON.stringify(content);
+  } else {
+    contentToCheck = content;
+  }
+
   const size = Buffer.byteLength(contentToCheck);
   const type = contentType.split(';')[0].toLowerCase();
 
@@ -72,13 +80,21 @@ function getCompressionMethod(acceptEncoding = '') {
 
 /**
  * Compresses content using specified method
- * @param {string|Buffer|Object} content - Content to compress
+ * @param {string|Buffer|Object|number} content - Content to compress
  * @param {string} method - Compression method
  * @returns {Promise<Buffer>} Compressed content
  */
 async function compressContent(content, method) {
-  // Convert objects to JSON strings before compression
-  const contentToCompress = typeof content === 'object' ? JSON.stringify(content) : content;
+  // Convert objects and numbers to strings before compression
+  let contentToCompress;
+  if (typeof content === 'number') {
+    contentToCompress = content.toString();
+  } else if (typeof content === 'object') {
+    contentToCompress = JSON.stringify(content);
+  } else {
+    contentToCompress = content;
+  }
+
   const buffer = Buffer.isBuffer(contentToCompress) ? contentToCompress : Buffer.from(contentToCompress);
 
   switch (method) {

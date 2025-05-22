@@ -25,7 +25,7 @@ function products(options = {}) {
  * @returns {string} Stock item endpoint path
  */
 function stockItem(sku) {
-  return `/V1/stockItems/${encodeURIComponent(sku)}`;
+  return `/V1/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]=${sku}&searchCriteria[filter_groups][0][filters][0][condition_type]=eq`;
 }
 
 /**
