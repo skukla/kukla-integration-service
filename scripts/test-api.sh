@@ -8,6 +8,40 @@ PROD_URL="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/ku
 FIELDS="sku,name,price,qty,categories,images"
 FORMAT="json"
 
+# Function to check if dev server is running
+check_dev_server() {
+    curl -k -s -o /dev/null -w "%{http_code}" "https://localhost:9080" > /dev/null 2>&1
+    return $?
+}
+
+# Function to start dev server
+start_dev_server() {
+    echo "Starting development server..."
+    npm run dev:actions &
+    DEV_SERVER_PID=$!
+    
+    # Wait for server to start (max 30 seconds)
+    for i in {1..30}; do
+        if check_dev_server; then
+            echo "Development server is ready"
+            return 0
+        fi
+        sleep 1
+    done
+    
+    echo "Error: Development server failed to start"
+    kill $DEV_SERVER_PID 2>/dev/null
+    return 1
+}
+
+# Function to cleanup dev server
+cleanup_dev_server() {
+    if [ ! -z "$DEV_SERVER_PID" ]; then
+        echo "Stopping development server..."
+        kill $DEV_SERVER_PID 2>/dev/null
+    fi
+}
+
 # Load environment variables if .env exists
 if [ -f ".env" ]; then
     # Read .env file but only process Commerce-related variables
@@ -160,6 +194,21 @@ fi
 
 if [ "$FORMAT" = "csv" ]; then
     PARAMS="$PARAMS&format=csv"
+fi
+
+# Start dev server if testing in dev environment
+if [ "$ENV" = "dev" ]; then
+    # Set up trap to cleanup dev server on script exit
+    trap cleanup_dev_server EXIT
+    
+    if ! check_dev_server; then
+        if ! start_dev_server; then
+            echo "Failed to start development server"
+            exit 1
+        fi
+    else
+        echo "Development server is already running"
+    fi
 fi
 
 # Execute the API call
