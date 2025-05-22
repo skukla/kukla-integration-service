@@ -26,6 +26,9 @@ async function main(rawParams) {
     // Extract and validate parameters
     const params = extractActionParams(rawParams);
     
+    // Check for development mode using query parameters
+    const isDev = (rawParams.__ow_query && rawParams.__ow_query.env === 'dev') || rawParams.env === 'dev';
+    
     // Step 1: Get authentication token
     const token = await getAuthToken(params);
     steps.push('Authentication successful');
@@ -47,6 +50,19 @@ async function main(rawParams) {
       buildProductObject(product, DEFAULT_FIELDS, categoryMap)
     );
     steps.push(`Transformed ${transformedProducts.length} products`);
+
+    // Check for development mode
+    if (isDev) {
+      steps.push('CSV creation and storage steps skipped in development environment');
+      return {
+        statusCode: 200,
+        body: {
+          success: true,
+          message: 'Product export completed successfully',
+          steps
+        }
+      };
+    }
 
     // Step 6: Generate CSV file
     const csvFile = await createCsv(transformedProducts);
@@ -74,7 +90,7 @@ async function main(rawParams) {
       statusCode: error.statusCode || 500,
       body: {
         error: error.message || 'server error',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        details: isDev ? error.stack : undefined,
         steps
       }
     };
