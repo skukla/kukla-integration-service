@@ -1,39 +1,39 @@
-const fetch = require('node-fetch');
-const { headers } = require('../../../../core/http');
-const { buildCommerceUrl } = require('../../../../commerce/integration');
+const { buildHeaders } = require('../../../core/http');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../commerce/integration');
+const endpoints = require('./api/commerce-endpoints');
 
 /**
  * Get authentication token from Adobe Commerce
  * @param {Object} params - Authentication parameters
- * @param {string} params.username - Commerce admin username
- * @param {string} params.password - Commerce admin password
+ * @param {string} params.COMMERCE_ADMIN_USERNAME - Commerce admin username
+ * @param {string} params.COMMERCE_ADMIN_PASSWORD - Commerce admin password
  * @param {string} params.COMMERCE_URL - Commerce instance base URL
  * @returns {Promise<string>} Authentication token
  * @throws {Error} If authentication fails
  */
-async function getAuthToken({ username, password, COMMERCE_URL }) {
-  const url = buildCommerceUrl(COMMERCE_URL, '/V1/integration/admin/token');
-  
+async function getAuthToken(params) {
   try {
-    const res = await fetch(url, {
+    const url = buildCommerceUrl(params.COMMERCE_URL, endpoints.adminToken());
+    
+    const response = await makeCommerceRequest(url, {
       method: 'POST',
-      headers: headers.json,
+      headers: buildHeaders(),
       body: JSON.stringify({
-        username,
-        password,
-      }),
+        username: params.COMMERCE_ADMIN_USERNAME,
+        password: params.COMMERCE_ADMIN_PASSWORD
+      })
     });
 
-    if (!res.ok) {
-      throw new Error(`Authentication failed: ${res.status} ${await res.text()}`);
+    if (response.statusCode !== 200) {
+      throw new Error('Failed to authenticate with Commerce API');
     }
 
-    return res.text();
+    return response.body;
   } catch (error) {
     throw new Error(`Failed to authenticate with Commerce: ${error.message}`);
   }
 }
 
 module.exports = {
-  getAuthToken,
+  getAuthToken
 }; 
