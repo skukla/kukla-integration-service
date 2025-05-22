@@ -38,12 +38,14 @@ const CompressionConfig = {
 
 /**
  * Checks if content should be compressed based on size and type
- * @param {string|Buffer} content - Content to check
+ * @param {string|Buffer|Object} content - Content to check
  * @param {string} contentType - Content type
  * @returns {boolean} Whether content should be compressed
  */
 function shouldCompress(content, contentType) {
-  const size = Buffer.byteLength(content);
+  // Convert objects to JSON strings for compression check
+  const contentToCheck = typeof content === 'object' ? JSON.stringify(content) : content;
+  const size = Buffer.byteLength(contentToCheck);
   const type = contentType.split(';')[0].toLowerCase();
 
   return size >= CompressionConfig.MIN_SIZE &&
@@ -70,12 +72,14 @@ function getCompressionMethod(acceptEncoding = '') {
 
 /**
  * Compresses content using specified method
- * @param {string|Buffer} content - Content to compress
+ * @param {string|Buffer|Object} content - Content to compress
  * @param {string} method - Compression method
  * @returns {Promise<Buffer>} Compressed content
  */
 async function compressContent(content, method) {
-  const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content);
+  // Convert objects to JSON strings before compression
+  const contentToCompress = typeof content === 'object' ? JSON.stringify(content) : content;
+  const buffer = Buffer.isBuffer(contentToCompress) ? contentToCompress : Buffer.from(contentToCompress);
 
   switch (method) {
     case CompressionConfig.METHODS.GZIP:

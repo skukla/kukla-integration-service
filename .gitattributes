@@ -1,0 +1,10 @@
+# Documentation files
+# When merging from docs/current into feature branches, take their version
+docs/**/*.md merge=theirs
+
+# Ensure text files have normalized line endings
+* text=auto
+
+# Explain merge strategies in comments
+# merge=theirs: During merge conflicts, automatically take the version from the branch we're merging from
+# This ensures docs/current remains the source of truth when we merge it into feature branches 

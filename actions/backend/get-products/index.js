@@ -1,80 +1,83 @@
 /**
- * Main action for exporting Adobe Commerce product data to CSV
+ * Main action for exporting Adobe Commerce product data
  * @module get-products
  */
-
-const dotenv = require('dotenv');
-const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
-const { response } = require('../../core/http');
-const { validateInput } = require('./steps/validateInput');
-const { fetchAndEnrichProducts } = require('./steps/fetchAndEnrichProducts');
-const buildProducts = require('./steps/buildProducts');
+const { extractActionParams } = require('../../core/http');
+const { getAuthToken } = require('./lib/auth');
+const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
+const { buildCategoryMap } = require('./lib/api/categories');
+const { buildProductObject, DEFAULT_FIELDS } = require('./lib/product-transformer');
+const { performance } = require('perf_hooks');
 const createCsv = require('./steps/createCsv');
 const storeCsv = require('./steps/storeCsv');
-const { getRequestedFields } = require('./lib/product-transformer');
-
-// Load environment variables from .env file
-dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 /**
- * Main function that orchestrates the product export process
- * 
- * @param {Object} params - Action parameters
- * @param {string} params.COMMERCE_URL - Adobe Commerce instance URL
- * @param {string} params.token - Authentication token for Commerce API
- * @param {string} [params.LOG_LEVEL='info'] - Logging level
- * @param {Array<string>} [params.fields] - Optional array of fields to include in the export
- * 
+ * Main action handler for get-products
+ * @param {Object} rawParams - Action parameters from OpenWhisk
  * @returns {Promise<Object>} Action response
- * @property {number} statusCode - HTTP status code (200 for success, 500 for error)
- * @property {Object} body - Response body
- * @property {string} body.message - Success or error message
- * @property {Object} body.file - File information
- * @property {string} body.file.downloadUrl - URL to download the generated CSV
- * @property {string[]} body.steps - Array of processing steps for tracking progress
- * 
- * @throws {Error} If any step in the process fails
  */
-async function main(params) {
-  const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
+async function main(rawParams) {
+  const logger = Core.Logger('main', { level: rawParams.LOG_LEVEL || 'info' });
+  const startTime = performance.now();
   const steps = [];
-
+  
   try {
-    // Step 1: Validate input
-    const validationResult = await validateInput(params);
-    steps.push(validationResult);
+    // Extract and validate parameters
+    const params = extractActionParams(rawParams);
+    
+    // Step 1: Get authentication token
+    const token = await getAuthToken(params);
+    steps.push('Authentication successful');
 
-    // Step 2: Fetch and enrich products
-    const { products, productsWithInventory, categoryMap } = await fetchAndEnrichProducts(params);
+    // Step 2: Fetch products with pagination
+    const products = await fetchAllProducts(token, params);
     steps.push(`Fetched ${products.length} products from Adobe Commerce`);
-    steps.push('Enriched products with inventory data');
+
+    // Step 3: Enrich with inventory data
+    const productsWithInventory = await enrichWithInventory(products, token, params);
+    steps.push(`Enriched ${productsWithInventory.length} products with inventory data`);
+
+    // Step 4: Build category map and enrich products
+    const categoryMap = await buildCategoryMap(productsWithInventory, token, params);
     steps.push(`Built category map with ${Object.keys(categoryMap).length} categories`);
 
-    // Step 3: Build product objects with requested fields
-    const requestedFields = getRequestedFields(params);
-    const productsWithCategories = buildProducts(productsWithInventory, requestedFields, categoryMap);
-    steps.push(`Constructed ${productsWithCategories.length} product objects for CSV export`);
+    // Step 5: Transform products
+    const transformedProducts = productsWithInventory.map(product => 
+      buildProductObject(product, DEFAULT_FIELDS, categoryMap)
+    );
+    steps.push(`Transformed ${transformedProducts.length} products`);
 
-    // Step 4: Generate CSV in memory
-    const { fileName, content } = await createCsv(productsWithCategories);
+    // Step 6: Generate CSV file
+    const csvFile = await createCsv(transformedProducts);
     steps.push('Generated CSV content in memory');
 
-    // Step 5: Store CSV
-    const storageResult = await storeCsv(content, fileName);
+    // Step 7: Store CSV file
+    const storageResult = await storeCsv(csvFile);
     steps.push(`Stored CSV file as "${storageResult.fileName}"`);
 
-    return response.success({
-      message: 'Product export completed successfully.',
-      file: {
-        downloadUrl: storageResult.downloadUrl
-      },
-      steps
-    });
+    return {
+      statusCode: 200,
+      body: {
+        message: 'Product export completed successfully.',
+        file: {
+          downloadUrl: storageResult.downloadUrl
+        },
+        steps
+      }
+    };
   } catch (error) {
-    logger.error('Error in main action:', error);
-    steps.push(`Error: ${error.message || error.toString()}`);
-    return response.error(500, error.message || error.toString(), { steps });
+    logger.error('Error in get-products action:', error);
+    steps.push(`Error: ${error.message}`);
+
+    return {
+      statusCode: error.statusCode || 500,
+      body: {
+        error: error.message || 'server error',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        steps
+      }
+    };
   }
 }
 

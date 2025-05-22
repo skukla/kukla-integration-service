@@ -2,13 +2,11 @@
  * Adobe Commerce integration utilities
  * @module actions/commerce/integration
  */
-
 const fetch = require('node-fetch');
 const { buildHeaders } = require('../core/http');
 const { createErrorResponse } = require('../core/error-handler');
 const { addCacheHeaders } = require('../core/cache');
 const { addCompression } = require('../core/compression');
-
 // Configuration
 const COMMERCE_CONFIG = {
     REQUEST_TIMEOUT: 30000,    // 30 second timeout
@@ -17,7 +15,6 @@ const COMMERCE_CONFIG = {
     BATCH_SIZE: 50,           // Maximum items per batch
     CACHE_DURATION: 300       // Cache duration for GET requests (5 minutes)
 };
-
 /**
  * Process Commerce API response with caching and compression
  * @param {Response} response - Fetch response
@@ -29,7 +26,6 @@ async function processCommerceResponse(response, context = {}) {
     const contentType = response.headers.get('content-type');
     const isJson = contentType && contentType.includes('application/json');
     const body = isJson ? await response.json() : await response.text();
-
     if (!response.ok) {
         // Handle rate limiting
         if (response.status === 429) {
@@ -40,7 +36,6 @@ async function processCommerceResponse(response, context = {}) {
                 headers: Object.fromEntries(response.headers)
             });
         }
-
         // Handle authentication errors
         if (response.status === 401) {
             return createErrorResponse('COMMERCE_AUTH', 'Commerce authentication failed', {
@@ -48,7 +43,6 @@ async function processCommerceResponse(response, context = {}) {
                 response: body
             });
         }
-
         // Handle other errors
         return createErrorResponse('COMMERCE_API', 
             isJson && body.message ? body.message : 'Commerce API request failed',
@@ -59,7 +53,6 @@ async function processCommerceResponse(response, context = {}) {
             }
         );
     }
-
     // For GET requests, add caching headers
     const baseResponse = {
         statusCode: response.status,
@@ -68,7 +61,6 @@ async function processCommerceResponse(response, context = {}) {
         },
         body
     };
-
     if (context.method === 'GET') {
         const cachedResponse = addCacheHeaders(baseResponse, {
             maxAge: COMMERCE_CONFIG.CACHE_DURATION,
@@ -76,10 +68,8 @@ async function processCommerceResponse(response, context = {}) {
         });
         return addCompression(cachedResponse, context.compression || {});
     }
-
     return baseResponse;
 }
-
 /**
  * Makes a Commerce API request with timeout and retry support
  * @param {string} url - Request URL
@@ -103,26 +93,28 @@ async function makeCommerceRequest(url, options = {}, context = {}) {
             });
 
             clearTimeout(timeout);
-            return processCommerceResponse(response, {
+
+            const result = await processCommerceResponse(response, {
                 ...context,
                 method: options.method || 'GET'
             });
+
+            return result;
+
         } catch (error) {
             attempt++;
             
-            // Don't retry if we've hit the limit or it's a timeout
-            if (attempt >= COMMERCE_CONFIG.RETRY_ATTEMPTS || error.name === 'AbortError') {
+            // If we've exhausted all retries, throw the error
+            if (attempt >= COMMERCE_CONFIG.RETRY_ATTEMPTS) {
                 throw error;
             }
 
-            // Exponential backoff
-            await new Promise(resolve => 
-                setTimeout(resolve, COMMERCE_CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1))
-            );
+            // Calculate exponential backoff delay
+            const delay = COMMERCE_CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
 }
-
 /**
  * Validates admin credentials against Adobe Commerce
  * @param {Object} params - Authentication parameters
@@ -152,7 +144,6 @@ async function validateAdminCredentials(params) {
         );
     }
 }
-
 /**
  * Batches multiple Commerce API requests
  * @param {Array<Object>} requests - Array of request objects
@@ -161,22 +152,18 @@ async function validateAdminCredentials(params) {
  */
 async function batchRequests(requests, options = {}) {
     const results = [];
-    
     // Process requests in batches
     for (let i = 0; i < requests.length; i += COMMERCE_CONFIG.BATCH_SIZE) {
         const batch = requests.slice(i, i + COMMERCE_CONFIG.BATCH_SIZE);
         const batchPromises = batch.map(req => 
             makeCommerceRequest(req.url, req.options, req.context)
         );
-        
         // Wait for all requests in this batch
         const batchResults = await Promise.allSettled(batchPromises);
         results.push(...batchResults);
     }
-
     return results;
 }
-
 /**
  * Builds a Commerce API URL
  * @param {string} baseUrl - Base Commerce URL
@@ -188,7 +175,6 @@ function buildCommerceUrl(baseUrl, endpoint) {
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return `${base}/rest${path}`;
 }
-
 module.exports = {
     COMMERCE_CONFIG,
     validateAdminCredentials,
