@@ -6,7 +6,6 @@ METHOD="POST"
 LOCAL_URL="https://localhost:9080/api/v1/web/kukla-integration-service"
 PROD_URL="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service"
 FIELDS="sku,name,price,qty,categories,images"
-FORMAT="json"
 
 # Function to check if dev server is running
 check_dev_server() {
@@ -77,7 +76,6 @@ show_help() {
     echo "  --fields FIELDS            Comma-separated list of fields to return"
     echo "                             Available fields: sku,name,price,qty,categories,images"
     echo "                             Default: all fields"
-    echo "  --format FORMAT            Response format (json|csv, default: json)"
     echo "  -h, --help                 Show this help message"
     echo
     echo "Environment Variables (required in .env):"
@@ -143,14 +141,6 @@ while [[ $# -gt 0 ]]; do
             validate_fields "$2"
             shift 2
             ;;
-        --format)
-            FORMAT="$2"
-            if [[ ! "$FORMAT" =~ ^(json|csv)$ ]]; then
-                echo "Error: format must be 'json' or 'csv'"
-                exit 1
-            fi
-            shift 2
-            ;;
         -h|--help)
             show_help
             exit 0
@@ -192,9 +182,8 @@ if [ ! -z "$FIELDS" ]; then
     PARAMS="$PARAMS&fields=$FIELDS"
 fi
 
-if [ "$FORMAT" = "csv" ]; then
-    PARAMS="$PARAMS&format=csv"
-fi
+# Include environment parameter
+PARAMS="$PARAMS&env=$ENV"
 
 # Start dev server if testing in dev environment
 if [ "$ENV" = "dev" ]; then
@@ -216,7 +205,6 @@ echo "Testing endpoint: $ENDPOINT"
 echo "Environment: $ENV"
 echo "Method: $METHOD"
 echo "Fields: $FIELDS"
-echo "Format: $FORMAT"
 echo
 
 # Use -k only for local testing (self-signed cert)
