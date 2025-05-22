@@ -1,0 +1,21 @@
+# <type>: <subject>
+# |<----  Using a maximum of 50 characters  ---->|
+# 
+# <body>
+# |<----   Try to limit each line to 72 characters   ---->|
+#
+# Types:
+# feat     (new feature)
+# fix      (bug fix)
+# docs     (documentation changes)
+# style    (formatting, missing semicolons, etc; no code change)
+# refactor (refactoring production code)
+# test     (adding tests, refactoring tests; no production code change)
+# chore    (updating build tasks, package manager configs, etc)
+#
+# Example:
+# feat: add rate limiting to products API
+#
+# - Implement per-IP rate limiting
+# - Add rate limit headers to responses
+# - Update documentation with rate limit details 

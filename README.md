@@ -82,6 +82,8 @@ Our documentation is organized into focused guides:
   - [File Operations](docs/file-operations.md) - File handling
   - [Performance](docs/performance.md) - Optimization guide
 
+- [Testing Guide](docs/testing.md) - API testing process and tools
+
 ## Support
 
 - Submit issues via [GitHub Issues](https://github.com/your-repo/issues)

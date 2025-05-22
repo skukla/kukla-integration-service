@@ -1,35 +1,32 @@
-/**
- * Step to fetch and enrich products with inventory and category data
- * @module steps/fetchAndEnrichProducts
- */
-
 const { getProducts } = require('../lib/api/products');
-const { getCategories } = require('../lib/api/categories');
+const { enrichProductsWithCategories } = require('../lib/api/categories');
+const { getAuthToken } = require('../lib/auth');
 
 /**
- * Fetch products and enrich them with additional data
- * @param {Object} params - Action parameters
- * @returns {Promise<Object>} Enriched products data
+ * Fetches products from Adobe Commerce and enriches them with inventory and category data
+ * @param {import('../index.js').ActionParams} params
+ * @returns {Promise<Object[]>} Array of enriched product objects
  */
 async function fetchAndEnrichProducts(params) {
-  // Get products from Commerce
-  const products = await getProducts(params);
+  try {
+    // Get authentication token
+    const token = await getAuthToken(params);
 
-  // Get categories if needed
-  if (params.include_categories) {
-    const categories = await getCategories(params);
-    // Enrich products with category data
-    products.items = products.items.map(product => ({
-      ...product,
-      categories: product.category_ids.map(id => 
-        categories.find(cat => cat.id === id)
-      ).filter(Boolean)
-    }));
+    // Fetch products with optional inventory data
+    const products = await getProducts(token, {
+      COMMERCE_URL: params.COMMERCE_URL,
+      include_inventory: params.include_inventory || false
+    });
+
+    // If category data is requested, enrich products with categories
+    if (params.include_categories) {
+      return await enrichProductsWithCategories(products, token, params);
+    }
+
+    return products;
+  } catch (error) {
+    throw new Error(`Failed to fetch and enrich products: ${error.message}`);
   }
-
-  return products;
 }
 
-module.exports = {
-  fetchAndEnrichProducts
-}; 
+module.exports = fetchAndEnrichProducts; 

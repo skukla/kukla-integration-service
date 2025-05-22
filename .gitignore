@@ -1,4 +1,3 @@
-
 # package directories
 node_modules
 jspm_packages
@@ -39,6 +38,7 @@ coverage
 
 # logs folder for aio-run-detached
 logs
+dev.log
 
 # workspace
 # Contains sensitive information like API keys and client secrets that should not be committed

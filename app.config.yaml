@@ -9,14 +9,26 @@ application:
           get-products:
             function: actions/backend/get-products/index.js
             web: "yes"
-            runtime: nodejs:18
+            runtime: nodejs:22
             inputs:
+              LOG_LEVEL: debug
               COMMERCE_URL: $COMMERCE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
+            parameters:
+              COMMERCE_URL:
+                type: string
+                description: Adobe Commerce instance URL
+              COMMERCE_ADMIN_USERNAME:
+                type: string
+                description: Admin username for authentication
+              COMMERCE_ADMIN_PASSWORD:
+                type: string
+                description: Admin password for authentication
             annotations:
               require-adobe-auth: false
               final: true
+              web-export: true
           download-file:
             function: actions/backend/download-file/index.js
             web: "yes"

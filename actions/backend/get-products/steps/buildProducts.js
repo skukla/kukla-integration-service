@@ -3,15 +3,25 @@
  * @module steps/buildProducts
  */
 
-const { buildProductObject } = require('../lib/product-transformer');
+const { buildProductObject, getRequestedFields } = require('../lib/product-transformer');
 
 /**
- * Builds an array of product objects with only the requested fields.
- * @param {Object[]} products - Array of product objects from Adobe Commerce
- * @param {Array<string>} requestedFields - Fields to include in the output
- * @param {Object<string, string>} categoryMap - Map of category IDs to names
- * @returns {Object[]} Array of filtered product objects
+ * Transforms raw product data into the required format
+ * @param {Object[]} products - Raw product data from Adobe Commerce
+ * @param {string[]} [fields] - Optional list of specific fields to include
+ * @returns {Promise<Object[]>} Transformed product objects ready for CSV
+ * @throws {Error} If product transformation fails
  */
-module.exports = function buildProducts(products, requestedFields, categoryMap) {
-  return products.map(product => buildProductObject(product, requestedFields, categoryMap));
-}; 
+async function buildProducts(products, fields) {
+  try {
+    // Get the list of fields to include (either specified or default)
+    const requestedFields = fields || getRequestedFields();
+
+    // Transform each product with the requested fields
+    return products.map(product => buildProductObject(product, requestedFields));
+  } catch (error) {
+    throw new Error(`Failed to build products: ${error.message}`);
+  }
+}
+
+module.exports = buildProducts; 

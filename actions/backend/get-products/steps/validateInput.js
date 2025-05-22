@@ -1,36 +1,42 @@
 /**
- * Validates the required input parameters for the Adobe Commerce integration.
- * 
- * @param {Object} params - The parameters object containing configuration values
- * @param {string} params.COMMERCE_URL - The base URL of the Adobe Commerce instance
- * @param {string} params.token - Authentication token for Commerce API
- * @returns {Promise<string>} A success message if validation passes
- * @throws {Error} If any required parameter is missing or invalid
+ * Step to validate input parameters
+ * @module steps/validateInput
  */
-const { validateRequired, validateString, validateUrl } = require('../../../core/validation');
+const { checkMissingParams } = require('../../../core/http');
 
 /**
- * Validate input parameters
- * @param {Object} params - Input parameters
- * @returns {Promise<string>} Success message
- * @throws {Error} If any required parameter is missing or invalid
+ * Validates the input parameters for the action
+ * @param {import('../index.js').ActionParams} params
+ * @throws {Error} If required parameters are missing or invalid
  */
 async function validateInput(params) {
   const requiredParams = [
     'COMMERCE_URL',
-    'token'
+    'COMMERCE_ADMIN_USERNAME',
+    'COMMERCE_ADMIN_PASSWORD'
   ];
 
-  // Check required fields
-  validateRequired(params, requiredParams);
+  // Check for missing required parameters
+  const errorMessage = checkMissingParams(params, requiredParams);
+  if (errorMessage) {
+    throw new Error(errorMessage);
+  }
 
-  // Validate string fields
-  validateString(params.token, 'token');
+  // Validate URL format
+  try {
+    new URL(params.COMMERCE_URL);
+  } catch (error) {
+    throw new Error('Invalid COMMERCE_URL format');
+  }
 
-  // Validate URL fields
-  validateUrl(params.COMMERCE_URL, 'COMMERCE_URL');
+  // Validate optional parameters if provided
+  if (params.include_inventory !== undefined && typeof params.include_inventory !== 'boolean') {
+    throw new Error('include_inventory must be a boolean value');
+  }
 
-  return 'Input validation successful';
+  if (params.include_categories !== undefined && typeof params.include_categories !== 'boolean') {
+    throw new Error('include_categories must be a boolean value');
+  }
 }
 
 module.exports = validateInput; 

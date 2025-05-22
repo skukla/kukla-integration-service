@@ -1,68 +1,89 @@
 /**
  * Category-related API calls to Adobe Commerce
- * @module api/categories
+ * @module lib/api/categories
  */
-
-const fetch = require('node-fetch');
-const { headers } = require('../../../../core/http');
-const { buildCommerceUrl } = require('../../../../commerce/integration');
-
+const { buildHeaders } = require('../../../../core/http');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
+const endpoints = require('./commerce-endpoints');
 
 /**
- * Fetch category details for a given category ID from the REST API.
- * @async
- * @param {number|string} categoryId - The category ID
- * @param {string} token - Bearer token for authentication
- * @param {Object} params - Action input parameters
- * @param {string} params.COMMERCE_URL - Adobe Commerce instance URL
- * @returns {Promise<{id: number, name: string}|undefined>} The category object or undefined if not found
- */
-async function fetchCategory(categoryId, token, params) {
-  const url = buildCommerceUrl(params.COMMERCE_URL, `/V1/categories/${categoryId}`);
-  
-  const res = await fetch(url, {
-    headers: headers.commerce(token)
-  });
-  
-  if (!res.ok) {
-    return undefined;
-  }
-  
-  const data = await res.json();
-  return { id: data.id, name: data.name };
-}
-
-/**
- * Extracts category IDs from a product object.
- * @param {Object} product - The product object from Adobe Commerce
- * @param {Object} [product.extension_attributes] - Extension attributes containing category links
- * @param {Array<Object>} [product.extension_attributes.category_links] - Category link objects
- * @param {Array<Object>} [product.custom_attributes] - Custom attributes array
- * @returns {Array<string>} Array of category IDs
+ * Extract category IDs from a product
+ * @param {Object} product - Product object
+ * @returns {string[]} Array of category IDs
  */
 function getCategoryIds(product) {
-  // Check for category links in extension attributes
-  const categoryLinks = product.extension_attributes?.category_links;
-  if (Array.isArray(categoryLinks)) {
-    return categoryLinks
-      .map(link => link.category_id)
-      .filter(Boolean);
+  const categoryIds = new Set();
+  
+  // Check category_ids array
+  if (Array.isArray(product.category_ids)) {
+    product.category_ids.forEach(id => categoryIds.add(String(id)));
   }
-
-  // Check for category IDs in custom attributes
-  const customAttributes = product.custom_attributes;
-  if (Array.isArray(customAttributes)) {
-    const categoryAttribute = customAttributes.find(attr => attr.attribute_code === 'category_ids');
-    if (categoryAttribute?.value && Array.isArray(categoryAttribute.value)) {
-      return categoryAttribute.value;
-    }
+  
+  // Check extension_attributes.category_links
+  if (Array.isArray(product.extension_attributes?.category_links)) {
+    product.extension_attributes.category_links.forEach(link => {
+      if (link.category_id) {
+        categoryIds.add(String(link.category_id));
+      }
+    });
   }
-
-  return [];
+  
+  return Array.from(categoryIds);
 }
 
 /**
- * Gets unique category IDs from a list of products.
+ * Fetch category details from Adobe Commerce
+ * @param {string} categoryId - Category ID
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @returns {Promise<Object>} Category details
+ */
+async function getCategory(categoryId, token, params) {
+  try {
+    const response = await makeCommerceRequest(
+      buildCommerceUrl(params.COMMERCE_URL, endpoints.category(categoryId)),
+      {
+        method: 'GET',
+        headers: buildHeaders(token)
+      }
+    );
+
+    if (response.statusCode === 200) {
+      return {
+        id: categoryId,
+        name: response.body.name
+      };
+    }
+    
+    console.warn(`Failed to fetch category ${categoryId}`);
+    return null;
+  } catch (error) {
+    console.error(`Error fetching category ${categoryId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch categories for a product
+ * @param {Object} product - Product object
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @returns {Promise<string[]>} Array of category names
+ */
+async function getProductCategories(product, token, params) {
+  const categoryIds = getCategoryIds(product);
+  const categories = await Promise.all(
+    categoryIds.map(id => getCategory(id, token, params))
+  );
+  
+  return categories
+    .filter(Boolean)
+    .map(category => category.name);
+}
+
+/**
+ * Gets unique category IDs from a list of products
  * @param {Array<Object>} products - Array of product objects
  * @returns {Array<string>} Array of unique category IDs
  */
@@ -72,12 +93,11 @@ function getUniqueCategoryIds(products) {
 }
 
 /**
- * Builds a map of category IDs to category names.
- * @async
+ * Builds a map of category IDs to category names
  * @param {Array<Object>} products - Array of product objects
- * @param {string} token - Bearer token for authentication
- * @param {Object} params - Action input parameters
- * @returns {Promise<Object<string, string>>} Map of category IDs to names
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object>} Map of category IDs to names
  */
 async function buildCategoryMap(products, token, params) {
   const categoryIds = getUniqueCategoryIds(products);
@@ -85,44 +105,20 @@ async function buildCategoryMap(products, token, params) {
 
   await Promise.all(
     categoryIds.map(async (categoryId) => {
-      const category = await fetchCategory(categoryId, token, params);
+      const category = await getCategory(categoryId, token, params);
       if (category) {
         categoryMap[String(categoryId)] = category.name;
       }
     })
   );
-  
+
   return categoryMap;
 }
 
-/**
- * Get categories from Adobe Commerce
- * @param {Object} params - Request parameters
- * @returns {Promise<Object>} Categories data
- */
-async function getCategories(params) {
-  const url = buildCommerceUrl(params.COMMERCE_URL, '/V1/categories');
-  
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: headers.commerce(params.token)
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch categories: ${res.status} ${await res.text()}`);
-    }
-
-    return res.json();
-  } catch (error) {
-    throw new Error(`Failed to fetch categories: ${error.message}`);
-  }
-}
-
 module.exports = {
-  fetchCategory,
   getCategoryIds,
+  getCategory,
+  getProductCategories,
   getUniqueCategoryIds,
-  buildCategoryMap,
-  getCategories
+  buildCategoryMap
 }; 

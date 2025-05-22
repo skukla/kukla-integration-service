@@ -1,92 +1,98 @@
 /**
  * Product-related API calls to Adobe Commerce
- * @module api/products
+ * @module lib/api/products
  */
-
-const fetch = require('node-fetch');
-const { headers } = require('../../../../core/http');
-const { buildCommerceUrl } = require('../../../../commerce/integration');
+const { buildHeaders } = require('../../../../core/http');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
+const endpoints = require('./commerce-endpoints');
 
 /**
- * Fetch all products from the Adobe Commerce REST API with pagination.
- * @async
- * @param {string} token - Bearer token for authentication
- * @param {Object} params - Action input parameters
- * @param {string} params.COMMERCE_URL - Adobe Commerce instance URL
- * @returns {Promise<Array<Object>>} Array of product objects from Adobe Commerce
- * @throws {Error} If the API request fails or returns an error
+ * Fetch all products from Adobe Commerce with pagination
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @returns {Promise<Object[]>} Array of product objects
  */
 async function fetchAllProducts(token, params) {
   let currentPage = 1;
-  const pageSize = 200;
+  const pageSize = 50;
   let allProducts = [];
   let totalCount = 0;
-  const restEndpoint = buildCommerceUrl(params.COMMERCE_URL, '/V1/products');
-
+  
   do {
-    const url = `${restEndpoint}?searchCriteria[currentPage]=${currentPage}&searchCriteria[pageSize]=${pageSize}`;
-    const res = await fetch(url, {
-      headers: headers.commerce(token)
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch products: ${res.status} ${await res.text()}`);
+    const response = await makeCommerceRequest(
+      buildCommerceUrl(params.COMMERCE_URL, endpoints.products({ currentPage, pageSize })),
+      {
+        method: 'GET',
+        headers: buildHeaders(token)
+      }
+    );
+
+    if (response.statusCode !== 200) {
+      throw new Error(`Failed to fetch products: ${JSON.stringify(response.body)}`);
     }
-    const data = await res.json();
+
+    const data = response.body;
     allProducts = allProducts.concat(data.items);
     totalCount = data.total_count;
     currentPage++;
+
+    console.log(`Fetched page ${currentPage - 1} of products (${allProducts.length}/${totalCount})`);
   } while (allProducts.length < totalCount);
 
   return allProducts;
 }
 
 /**
- * Fetch inventory (qty) for a given SKU from the REST API.
- * @async
- * @param {string} sku - The product SKU
- * @param {string} token - Bearer token for authentication
- * @param {Object} params - Action input parameters
- * @param {string} params.COMMERCE_URL - Adobe Commerce instance URL
- * @returns {Promise<number|undefined>} The quantity or undefined if not found
+ * Fetch inventory data for a product
+ * @param {string} sku - Product SKU
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @returns {Promise<Object>} Inventory data
  */
-async function fetchProductQty(sku, token, params) {
-  const url = buildCommerceUrl(params.COMMERCE_URL, `/V1/stockItems/${sku}`);
-  const res = await fetch(url, {
-    headers: headers.commerce(token)
-  });
-  if (!res.ok) {
-    return undefined;
+async function getInventory(sku, token, params) {
+  const response = await makeCommerceRequest(
+    buildCommerceUrl(params.COMMERCE_URL, endpoints.stockItem(sku)),
+    {
+      method: 'GET',
+      headers: buildHeaders(token)
+    }
+  );
+
+  if (response.statusCode === 200) {
+    return {
+      qty: response.body.qty,
+      is_in_stock: response.body.is_in_stock
+    };
   }
-  const data = await res.json();
-  return data.qty;
+  
+  console.warn(`Failed to fetch inventory for SKU ${sku}`);
+  return { qty: 0, is_in_stock: false };
 }
 
 /**
- * Get products from Adobe Commerce
+ * Enrich products with inventory data
+ * @param {Object[]} products - Array of product objects
+ * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
- * @returns {Promise<Object>} Products data
+ * @returns {Promise<Object[]>} Products enriched with inventory data
  */
-async function getProducts(params) {
-  const url = buildCommerceUrl(params.COMMERCE_URL, '/V1/products');
+async function enrichWithInventory(products, token, params) {
+  const enrichedProducts = [];
   
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: headers.commerce(params.token)
+  for (const product of products) {
+    const inventory = await getInventory(product.sku, token, params);
+    enrichedProducts.push({
+      ...product,
+      qty: inventory.qty
     });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch products: ${res.status} ${await res.text()}`);
-    }
-
-    return res.json();
-  } catch (error) {
-    throw new Error(`Failed to fetch products: ${error.message}`);
   }
+
+  return enrichedProducts;
 }
 
 module.exports = {
   fetchAllProducts,
-  fetchProductQty,
-  getProducts
+  enrichWithInventory
 }; 
