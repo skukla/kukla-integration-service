@@ -60,15 +60,23 @@ async function getInventory(sku, token, params) {
     }
   );
 
-  if (response.statusCode === 200) {
+  if (response.statusCode === 200 && response.body.items && response.body.items.length > 0) {
+    // Sum up quantities from all sources
+    const totalQty = response.body.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    // Product is in stock if any source has it in stock
+    const isInStock = response.body.items.some(item => item.status === 1);
+
     return {
-      qty: response.body.qty,
-      is_in_stock: response.body.is_in_stock
+      qty: totalQty,
+      is_in_stock: isInStock
     };
   }
   
-  console.warn(`Failed to fetch inventory for SKU ${sku}`);
-  return { qty: 0, is_in_stock: false };
+  console.warn(`Failed to fetch inventory for SKU ${sku} - Status: ${response.statusCode}, Response: ${JSON.stringify(response.body)}`);
+  return {
+    qty: 0,
+    is_in_stock: false
+  };
 }
 
 /**
@@ -82,7 +90,13 @@ async function enrichWithInventory(products, token, params) {
   const enrichedProducts = [];
   
   for (const product of products) {
-    const inventory = await getInventory(product.sku, token, params);
+    let inventory = { qty: 0, is_in_stock: false };
+    
+    // Only fetch inventory for simple and virtual products
+    if (product.type_id === 'simple' || product.type_id === 'virtual') {
+      inventory = await getInventory(product.sku, token, params);
+    }
+
     enrichedProducts.push({
       ...product,
       qty: inventory.qty
