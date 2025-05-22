@@ -4,6 +4,7 @@
  */
 const { Core } = require('@adobe/aio-sdk');
 const { extractActionParams } = require('../../core/http');
+const ResponseHandler = require('../../core/response-handler');
 const { getAuthToken } = require('./lib/auth');
 const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
 const { buildCategoryMap } = require('./lib/api/categories');
@@ -20,80 +21,51 @@ const storeCsv = require('./steps/storeCsv');
 async function main(rawParams) {
   const logger = Core.Logger('main', { level: rawParams.LOG_LEVEL || 'info' });
   const startTime = performance.now();
-  const steps = [];
+  
+  // Extract parameters and initialize response handler
+  const params = extractActionParams(rawParams);
+  const isDev = (rawParams.__ow_query && rawParams.__ow_query.env === 'dev') || rawParams.env === 'dev';
+  const responseHandler = new ResponseHandler({ isDev, logger });
   
   try {
-    // Extract and validate parameters
-    const params = extractActionParams(rawParams);
-    
-    // Check for development mode using query parameters
-    const isDev = (rawParams.__ow_query && rawParams.__ow_query.env === 'dev') || rawParams.env === 'dev';
-    
     // Step 1: Get authentication token
     const token = await getAuthToken(params);
-    steps.push('Authentication successful');
+    responseHandler.addStep('Authentication successful');
 
     // Step 2: Fetch products with pagination
     const products = await fetchAllProducts(token, params);
-    steps.push(`Fetched ${products.length} products from Adobe Commerce`);
+    responseHandler.addStep(`Fetched ${products.length} products from Adobe Commerce`);
 
     // Step 3: Enrich with inventory data
     const productsWithInventory = await enrichWithInventory(products, token, params);
-    steps.push(`Enriched ${productsWithInventory.length} products with inventory data`);
+    responseHandler.addStep(`Enriched ${productsWithInventory.length} products with inventory data`);
 
     // Step 4: Build category map and enrich products
     const categoryMap = await buildCategoryMap(productsWithInventory, token, params);
-    steps.push(`Built category map with ${Object.keys(categoryMap).length} categories`);
+    responseHandler.addStep(`Built category map with ${Object.keys(categoryMap).length} categories`);
 
     // Step 5: Transform products
     const transformedProducts = productsWithInventory.map(product => 
       buildProductObject(product, DEFAULT_FIELDS, categoryMap)
     );
-    steps.push(`Transformed ${transformedProducts.length} products`);
+    responseHandler.addStep(`Transformed ${transformedProducts.length} products`);
 
-    // Check for development mode
-    if (isDev) {
-      steps.push('CSV creation and storage steps skipped in development environment');
-      return {
-        statusCode: 200,
-        body: {
-          success: true,
-          message: 'Product export completed successfully',
-          steps
-        }
-      };
+    // Skip file operations in development mode
+    if (responseHandler.shouldSkipFileOperations()) {
+      return responseHandler.success();
     }
 
     // Step 6: Generate CSV file
     const csvFile = await createCsv(transformedProducts);
-    steps.push('Generated CSV content in memory');
+    responseHandler.addStep('Generated CSV content in memory');
 
     // Step 7: Store CSV file
     const storageResult = await storeCsv(csvFile);
-    steps.push(`Stored CSV file as "${storageResult.fileName}"`);
+    responseHandler.addStep(`Stored CSV file as "${storageResult.fileName}"`);
 
-    return {
-      statusCode: 200,
-      body: {
-        message: 'Product export completed successfully.',
-        file: {
-          downloadUrl: storageResult.downloadUrl
-        },
-        steps
-      }
-    };
+    return responseHandler.success({ file: { downloadUrl: storageResult.downloadUrl } });
   } catch (error) {
-    logger.error('Error in get-products action:', error);
-    steps.push(`Error: ${error.message}`);
-
-    return {
-      statusCode: error.statusCode || 500,
-      body: {
-        error: error.message || 'server error',
-        details: isDev ? error.stack : undefined,
-        steps
-      }
-    };
+    return responseHandler.error(error);
   }
 }
 
