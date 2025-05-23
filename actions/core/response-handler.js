@@ -35,7 +35,8 @@ class ResponseHandler {
    */
   success(data = {}) {
     const responseBody = {
-      message: 'Product export completed successfully.'
+      message: data.message || 'Product export completed successfully.',
+      ...data
     };
 
     if (!this.isDev && data.file) {
