@@ -4,7 +4,14 @@
  */
 const { buildHeaders } = require('../../../../core/http');
 const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
+const { processConcurrently } = require('./concurrency');
+const cache = require('./cache');
 const endpoints = require('./commerce-endpoints');
+
+// Optimal values for category operations
+const MAX_CONCURRENT_REQUESTS = 3;
+const REQUEST_RETRIES = 2;
+const RETRY_DELAY = 1000;
 
 /**
  * Extract category IDs from a product
@@ -32,7 +39,7 @@ function getCategoryIds(product) {
 }
 
 /**
- * Fetch category details from Adobe Commerce
+ * Fetch category details from Adobe Commerce with caching
  * @param {string} categoryId - Category ID
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
@@ -40,6 +47,12 @@ function getCategoryIds(product) {
  * @returns {Promise<Object>} Category details
  */
 async function getCategory(categoryId, token, params) {
+  // Check cache first
+  const cachedCategory = cache.get('category', categoryId);
+  if (cachedCategory) {
+    return cachedCategory;
+  }
+
   try {
     const response = await makeCommerceRequest(
       buildCommerceUrl(params.COMMERCE_URL, endpoints.category(categoryId)),
@@ -50,10 +63,14 @@ async function getCategory(categoryId, token, params) {
     );
 
     if (response.statusCode === 200) {
-      return {
+      const category = {
         id: categoryId,
         name: response.body.name
       };
+      
+      // Cache the result
+      cache.set('category', categoryId, category);
+      return category;
     }
     
     console.warn(`Failed to fetch category ${categoryId}`);
@@ -93,7 +110,7 @@ function getUniqueCategoryIds(products) {
 }
 
 /**
- * Builds a map of category IDs to category names
+ * Builds a map of category IDs to category names with caching
  * @param {Array<Object>} products - Array of product objects
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
@@ -101,18 +118,42 @@ function getUniqueCategoryIds(products) {
  */
 async function buildCategoryMap(products, token, params) {
   const categoryIds = getUniqueCategoryIds(products);
-  const categoryMap = {};
-
-  await Promise.all(
-    categoryIds.map(async (categoryId) => {
-      const category = await getCategory(categoryId, token, params);
-      if (category) {
-        categoryMap[String(categoryId)] = category.name;
+  
+  // Check cache for existing categories
+  const cachedCategories = cache.getMulti('category', categoryIds);
+  const uncachedIds = categoryIds.filter(id => !cachedCategories[id]);
+  
+  console.log(`Found ${Object.keys(cachedCategories).length} cached categories, fetching ${uncachedIds.length} new categories`);
+  
+  // Fetch uncached categories in parallel
+  if (uncachedIds.length > 0) {
+    const newCategories = await processConcurrently(
+      uncachedIds,
+      async (categoryId) => {
+        const category = await getCategory(categoryId, token, params);
+        return category ? [categoryId, category.name] : null;
+      },
+      {
+        concurrency: MAX_CONCURRENT_REQUESTS,
+        retries: REQUEST_RETRIES,
+        retryDelay: RETRY_DELAY
       }
-    })
-  );
-
-  return categoryMap;
+    );
+    
+    // Add new categories to cache
+    const newCategoryMap = Object.fromEntries(
+      newCategories.filter(Boolean)
+    );
+    cache.setMulti('category', newCategoryMap);
+    
+    // Merge cached and new categories
+    return {
+      ...cachedCategories,
+      ...newCategoryMap
+    };
+  }
+  
+  return cachedCategories;
 }
 
 module.exports = {
