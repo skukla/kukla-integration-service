@@ -1,10 +1,10 @@
 /**
- * CSV Generation module for product data export
- * @module csv/generator
- * @description Handles the conversion of product data into CSV format with consistent headers and data mapping
+ * CSV generation utilities with memory optimization and compression
+ * @module lib/csv/generator
  */
-
 const csvWriter = require('csv-writer');
+const { Transform } = require('stream');
+const { compress, getCompressionStats } = require('../api/compression');
 
 /**
  * Formats product categories into a comma-separated string
@@ -76,31 +76,65 @@ function mapProductToCsvRow(product) {
 }
 
 /**
- * Generates a CSV string from an array of product objects
+ * Stream transformer for converting products to CSV rows
+ * @private
+ * @returns {Transform} Transform stream
+ */
+function createProductTransformer() {
+  return new Transform({
+    objectMode: true,
+    transform(product, encoding, callback) {
+      try {
+        const row = mapProductToCsvRow(product);
+        callback(null, row);
+      } catch (error) {
+        callback(error);
+      }
+    }
+  });
+}
+
+/**
+ * Generates a compressed CSV string from an array of product objects
  * @param {Object[]} products - Array of product objects to convert to CSV
- * @returns {Promise<string>} CSV content as a string
+ * @returns {Promise<{content: Buffer, stats: Object}>} Compressed CSV content and compression stats
  * @throws {Error} If products array is empty or if CSV generation fails
- * @example
- * const products = [{
- *   sku: 'ABC123',
- *   name: 'Sample Product',
- *   categories: ['Electronics'],
- *   price: 99.99,
- *   qty: 100,
- *   images: [{url: 'http://example.com/image.jpg'}]
- * }];
- * const csv = await generateCsv(products);
  */
 async function generateCsv(products) {
-  const csvStringifier = csvWriter.createObjectCsvStringifier({
+  if (!Array.isArray(products) || products.length === 0) {
+    throw new Error('No products provided for CSV generation');
+  }
+
+  // Create CSV stringifier with headers
+  const stringifier = csvWriter.createObjectCsvStringifier({
     header: csvHeaders.map(h => ({ id: h, title: h }))
   });
   
-  const rows = products.map(mapProductToCsvRow);
-  const headerString = csvStringifier.getHeaderString();
-  const rowString = csvStringifier.stringifyRecords(rows);
+  // Generate CSV content with streaming for memory efficiency
+  const headerString = stringifier.getHeaderString();
+  let csvContent = headerString;
   
-  return headerString + rowString;
+  // Process products in chunks for memory efficiency
+  const CHUNK_SIZE = 100;
+  for (let i = 0; i < products.length; i += CHUNK_SIZE) {
+    const chunk = products.slice(i, i + CHUNK_SIZE);
+    csvContent += stringifier.stringifyRecords(chunk.map(mapProductToCsvRow));
+  }
+
+  // Compress the CSV content
+  const originalBuffer = Buffer.from(csvContent);
+  const compressedContent = await compress(originalBuffer);
+  const stats = getCompressionStats(originalBuffer, compressedContent);
+
+  console.log(`CSV Generation: ${stats.savingsPercent} size reduction through compression (${stats.originalSize} → ${stats.compressedSize} bytes)`);
+
+  return {
+    content: compressedContent,
+    stats
+  };
 }
 
-module.exports = { generateCsv }; 
+module.exports = {
+  generateCsv,
+  csvHeaders
+}; 

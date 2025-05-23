@@ -79,6 +79,7 @@ const storeCsv = require('./steps/storeCsv');
 async function main(rawParams) {
   const logger = Core.Logger('main', { level: rawParams.LOG_LEVEL || 'info' });
   const startTime = performance.now();
+  const memoryUsage = {};
   
   // Extract parameters and initialize response handler
   const params = extractActionParams(rawParams);
@@ -86,6 +87,9 @@ async function main(rawParams) {
   const responseHandler = new ResponseHandler({ isDev, logger });
   
   try {
+    // Record initial memory usage
+    memoryUsage.start = process.memoryUsage().heapUsed;
+
     // Step 1: Get authentication token
     const token = await getAuthToken(params);
     responseHandler.addStep('Authentication successful');
@@ -93,6 +97,9 @@ async function main(rawParams) {
     // Step 2: Fetch products with pagination
     const products = await fetchAllProducts(token, params);
     responseHandler.addStep(`Fetched ${products.length} products from Adobe Commerce`);
+
+    // Record memory after product fetch
+    memoryUsage.afterFetch = process.memoryUsage().heapUsed;
 
     // Step 3: Enrich with inventory data
     const productsWithInventory = await enrichWithInventory(products, token, params);
@@ -108,20 +115,64 @@ async function main(rawParams) {
     );
     responseHandler.addStep(`Transformed ${transformedProducts.length} products`);
 
+    // Record memory after transformation
+    memoryUsage.afterTransform = process.memoryUsage().heapUsed;
+
     // Skip file operations in development mode
     if (responseHandler.shouldSkipFileOperations()) {
+      // Log memory usage in development mode
+      if (isDev) {
+        const memoryStats = Object.entries(memoryUsage).map(([stage, bytes]) => 
+          `${stage}: ${(bytes / 1024 / 1024).toFixed(1)}MB`
+        ).join(', ');
+        logger.info(`Memory usage - ${memoryStats}`);
+      }
       return responseHandler.success();
     }
 
-    // Step 6: Generate CSV file
-    const csvFile = await createCsv(transformedProducts);
-    responseHandler.addStep('Generated CSV content in memory');
+    // Step 6: Generate compressed CSV file
+    const csvResult = await createCsv(transformedProducts);
+    responseHandler.addStep(`Generated compressed CSV content (${csvResult.stats.savingsPercent} size reduction)`);
+
+    // Record memory after CSV generation
+    memoryUsage.afterCsv = process.memoryUsage().heapUsed;
 
     // Step 7: Store CSV file
-    const storageResult = await storeCsv(csvFile);
-    responseHandler.addStep(`Stored CSV file as "${storageResult.fileName}"`);
+    const storageResult = await storeCsv(csvResult);
+    responseHandler.addStep(`Stored compressed CSV file as "${storageResult.fileName}"`);
 
-    return responseHandler.success({ file: { downloadUrl: storageResult.downloadUrl } });
+    // Calculate execution time
+    const executionTime = ((performance.now() - startTime) / 1000).toFixed(1);
+    logger.info(`Execution completed in ${executionTime}s`);
+
+    // Log final memory usage
+    const finalMemory = process.memoryUsage().heapUsed;
+    const peakMemory = Math.max(...Object.values(memoryUsage), finalMemory);
+    
+    // Format memory metrics for response
+    const memoryMetrics = {
+      start: `${(memoryUsage.start / 1024 / 1024).toFixed(1)}MB`,
+      afterFetch: `${(memoryUsage.afterFetch / 1024 / 1024).toFixed(1)}MB`,
+      afterTransform: `${(memoryUsage.afterTransform / 1024 / 1024).toFixed(1)}MB`,
+      afterCsv: `${(memoryUsage.afterCsv / 1024 / 1024).toFixed(1)}MB`,
+      peak: `${(peakMemory / 1024 / 1024).toFixed(1)}MB`
+    };
+
+    // Always include performance metrics in response
+    const response = {
+      file: isDev ? null : { downloadUrl: storageResult.downloadUrl },
+      message: "Product export completed successfully.",
+      steps: responseHandler.steps,
+      performance: {
+        executionTime: `${executionTime}s`,
+        compression: csvResult ? csvResult.stats : null,
+        memory: memoryMetrics,
+        productCount: products.length,
+        categoryCount: Object.keys(categoryMap).length
+      }
+    };
+
+    return responseHandler.success(response);
   } catch (error) {
     return responseHandler.error(error);
   }
