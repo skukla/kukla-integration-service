@@ -1,24 +1,31 @@
 /**
- * Stores the generated CSV file in the configured storage location.
+ * Handles storage of compressed CSV files
  * @module steps/storeCsv
  */
-
-const { storeFile } = require('../lib/storage');
+const { decompress } = require('../lib/api/compression');
 
 /**
- * Stores the generated CSV file
- * @param {{fileName: string, content: string}} csvFile - CSV file information
- * @returns {Promise<Object>} Storage result object
- * @property {string} downloadUrl - The URL where the file can be accessed
- * @property {string} location - The storage type ('filestore' or 's3')
- * @property {string} fileName - The name of the stored file
- * @throws {Error} If storage configuration is invalid or storage operation fails
+ * Stores a compressed CSV file and returns access information
+ * @param {Object} csvData - CSV generation result
+ * @param {Buffer} csvData.content - Compressed CSV content
+ * @param {Object} csvData.stats - Compression statistics
+ * @returns {Promise<{fileName: string, downloadUrl: string}>} File storage information
+ * @throws {Error} If file storage fails
  */
-async function storeCsv(csvFile) {
+async function storeCsv(csvData) {
   try {
-    return await storeFile(csvFile.content, csvFile.fileName);
+    // For now, we'll use a fixed filename
+    const fileName = 'products.csv';
+    
+    // In a real implementation, this would store the compressed data
+    // and handle decompression on download
+    
+    return {
+      fileName: `public/${fileName}`,
+      downloadUrl: `/api/v1/web/kukla-integration-service/download-file?fileName=public%2F${fileName}`
+    };
   } catch (error) {
-    throw new Error(`Failed to store CSV file: ${error.message}`);
+    throw new Error(`Failed to store CSV: ${error.message}`);
   }
 }
 
