@@ -1,79 +1,100 @@
 /**
  * Response handler for Adobe Commerce Integration Service
- * Handles environment-specific response formatting and step tracking
+ * Pure functions for handling response formatting and step tracking
  * @module actions/core/response-handler
  */
 
-class ResponseHandler {
-  /**
-   * Creates a new response handler
-   * @param {Object} options - Configuration options
-   * @param {boolean} options.isDev - Whether running in development mode
-   * @param {Object} [options.logger] - Logger instance (optional, defaults to console)
-   */
-  constructor({ isDev, logger = console }) {
-    this.isDev = isDev;
-    this.logger = logger;
-    this.steps = [];
-  }
-
-  /**
-   * Adds a step to the processing history
-   * @param {string} step - Description of the processing step
-   */
-  addStep(step) {
-    this.steps.push(step);
-  }
-
-  /**
-   * Creates a success response based on environment
-   * @param {Object} data - Response data
-   * @param {Object} [data.file] - File information for production mode
-   * @param {string} [data.file.downloadUrl] - Download URL for generated file
-   * @param {string} [data.file.fileName] - Name of the generated file
-   * @returns {Object} Formatted response object
-   */
-  success(data = {}) {
-    const responseBody = {
-      success: true,
-      ...data
-    };
-
-    if (!this.isDev && data.file) {
-      responseBody.file = data.file;
-    }
-
-    return {
-      statusCode: 200,
-      body: responseBody
-    };
-  }
-
-  /**
-   * Creates an error response based on environment
-   * @param {Error} error - Error object
-   * @returns {Object} Formatted error response
-   */
-  error(error) {
-    this.logger.error('Error:', error.message);
-
-    return {
-      statusCode: error.statusCode || 500,
-      body: {
-        success: false,
-        error: error.message || 'server error',
-        details: this.isDev ? error.stack : undefined
-      }
-    };
-  }
-
-  /**
-   * Determines if file operations should be skipped
-   * @returns {boolean} True if file operations should be skipped
-   */
-  shouldSkipFileOperations() {
-    return this.isDev;
-  }
+/**
+ * Creates a new response handler state object
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.isDev - Whether running in development mode
+ * @param {Object} [options.logger] - Logger instance (optional, defaults to console)
+ * @returns {Object} Response handler state
+ */
+function createResponseHandlerState({ isDev, logger = console }) {
+  return {
+    isDev,
+    logger,
+    steps: []
+  };
 }
 
-module.exports = ResponseHandler; 
+/**
+ * Adds a step to the processing history
+ * @param {Object} state - Response handler state
+ * @param {string} step - Description of the processing step
+ * @returns {Object} Updated state with new step
+ */
+function addStep(state, step) {
+  return {
+    ...state,
+    steps: [...state.steps, step]
+  };
+}
+
+/**
+ * Creates a success response based on environment
+ * @param {Object} state - Response handler state
+ * @param {Object} data - Response data
+ * @param {Object} [data.file] - File information for production mode
+ * @param {string} [data.file.downloadUrl] - Download URL for generated file
+ * @param {string} [data.file.fileName] - Name of the generated file
+ * @returns {Object} Formatted response object
+ */
+function createSuccessResponse(state, data = {}) {
+  const responseBody = {
+    success: true,
+    ...data
+  };
+
+  if (!state.isDev && data.file) {
+    responseBody.file = data.file;
+  }
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'message/http'
+    },
+    body: responseBody
+  };
+}
+
+/**
+ * Creates an error response based on environment
+ * @param {Object} state - Response handler state
+ * @param {Error} error - Error object
+ * @returns {Object} Formatted error response
+ */
+function createErrorResponse(state, error) {
+  state.logger.error('Error:', error.message);
+
+  return {
+    statusCode: error.statusCode || 500,
+    headers: {
+      'Content-Type': 'message/http'
+    },
+    body: {
+      success: false,
+      error: error.message || 'server error',
+      details: state.isDev ? error.stack : undefined
+    }
+  };
+}
+
+/**
+ * Determines if file operations should be skipped
+ * @param {Object} state - Response handler state
+ * @returns {boolean} True if file operations should be skipped
+ */
+function shouldSkipFileOperations(state) {
+  return state.isDev;
+}
+
+module.exports = {
+  createResponseHandlerState,
+  addStep,
+  createSuccessResponse,
+  createErrorResponse,
+  shouldSkipFileOperations
+}; 
