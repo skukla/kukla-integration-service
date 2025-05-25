@@ -4,97 +4,119 @@
  */
 const { buildHeaders } = require('../../../../core/http');
 const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
-const { processConcurrently } = require('./concurrency');
 const endpoints = require('./commerce-endpoints');
+const { default: ora } = require('ora');
 
-// Optimal values based on Adobe Commerce API performance characteristics
-const OPTIMAL_PAGE_SIZE = 100;
-const MAX_CONCURRENT_REQUESTS = 3;
-const REQUEST_RETRIES = 2;
-const RETRY_DELAY = 1000;
+// Configuration constants
+const DEFAULT_PAGE_SIZE = 100;
+const INVENTORY_BATCH_SIZE = 20;
+const MAX_CONCURRENT_REQUESTS = 10;
+const CACHE_TTL = 3600;
+
+// Add request caching
+const requestCache = new Map();
 
 /**
- * Fetch a single page of products from Adobe Commerce
+ * Process items in batches with concurrency control
  * @private
- * @param {Object} params - Request parameters
- * @param {string} params.token - Authentication token
- * @param {string} params.COMMERCE_URL - Commerce instance URL
- * @param {number} params.page - Page number to fetch
- * @param {number} params.pageSize - Number of items per page
- * @returns {Promise<Object>} Page data with items and total count
+ * @param {Array} items - Items to process
+ * @param {function} processItem - Function to process a single item
+ * @param {Object} options - Processing options
+ * @returns {Promise<Array>} Processed results
  */
-async function fetchProductPage({ token, COMMERCE_URL, page, pageSize }) {
-  const response = await makeCommerceRequest(
-    buildCommerceUrl(COMMERCE_URL, endpoints.products({ currentPage: page, pageSize })),
-    {
-      method: 'GET',
-      headers: buildHeaders(token)
+async function processBatch(items, processItem, { batchSize = 10, maxConcurrent = 5 } = {}) {
+    const results = [];
+    
+    for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        const batchPromises = batch.map(processItem);
+        
+        // Process batch with concurrency limit
+        const batchResults = await Promise.all(
+            batchPromises.map(p => p.catch(error => ({ error })))
+        );
+        
+        results.push(...batchResults);
+        
+        // Optional delay between batches to prevent rate limiting
+        if (i + batchSize < items.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
     }
-  );
-
-  if (response.statusCode !== 200) {
-    throw new Error(`Failed to fetch products page ${page}: ${JSON.stringify(response.body)}`);
-  }
-
-  return response.body;
+    
+    return results;
 }
 
 /**
- * Fetch all products from Adobe Commerce with parallel pagination
+ * Make a cached request
+ * @private
+ * @param {string} url - Request URL
+ * @param {Object} options - Request options
+ * @returns {Promise<Object>} Response data
+ */
+async function makeCachedRequest(url, options) {
+    const cacheKey = `${url}:${JSON.stringify(options)}`;
+    
+    if (requestCache.has(cacheKey)) {
+        const cached = requestCache.get(cacheKey);
+        if (Date.now() - cached.timestamp < CACHE_TTL * 1000) {
+            return cached.data;
+        }
+        requestCache.delete(cacheKey);
+    }
+    
+    const response = await makeCommerceRequest(url, options);
+    requestCache.set(cacheKey, {
+        timestamp: Date.now(),
+        data: response
+    });
+    
+    return response;
+}
+
+/**
+ * Fetch products from Adobe Commerce with pagination
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
  * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @param {number} [params.limit] - Maximum number of products to fetch
  * @returns {Promise<Object[]>} Array of product objects
  */
 async function fetchAllProducts(token, params) {
-  // Get first page to determine total count
-  const firstPage = await fetchProductPage({ 
-    token, 
-    COMMERCE_URL: params.COMMERCE_URL, 
-    page: 1, 
-    pageSize: OPTIMAL_PAGE_SIZE 
-  });
-  
-  const totalCount = firstPage.total_count;
-  const totalPages = Math.ceil(totalCount / OPTIMAL_PAGE_SIZE);
-  
-  console.log(`Found ${totalCount} products, fetching ${totalPages} pages with size ${OPTIMAL_PAGE_SIZE}`);
-  
-  // If only one page, return it
-  if (totalPages <= 1) {
-    return firstPage.items;
-  }
-  
-  // Generate page numbers for remaining pages
-  const remainingPages = Array.from(
-    { length: totalPages - 1 }, 
-    (_, i) => i + 2
-  );
-  
-  // Fetch remaining pages in parallel with controlled concurrency
-  const pageResults = await processConcurrently(
-    remainingPages,
-    async (page) => fetchProductPage({ 
-      token, 
-      COMMERCE_URL: params.COMMERCE_URL, 
-      page, 
-      pageSize: OPTIMAL_PAGE_SIZE 
-    }),
-    {
-      concurrency: MAX_CONCURRENT_REQUESTS,
-      retries: REQUEST_RETRIES,
-      retryDelay: RETRY_DELAY
+    const products = [];
+    let currentPage = 1;
+    let hasMorePages = true;
+
+    while (hasMorePages) {
+        const url = buildCommerceUrl(params.COMMERCE_URL, endpoints.products({ 
+            pageSize: DEFAULT_PAGE_SIZE,
+            currentPage
+        }));
+
+        const response = await makeCommerceRequest(url, {
+            method: 'GET',
+            headers: buildHeaders(token)
+        });
+
+        if (response.statusCode !== 200) {
+            throw new Error(`Failed to fetch products: ${JSON.stringify(response.body)}`);
+        }
+
+        const pageProducts = response.body.items || [];
+        products.push(...pageProducts);
+
+        // Check if we've reached the limit
+        if (params.limit && products.length >= params.limit) {
+            return products.slice(0, params.limit);
+        }
+
+        // Check if there are more pages
+        const totalPages = Math.ceil((response.body.total_count || 0) / DEFAULT_PAGE_SIZE);
+        hasMorePages = currentPage < totalPages;
+        currentPage++;
     }
-  );
-  
-  // Combine all products
-  const allProducts = [
-    ...firstPage.items,
-    ...pageResults.flatMap(result => result.items)
-  ];
-  
-  console.log(`Successfully fetched ${allProducts.length} products`);
-  return allProducts;
+
+    return products;
 }
 
 /**
@@ -102,80 +124,80 @@ async function fetchAllProducts(token, params) {
  * @param {string} sku - Product SKU
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
- * @param {string} params.COMMERCE_URL - Commerce instance URL
  * @returns {Promise<Object>} Inventory data
  */
 async function getInventory(sku, token, params) {
-  const response = await makeCommerceRequest(
-    buildCommerceUrl(params.COMMERCE_URL, endpoints.stockItem(sku)),
-    {
-      method: 'GET',
-      headers: buildHeaders(token)
-    }
-  );
+    const url = buildCommerceUrl(params.COMMERCE_URL, endpoints.stockItem(sku));
+    const response = await makeCachedRequest(url, {
+        method: 'GET',
+        headers: buildHeaders(token)
+    });
 
-  if (response.statusCode === 200 && response.body.items && response.body.items.length > 0) {
-    // Sum up quantities from all sources
-    const totalQty = response.body.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    // Product is in stock if any source has it in stock
-    const isInStock = response.body.items.some(item => item.status === 1);
+    if (response.statusCode === 200 && response.body.items && response.body.items.length > 0) {
+        const totalQty = response.body.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const isInStock = response.body.items.some(item => item.status === 1);
+        return {
+            qty: totalQty,
+            is_in_stock: isInStock
+        };
+    }
 
     return {
-      qty: totalQty,
-      is_in_stock: isInStock
+        qty: 0,
+        is_in_stock: false
     };
-  }
-  
-  console.warn(`Failed to fetch inventory for SKU ${sku} - Status: ${response.statusCode}`);
-  return {
-    qty: 0,
-    is_in_stock: false
-  };
 }
 
 /**
- * Enrich products with inventory data in parallel
+ * Enrich products with inventory data using batch processing
  * @param {Object[]} products - Array of product objects
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
  * @returns {Promise<Object[]>} Products enriched with inventory data
  */
 async function enrichWithInventory(products, token, params) {
-  // Filter products that need inventory data
-  const productsNeedingInventory = products.filter(
-    product => product.type_id === 'simple' || product.type_id === 'virtual'
-  );
-  
-  console.log(`Fetching inventory for ${productsNeedingInventory.length} products`);
-  
-  // Fetch inventory data in parallel
-  const inventoryData = await processConcurrently(
-    productsNeedingInventory,
-    async (product) => ({
-      sku: product.sku,
-      inventory: await getInventory(product.sku, token, params)
-    }),
-    {
-      concurrency: MAX_CONCURRENT_REQUESTS,
-      retries: REQUEST_RETRIES,
-      retryDelay: RETRY_DELAY
-    }
-  );
-  
-  // Create inventory lookup map
-  const inventoryMap = inventoryData.reduce((map, { sku, inventory }) => {
-    map[sku] = inventory;
-    return map;
-  }, {});
-  
-  // Enrich all products with inventory data
-  return products.map(product => ({
-    ...product,
-    qty: inventoryMap[product.sku]?.qty || 0
-  }));
+    // Filter products that need inventory data
+    const productsNeedingInventory = products.filter(
+        product => product.type_id === 'simple' || product.type_id === 'virtual'
+    );
+
+    // Process inventory requests in batches
+    const inventoryResults = await processBatch(
+        productsNeedingInventory,
+        async (product) => {
+            try {
+                const inventory = await getInventory(product.sku, token, params);
+                return { sku: product.sku, inventory };
+            } catch (error) {
+                return { 
+                    sku: product.sku, 
+                    inventory: { qty: 0, is_in_stock: false }
+                };
+            }
+        },
+        {
+            batchSize: INVENTORY_BATCH_SIZE,
+            maxConcurrent: MAX_CONCURRENT_REQUESTS
+        }
+    );
+
+    // Build inventory map from results
+    const inventoryMap = inventoryResults.reduce((map, result) => {
+        map[result.sku] = result.inventory;
+        return map;
+    }, {});
+
+    // Enrich all products with inventory data
+    const enrichedProducts = products.map(product => ({
+        ...product,
+        qty: inventoryMap[product.sku]?.qty || 0,
+        is_in_stock: inventoryMap[product.sku]?.is_in_stock || false
+    }));
+
+    return enrichedProducts;
 }
 
 module.exports = {
-  fetchAllProducts,
-  enrichWithInventory
+    fetchAllProducts,
+    enrichWithInventory
 }; 
