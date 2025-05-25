@@ -60,7 +60,7 @@
  */
 
 const { extractActionParams } = require('../../core/http');
-const ResponseHandler = require('../../core/response-handler');
+const { createResponseHandlerState, addStep, createSuccessResponse, createErrorResponse, shouldSkipFileOperations } = require('../../core/response-handler');
 const { getAuthToken } = require('./lib/auth');
 const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
 const { buildCategoryMap } = require('./lib/api/categories');
@@ -199,7 +199,7 @@ async function main(rawParams) {
     // Extract parameters and initialize response handler
     const params = extractActionParams(rawParams);
     const isDev = (rawParams.__ow_query && rawParams.__ow_query.env === 'dev') || rawParams.env === 'dev';
-    const responseHandler = new ResponseHandler({ isDev });
+    const responseState = createResponseHandlerState({ isDev });
     
     try {
         // Record initial memory usage
@@ -209,13 +209,13 @@ async function main(rawParams) {
         spinner.text = 'Authenticating...';
         const token = await getAuthToken(params);
         spinner = await updateProgress(spinner, 'Authentication successful');
-        responseHandler.addStep('Authentication successful');
+        let state = addStep(responseState, 'Authentication successful');
 
         // Step 2: Fetch products with pagination
         spinner.text = 'Fetching products...';
         const products = await fetchAllProducts(token, params);
         spinner = await updateProgress(spinner, `Fetched ${products.length} products`);
-        responseHandler.addStep(`Fetched ${products.length} products from Adobe Commerce`);
+        state = addStep(state, `Fetched ${products.length} products from Adobe Commerce`);
 
         // Record memory after product fetch
         memoryUsage.afterFetch = process.memoryUsage().heapUsed;
@@ -224,13 +224,13 @@ async function main(rawParams) {
         spinner.text = 'Enriching with inventory data...';
         const productsWithInventory = await enrichWithInventory(products, token, params);
         spinner = await updateProgress(spinner, `Successfully enriched ${productsWithInventory.length} products with inventory data`);
-        responseHandler.addStep(`Enriched ${productsWithInventory.length} products with inventory data`);
+        state = addStep(state, `Enriched ${productsWithInventory.length} products with inventory data`);
 
         // Step 4: Build category map
         spinner.text = 'Building category map...';
         const categoryMap = await buildCategoryMap(productsWithInventory, token, params);
         spinner = await updateProgress(spinner, `Built category map with ${Object.keys(categoryMap).length} categories`);
-        responseHandler.addStep(`Built category map with ${Object.keys(categoryMap).length} categories`);
+        state = addStep(state, `Built category map with ${Object.keys(categoryMap).length} categories`);
 
         // Step 5: Transform products
         const transformResults = await processProductBatch(
@@ -242,13 +242,13 @@ async function main(rawParams) {
         memoryUsage.afterTransform = process.memoryUsage().heapUsed;
 
         // Skip file operations in development mode
-        if (responseHandler.shouldSkipFileOperations()) {
+        if (shouldSkipFileOperations(state)) {
             if (spinner) {
                 await spinner.succeed('Development mode - skipping file operations');
                 // Add final delay
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
-            return responseHandler.success({
+            return createSuccessResponse(state, {
                 performance: {
                     executionTime: ((performance.now() - startTime) / 1000).toFixed(1),
                     memory: {
@@ -267,7 +267,7 @@ async function main(rawParams) {
         spinner.text = 'Generating CSV...';
         const csvResult = await createCsv(transformResults.processedProducts);
         spinner = await updateProgress(spinner, `Generated compressed CSV content (${csvResult.stats.savingsPercent}% size reduction)`);
-        responseHandler.addStep(`Generated compressed CSV content (${csvResult.stats.savingsPercent}% size reduction)`);
+        state = addStep(state, `Generated compressed CSV content (${csvResult.stats.savingsPercent}% size reduction)`);
 
         // Record memory after CSV generation
         memoryUsage.afterCsv = process.memoryUsage().heapUsed;
@@ -280,7 +280,7 @@ async function main(rawParams) {
             // Add final delay
             await new Promise(resolve => setTimeout(resolve, 500));
         }
-        responseHandler.addStep(`Stored compressed CSV file as "${storageResult.fileName}"`);
+        state = addStep(state, `Stored compressed CSV file as "${storageResult.fileName}"`);
 
         // Calculate execution time
         const executionTime = ((performance.now() - startTime) / 1000).toFixed(1);
@@ -289,7 +289,7 @@ async function main(rawParams) {
         const response = {
             file: isDev ? null : { downloadUrl: storageResult.downloadUrl },
             message: "Product export completed successfully.",
-            steps: responseHandler.steps,
+            steps: state.steps,
             performance: {
                 executionTime: `${executionTime}s`,
                 compression: csvResult ? csvResult.stats : null,
@@ -304,12 +304,12 @@ async function main(rawParams) {
             }
         };
 
-        return responseHandler.success(response);
+        return createSuccessResponse(state, response);
     } catch (error) {
         if (spinner) {
             await spinner.fail(error.message);
         }
-        return responseHandler.error(error);
+        return createErrorResponse(state, error);
     }
 }
 

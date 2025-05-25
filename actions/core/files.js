@@ -1,5 +1,6 @@
 /**
  * Core file operations module
+ * Pure functions for file operations and error handling
  * @module actions/core/files
  */
 
@@ -22,56 +23,90 @@ const BYTES_PER_UNIT = 1024;
 const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
 /**
- * Error class for file operations
+ * Creates a file operation error object
+ * @param {string} type - Error type from FileErrorType
+ * @param {string} message - Error message
+ * @param {Error} [originalError] - Original error that caused this
+ * @returns {Object} File operation error object
  */
-class FileOperationError extends Error {
-    constructor(type, message, originalError = null) {
-        super(message);
-        this.name = 'FileOperationError';
-        this.type = type;
-        this.originalError = originalError;
+function createFileOperationError(type, message, originalError = null) {
+    return {
+        name: 'FileOperationError',
+        message,
+        type,
+        originalError,
+        isFileOperationError: true
+    };
+}
+
+/**
+ * Determines if an object is a file operation error
+ * @param {Object} error - Error to check
+ * @returns {boolean} True if it's a file operation error
+ */
+function isFileOperationError(error) {
+    return error && error.isFileOperationError === true;
+}
+
+/**
+ * Maps an error code to error type and retry capability
+ * @param {string} errorCode - Error code to map
+ * @returns {Object} Error type and retry information
+ */
+function mapErrorCodeToType(errorCode) {
+    switch (errorCode) {
+        case 'FILE_NOT_FOUND':
+            return {
+                type: FileErrorType.NOT_FOUND,
+                canRetry: false
+            };
+        case 'PERMISSION_DENIED':
+            return {
+                type: FileErrorType.PERMISSION_DENIED,
+                canRetry: true
+            };
+        case 'EEXIST':
+            return {
+                type: FileErrorType.ALREADY_EXISTS,
+                canRetry: false
+            };
+        default:
+            return {
+                type: FileErrorType.UNKNOWN,
+                canRetry: true
+            };
     }
 }
 
 /**
+ * Creates a user-friendly error message
+ * @param {string} operation - Operation description
+ * @param {string} errorMessage - Technical error message
+ * @param {boolean} canRetry - Whether the operation can be retried
+ * @returns {string} User-friendly error message
+ */
+function createUserFriendlyErrorMessage(operation, errorMessage, canRetry) {
+    const baseMessage = `Failed to ${operation}: ${errorMessage}`;
+    const action = canRetry 
+        ? 'Please try again or contact support if the issue persists.'
+        : 'Please contact support for assistance.';
+    return `${baseMessage} ${action}`;
+}
+
+/**
  * Creates a file operation error based on the error code
- * @private
  * @param {Error} error - Original error
  * @param {string} operation - Operation description for the error message
  * @param {Object} [context] - Additional debug context
- * @returns {FileOperationError} Wrapped error
+ * @returns {Object} File operation error object
  */
 function createFileError(error, operation, context = {}) {
-    // Determine error type and retry capability
-    let errorType = FileErrorType.UNKNOWN;
-    let canRetry = false;
+    const { type, canRetry } = mapErrorCodeToType(error.code);
+    const userMessage = createUserFriendlyErrorMessage(operation, error.message, canRetry);
 
-    // Map common error codes to types
-    switch (error.code) {
-        case 'FILE_NOT_FOUND':
-            errorType = FileErrorType.NOT_FOUND;
-            canRetry = false;
-            break;
-        case 'PERMISSION_DENIED':
-            errorType = FileErrorType.PERMISSION_DENIED;
-            canRetry = true;
-            break;
-        case 'EEXIST':
-            errorType = FileErrorType.ALREADY_EXISTS;
-            canRetry = false;
-            break;
-        default:
-            errorType = FileErrorType.UNKNOWN;
-            canRetry = true;
-    }
-
-    // Create user-friendly message with action
-    const userMessage = `Failed to ${operation}: ${error.message}`;
-    const userAction = canRetry ? 'Please try again or contact support if the issue persists.' : 'Please contact support for assistance.';
-
-    return new FileOperationError(
-        errorType,
-        `${userMessage} ${userAction}`,
+    return createFileOperationError(
+        type,
+        userMessage,
         {
             originalError: error,
             operation,
@@ -83,7 +118,6 @@ function createFileError(error, operation, context = {}) {
 
 /**
  * Gets content type with fallback
- * @private
  * @param {Object} properties - File properties from SDK
  * @returns {string} Content type
  */
@@ -92,14 +126,13 @@ function getContentType(properties) {
 }
 
 /**
- * Validates a file path
- * @private
+ * Validates a file path and returns any errors
  * @param {string} path - File path to validate
- * @throws {FileOperationError} If path is invalid
+ * @returns {Object|null} File operation error if invalid, null if valid
  */
 function validatePath(path) {
     if (!path || typeof path !== 'string') {
-        throw new FileOperationError(
+        return createFileOperationError(
             FileErrorType.INVALID_PATH,
             'File path must be a non-empty string'
         );
@@ -107,11 +140,13 @@ function validatePath(path) {
 
     // Prevent path traversal
     if (path.includes('..')) {
-        throw new FileOperationError(
+        return createFileOperationError(
             FileErrorType.INVALID_PATH,
             'Path traversal is not allowed'
         );
     }
+
+    return null;
 }
 
 /**
@@ -329,8 +364,11 @@ module.exports = {
     formatFileDate,
     
     // Error handling
-    FileOperationError,
     FileErrorType,
+    createFileOperationError,
+    isFileOperationError,
+    createFileError,
+    validatePath,
     createFileErrorResponse,
     createFileSuccessResponse
 }; 
