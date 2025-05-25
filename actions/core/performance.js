@@ -58,14 +58,6 @@ class PerformanceMetrics {
       external: endMemory.external - startMemory.external
     };
 
-    this.logger.info('Performance metric', {
-      operation,
-      type,
-      duration,
-      memory: memoryDiff,
-      ...context
-    });
-
     this.measurements.delete(operation);
   }
 
