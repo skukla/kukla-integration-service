@@ -79,36 +79,28 @@ async function processCommerceResponse(response, context = {}) {
  */
 async function makeCommerceRequest(url, options = {}, context = {}) {
     let attempt = 0;
-    
     while (attempt < COMMERCE_CONFIG.RETRY_ATTEMPTS) {
         try {
             const controller = new AbortController();
             const timeout = setTimeout(() => {
                 controller.abort();
             }, COMMERCE_CONFIG.REQUEST_TIMEOUT);
-
             const response = await fetch(url, {
                 ...options,
                 signal: controller.signal
             });
-
             clearTimeout(timeout);
-
             const result = await processCommerceResponse(response, {
                 ...context,
                 method: options.method || 'GET'
             });
-
             return result;
-
         } catch (error) {
             attempt++;
-            
             // If we've exhausted all retries, throw the error
             if (attempt >= COMMERCE_CONFIG.RETRY_ATTEMPTS) {
                 throw error;
             }
-
             // Calculate exponential backoff delay
             const delay = COMMERCE_CONFIG.RETRY_DELAY * Math.pow(2, attempt - 1);
             await new Promise(resolve => setTimeout(resolve, delay));

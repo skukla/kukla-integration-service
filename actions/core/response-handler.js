@@ -9,9 +9,9 @@ class ResponseHandler {
    * Creates a new response handler
    * @param {Object} options - Configuration options
    * @param {boolean} options.isDev - Whether running in development mode
-   * @param {Object} options.logger - Logger instance
+   * @param {Object} [options.logger] - Logger instance (optional, defaults to console)
    */
-  constructor({ isDev, logger }) {
+  constructor({ isDev, logger = console }) {
     this.isDev = isDev;
     this.logger = logger;
     this.steps = [];
@@ -35,15 +35,13 @@ class ResponseHandler {
    */
   success(data = {}) {
     const responseBody = {
-      message: data.message || 'Product export completed successfully.',
+      success: true,
       ...data
     };
 
     if (!this.isDev && data.file) {
       responseBody.file = data.file;
     }
-
-    responseBody.steps = this.steps;
 
     return {
       statusCode: 200,
@@ -57,15 +55,14 @@ class ResponseHandler {
    * @returns {Object} Formatted error response
    */
   error(error) {
-    this.logger.error('Error in action:', error);
-    this.addStep(`Error: ${error.message}`);
+    this.logger.error('Error:', error.message);
 
     return {
       statusCode: error.statusCode || 500,
       body: {
+        success: false,
         error: error.message || 'server error',
-        details: this.isDev ? error.stack : undefined,
-        steps: this.steps
+        details: this.isDev ? error.stack : undefined
       }
     };
   }
@@ -75,11 +72,7 @@ class ResponseHandler {
    * @returns {boolean} True if file operations should be skipped
    */
   shouldSkipFileOperations() {
-    if (this.isDev) {
-      this.addStep('CSV creation and storage steps skipped in development environment');
-      return true;
-    }
-    return false;
+    return this.isDev;
   }
 }
 

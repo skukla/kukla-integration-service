@@ -19,12 +19,10 @@ function normalizeParams(params) {
     'commerce_admin_username': 'COMMERCE_ADMIN_USERNAME',
     'commerce_admin_password': 'COMMERCE_ADMIN_PASSWORD'
   };
-
   Object.entries(params).forEach(([key, value]) => {
     const normalizedKey = paramMap[key.toLowerCase()] || key;
     normalized[normalizedKey] = value;
   });
-
   return normalized;
 }
 /**
@@ -46,7 +44,6 @@ function extractActionParams(params) {
       console.warn('Failed to parse request body:', e);
     }
   }
-
   // Normalize parameters even if no __ow_body
   return normalizeParams(params);
 }

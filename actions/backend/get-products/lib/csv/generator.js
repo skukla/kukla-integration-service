@@ -126,8 +126,6 @@ async function generateCsv(products) {
   const compressedContent = await compress(originalBuffer);
   const stats = getCompressionStats(originalBuffer, compressedContent);
 
-  console.log(`CSV Generation: ${stats.savingsPercent} size reduction through compression (${stats.originalSize} → ${stats.compressedSize} bytes)`);
-
   return {
     content: compressedContent,
     stats

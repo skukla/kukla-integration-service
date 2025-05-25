@@ -64,9 +64,10 @@ function buildProductObject(product, requestedFields, categoryMap) {
     sku: () => product.sku,
     name: () => product.name,
     price: () => product.price,
-    qty: () => product.qty,
+    qty: () => product.qty || 0,
     categories: () => {
-      const categoryNames = getCategoryIds(product)
+      const categoryIds = getCategoryIds(product);
+      const categoryNames = categoryIds
         .map(id => categoryMap[String(id)])
         .filter(Boolean);
       return categoryNames;
@@ -75,12 +76,20 @@ function buildProductObject(product, requestedFields, categoryMap) {
       .map(transformImageEntry)
   };
 
-  return requestedFields.reduce((result, field) => {
+  const result = requestedFields.reduce((obj, field) => {
     if (fieldMappings[field]) {
-      result[field] = fieldMappings[field]();
+      obj[field] = fieldMappings[field]();
     }
-    return result;
+    return obj;
   }, {});
+
+  // Add performance metrics
+  result.performance = {
+    productCount: 1,
+    categoryCount: result.categories ? result.categories.length : 0
+  };
+
+  return result;
 }
 
 module.exports = {
