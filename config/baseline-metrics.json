@@ -1,0 +1,66 @@
+{
+  "local": {
+    "Small Dataset": {
+      "timestamp": "2025-05-25T18:16:23.425Z",
+      "metrics": {
+        "executionTime": 10248.497626,
+        "memory": 3428200,
+        "products": 50,
+        "categories": 50,
+        "compression": null
+      }
+    },
+    "Medium Dataset": {
+      "timestamp": "2025-05-25T18:16:23.427Z",
+      "metrics": {
+        "executionTime": 6839.809930000001,
+        "memory": 1899200,
+        "products": 100,
+        "categories": 100,
+        "compression": null
+      }
+    },
+    "Large Dataset": {
+      "timestamp": "2025-05-25T18:16:23.428Z",
+      "metrics": {
+        "executionTime": 7546.153021999999,
+        "memory": -3580008,
+        "products": 119,
+        "categories": 119,
+        "compression": null
+      }
+    }
+  },
+  "deployed": {
+    "Small Dataset": {
+      "timestamp": "2025-05-25T18:17:06.494Z",
+      "metrics": {
+        "executionTime": 8900,
+        "memory": 971600,
+        "products": 50,
+        "categories": 50,
+        "compression": null
+      }
+    },
+    "Medium Dataset": {
+      "timestamp": "2025-05-25T18:17:06.496Z",
+      "metrics": {
+        "executionTime": 6900,
+        "memory": 368600,
+        "products": 100,
+        "categories": 100,
+        "compression": null
+      }
+    },
+    "Large Dataset": {
+      "timestamp": "2025-05-25T18:17:06.496Z",
+      "metrics": {
+        "executionTime": 7900,
+        "memory": 285736,
+        "products": 119,
+        "categories": 119,
+        "compression": null
+      }
+    }
+  }
+}
