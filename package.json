@@ -5,9 +5,11 @@
   "description": "Adobe Commerce integration service for product data export",
   "dependencies": {
     "@adobe/aio-sdk": "^6",
+    "chalk": "^5.4.1",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.5.0",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@openwhisk/wskdebug": "^1.3.0",
@@ -23,22 +25,26 @@
   "scripts": {
     "start": "concurrently \"npm run dev:ui\" \"npm run dev:actions\"",
     "start:bg": "./scripts/run-background.sh",
-    
     "dev:ui": "vite --port 3000",
     "dev:actions": "aio app dev",
-    
     "build": "vite build",
     "clean": "rm -rf dist .parcel-cache",
-    
     "test": "jest",
     "test:api": "./scripts/test-api.sh --env dev",
     "test:api:help": "./scripts/test-api.sh --help",
-    
+    "test:perf:local": "node scripts/test-performance.js --env local",
+    "test:perf:prod": "node scripts/test-performance.js --env deployed",
+    "test:perf:prod:small": "node scripts/test-performance.js --env deployed --scenario small",
+    "test:perf:prod:medium": "node scripts/test-performance.js --env deployed --scenario medium",
+    "test:perf:prod:large": "node scripts/test-performance.js --env deployed --scenario large",
+    "test:perf:help": "node scripts/test-performance.js --help",
+    "test:perf:small": "node scripts/test-performance.js --env local --scenario small",
+    "test:perf:medium": "node scripts/test-performance.js --env local --scenario medium",
+    "test:perf:large": "node scripts/test-performance.js --env local --scenario large",
     "deploy": "npm run clean && npm run build && aio app deploy",
     "deploy:web": "npm run build && aio app deploy --no-actions",
     "deploy:actions": "aio app deploy --no-web-assets",
     "deploy:prepare": "node scripts/remove-debug.js",
-    
     "logs": "cat dev.log",
     "logs:clear": "echo \"\" > dev.log"
   },
