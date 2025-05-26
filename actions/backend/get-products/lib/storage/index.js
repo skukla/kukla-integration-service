@@ -4,14 +4,16 @@
  */
 
 const { getStorageConfig } = require('./config');
-const { APP_PREFIX } = require('../../../../src/core/http');
-const { Files } = require('@adobe/aio-sdk');
-const {
-    writeFile,
-    getFileProperties,
-    FileOperationError,
-    FileErrorType
-} = require('../../../../src/core/storage/files');
+const { Files: FilesLib } = require('@adobe/aio-sdk');
+const { 
+    http: { APP_PREFIX },
+    storage: {
+        writeFile,
+        getFileProperties,
+        FileOperationError,
+        FileErrorType
+    }
+} = require('../../../../src/core');
 
 /**
  * Builds a download URL for a file

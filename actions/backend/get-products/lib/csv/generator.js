@@ -3,7 +3,8 @@
  * @module lib/csv/generator
  */
 const csvWriter = require('csv-writer');
-const { formatList, createObjectTransformer } = require('../../../../../src/core/data/transformation');
+const { Transform } = require('stream');
+const { data: { formatList } } = require('../../../../../src/core');
 const { compress, getCompressionStats } = require('../api/compression');
 
 /**
