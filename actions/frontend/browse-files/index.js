@@ -9,9 +9,11 @@ const {
     listFiles, 
     getFileProperties,
     deleteFile, 
-    FileOperationError, 
-    FileErrorType 
-} = require('../../../src/core/files');
+    FileErrorType,
+    createFileOperationError
+} = require('../../../src/core/storage/files');
+const { createHtmxResponse } = require('../../../src/htmx/formatting');
+const { response } = require('../../../src/core/http');
 
 /**
  * Creates a simple HTML response
@@ -20,13 +22,10 @@ const {
  * @returns {Object} Response object
  */
 function createHtmlResponse(html, status = 200) {
-    return {
-        statusCode: status,
-        headers: {
-            'Content-Type': 'text/html'
-        },
-        body: html
-    };
+    return createHtmxResponse({
+        html,
+        status
+    });
 }
 
 /**
@@ -36,11 +35,14 @@ function createHtmlResponse(html, status = 200) {
  * @returns {Object} Response object
  */
 function createErrorResponse(message, status = 500) {
-    return createHtmlResponse(`
-        <div class="error-message" role="alert">
-            <p>${message}</p>
-        </div>
-    `, status);
+    return createHtmxResponse({
+        html: `
+            <div class="error-message" role="alert">
+                <p>${message}</p>
+            </div>
+        `,
+        status
+    });
 }
 
 /**
@@ -80,7 +82,7 @@ async function handleGetRequest(params, files, logger) {
     } catch (error) {
         logger.error('Error in GET request:', error);
         
-        if (error instanceof FileOperationError) {
+        if (error.isFileOperationError) {
             switch (error.type) {
                 case FileErrorType.PERMISSION_DENIED:
                     return createErrorResponse('File storage credentials not configured properly', 400);
@@ -115,7 +117,7 @@ async function handleDeleteRequest(params, files, logger) {
     } catch (error) {
         logger.error('Error in DELETE request:', error);
 
-        if (error instanceof FileOperationError) {
+        if (error.isFileOperationError) {
             switch (error.type) {
                 case FileErrorType.NOT_FOUND:
                     return createErrorResponse(`File not found: ${params.fileName}`, 404);
