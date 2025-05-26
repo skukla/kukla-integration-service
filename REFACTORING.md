@@ -96,7 +96,7 @@ src/
     > Completed 2024-03-20: Created centralized core entry point with public API exports, added documentation and examples, updated all imports to use the new pattern, and cleaned up unused imports across the codebase
 
 ### Phase 2: Commerce Integration Restructuring
-- [ ] 1. Create new commerce directory structure
+- [x] 1. Create new commerce directory structure
   ```
   src/commerce/
   ├── api/
@@ -113,23 +113,26 @@ src/
   │   └── index.js        (Transform module entry point)
   └── index.js            (Commerce module entry point)
   ```
+    > Completed 2024-03-20: Created initial directory structure and implemented API and data modules
 
-- [ ] 2. Refactor commerce API modules
-  - [ ] Create unified Commerce API client using core/http
-  - [ ] Extract endpoint definitions to endpoints.js
-  - [ ] Move authentication handling to client.js
-  - [ ] Use core/monitoring for error handling
-  - [ ] Use core/storage/cache for caching
-  - [ ] Move batch processing logic to client.js
-  - [ ] Create api/index.js entry point
+- [x] 2. Refactor commerce API modules
+  - [x] Create unified Commerce API client using core/http
+  - [x] Extract endpoint definitions to endpoints.js
+  - [x] Move authentication handling to client.js
+  - [x] Use core/monitoring for error handling
+  - [x] Use core/storage/cache for caching
+  - [x] Move batch processing logic to client.js
+  - [x] Create api/index.js entry point
+    > Completed 2024-03-20: Created API module with client, endpoints, and proper integration with core modules
 
-- [ ] 3. Consolidate commerce data
-  - [ ] Move product-related constants to data/product.js
-  - [ ] Move category-related constants to data/category.js
-  - [ ] Move inventory-related constants to data/inventory.js
-  - [ ] Use core/data/validation for field validation
-  - [ ] Create data/index.js entry point
-  - [ ] Document data structures and validation rules
+- [x] 3. Consolidate commerce data
+  - [x] Move product-related constants to data/product.js
+  - [x] Move category-related constants to data/category.js
+  - [x] Move inventory-related constants to data/inventory.js
+  - [x] Use core/data/validation for field validation
+  - [x] Create data/index.js entry point
+  - [x] Document data structures and validation rules
+    > Completed 2024-03-20: Created data modules with validation, type definitions, and utilities
 
 - [ ] 4. Consolidate transformations
   - [ ] Move product transformation logic to transform/product.js
