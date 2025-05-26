@@ -3,7 +3,7 @@
  * @module actions/core/http
  */
 const fetch = require('node-fetch');
-const { createErrorResponse, processError } = require('./error-handler');
+const { createErrorResponse, processError } = require('./errors');
 const { addCacheHeaders } = require('./cache');
 const { addCompression } = require('./compression');
 const { createPerformanceMiddleware } = require('./performance');

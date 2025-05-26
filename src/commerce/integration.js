@@ -4,7 +4,7 @@
  */
 const fetch = require('node-fetch');
 const { buildHeaders } = require('../core/http');
-const { createErrorResponse } = require('../core/error-handler');
+const { createErrorResponse } = require('../core/errors');
 const { addCacheHeaders } = require('../core/cache');
 const { addCompression } = require('../core/compression');
 // Configuration

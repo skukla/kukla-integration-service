@@ -59,8 +59,8 @@
  * @property {Array<string>} body.steps - Processing steps before error
  */
 
-const { extractActionParams } = require('../../core/http');
-const { createResponseHandlerState, addStep, createSuccessResponse, createErrorResponse, shouldSkipFileOperations } = require('../../core/response-handler');
+const { extractActionParams } = require('../../../src/core/http');
+const { createResponseHandlerState, addStep, createSuccessResponse, createErrorResponse, shouldSkipFileOperations } = require('../../../src/core/responses');
 const { getAuthToken } = require('./lib/auth');
 const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
 const { buildCategoryMap } = require('./lib/api/categories');
