@@ -3,17 +3,12 @@
  * @module browse-files
  */
 
-const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
+const { Core } = require('@adobe/aio-sdk');
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { 
-    listFiles, 
-    getFileProperties,
-    deleteFile, 
-    FileErrorType,
-    createFileOperationError
-} = require('../../../src/core/storage/files');
-const { createHtmxResponse } = require('../../../src/htmx/formatting');
-const { response } = require('../../../src/core/http');
+    storage: { listFiles },
+    http: { createHtmxResponse, createErrorResponse }
+} = require('../../../src/core');
 
 /**
  * Creates a simple HTML response
