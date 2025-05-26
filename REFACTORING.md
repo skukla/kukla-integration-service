@@ -30,12 +30,13 @@ src/
 ├── commerce/
 │   ├── api/
 │   │   ├── client.js
-│   │   ├── products.js
-│   │   └── categories.js
-│   ├── transform/
-│   │   └── product.js
-│   └── storage/
-│       └── csv.js
+│   │   └── endpoints.js
+│   ├── data/
+│   │   ├── product.js
+│   │   ├── category.js
+│   │   └── inventory.js
+│   └── transform/
+│       └── product.js
 ```
 
 ## Implementation Phases
@@ -86,27 +87,75 @@ src/
   - [x] Update imports in all dependent files
     > Completed 2024-03-19: Moved error and performance monitoring to dedicated modules and updated all imports
 
+- [x] 6. Create core entry point
+  - [x] Create core/index.js to export all core modules
+  - [x] Document core module public API
+  - [x] Add usage examples
+  - [x] Update imports to use new entry point
+    > Completed 2024-03-20: Created centralized core entry point with public API exports, added documentation and examples, updated all imports to use the new pattern, and cleaned up unused imports across the codebase
+
 ### Phase 2: Commerce Integration Restructuring
 - [ ] 1. Create new commerce directory structure
   ```
   src/commerce/
   ├── api/
+  │   ├── client.js        (Commerce API client using core/http)
+  │   ├── endpoints.js     (Commerce API endpoint definitions)
+  │   └── index.js        (API module entry point)
+  ├── data/
+  │   ├── product.js       (Product data and validation)
+  │   ├── category.js      (Category data and validation)
+  │   ├── inventory.js     (Inventory data and validation)
+  │   └── index.js        (Data module entry point)
   ├── transform/
-  └── storage/
+  │   ├── product.js       (Product transformations)
+  │   └── index.js        (Transform module entry point)
+  └── index.js            (Commerce module entry point)
   ```
 
 - [ ] 2. Refactor commerce API modules
-  - [ ] Extract core API client from `integration.js` → `api/client.js`
-  - [ ] Create `api/products.js` from get-products API logic
-  - [ ] Create `api/categories.js` from get-products category logic
+  - [ ] Create unified Commerce API client using core/http
+  - [ ] Extract endpoint definitions to endpoints.js
+  - [ ] Move authentication handling to client.js
+  - [ ] Use core/monitoring for error handling
+  - [ ] Use core/storage/cache for caching
+  - [ ] Move batch processing logic to client.js
+  - [ ] Create api/index.js entry point
 
-- [ ] 3. Refactor commerce transformation
-  - [ ] Move `product-transformer.js` → `transform/product.js`
-  - [ ] Extract reusable transforms from get-products
+- [ ] 3. Consolidate commerce data
+  - [ ] Move product-related constants to data/product.js
+  - [ ] Move category-related constants to data/category.js
+  - [ ] Move inventory-related constants to data/inventory.js
+  - [ ] Use core/data/validation for field validation
+  - [ ] Create data/index.js entry point
+  - [ ] Document data structures and validation rules
 
-- [ ] 4. Refactor commerce storage
-  - [ ] Move CSV handling from get-products → `storage/csv.js`
-  - [ ] Standardize storage interfaces
+- [ ] 4. Consolidate transformations
+  - [ ] Move product transformation logic to transform/product.js
+  - [ ] Use core/data/transformation utilities
+  - [ ] Use core/monitoring for error handling
+  - [ ] Create transform/index.js entry point
+  - [ ] Document transformation rules and processes
+
+- [ ] 5. Create commerce entry point
+  - [ ] Create commerce/index.js
+  - [ ] Export public API for commerce integration
+  - [ ] Add module documentation
+  - [ ] Add usage examples
+
+- [ ] 6. Move CSV functionality to core
+  - [ ] Create core/storage/csv.js for generic CSV operations
+  - [ ] Use core/http/compression for compression
+  - [ ] Implement memory-efficient generation
+  - [ ] Add comprehensive documentation
+  - [ ] Keep product-specific CSV transformation in commerce/transform/product.js
+
+- [ ] 7. Update dependent modules
+  - [ ] Update get-products action to use new structure
+  - [ ] Update browse-files action if needed
+  - [ ] Ensure consistent error handling
+  - [ ] Remove any duplicate code
+  - [ ] Add logging using core/monitoring
 
 ### Phase 3: Action Cleanup
 - [ ] 1. Clean up get-products action

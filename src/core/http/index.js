@@ -3,25 +3,23 @@
  * @module core/http
  */
 
-const { buildHeaders, getBearerToken, request, extractActionParams, checkMissingParams } = require('./client');
-const { response, createResponseHandlerState, addStep, createSuccessResponse, createErrorResponse } = require('./responses');
-const { addCompression } = require('./compression');
+const client = require('./client');
+const responses = require('./responses');
+const compression = require('./compression');
 
+// Internal exports for core module
 module.exports = {
     // Client utilities
-    buildHeaders,
-    getBearerToken,
-    request,
-    extractActionParams,
-    checkMissingParams,
-    
-    // Response utilities
-    response,
-    createResponseHandlerState,
-    addStep,
-    createSuccessResponse,
-    createErrorResponse,
-    
+    client,
+    // Response handling
+    response: responses,
     // Compression utilities
-    addCompression
+    compression
+};
+
+// Public API exports
+module.exports.public = {
+    ...client,
+    ...responses,
+    compression: compression.addCompression
 }; 
