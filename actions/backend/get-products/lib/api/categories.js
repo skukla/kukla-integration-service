@@ -2,8 +2,8 @@
  * Category-related API calls to Adobe Commerce
  * @module lib/api/categories
  */
-const { buildHeaders } = require('../../../../core/http');
-const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
+const { buildHeaders } = require('../../../../src/core/http/client');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../../src/commerce/integration');
 const { processConcurrently } = require('./concurrency');
 const cache = require('./cache');
 const endpoints = require('./commerce-endpoints');

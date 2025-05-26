@@ -3,25 +3,8 @@
  * @module lib/csv/generator
  */
 const csvWriter = require('csv-writer');
-const { Transform } = require('stream');
+const { formatList, createObjectTransformer } = require('../../../../../src/core/data/transformation');
 const { compress, getCompressionStats } = require('../api/compression');
-
-/**
- * Formats product categories into a comma-separated string
- * @private
- * @param {string[]|string} categories - Array of categories or single category string
- * @returns {string} Formatted category string
- * @example
- * formatCategories(['Electronics', 'Phones']) // Returns: 'Electronics, Phones'
- * formatCategories('Electronics') // Returns: 'Electronics'
- * formatCategories(null) // Returns: ''
- */
-function formatCategories(categories) {
-  if (Array.isArray(categories)) {
-    return categories.join(', ');
-  }
-  return categories || '';
-}
 
 /**
  * Gets the primary image URL from a product's images array
@@ -52,26 +35,19 @@ const csvHeaders = [
 ];
 
 /**
- * Maps a product object to a CSV row format
+ * Maps a product object to a CSV row
  * @private
- * @param {Object} product - Product data object
- * @param {string} product.sku - Product SKU
- * @param {string} product.name - Product name
- * @param {Array|string} product.categories - Product categories
- * @param {number} product.price - Product price
- * @param {number} product.qty - Product quantity
- * @param {Array} [product.images] - Product images array
- * @returns {Object} CSV row object with entity prefixed keys
- * @throws {Error} If required product properties are missing
+ * @param {Object} product - Product object
+ * @returns {Object} CSV row object
  */
 function mapProductToCsvRow(product) {
   return {
-    'entity.id': product.sku,
-    'entity.name': product.name,
-    'entity.category': formatCategories(product.categories),
-    'entity.value': product.price,
-    'entity.inventory': product.qty,
-    'entity.base_image': getPrimaryImageUrl(product.images)
+    sku: product.sku,
+    name: product.name,
+    price: product.price,
+    qty: product.qty,
+    categories: formatList(product.categories),
+    images: formatList(product.images.map(img => img.url))
   };
 }
 

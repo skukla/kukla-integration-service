@@ -7,19 +7,26 @@ This document outlines the plan for restructuring the codebase to improve modula
 ```
 src/
 ├── core/
+│   ├── config/
+│   │   └── index.js
 │   ├── http/
-│   │   ├── cache.js
 │   │   ├── compression.js
-│   │   └── client.js
+│   │   ├── client.js
+│   │   └── index.js
 │   ├── data/
 │   │   ├── validation.js
-│   │   └── transformation.js
+│   │   ├── transformation.js
+│   │   └── index.js
 │   ├── storage/
 │   │   ├── files.js
-│   │   └── cache.js
+│   │   ├── cache.js
+│   │   └── index.js
 │   └── monitoring/
 │       ├── performance.js
-│       └── errors.js
+│       ├── errors.js
+│       └── index.js
+├── htmx/
+│   └── formatting.js
 ├── commerce/
 │   ├── api/
 │   │   ├── client.js
@@ -34,35 +41,50 @@ src/
 ## Implementation Phases
 
 ### Phase 1: Core Module Reorganization
-- [ ] 1. Create new core directory structure
+- [x] 1. Create new core directory structure
   ```
   src/core/
+  ├── config/
   ├── http/
   ├── data/
   ├── storage/
   └── monitoring/
   ```
+  > Completed 2024-03-19: Created initial directory structure for core modules
+  > Updated 2024-03-20: Added config directory for app-specific configuration
 
-- [ ] 2. Move and refactor HTTP-related modules
-  - [ ] Move `cache.js` → `http/cache.js`
-  - [ ] Move `compression.js` → `http/compression.js`
-  - [ ] Extract HTTP client from `http.js` → `http/client.js`
-  - [ ] Update imports in all dependent files
+- [x] 2. Move and refactor HTTP-related modules
+  - [x] Move `compression.js` → `http/compression.js`
+    > Completed 2024-03-19: Moved compression.js and updated imports in integration.js and responses.js
+  - [x] Extract HTTP client from `http.js` → `http/client.js`
+    > Completed 2024-03-19: Extracted client functionality and updated imports in affected files
+  - [x] Create domain-specific entry points
+    > Completed 2024-03-20: Created index.js files for each core domain (http, storage, monitoring, config)
+    > Updated 2024-03-20: Added data/index.js to complete domain-specific entry points
+  - [x] Update imports in all dependent files
+    > Completed 2024-03-20: Updated all imports to use new domain-specific entry points
 
-- [ ] 3. Move and refactor data handling modules
-  - [ ] Move `validation.js` → `data/validation.js`
-  - [ ] Create `data/transformation.js` from common transform patterns
-  - [ ] Update imports in all dependent files
+- [x] 3. Move and refactor data handling modules
+  - [x] Move `validation.js` → `data/validation.js`
+    > Completed 2024-03-19: Moved validation.js and updated imports in all dependent files
+  - [x] Create `data/transformation.js` from common transform patterns
+    > Completed 2024-03-19: Created transformation.js with common utilities and updated imports in affected files
+  - [x] Create unified data module entry point
+    > Completed 2024-03-20: Created data/index.js to expose validation and transformation utilities
 
-- [ ] 4. Move and refactor storage modules
-  - [ ] Move `files.js` → `storage/files.js`
-  - [ ] Create `storage/cache.js` for generic caching (merge with get-products cache)
-  - [ ] Update imports in all dependent files
+- [x] 4. Move and refactor storage modules
+  - [x] Move `files.js` → `storage/files.js`
+    > Completed 2024-03-19: Moved files.js and updated imports in all dependent files
+  - [x] Create unified `storage/cache.js` for all caching concerns
+    > Completed 2024-03-20: Created consolidated cache.js that handles both HTTP and memory caching. Removed separate HTTP cache implementation for better cohesion.
+  - [x] Update imports in all dependent files
+    > Completed 2024-03-20: Updated all imports to use new unified cache module in storage/
 
-- [ ] 5. Move and refactor monitoring modules
-  - [ ] Move `errors.js` → `monitoring/errors.js`
-  - [ ] Move `performance.js` → `monitoring/performance.js`
-  - [ ] Update imports in all dependent files
+- [x] 5. Move and refactor monitoring modules
+  - [x] Move `errors.js` → `monitoring/errors.js`
+  - [x] Move `performance.js` → `monitoring/performance.js`
+  - [x] Update imports in all dependent files
+    > Completed 2024-03-19: Moved error and performance monitoring to dedicated modules and updated all imports
 
 ### Phase 2: Commerce Integration Restructuring
 - [ ] 1. Create new commerce directory structure
@@ -94,7 +116,10 @@ src/
   - [ ] Reorganize steps to use new structure
 
 - [ ] 2. Update frontend actions
-  - [ ] Update browse-files to use new core modules
+  - [x] Update browse-files to use new core modules
+    > Completed 2024-03-21: Refactored browse-files to use core storage/files.js and removed redundant HTMX response handling
+    > Completed 2024-03-21: Created new htmx/formatting.js for HTMX-specific concerns
+    > Completed 2024-03-21: Removed redundant src/htmx/file-responses.js and responses.js
   - [ ] Standardize action structure
 
 ### Phase 4: Testing and Validation
@@ -121,6 +146,32 @@ src/
 - [ ] 2. Update README with new architecture
 - [ ] 3. Update any deployment scripts
 - [ ] 4. Final testing of complete system
+
+### Phase 6: Configuration Consolidation
+- [ ] 1. Audit current configuration
+  - [ ] Map all configuration files and their purposes
+  - [ ] Identify configuration duplication
+  - [ ] Document environment-specific configuration needs
+  - [ ] Review App Builder configuration requirements
+
+- [ ] 2. Design consolidated configuration
+  - [ ] Plan unified configuration structure in root config/
+  - [ ] Define environment configuration strategy
+  - [ ] Design configuration validation approach
+  - [ ] Plan migration path for existing configuration
+
+- [ ] 3. Implement configuration changes
+  - [ ] Remove src/core/config
+  - [ ] Consolidate all configuration into root config/
+  - [ ] Update all configuration imports
+  - [ ] Add configuration validation
+  - [ ] Update environment handling
+
+- [ ] 4. Update documentation
+  - [ ] Document new configuration structure
+  - [ ] Update environment setup instructions
+  - [ ] Add configuration management guidelines
+  - [ ] Document configuration best practices
 
 ## Progress Tracking
 For each completed item:
