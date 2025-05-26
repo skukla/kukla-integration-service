@@ -3,9 +3,11 @@
  * @module actions/commerce/integration
  */
 const fetch = require('node-fetch');
-const { buildHeaders, addCompression } = require('../core/http');
-const { createErrorResponse } = require('../core/monitoring');
-const { HttpCache } = require('../core/storage');
+const { 
+    http: { buildHeaders, addCompression },
+    monitoring: { createErrorResponse },
+    storage: { HttpCache }
+} = require('../core');
 // Configuration
 const COMMERCE_CONFIG = {
     REQUEST_TIMEOUT: 30000,    // 30 second timeout
