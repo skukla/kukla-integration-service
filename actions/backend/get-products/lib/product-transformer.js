@@ -4,7 +4,7 @@
  */
 
 const { getCategoryIds } = require('./api/categories');
-const { transformObject } = require('../../../../src/core/data/transformation');
+const { data: { transformObject } } = require('../../../../src/core');
 
 /**
  * Default fields to include if none specified

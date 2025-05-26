@@ -2,7 +2,7 @@
  * Product-related API calls to Adobe Commerce
  * @module lib/api/products
  */
-const { buildHeaders } = require('../../../../src/core/http/client');
+const { http: { buildHeaders } } = require('../../../../src/core');
 const { buildCommerceUrl, makeCommerceRequest } = require('../../../../src/commerce/integration');
 const endpoints = require('./commerce-endpoints');
 const { default: ora } = require('ora');
