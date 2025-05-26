@@ -3,7 +3,7 @@
  * @module browse-files/templates
  */
 
-const { APP_PREFIX } = require('../../core/http');
+const { APP_PREFIX } = require('../../../src/core/http');
 
 /**
  * Build a download URL for a file
