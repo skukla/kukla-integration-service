@@ -59,8 +59,17 @@
  * @property {Array<string>} body.steps - Processing steps before error
  */
 
-const { extractActionParams } = require('../../../src/core/http/client');
-const { createResponseHandlerState, addStep, createSuccessResponse, createErrorResponse, shouldSkipFileOperations } = require('../../../src/core/responses');
+const { Core } = require('@adobe/aio-sdk');
+const { 
+    http: { 
+        extractActionParams,
+        createResponseHandlerState, 
+        addStep, 
+        createSuccessResponse, 
+        createErrorResponse, 
+        shouldSkipFileOperations 
+    }
+} = require('../../../src/core');
 const { getAuthToken } = require('./lib/auth');
 const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
 const { buildCategoryMap } = require('./lib/api/categories');

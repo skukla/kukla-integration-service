@@ -49,7 +49,8 @@ src/
   ├── http/
   ├── data/
   ├── storage/
-  └── monitoring/
+  ├── monitoring/
+  └── index.js            (Core module entry point)
   ```
   > Completed 2024-03-19: Created initial directory structure for core modules
   > Updated 2024-03-20: Added config directory for app-specific configuration
