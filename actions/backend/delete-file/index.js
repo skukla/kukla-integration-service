@@ -4,9 +4,9 @@
  */
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
-const { checkMissingRequestInputs } = require('../../core/validation');
-const { response: { error: errorResponse, success: successResponse } } = require('../../core/http');
-const { deleteFile, FileOperationError, FileErrorType } = require('../../core/files');
+const { checkMissingRequestInputs } = require('../../../src/core/validation');
+const { response: { error: errorResponse, success: successResponse } } = require('../../../src/core/http');
+const { deleteFile, FileOperationError, FileErrorType } = require('../../../src/core/files');
 
 /**
  * Main function that handles file deletion

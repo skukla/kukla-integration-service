@@ -7,10 +7,11 @@ const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { 
     listFiles, 
+    getFileProperties,
     deleteFile, 
     FileOperationError, 
     FileErrorType 
-} = require('../../core/files');
+} = require('../../../src/core/files');
 
 /**
  * Creates a simple HTML response

@@ -5,7 +5,7 @@
 
 const { addCacheHeaders } = require('../core/cache');
 const { addCompression } = require('../core/compression');
-const { ErrorTypes } = require('../core/error-handler');
+const { ErrorTypes } = require('../core/errors');
 
 // Response configuration
 const RESPONSE_CONFIG = {
