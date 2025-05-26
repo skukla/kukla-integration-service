@@ -3,10 +3,9 @@
  * @module actions/commerce/integration
  */
 const fetch = require('node-fetch');
-const { buildHeaders } = require('../core/http');
-const { createErrorResponse } = require('../core/errors');
-const { addCacheHeaders } = require('../core/cache');
-const { addCompression } = require('../core/compression');
+const { buildHeaders, addCompression } = require('../core/http');
+const { createErrorResponse } = require('../core/monitoring');
+const { HttpCache } = require('../core/storage');
 // Configuration
 const COMMERCE_CONFIG = {
     REQUEST_TIMEOUT: 30000,    // 30 second timeout
@@ -62,7 +61,7 @@ async function processCommerceResponse(response, context = {}) {
         body
     };
     if (context.method === 'GET') {
-        const cachedResponse = addCacheHeaders(baseResponse, {
+        const cachedResponse = HttpCache.addHeaders(baseResponse, {
             maxAge: COMMERCE_CONFIG.CACHE_DURATION,
             public: false
         });

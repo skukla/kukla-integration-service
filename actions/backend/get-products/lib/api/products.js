@@ -2,10 +2,12 @@
  * Product-related API calls to Adobe Commerce
  * @module lib/api/products
  */
-const { buildHeaders } = require('../../../../core/http');
-const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
+const { buildHeaders } = require('../../../../src/core/http/client');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../../src/commerce/integration');
 const endpoints = require('./commerce-endpoints');
 const { default: ora } = require('ora');
+const { processConcurrently } = require('./concurrency');
+const cache = require('./cache');
 
 // Configuration constants
 const DEFAULT_PAGE_SIZE = 100;

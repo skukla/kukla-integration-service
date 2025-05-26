@@ -6,8 +6,8 @@
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
 const { response: { error: errorResponse } } = require('../../../src/core/http');
-const { checkMissingRequestInputs } = require('../../../src/core/validation');
-const { readFile, getFileProperties, FileOperationError, FileErrorType } = require('../../../src/core/files');
+const { checkMissingRequestInputs } = require('../../../src/core/data');
+const { readFile, getFileProperties, FileOperationError, FileErrorType } = require('../../../src/core/storage/files');
 
 /**
  * Main function that handles file download requests

@@ -3,7 +3,7 @@
  * @module src/testing/performance/get-products
  */
 
-const { PerformanceMetrics } = require('../../actions/core/performance');
+const { PerformanceMonitor } = require('../../../src/core/monitoring/performance');
 const { getProducts } = require('../../actions/backend/get-products');
 
 /**
@@ -13,7 +13,7 @@ const { getProducts } = require('../../actions/backend/get-products');
  * @returns {Promise<Object>} Action result with performance metrics
  */
 async function executeWithPerformance(params, logger = console) {
-    const perf = new PerformanceMetrics(logger);
+    const perf = new PerformanceMonitor(logger);
     perf.start('get-products');
 
     try {

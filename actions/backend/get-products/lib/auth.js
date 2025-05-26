@@ -1,4 +1,4 @@
-const { buildHeaders } = require('../../../core/http');
+const { buildHeaders } = require('../../../../src/core/http/client');
 const { buildCommerceUrl, makeCommerceRequest } = require('../../../commerce/integration');
 const endpoints = require('./api/commerce-endpoints');
 /**

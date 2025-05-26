@@ -4,6 +4,7 @@
  */
 
 const { getCategoryIds } = require('./api/categories');
+const { transformObject } = require('../../../../src/core/data/transformation');
 
 /**
  * Default fields to include if none specified
@@ -76,12 +77,7 @@ function buildProductObject(product, requestedFields, categoryMap) {
       .map(transformImageEntry)
   };
 
-  const result = requestedFields.reduce((obj, field) => {
-    if (fieldMappings[field]) {
-      obj[field] = fieldMappings[field]();
-    }
-    return obj;
-  }, {});
+  const result = transformObject(product, fieldMappings, requestedFields);
 
   // Add performance metrics
   result.performance = {
