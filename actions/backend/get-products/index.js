@@ -70,11 +70,13 @@ const {
         shouldSkipFileOperations 
     }
 } = require('../../../src/core');
+const { 
+    api: { makeCommerceRequest, buildCommerceUrl },
+    transform: { product: { buildProductObject, DEFAULT_FIELDS } }
+} = require('../../../src/commerce');
 const { getAuthToken } = require('./lib/auth');
 const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
 const { buildCategoryMap } = require('./lib/api/categories');
-const { buildProductObject, DEFAULT_FIELDS } = require('./lib/product-transformer');
-const { performance } = require('perf_hooks');
 const createCsv = require('./steps/createCsv');
 const storeCsv = require('./steps/storeCsv');
 const { default: ora } = require('ora');
