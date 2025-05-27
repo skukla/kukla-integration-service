@@ -7,6 +7,7 @@
  * - Data validation and transformation
  * - Storage and caching operations
  * - Error monitoring and performance tracking
+ * - Configuration management
  * 
  * @example
  * // Import specific modules
@@ -25,17 +26,30 @@
  * } catch (error) {
  *   monitoring.errors.createErrorResponse('STORAGE', error.message);
  * }
+ * 
+ * @example
+ * // Access configuration
+ * const { config } = require('./core');
+ * const apiUrl = config.storage.buildApiUrl({
+ *   org: 'my-org',
+ *   service: 'my-service',
+ *   action: 'my-action'
+ * });
  */
 
 const http = require('./http');
 const data = require('./data');
 const storage = require('./storage');
 const monitoring = require('./monitoring');
+const config = require('./config');
 
 // Export public APIs only
 module.exports = {
     http: http.public,
     data: data.public,
     storage: storage.public,
-    monitoring: monitoring.public
+    monitoring: monitoring.public,
+    config: {
+        storage: config.storage
+    }
 }; 

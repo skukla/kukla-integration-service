@@ -3,13 +3,20 @@
  * @module core/storage
  */
 
-const cache = require('./cache');
 const files = require('./files');
+const cache = require('./cache');
+const csv = require('./csv');
 
 // Internal exports for core module
 module.exports = {
+    // File operations
+    files,
+    
+    // Caching utilities
     cache,
-    files
+    
+    // CSV generation
+    csv
 };
 
 // Public API exports
@@ -18,5 +25,12 @@ module.exports.public = {
     ...cache,
     
     // File operations
-    ...files
+    ...files,
+    
+    // CSV generation
+    csv: {
+        generateCsv: csv.generateCsv,
+        createCsvStream: csv.createCsvStream,
+        CSV_CONFIG: csv.CSV_CONFIG
+    }
 }; 
