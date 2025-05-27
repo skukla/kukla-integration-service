@@ -198,13 +198,7 @@ src/
   - [ ] Test caching behavior
   - [ ] Test compression functionality
 
-### Phase 5: Cleanup and Finalization
-- [ ] 1. Remove all deprecated/unused code
-- [ ] 2. Update README with new architecture
-- [ ] 3. Update any deployment scripts
-- [ ] 4. Final testing of complete system
-
-### Phase 6: Configuration Consolidation
+### Phase 5: Configuration Consolidation
 - [ ] 1. Audit current configuration
   - [ ] Map all configuration files and their purposes
   - [ ] Identify configuration duplication
@@ -237,23 +231,29 @@ src/
     - [ ] Document URL dependencies in both frontend and backend
     - [ ] Review environment-specific URL requirements
   
-  - [ ] Design URL configuration structure
+  - [ ] 6. Design URL configuration structure
     - [ ] Create unified URL configuration schema
     - [ ] Define environment-specific URL overrides
     - [ ] Plan URL validation strategy
     - [ ] Design URL generation utilities
   
-  - [ ] Implement URL configuration
+  - [ ] 7. Implement URL configuration
     - [ ] Create config/urls.js for centralized URL management
     - [ ] Implement environment-aware URL resolution
     - [ ] Add URL validation and formatting utilities
     - [ ] Create URL generation helpers for frontend and backend
   
-  - [ ] Migration and testing
+  - [ ] 8. Migration and testing
     - [ ] Update all hardcoded URLs to use configuration
     - [ ] Test URL resolution across environments
     - [ ] Verify API endpoint accessibility
     - [ ] Validate frontend routing behavior
+
+### Phase 6: Cleanup and Finalization
+- [ ] 1. Remove all deprecated/unused code
+- [ ] 2. Update README with new architecture
+- [ ] 3. Update any deployment scripts
+- [ ] 4. Final testing of complete system
 
 ## Progress Tracking
 For each completed item:
