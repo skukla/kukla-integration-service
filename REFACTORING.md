@@ -230,6 +230,31 @@ src/
   - [ ] Add configuration management guidelines
   - [ ] Document configuration best practices
 
+- [ ] 5. URL Configuration Consolidation
+  - [ ] Audit current URL usage
+    - [ ] Map all application URLs (frontend routes, API endpoints)
+    - [ ] Identify URL patterns across environments
+    - [ ] Document URL dependencies in both frontend and backend
+    - [ ] Review environment-specific URL requirements
+  
+  - [ ] Design URL configuration structure
+    - [ ] Create unified URL configuration schema
+    - [ ] Define environment-specific URL overrides
+    - [ ] Plan URL validation strategy
+    - [ ] Design URL generation utilities
+  
+  - [ ] Implement URL configuration
+    - [ ] Create config/urls.js for centralized URL management
+    - [ ] Implement environment-aware URL resolution
+    - [ ] Add URL validation and formatting utilities
+    - [ ] Create URL generation helpers for frontend and backend
+  
+  - [ ] Migration and testing
+    - [ ] Update all hardcoded URLs to use configuration
+    - [ ] Test URL resolution across environments
+    - [ ] Verify API endpoint accessibility
+    - [ ] Validate frontend routing behavior
+
 ## Progress Tracking
 For each completed item:
 1. Mark the checkbox with an 'x': `[x]`
