@@ -1,27 +1,38 @@
-const { generateCsv } = require('../lib/csv/generator');
+/**
+ * CSV generation step for product export
+ * @module steps/createCsv
+ */
+
+const { storage: { csv } } = require('../../../../src/core');
+const { transform: { product: { mapProductToCsvRow } } } = require('../../../../src/commerce');
 
 /**
- * Creates a CSV file from the transformed product data
- * @param {Object[]} products - Transformed product objects
- * @returns {Promise<{fileName: string, content: Buffer, stats: Object}>} CSV file information
- * @property {string} fileName - The name of the generated CSV file
- * @property {Buffer} content - The compressed CSV content
- * @property {Object} stats - Compression statistics
+ * CSV header definitions for product export
+ * @constant {Array<Object>}
+ */
+const CSV_HEADERS = [
+    { id: 'sku', title: 'entity.id' },
+    { id: 'name', title: 'entity.name' },
+    { id: 'categories', title: 'entity.category' },
+    { id: 'price', title: 'entity.value' },
+    { id: 'qty', title: 'entity.inventory' },
+    { id: 'base_image', title: 'entity.base_image' }
+];
+
+/**
+ * Generates a compressed CSV file from product data
+ * @param {Array<Object>} products - Array of transformed product objects
+ * @returns {Promise<{content: Buffer, stats: Object}>} Generated CSV content and compression stats
  */
 async function createCsv(products) {
-  try {
-    // Generate CSV content with compression
-    const { content, stats } = await generateCsv(products);
-
-    // Return with fixed filename and include compression stats
-    return {
-      fileName: 'products.csv',
-      content,
-      stats
-    };
-  } catch (error) {
-    throw new Error(`Failed to create CSV: ${error.message}`);
-  }
+    return csv.generateCsv({
+        records: products,
+        headers: CSV_HEADERS,
+        rowMapper: mapProductToCsvRow,
+        compression: {
+            level: csv.CSV_CONFIG.COMPRESSION_LEVEL
+        }
+    });
 }
 
 module.exports = createCsv;
