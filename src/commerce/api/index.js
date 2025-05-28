@@ -4,7 +4,7 @@
  */
 
 const client = require('./client');
-const endpoints = require('./endpoints');
+const endpoints = require('./endpoint-builder');
 
 module.exports = {
     // Client utilities
