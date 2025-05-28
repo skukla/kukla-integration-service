@@ -4,14 +4,14 @@
 load_config() {
     node -e "
         const { loadConfig } = require('../config');
+        const { buildRuntimeUrl } = require('../src/core/url');
         const config = loadConfig();
-        const { test } = config;
         
         console.log(JSON.stringify({
-            local: test.api.local,
-            staging: test.api.staging,
-            production: test.api.production,
-            defaults: test.defaults
+            local: buildRuntimeUrl('get-products'),
+            staging: buildRuntimeUrl('get-products'),
+            production: buildRuntimeUrl('get-products'),
+            defaults: config.test.defaults
         }));
     "
 }
