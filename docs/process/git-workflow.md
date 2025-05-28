@@ -51,6 +51,7 @@ git push origin feature/your-feature-name
 ### 2. Making Regular Commits
 
 Follow these commit message conventions:
+
 - `feat:` for new features
 - `fix:` for bug fixes
 - `docs:` for documentation changes
@@ -59,6 +60,7 @@ Follow these commit message conventions:
 - `chore:` for maintenance tasks
 
 Example:
+
 ```bash
 git add specific-file.js
 git commit -m "feat: implement user authentication flow"
@@ -132,6 +134,7 @@ git push origin --delete release/v1.x.x
 ### 6. Documentation Changes
 
 For documentation updates:
+
 ```bash
 git checkout docs/current
 git pull origin docs/current
@@ -200,4 +203,4 @@ git push origin --delete hotfix/critical-issue
 
 ## Questions and Support
 
-For questions about this workflow or assistance with Git operations, consult with the team lead or senior developers. 
+For questions about this workflow or assistance with Git operations, consult with the team lead or senior developers.

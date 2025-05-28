@@ -5,6 +5,7 @@ This directory contains documentation specific to the product export functionali
 ## Overview
 
 The product export feature allows users to:
+
 1. Query products from Adobe Commerce
 2. Transform the data into a standardized format
 3. Generate and download CSV files
@@ -27,4 +28,4 @@ Status: Production Ready
 
 - Maximum of 100,000 products per export
 - CSV file size limit of 1GB
-- Cache retention period of 24 hours 
+- Cache retention period of 24 hours

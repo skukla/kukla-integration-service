@@ -134,4 +134,4 @@ async function getProductsWithFallback(storeId) {
 3. Consistency
    - Version cache keys
    - Handle stale data
-   - Implement cache stampede protection 
+   - Implement cache stampede protection

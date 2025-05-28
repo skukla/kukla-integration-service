@@ -30,12 +30,14 @@ config/
 ### App Configuration
 
 Controls application-wide settings including:
+
 - Runtime environment and feature flags
 - Logging configuration
 - Performance monitoring settings
 - Storage and file handling
 
 Example:
+
 ```javascript
 {
   runtime: {
@@ -54,12 +56,14 @@ Example:
 ### URL Configuration
 
 Defines URL patterns and routing for:
+
 - API endpoints
 - Frontend routes
 - Environment-specific base URLs
 - Path templates
 
 Example:
+
 ```javascript
 {
   api: {
@@ -75,12 +79,14 @@ Example:
 ### Commerce Configuration
 
 Manages Adobe Commerce integration settings:
+
 - API timeouts and retry logic
 - Batch processing configuration
 - Caching policies
 - Endpoint definitions
 
 Example:
+
 ```javascript
 {
   api: {
@@ -99,6 +105,7 @@ Example:
 ### Security Configuration
 
 Controls security-related settings:
+
 - Authentication configuration
 - Authorization rules
 - Rate limiting
@@ -106,6 +113,7 @@ Controls security-related settings:
 - Encryption settings
 
 Example:
+
 ```javascript
 {
   authentication: {
@@ -221,4 +229,4 @@ When updating from previous versions:
 2. Review schema changes
 3. Update environment files
 4. Test configuration loading
-5. Verify application behavior 
+5. Verify application behavior
