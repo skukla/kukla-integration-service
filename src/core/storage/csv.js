@@ -6,15 +6,19 @@
 const csvWriter = require('csv-writer');
 const { Transform } = require('stream');
 const { compression } = require('../http');
+const { loadConfig } = require('../../../config');
+
+// Load storage configuration
+const { storage: { csv: csvConfig } } = loadConfig();
 
 /**
  * Configuration for CSV generation
  * @constant {Object}
  */
 const CSV_CONFIG = {
-    CHUNK_SIZE: 100,           // Number of records to process in each chunk
-    COMPRESSION_LEVEL: 6,      // Default compression level (0-9)
-    STREAM_HIGH_WATER_MARK: 16384 // Stream buffer size in bytes
+    CHUNK_SIZE: csvConfig.chunkSize,
+    COMPRESSION_LEVEL: csvConfig.compressionLevel,
+    STREAM_HIGH_WATER_MARK: csvConfig.streamBufferSize
 };
 
 /**
