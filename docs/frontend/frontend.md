@@ -88,37 +88,40 @@ export function setupEventHandlers() {
 Our application uses the following HTMX events to handle various aspects of the UI:
 
 #### Modal Events
+
 - `htmx:afterSwap`
-  - **Purpose**: Handles showing modals after content is swapped
-  - **Implementation**: Shows modal if the target is a modal container
-  - **Example**: Used when loading modal content dynamically
+    - **Purpose**: Handles showing modals after content is swapped
+    - **Implementation**: Shows modal if the target is a modal container
+    - **Example**: Used when loading modal content dynamically
 
 - `htmx:beforeSwap`
-  - **Purpose**: Handles hiding modals before content is swapped
-  - **Implementation**: Hides modal if the target is a table row
-  - **Example**: Used when closing modals before updating content
+    - **Purpose**: Handles hiding modals before content is swapped
+    - **Implementation**: Hides modal if the target is a table row
+    - **Example**: Used when closing modals before updating content
 
 #### Request Lifecycle Events
+
 - `htmx:beforeRequest`
-  - **Purpose**: Manages loading states when requests start
-  - **Implementation**: Adds loading class to the requesting element
-  - **Example**: Shows loading spinner on buttons during requests
+    - **Purpose**: Manages loading states when requests start
+    - **Implementation**: Adds loading class to the requesting element
+    - **Example**: Shows loading spinner on buttons during requests
 
 - `htmx:afterRequest`
-  - **Purpose**: Handles request completion and success states
-  - **Implementation**: Removes loading class and shows success notifications
-  - **Example**: Shows success message after file deletion
+    - **Purpose**: Handles request completion and success states
+    - **Implementation**: Removes loading class and shows success notifications
+    - **Example**: Shows success message after file deletion
 
 - `htmx:responseError`
-  - **Purpose**: Handles failed requests and error states
-  - **Implementation**: Shows error notifications and logs errors
-  - **Example**: Displays error message when file operation fails
+    - **Purpose**: Handles failed requests and error states
+    - **Implementation**: Shows error notifications and logs errors
+    - **Example**: Displays error message when file operation fails
 
 #### Configuration Events
+
 - `htmx:configRequest`
-  - **Purpose**: Sets up request headers and security tokens
-  - **Implementation**: Configures XHR indicators and CSRF tokens
-  - **Example**: Adds security headers to all HTMX requests
+    - **Purpose**: Sets up request headers and security tokens
+    - **Implementation**: Configures XHR indicators and CSRF tokens
+    - **Example**: Adds security headers to all HTMX requests
 
 Each event is implemented in `web-src/src/js/utils/htmx-events.js` and follows our standard patterns for error handling, loading states, and user feedback.
 
@@ -197,6 +200,7 @@ export class Modal {
 ### 1. Data Attributes
 
 Use data attributes for configuration:
+
 ```html
 <div data-modal-id="file-delete"
      data-action-url="/api/files/delete"
@@ -285,4 +289,4 @@ function handleError(detail) {
 - [API Reference](api-reference.md#htmx-integration) - HTMX API integration details
 - [Design System](design-system.md) - UI components and styling
 - [Development Guide](development.md) - General development workflow
-- [Troubleshooting Guide](troubleshooting.md) - Common issues and solutions 
+- [Troubleshooting Guide](troubleshooting.md) - Common issues and solutions

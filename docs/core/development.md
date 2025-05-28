@@ -5,6 +5,7 @@
 ## Setup
 
 ### 1. Environment
+
 ```bash
 # Copy environment template
 cp .env.example .env
@@ -16,12 +17,14 @@ COMMERCE_ADMIN_PASSWORD=<password>
 ```
 
 ### 2. Adobe Developer Console
+
 1. Create new project
 2. Enable App Builder
 3. Download configuration
 4. Run `aio app use <config>`
 
 ### 3. Dependencies
+
 ```bash
 npm install
 ```
@@ -29,6 +32,7 @@ npm install
 ## Development Workflow
 
 ### 1. Local Development
+
 ```bash
 npm run dev          # Start development server
 npm run build       # Build the application
@@ -56,6 +60,7 @@ web-src/
 ### 3. Implementation Patterns
 
 #### URL Handling
+
 ```javascript
 // Frontend actions use getActionUrl
 const url = getActionUrl('browse-files', { page: 1 });
@@ -75,6 +80,7 @@ const URL_CONFIG = {
 ```
 
 #### Backend Actions
+
 ```javascript
 // Example action structure
 const { response } = require('../../core/http');
@@ -93,6 +99,7 @@ async function main(params) {
 ```
 
 #### Frontend Components
+
 ```html
 <!-- Example HTMX component -->
 <div hx-get="/api/data"
@@ -118,6 +125,7 @@ try {
 ## Deployment
 
 ### 1. Build and Deploy
+
 ```bash
 # Full deployment
 npm run deploy
@@ -130,6 +138,7 @@ npm run deploy:actions
 ```
 
 ### 2. Verify Deployment
+
 1. Check App Builder console
 2. Verify endpoints
 3. Test functionality
@@ -138,24 +147,28 @@ npm run deploy:actions
 ## Best Practices
 
 ### 1. Code Style
+
 - Follow ESLint config
 - Use consistent patterns
 - Keep functions focused
 - Document complex logic
 
 ### 2. Error Handling
+
 - Use core error utilities
 - Include context
 - Log appropriately
 - Handle edge cases
 
 ### 3. Performance
+
 - Use caching appropriately
 - Optimize responses
 - Monitor metrics
 - Handle timeouts
 
 For detailed guides, see:
+
 - [Architecture](architecture.md)
 - [API Reference](api-reference.md)
-- [Error Handling](error-handling.md) 
+- [Error Handling](error-handling.md)

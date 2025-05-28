@@ -20,6 +20,7 @@ npm run test:api:help
 ### Environment Setup
 
 1. Create a `.env` file with your credentials:
+
 ```bash
 COMMERCE_URL=your-commerce-instance
 COMMERCE_ADMIN_USERNAME=admin
@@ -27,6 +28,7 @@ COMMERCE_ADMIN_PASSWORD=your-password
 ```
 
 2. Ensure the testing script is executable:
+
 ```bash
 chmod +x scripts/test-api.sh
 ```
@@ -36,13 +38,13 @@ chmod +x scripts/test-api.sh
 The testing script requires explicit environment specification to prevent accidental testing in the wrong environment:
 
 - **Development** (`--env dev`)
-  - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
-  - Uses self-signed certificates (automatically handled)
-  - Requires local development server to be running
+    - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
+    - Uses self-signed certificates (automatically handled)
+    - Requires local development server to be running
 
 - **Production** (`--env prod`)
-  - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
-  - Requires valid production credentials
+    - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
+    - Requires valid production credentials
 
 ### Available Options
 
@@ -56,6 +58,7 @@ The testing script requires explicit environment specification to prevent accide
 ### Available Fields
 
 The following fields can be requested using the `--fields` option:
+
 - `sku` - Product SKU
 - `name` - Product name
 - `price` - Product price
@@ -68,6 +71,7 @@ Note: The API always fetches complete product data internally but returns only t
 ### Common Testing Scenarios
 
 1. **Basic Development Testing**
+
 ```bash
 # Test get-products endpoint with all fields
 npm run test:api
@@ -77,6 +81,7 @@ npm run test:api -- --endpoint get-categories
 ```
 
 2. **Production Testing**
+
 ```bash
 # Test with all fields in production
 npm run test:api -- --env prod
@@ -86,6 +91,7 @@ npm run test:api -- --env prod --fields sku,name
 ```
 
 3. **Field Selection**
+
 ```bash
 # Get only basic product information
 npm run test:api -- --fields sku,name,price
@@ -98,6 +104,7 @@ npm run test:api -- --fields sku,name,price,qty,categories,images
 ```
 
 4. **Format Options**
+
 ```bash
 # Get JSON response (default)
 npm run test:api
@@ -109,6 +116,7 @@ npm run test:api -- --format csv
 ### Response Formats
 
 1. **JSON Response** (default)
+
 ```json
 {
   "success": true,
@@ -124,6 +132,7 @@ npm run test:api -- --format csv
 ```
 
 2. **CSV Response** (when using `--format csv`)
+
 ```json
 {
   "success": true,
@@ -139,6 +148,7 @@ npm run test:api -- --format csv
 The script handles several types of errors:
 
 1. **Environment Errors**
+
 ```bash
 # Missing environment specification
 ./scripts/test-api.sh  # Error: --env must be specified (dev or prod)
@@ -148,6 +158,7 @@ The script handles several types of errors:
 ```
 
 2. **Configuration Errors**
+
 ```bash
 # Missing credentials
 Error: Missing required environment variables. Please set them in .env file:
@@ -157,6 +168,7 @@ COMMERCE_ADMIN_PASSWORD=
 ```
 
 3. **Validation Errors**
+
 ```bash
 # Invalid fields
 Error: Invalid field 'invalid'. Valid fields are: sku name price qty categories images
@@ -170,6 +182,7 @@ Error: format must be 'json' or 'csv'
 When testing with a local development server, follow these explicit steps:
 
 1. Start the server:
+
 ```bash
 # Interactive mode (blocks terminal)
 npm run start
@@ -179,16 +192,19 @@ npm run start:bg
 ```
 
 2. If using background mode, wait for server readiness:
+
 ```bash
 ./scripts/wait-for-server.sh
 ```
 
 3. Run the tests:
+
 ```bash
 npm run test:api
 ```
 
 4. Monitor and manage logs:
+
 ```bash
 # View logs
 npm run logs
@@ -213,4 +229,4 @@ npm run logs:clear
    - Choose between interactive (`npm run start`) or background (`npm run start:bg`) server mode
    - When using background mode, ensure server is ready with `./scripts/wait-for-server.sh`
    - Monitor logs with `npm run logs`
-   - Keep logs clean with `npm run logs:clear` when needed 
+   - Keep logs clean with `npm run logs:clear` when needed

@@ -6,7 +6,7 @@ The Adobe Commerce Integration Service provides a RESTful API for integrating wi
 
 ## Base URL
 
-```
+```plaintext
 https://api.commerce.adobe.io/integration-service/v1
 ```
 
@@ -21,6 +21,7 @@ The API implements rate limiting to ensure service stability. See the [Rate Limi
 ## Available Endpoints
 
 ### Product Export
+
 - [Product Export API](endpoints/product-export.md) - Export product data in various formats
 
 ## Response Format
@@ -65,6 +66,11 @@ All API responses follow this standard format:
 ## Support
 
 For API support:
+
 1. Check the documentation
 2. Review common issues in [Troubleshooting](../maintenance/troubleshooting.md)
-3. Contact Adobe Support 
+3. Contact Adobe Support
+
+```javascript
+// ... existing code ...
+```
