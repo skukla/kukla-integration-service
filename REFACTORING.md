@@ -222,6 +222,7 @@ src/
     - [x] Document commerce endpoint patterns
     - [x] Map environment-specific commerce settings
     > Completed 2024-03-26: Completed comprehensive audit of all configuration files and their purposes
+    > Updated 2024-03-27: Moved performance testing configuration and baselines to tests/performance directory
 
 - [x] 2. Design consolidated configuration
   - [x] Plan unified configuration structure in root config/
@@ -234,101 +235,57 @@ src/
     ├── schema/                # Configuration schemas
     │   ├── app.schema.js      
     │   ├── url.schema.js      
-    │   ├── commerce.schema.js # Commerce API schema
-    │   └── security.schema.js # Security settings schema
-    ├── defaults/              # Default configuration
-    │   ├── app.defaults.js    
-    │   ├── url.defaults.js    
-    │   ├── commerce.defaults.js
-    │   └── security.defaults.js
+    │   ├── commerce.schema.js     # Commerce API schema
+    │   ├── security.schema.js     # Security settings schema
+    │   ├── api-testing.schema.js  # API testing schema
+    │   └── performance-testing.schema.js # Performance testing schema
     └── index.js              # Configuration entry point
     ```
   - [x] Define environment configuration strategy
   - [x] Design configuration validation approach
   - [x] Plan migration path for existing configuration
   - [x] Design configuration categories and schemas
-    - [x] App Configuration
-      - [x] Runtime settings and feature flags
-      - [x] Logging levels
-      - [x] Performance thresholds
-    - [x] Security Configuration
-      - [x] API keys management
-      - [x] Authentication settings
-      - [x] Authorization rules
-      - [x] Security policies
-      - [x] Credential handling
-    - [x] URL Configuration
-      - [x] Base URLs and patterns
-      - [x] Path templates
-      - [x] Query parameter schemas
-      - [x] Environment-specific overrides
-    - [x] Commerce Configuration
-      - [x] API settings and endpoints
-      - [x] Timeout and retry settings
-      - [x] Cache duration configuration
-      - [x] Batch processing settings
-    > Completed 2024-03-26: Designed and implemented comprehensive configuration structure with JSON schema validation
+    > Completed 2024-03-26: Created initial configuration structure with environment-specific files and schemas
+    > Updated 2024-03-28: Flattened schema directory structure by moving testing schemas to root schema directory
+    > Updated 2024-03-28: Removed nested api.api configuration in favor of flatter structure
 
-- [x] 3. Implement configuration changes
-  - [x] Remove src/core/config
-  - [x] Create new configuration structure
-    - [x] Implement schema definitions
-    - [x] Create default configurations
-    - [x] Set up environment-specific overrides
-  - [x] Migrate commerce configuration
-    - [x] Move commerce API settings to new structure
-    - [x] Implement commerce schema validation
-    - [x] Update commerce client to use new config
-  - [x] Add configuration validation
-  - [x] Update environment handling
-  - [x] Create configuration documentation
-    > Completed 2024-03-26: Implemented new configuration system with schema validation, defaults, and environment-specific overrides
+- [x] 3. Implement configuration validation
+  - [x] Create JSON schemas for all configuration
+    - [x] App configuration schema
+    - [x] URL configuration schema
+    - [x] Commerce API schema
+    - [x] Security settings schema
+    - [x] Testing configuration schemas
+  - [x] Implement schema validation using AJV
+  - [x] Add validation to configuration loading
+  - [x] Add helpful error messages for validation failures
+    > Completed 2024-03-26: Created comprehensive JSON schemas for all configuration categories
+    > Updated 2024-03-28: Improved schema organization and validation error messages
 
-- [x] 4. Update documentation
-  - [x] Document new configuration structure
-  - [x] Update environment setup instructions
-  - [x] Add configuration management guidelines
-  - [x] Document configuration best practices
-  - [x] Add commerce configuration guide
-    - [x] Document available settings
-    - [x] Provide configuration examples
-    - [x] Explain environment overrides
-    - [x] Detail validation rules
-    > Completed 2024-03-26: Created comprehensive configuration.md guide with detailed documentation of all configuration aspects, including structure, validation, best practices, and troubleshooting. Updated README.md with configuration system information.
+- [x] 4. Move URL handling to core/routing
+  - [x] Create routing module for URL construction
+  - [x] Move URL utilities from core/url.js to core/routing/url.js
+  - [x] Create routing/index.js entry point
+  - [x] Update all imports to use new routing module
+    > Completed 2024-03-28: Created routing module and moved URL functionality from core/url.js
+    > Updated 2024-03-28: Updated all imports to use new routing module location
 
-- [x] 5. URL Configuration Consolidation
-  - [x] Audit current URL usage
-    - [x] Map all application URLs (frontend routes, API endpoints)
-    - [x] Identify URL patterns across environments
-    - [x] Document URL dependencies in both frontend and backend
-    - [x] Review environment-specific URL requirements
-    - [x] Catalog commerce API endpoints
-      - [x] Map product endpoints
-      - [x] Document category endpoints
-      - [x] List inventory endpoints
-    > Completed 2024-03-26: Completed URL configuration audit and documented all endpoints in url.schema.js and url.defaults.js
-  
-  - [x] 6. Design URL configuration structure
-    - [x] Create unified URL configuration schema
-    - [x] Define environment-specific URL overrides
-    - [x] Plan URL validation strategy
-    - [x] Design URL generation utilities
-    - [x] Create commerce URL patterns
-      - [x] Define product URL templates
-      - [x] Create category URL structure
-      - [x] Plan inventory URL patterns
-    > Completed 2024-03-26: Implemented URL configuration structure with schema validation and environment-specific overrides
-  
-  - [x] 7. Implement URL configuration
-    - [x] Create config/urls.js for centralized URL management
-    - [x] Implement environment-aware URL resolution
-    - [x] Add commerce URL utilities
-      - [x] Create commerce endpoint builder
-      - [x] Add URL validation for commerce
-      - [x] Implement environment switching
-    - [x] Update commerce client to use URL config
-    - [x] Add URL configuration tests
-    > Completed 2024-03-26: Implemented URL configuration system with environment-aware resolution and commerce integration
+- [x] 5. Update dependent modules
+  - [x] Update commerce API to use new configuration
+  - [x] Update testing modules to use new schemas
+  - [x] Update environment-specific code
+  - [x] Remove deprecated configuration files
+    > Completed 2024-03-26: Updated all modules to use new configuration structure
+    > Updated 2024-03-28: Removed deprecated configuration files and updated all imports
+
+- [x] 6. Documentation
+  - [x] Document configuration structure
+  - [x] Add schema documentation
+  - [x] Document environment configuration
+  - [x] Add configuration examples
+  - [x] Document validation process
+    > Completed 2024-03-26: Added comprehensive documentation for configuration system
+    > Updated 2024-03-28: Updated documentation to reflect flattened schema structure and routing changes
 
 ### Phase 5: Code Quality Improvements
 

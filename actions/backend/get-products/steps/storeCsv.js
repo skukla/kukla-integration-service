@@ -5,7 +5,7 @@
 
 const { 
     storage: { files },
-    config: { storage: STORAGE_CONFIG }
+    config: { storage: storageConfig }
 } = require('../../../../src/core');
 
 /**
@@ -17,7 +17,7 @@ const {
  */
 async function storeCsv(csvResult) {
     const fileName = 'products.csv';
-    const publicFileName = `${STORAGE_CONFIG.FILES.PUBLIC_DIR}/${fileName}`;
+    const publicFileName = `${storageConfig.files.publicDir}/${fileName}`;
     
     // Store the file using core file operations
     await files.writeFile(publicFileName, csvResult.content);
