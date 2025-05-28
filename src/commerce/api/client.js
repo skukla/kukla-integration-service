@@ -4,29 +4,20 @@
  */
 
 const { 
-    http: { buildHeaders, addCompression },
+    http: { addCompression },
     monitoring: { createErrorResponse },
     storage: { HttpCache }
 } = require('../../core');
-
-// Configuration
-const COMMERCE_CONFIG = {
-    REQUEST_TIMEOUT: 30000,    // 30 second timeout
-    RETRY_ATTEMPTS: 3,         // Number of retry attempts
-    RETRY_DELAY: 1000,        // Base delay between retries (ms)
-    BATCH_SIZE: 50,           // Maximum items per batch
-    CACHE_DURATION: 300       // Cache duration for GET requests (5 minutes)
-};
+const { COMMERCE_CONFIG } = require('./config');
 
 /**
  * Process Commerce API response with caching and compression
- * @private
  * @param {Response} response - Fetch response
  * @param {Object} context - Additional context
  * @returns {Promise<Object>} Processed response
  * @throws {Error} Formatted error response
  */
-async function processCommerceResponse(response, context = {}) {
+async function processResponse(response, context = {}) {
     const contentType = response.headers.get('content-type');
     const isJson = contentType && contentType.includes('application/json');
     const body = isJson ? await response.json() : await response.text();
@@ -88,7 +79,7 @@ async function processCommerceResponse(response, context = {}) {
  * @param {Object} context - Additional context
  * @returns {Promise<Object>} Response data
  */
-async function makeCommerceRequest(url, options = {}, context = {}) {
+async function makeRequest(url, options = {}, context = {}) {
     let attempt = 0;
     while (attempt < COMMERCE_CONFIG.RETRY_ATTEMPTS) {
         try {
@@ -104,7 +95,7 @@ async function makeCommerceRequest(url, options = {}, context = {}) {
 
             clearTimeout(timeout);
 
-            const result = await processCommerceResponse(response, {
+            const result = await processResponse(response, {
                 ...context,
                 method: options.method || 'GET'
             });
@@ -126,16 +117,15 @@ async function makeCommerceRequest(url, options = {}, context = {}) {
 /**
  * Batches multiple Commerce API requests
  * @param {Array<Object>} requests - Array of request objects
- * @param {Object} options - Batch options
  * @returns {Promise<Array>} Array of responses
  */
-async function batchRequests(requests, options = {}) {
+async function batchRequests(requests) {
     const results = [];
     // Process requests in batches
     for (let i = 0; i < requests.length; i += COMMERCE_CONFIG.BATCH_SIZE) {
         const batch = requests.slice(i, i + COMMERCE_CONFIG.BATCH_SIZE);
         const batchPromises = batch.map(req => 
-            makeCommerceRequest(req.url, req.options, req.context)
+            makeRequest(req.url, req.options, req.context)
         );
         // Wait for all requests in this batch
         const batchResults = await Promise.allSettled(batchPromises);
@@ -144,21 +134,8 @@ async function batchRequests(requests, options = {}) {
     return results;
 }
 
-/**
- * Builds a Commerce API URL
- * @param {string} baseUrl - Base Commerce URL
- * @param {string} endpoint - API endpoint
- * @returns {string} Full URL
- */
-function buildCommerceUrl(baseUrl, endpoint) {
-    const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    return `${base}/rest${path}`;
-}
-
 module.exports = {
-    COMMERCE_CONFIG,
-    makeCommerceRequest,
-    buildCommerceUrl,
-    batchRequests
+    makeRequest,
+    batchRequests,
+    processResponse
 }; 
