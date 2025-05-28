@@ -209,6 +209,11 @@ src/
 
 - [ ] 1. Audit current configuration
   - [ ] Map all configuration files and their purposes
+    - [ ] Environment variables (.env) for sensitive data and credentials
+    - [ ] App Builder config (app.config.yaml) for runtime settings
+    - [ ] Frontend config (web-src/src/config.json) for API endpoints
+    - [ ] URL config (config/urls.js) for environment URLs
+    - [ ] Performance config (test-performance.js, baseline-metrics.json)
   - [ ] Identify configuration duplication
   - [ ] Document environment-specific configuration needs
   - [ ] Review App Builder configuration requirements
@@ -239,11 +244,36 @@ src/
   - [ ] Define environment configuration strategy
   - [ ] Design configuration validation approach
   - [ ] Plan migration path for existing configuration
-  - [ ] Design commerce configuration schema
-    - [ ] Define timeout and retry settings
-    - [ ] Plan cache duration configuration
-    - [ ] Document batch processing settings
-    - [ ] Define endpoint configuration structure
+  - [ ] Design configuration categories and schemas
+    - [ ] App Configuration
+      - [ ] Runtime settings and feature flags
+      - [ ] Logging levels
+      - [ ] Performance thresholds
+    - [ ] API Configuration
+      - [ ] Endpoint definitions
+      - [ ] Timeout settings
+      - [ ] Retry policies
+      - [ ] Rate limits
+    - [ ] Security Configuration
+      - [ ] API keys management
+      - [ ] Authentication settings
+      - [ ] Authorization rules
+      - [ ] Security policies
+      - [ ] Credential handling
+    - [ ] URL Configuration
+      - [ ] Base URLs and patterns
+      - [ ] Path templates
+      - [ ] Query parameter schemas
+      - [ ] Environment-specific overrides
+    - [ ] Performance Configuration
+      - [ ] Test configuration
+      - [ ] Baseline metrics
+      - [ ] Environment-specific thresholds
+    - [ ] Commerce Configuration
+      - [ ] API settings and endpoints
+      - [ ] Timeout and retry settings
+      - [ ] Cache duration configuration
+      - [ ] Batch processing settings
 
 - [ ] 3. Implement configuration changes
   - [ ] Remove src/core/config
