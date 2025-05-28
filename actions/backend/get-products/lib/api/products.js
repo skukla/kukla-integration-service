@@ -2,19 +2,16 @@
  * Product-related API calls to Adobe Commerce
  * @module lib/api/products
  */
-const { buildHeaders } = require('../../../../core/http');
-const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
+const { http: { buildHeaders } } = require('../../../../src/core');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../../src/commerce/api/integration');
+const { cache } = require('../../../../src/core/cache');
 const endpoints = require('./commerce-endpoints');
-const { default: ora } = require('ora');
 
 // Configuration constants
 const DEFAULT_PAGE_SIZE = 100;
 const INVENTORY_BATCH_SIZE = 20;
 const MAX_CONCURRENT_REQUESTS = 10;
 const CACHE_TTL = 3600;
-
-// Add request caching
-const requestCache = new Map();
 
 /**
  * Process items in batches with concurrency control
@@ -24,7 +21,7 @@ const requestCache = new Map();
  * @param {Object} options - Processing options
  * @returns {Promise<Array>} Processed results
  */
-async function processBatch(items, processItem, { batchSize = 10, maxConcurrent = 5 } = {}) {
+async function processBatch(items, processItem, { batchSize = 10 } = {}) {
     const results = [];
     
     for (let i = 0; i < items.length; i += batchSize) {
@@ -55,21 +52,15 @@ async function processBatch(items, processItem, { batchSize = 10, maxConcurrent 
  * @returns {Promise<Object>} Response data
  */
 async function makeCachedRequest(url, options) {
-    const cacheKey = `${url}:${JSON.stringify(options)}`;
+    const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
     
-    if (requestCache.has(cacheKey)) {
-        const cached = requestCache.get(cacheKey);
-        if (Date.now() - cached.timestamp < CACHE_TTL * 1000) {
-            return cached.data;
-        }
-        requestCache.delete(cacheKey);
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+        return cached;
     }
     
     const response = await makeCommerceRequest(url, options);
-    requestCache.set(cacheKey, {
-        timestamp: Date.now(),
-        data: response
-    });
+    await cache.set(cacheKey, response, CACHE_TTL);
     
     return response;
 }

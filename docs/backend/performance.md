@@ -18,12 +18,14 @@ const cachedResponse = addCacheHeaders(response, {
 ```
 
 #### Cache Durations
+
 - Short (60s): Dynamic HTML content
 - Medium (300s): API responses
 - Long (3600s): Semi-static content
 - Very Long (86400s): Static assets
 
 #### Cache Control
+
 - Public vs Private caching
 - No-cache directives for sensitive data
 - Content-type based cache durations
@@ -40,6 +42,7 @@ const compressedResponse = await addCompression(response, {
 ```
 
 #### Compression Features
+
 - Automatic content-type detection
 - Size-based compression (>1KB)
 - GZIP and Deflate support
@@ -57,6 +60,7 @@ metrics.end('operation-name', { context: 'additional info' });
 ```
 
 #### Monitored Metrics
+
 - Response times
 - Memory usage
 - File operations
@@ -65,18 +69,21 @@ metrics.end('operation-name', { context: 'additional info' });
 ## Best Practices
 
 ### Response Optimization
+
 1. Use appropriate cache durations
 2. Enable compression for large responses
 3. Monitor performance metrics
 4. Set proper cache headers
 
 ### Resource Management
+
 1. Clean up resources properly
 2. Monitor memory usage
 3. Use compression when beneficial
 4. Implement proper timeouts
 
 ### Error Handling
+
 1. Don't cache error responses
 2. Compress error details if large
 3. Include performance context
@@ -85,6 +92,7 @@ metrics.end('operation-name', { context: 'additional info' });
 ## Implementation Examples
 
 ### Basic Response
+
 ```javascript
 const response = {
   statusCode: 200,
@@ -103,6 +111,7 @@ const finalResponse = await addCompression(cachedResponse, {
 ```
 
 ### Performance Monitoring
+
 ```javascript
 const performanceMiddleware = createPerformanceMiddleware(logger);
 
@@ -115,6 +124,7 @@ const monitoredHandler = (params) => performanceMiddleware(params, handler);
 ```
 
 ### Caching Strategy
+
 ```javascript
 // Static content
 addCacheHeaders(response, {
@@ -137,7 +147,9 @@ addCacheHeaders(response, {
 ## Monitoring and Debugging
 
 ### Performance Logs
+
 Performance metrics are automatically logged:
+
 ```json
 {
   "level": "info",
@@ -154,7 +166,9 @@ Performance metrics are automatically logged:
 ```
 
 ### Cache Headers
+
 Example of cache headers in response:
+
 ```http
 Cache-Control: public, max-age=3600
 Content-Type: application/json
@@ -167,4 +181,4 @@ Vary: Accept-Encoding
 1. Monitor performance metrics
 2. Adjust cache durations based on usage
 3. Fine-tune compression thresholds
-4. Review and optimize as needed 
+4. Review and optimize as needed

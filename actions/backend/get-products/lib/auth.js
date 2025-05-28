@@ -1,5 +1,4 @@
-const { buildHeaders } = require('../../../core/http');
-const { buildCommerceUrl, makeCommerceRequest } = require('../../../commerce/integration');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../src/commerce/api/integration');
 const endpoints = require('./api/commerce-endpoints');
 /**
  * Get authentication token from Adobe Commerce
@@ -15,7 +14,6 @@ async function getAuthToken(params) {
     const url = buildCommerceUrl(params.COMMERCE_URL, endpoints.adminToken());
     const response = await makeCommerceRequest(url, {
       method: 'POST',
-      headers: buildHeaders(),
       body: JSON.stringify({
         username: params.COMMERCE_ADMIN_USERNAME,
         password: params.COMMERCE_ADMIN_PASSWORD

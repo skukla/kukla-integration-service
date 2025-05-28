@@ -59,13 +59,23 @@
  * @property {Array<string>} body.steps - Processing steps before error
  */
 
-const { extractActionParams } = require('../../../src/core/http');
-const { createResponseHandlerState, addStep, createSuccessResponse, createErrorResponse, shouldSkipFileOperations } = require('../../../src/core/responses');
+
+const { 
+    http: { 
+        extractActionParams,
+        createResponseHandlerState, 
+        addStep, 
+        createSuccessResponse, 
+    },
+    monitoring: { 
+        performance: { processInBatches },
+        errors: { handleError }
+    }
+} = require('../../../src/core');
 const { getAuthToken } = require('./lib/auth');
 const { fetchAllProducts, enrichWithInventory } = require('./lib/api/products');
 const { buildCategoryMap } = require('./lib/api/categories');
-const { buildProductObject, DEFAULT_FIELDS } = require('./lib/product-transformer');
-const { performance } = require('perf_hooks');
+const { transform: { product: { buildProductObject } } } = require('../../../src/commerce');
 const createCsv = require('./steps/createCsv');
 const storeCsv = require('./steps/storeCsv');
 const { default: ora } = require('ora');
@@ -74,116 +84,17 @@ const { default: ora } = require('ora');
 const PRODUCT_BATCH_SIZE = 200;
 const GC_THRESHOLD = 50 * 1024 * 1024;
 
-/**
- * Track memory usage
- * @private
- * @param {Object} metrics - Metrics object to update
- * @param {string} label - Metric label
- */
-function trackMemory(metrics, label) {
-    const used = process.memoryUsage();
-    metrics[label] = {
-        heapUsed: used.heapUsed,
-        heapTotal: used.heapTotal,
-        external: used.external,
-        arrayBuffers: used.arrayBuffers
-    };
-}
-
-/**
- * Process products in batches to optimize memory usage
- * @private
- * @param {Object[]} products - Array of products to process
- * @param {function} processProduct - Function to process a single product
- * @param {Object} options - Processing options
- * @returns {Promise<Object>} Processing results
- */
-async function processProductBatch(products, processProduct, options = {}) {
-    const { batchSize = PRODUCT_BATCH_SIZE, onProgress } = options;
-    const results = {
-        productCount: 0,
-        categoryCount: 0,
-        processedProducts: []
-    };
-
-    const startTime = performance.now();
-    const metrics = {
-        batches: [],
-        totalProcessingTime: 0,
-        averageProcessingTime: 0,
-        peakMemoryUsage: 0
-    };
-
-    for (let i = 0; i < products.length; i += batchSize) {
-        const batchStartTime = performance.now();
-        const batch = products.slice(i, i + batchSize);
-        const batchResults = await Promise.all(
-            batch.map(async (product) => {
-                const result = await processProduct(product);
-                results.productCount += result.performance.productCount;
-                results.categoryCount += result.performance.categoryCount;
-                return result;
-            })
-        );
-        
-        results.processedProducts.push(...batchResults);
-
-        // Track batch metrics
-        const batchEndTime = performance.now();
-        const batchProcessingTime = batchEndTime - batchStartTime;
-        const currentMemory = process.memoryUsage().heapUsed;
-        
-        metrics.batches.push({
-            size: batch.length,
-            processingTime: batchProcessingTime,
-            memoryUsage: currentMemory
-        });
-        
-        metrics.totalProcessingTime += batchProcessingTime;
-        metrics.peakMemoryUsage = Math.max(metrics.peakMemoryUsage, currentMemory);
-
-        // Progress callback
-        if (onProgress) {
-            onProgress({
-                total: products.length,
-                processed: Math.min(i + batchSize, products.length),
-                percentage: Math.round(((i + batchSize) / products.length) * 100),
-                currentBatch: {
-                    processingTime: batchProcessingTime,
-                    memoryUsage: currentMemory
-                }
-            });
-        }
-
-        // Check memory usage and trigger GC if needed
-        if (currentMemory > GC_THRESHOLD) {
-            global.gc && global.gc();
-            console.log(`Garbage collection triggered at ${(currentMemory / 1024 / 1024).toFixed(1)}MB`);
-        }
-
-        // Small delay to prevent event loop blocking
-        await new Promise(resolve => setTimeout(resolve, 0));
-    }
-
-    // Calculate average processing time
-    metrics.averageProcessingTime = metrics.totalProcessingTime / metrics.batches.length;
-    results.metrics = metrics;
-
-    return results;
-}
-
-// Centralized progress handling
-async function updateProgress(spinner, message) {
-    if (spinner) {
-        await spinner.succeed(message);
-        // Add a clear delay between steps
-        await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    const newSpinner = ora().start();
-    // Add a small delay before starting the next step
-    await new Promise(resolve => setTimeout(resolve, 150));
-    return newSpinner;
-}
+// Default fields to include in export
+const DEFAULT_FIELDS = [
+    'sku',
+    'name',
+    'price',
+    'status',
+    'visibility',
+    'type_id',
+    'created_at',
+    'updated_at'
+];
 
 /**
  * Main action handler for get-products
@@ -192,8 +103,6 @@ async function updateProgress(spinner, message) {
  */
 async function main(rawParams) {
     const startTime = performance.now();
-    const metrics = {};
-    const memoryUsage = {};
     let spinner = ora().start();
     
     // Extract parameters and initialize response handler
@@ -202,9 +111,6 @@ async function main(rawParams) {
     const responseState = createResponseHandlerState({ isDev });
     
     try {
-        // Record initial memory usage
-        memoryUsage.start = process.memoryUsage().heapUsed;
-
         // Step 1: Get authentication token
         spinner.text = 'Authenticating...';
         const token = await getAuthToken(params);
@@ -217,100 +123,88 @@ async function main(rawParams) {
         spinner = await updateProgress(spinner, `Fetched ${products.length} products`);
         state = addStep(state, `Fetched ${products.length} products from Adobe Commerce`);
 
-        // Record memory after product fetch
-        memoryUsage.afterFetch = process.memoryUsage().heapUsed;
-
         // Step 3: Enrich with inventory data
         spinner.text = 'Enriching with inventory data...';
         const productsWithInventory = await enrichWithInventory(products, token, params);
         spinner = await updateProgress(spinner, `Successfully enriched ${productsWithInventory.length} products with inventory data`);
         state = addStep(state, `Enriched ${productsWithInventory.length} products with inventory data`);
 
-        // Step 4: Build category map
-        spinner.text = 'Building category map...';
-        const categoryMap = await buildCategoryMap(productsWithInventory, token, params);
-        spinner = await updateProgress(spinner, `Built category map with ${Object.keys(categoryMap).length} categories`);
-        state = addStep(state, `Built category map with ${Object.keys(categoryMap).length} categories`);
+        // Step 4: Build category map if needed
+        let categoryMap = {};
+        if (params.include_categories) {
+            spinner.text = 'Building category map...';
+            categoryMap = await buildCategoryMap(productsWithInventory, token, params);
+            spinner = await updateProgress(spinner, `Built category map with ${Object.keys(categoryMap).length} categories`);
+            state = addStep(state, `Built category map with ${Object.keys(categoryMap).length} categories`);
+        }
 
         // Step 5: Transform products
-        const transformResults = await processProductBatch(
-            productsWithInventory,
-            async (product) => buildProductObject(product, DEFAULT_FIELDS, categoryMap)
-        );
-        
-        // Record memory after transformation
-        memoryUsage.afterTransform = process.memoryUsage().heapUsed;
-
-        // Skip file operations in development mode
-        if (shouldSkipFileOperations(state)) {
-            if (spinner) {
-                await spinner.succeed('Development mode - skipping file operations');
-                // Add final delay
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            return createSuccessResponse(state, {
-                performance: {
-                    executionTime: ((performance.now() - startTime) / 1000).toFixed(1),
-                    memory: {
-                        start: `${(memoryUsage.start / 1024 / 1024).toFixed(1)}MB`,
-                        afterFetch: `${(memoryUsage.afterFetch / 1024 / 1024).toFixed(1)}MB`,
-                        afterTransform: `${(memoryUsage.afterTransform / 1024 / 1024).toFixed(1)}MB`,
-                        peak: `${(Math.max(...Object.values(memoryUsage)) / 1024 / 1024).toFixed(1)}MB`
-                    },
-                    productCount: transformResults.productCount,
-                    categoryCount: transformResults.categoryCount
-                }
+        spinner.text = 'Transforming products...';
+        const transformedProducts = await processInBatches(productsWithInventory, async (product) => {
+            return buildProductObject(product, {
+                categoryMap,
+                fields: params.fields ? params.fields.split(',') : DEFAULT_FIELDS
             });
-        }
-
-        // Step 6: Generate compressed CSV file
-        spinner.text = 'Generating CSV...';
-        const csvResult = await createCsv(transformResults.processedProducts);
-        spinner = await updateProgress(spinner, `Generated compressed CSV content (${csvResult.stats.savingsPercent}% size reduction)`);
-        state = addStep(state, `Generated compressed CSV content (${csvResult.stats.savingsPercent}% size reduction)`);
-
-        // Record memory after CSV generation
-        memoryUsage.afterCsv = process.memoryUsage().heapUsed;
-
-        // Step 7: Store CSV file
-        spinner.text = 'Storing CSV file...';
-        const storageResult = await storeCsv(csvResult);
-        if (spinner) {
-            await spinner.succeed(`Stored compressed CSV file as "${storageResult.fileName}"`);
-            // Add final delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        state = addStep(state, `Stored compressed CSV file as "${storageResult.fileName}"`);
-
-        // Calculate execution time
-        const executionTime = ((performance.now() - startTime) / 1000).toFixed(1);
-
-        // Format response
-        const response = {
-            file: isDev ? null : { downloadUrl: storageResult.downloadUrl },
-            message: "Product export completed successfully.",
-            steps: state.steps,
-            performance: {
-                executionTime: `${executionTime}s`,
-                compression: csvResult ? csvResult.stats : null,
-                memory: {
-                    start: `${(memoryUsage.start / 1024 / 1024).toFixed(1)}MB`,
-                    afterFetch: `${(memoryUsage.afterFetch / 1024 / 1024).toFixed(1)}MB`,
-                    afterTransform: `${(memoryUsage.afterTransform / 1024 / 1024).toFixed(1)}MB`,
-                    afterCsv: `${(memoryUsage.afterCsv / 1024 / 1024).toFixed(1)}MB`
-                },
-                productCount: transformResults.productCount,
-                categoryCount: transformResults.categoryCount
+        }, {
+            batchSize: PRODUCT_BATCH_SIZE,
+            gcThreshold: GC_THRESHOLD,
+            onProgress: (progress) => {
+                spinner.text = `Transforming products... ${progress.percentage}%`;
             }
-        };
+        });
+        spinner = await updateProgress(spinner, `Transformed ${transformedProducts.length} products`);
+        state = addStep(state, `Transformed ${transformedProducts.length} products`);
 
-        return createSuccessResponse(state, response);
+        // Step 6: Generate CSV
+        spinner.text = 'Generating CSV...';
+        const csvResult = await createCsv(transformedProducts);
+        spinner = await updateProgress(spinner, 'Generated CSV file');
+        state = addStep(state, 'Generated CSV file');
+
+        // Step 7: Store CSV if not in development mode
+        let fileInfo = null;
+        if (!isDev) {
+            spinner.text = 'Storing CSV...';
+            fileInfo = await storeCsv(csvResult);
+            spinner = await updateProgress(spinner, 'Stored CSV file');
+            state = addStep(state, 'Stored CSV file');
+        }
+
+        // Create success response
+        const endTime = performance.now();
+        const response = createSuccessResponse(state, {
+            message: 'Successfully exported products',
+            file: fileInfo,
+            metrics: {
+                processingTime: endTime - startTime,
+                productCount: products.length,
+                categoryCount: Object.keys(categoryMap).length,
+                csvSize: csvResult.stats.size,
+                compressionRatio: csvResult.stats.compressionRatio
+            }
+        });
+
+        spinner.succeed('Export completed successfully');
+        return response;
+
     } catch (error) {
         if (spinner) {
             await spinner.fail(error.message);
         }
-        return createErrorResponse(state, error);
+        return handleError(responseState, error);
     }
+}
+
+/**
+ * Update spinner progress
+ * @private
+ * @param {Object} spinner - Ora spinner instance
+ * @param {string} text - Progress text
+ * @returns {Promise<Object>} Updated spinner
+ */
+async function updateProgress(spinner, text) {
+    await spinner.succeed(text);
+    return spinner.start();
 }
 
 exports.main = main;

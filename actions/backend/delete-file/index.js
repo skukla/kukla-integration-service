@@ -4,9 +4,11 @@
  */
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
-const { checkMissingRequestInputs } = require('../../../src/core/validation');
-const { response: { error: errorResponse, success: successResponse } } = require('../../../src/core/http');
-const { deleteFile, FileOperationError, FileErrorType } = require('../../../src/core/files');
+const { 
+    http: { createErrorResponse, createSuccessResponse },
+    data: { checkMissingRequestInputs },
+    storage: { deleteFile, FileOperationError, FileErrorType }
+} = require('../../../src/core');
 
 /**
  * Main function that handles file deletion
@@ -21,7 +23,7 @@ async function main(params) {
         const requiredParams = ['fileName'];
         const missingParams = checkMissingRequestInputs(params, requiredParams);
         if (missingParams) {
-            return errorResponse({
+            return createErrorResponse({
                 message: missingParams
             }, 400);
         }
@@ -49,21 +51,21 @@ async function main(params) {
         if (error instanceof FileOperationError) {
             switch (error.type) {
                 case FileErrorType.NOT_FOUND:
-                    return errorResponse({
+                    return createErrorResponse({
                         message: `File not found: ${params.fileName}`
                     }, 404);
                 case FileErrorType.INVALID_PATH:
-                    return errorResponse({
+                    return createErrorResponse({
                         message: error.message
                     }, 400);
                 default:
-                    return errorResponse({
+                    return createErrorResponse({
                         message: `Failed to delete file: ${error.message}`
                     }, 500);
             }
         }
 
-        return errorResponse({
+        return createErrorResponse({
             message: `Failed to delete file: ${error.message}`
         }, 500);
     }
