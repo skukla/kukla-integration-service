@@ -91,12 +91,14 @@ For detailed implementation guidelines, see [Rate Limiting Best Practices](best-
 ## Monitoring
 
 ### Key Metrics
+
 - Requests per minute
 - Rate limit errors
 - Average response time
 - Queue length
 
 ### Health Checks
+
 - Monitor rate limit headers
 - Track error responses
 - Alert on high usage
@@ -109,4 +111,4 @@ For detailed implementation guidelines, see [Rate Limiting Best Practices](best-
 4. Monitor usage patterns
 5. Handle errors gracefully
 
-For detailed implementation strategies, see our [Best Practices Guide](best-practices.md). 
+For detailed implementation strategies, see our [Best Practices Guide](best-practices.md).

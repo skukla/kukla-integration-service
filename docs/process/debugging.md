@@ -5,6 +5,7 @@
 ## Overview
 
 This guide outlines the standardized debugging process for the Adobe Commerce integration service. It covers:
+
 - Debugging workflow
 - Issue tracking
 - Validation procedures
@@ -87,6 +88,7 @@ When an issue is discovered:
    - Error handling verification
 
 2. **Architecture Compliance**
+
    | Component     | Expected Pattern             | Implementation              | Status |
    |--------------|-----------------------------|-----------------------------|--------|
    | Location     | [Path from architecture.md] | [Actual implementation]     | ✓/✗    |
@@ -105,17 +107,20 @@ When an issue is discovered:
 ### 1. HTMX Integration Issues
 
 **Symptoms**:
+
 - Missing HTMX functionality
 - Incorrect response handling
 - Loading state problems
 
 **Debug Steps**:
+
 1. Check browser console for HTMX errors
 2. Verify HTMX attributes in HTML
 3. Review response headers
 4. Check event handlers
 
 **Tools**:
+
 - Browser DevTools
 - HTMX debug mode
 - Network request inspector
@@ -123,17 +128,20 @@ When an issue is discovered:
 ### 2. API Endpoint Errors
 
 **Symptoms**:
+
 - 404 errors
 - Incorrect response format
 - Authentication failures
 
 **Debug Steps**:
+
 1. Verify endpoint URL construction
 2. Check authentication tokens
 3. Review request/response format
 4. Validate error handling
 
 **Tools**:
+
 - Network inspector
 - API documentation
 - Server logs
@@ -141,17 +149,20 @@ When an issue is discovered:
 ### 3. File Operation Issues
 
 **Symptoms**:
+
 - Upload failures
 - Download errors
 - File listing problems
 
 **Debug Steps**:
+
 1. Check file permissions
 2. Verify path construction
 3. Review error handling
 4. Check file operations
 
 **Tools**:
+
 - Server logs
 - File system checks
 - Network monitoring
@@ -166,6 +177,7 @@ When an issue is discovered:
 - Structure log messages
 
 Example:
+
 ```javascript
 logger.debug('File operation', {
   operation: 'upload',
@@ -183,6 +195,7 @@ logger.debug('File operation', {
 - Implement retry logic
 
 Example:
+
 ```javascript
 try {
   await operation();
@@ -204,6 +217,7 @@ try {
 - Document test cases
 
 Example:
+
 ```javascript
 describe('File Upload', () => {
   it('handles invalid file types', async () => {
@@ -215,18 +229,21 @@ describe('File Upload', () => {
 ## Tools and Resources
 
 ### Development Tools
+
 - Browser DevTools
 - Network analyzers
 - Log viewers
 - Performance profilers
 
 ### Documentation
+
 - [Architecture Guide](architecture.md)
 - [API Reference](api-reference.md)
 - [Error Handling](error-handling.md)
 - [Performance Guide](performance.md)
 
 ### Monitoring
+
 - Application logs
 - Performance metrics
 - Error tracking
@@ -258,4 +275,4 @@ Before marking an issue as resolved:
    - [ ] Code review completed
    - [ ] Testing verified
    - [ ] Performance acceptable
-   - [ ] Security maintained 
+   - [ ] Security maintained

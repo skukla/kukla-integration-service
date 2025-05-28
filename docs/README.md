@@ -47,16 +47,19 @@ docs/
 ## Quick Links
 
 ### For New Users
+
 - [Introduction](getting-started/introduction.md)
 - [Quick Start Guide](getting-started/quick-start.md)
 - [Installation](getting-started/installation.md)
 
 ### For Developers
+
 - [Local Development Setup](development/setup/local-environment.md)
 - [Git Workflow](development/workflows/git-workflow.md)
 - [API Overview](api/overview.md)
 
 ### For Operations
+
 - [Monitoring Guide](maintenance/monitoring.md)
 - [Troubleshooting](maintenance/troubleshooting.md)
 - [Security Practices](maintenance/security-practices.md)
@@ -70,7 +73,8 @@ docs/
 ## Documentation Updates
 
 When updating documentation:
+
 1. Maintain the directory structure
 2. Follow markdown standards
 3. Update relevant cross-references
-4. Test all links before submitting 
+4. Test all links before submitting

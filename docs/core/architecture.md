@@ -41,62 +41,62 @@ actions/
 #### Core Layer
 
 - **HTTP Module** (`core/http.js`)
-  - Standardized API communication
-  - Response handling patterns
-  - Request formatting
-  - Error handling integration
+    - Standardized API communication
+    - Response handling patterns
+    - Request formatting
+    - Error handling integration
 
 - **Cache Module** (`core/cache.js`)
-  - Response caching strategies
-  - Cache invalidation
-  - Performance optimization
-  - Resource management
+    - Response caching strategies
+    - Cache invalidation
+    - Performance optimization
+    - Resource management
 
 - **Files Module** (`core/files.js`)
-  - Secure file operations
-  - Path validation
-  - Metadata handling
-  - Storage integration
+    - Secure file operations
+    - Path validation
+    - Metadata handling
+    - Storage integration
 
 - **Error Module** (`core/errors.js`)
-  - Error type definitions
-  - Error handling patterns
-  - Debug context management
-  - Retry capability handling
+    - Error type definitions
+    - Error handling patterns
+    - Debug context management
+    - Retry capability handling
 
 - **Validation Module** (`core/validation.js`)
-  - Input validation rules
-  - Data sanitization
-  - Type checking
-  - Security validation
+    - Input validation rules
+    - Data sanitization
+    - Type checking
+    - Security validation
 
 - **Performance Module** (`core/performance.js`)
-  - Performance metrics
-  - Resource monitoring
-  - Optimization utilities
-  - Load management
+    - Performance metrics
+    - Resource monitoring
+    - Optimization utilities
+    - Load management
 
 #### Commerce Layer
 
 - **Integration Module** (`commerce/integration.js`)
-  - Adobe Commerce API integration
-  - Product data management
-  - API response handling
-  - Error recovery
+    - Adobe Commerce API integration
+    - Product data management
+    - API response handling
+    - Error recovery
 
 - **Auth Module** (`commerce/auth.js`)
-  - Secure credential handling
-  - Token management
-  - Authentication flows
-  - Session handling
+    - Secure credential handling
+    - Token management
+    - Authentication flows
+    - Session handling
 
 #### HTMX Layer
 
 - **Response Module** (`htmx/responses.js`)
-  - Dynamic UI updates
-  - Response formatting
-  - Loading state management
-  - Error presentation
+    - Dynamic UI updates
+    - Response formatting
+    - Loading state management
+    - Error presentation
 
 ### Frontend (web-src/)
 
@@ -130,81 +130,81 @@ web-src/src/styles/design-system/
 #### Core Features
 
 - **HTTP Module** (`core/http.js`)
-  - API communication
-  - Request formatting
-  - Response handling
-  - Error management
+    - API communication
+    - Request formatting
+    - Response handling
+    - Error management
 
 - **URL Module** (`core/urls.js`)
-  - Centralized URL construction
-  - Action-based routing
-  - Commerce API URL handling
-  - Clean separation between frontend and Commerce URLs
+    - Centralized URL construction
+    - Action-based routing
+    - Commerce API URL handling
+    - Clean separation between frontend and Commerce URLs
 
 - **Notifications** (`core/notifications.js`)
-  - User notifications
-  - Toast messages
-  - Status updates
-  - Error presentation
-  - Type-specific styling (success, error, warning, info)
-  - Accessibility support
-  - Animation handling
+    - User notifications
+    - Toast messages
+    - Status updates
+    - Error presentation
+    - Type-specific styling (success, error, warning, info)
+    - Accessibility support
+    - Animation handling
 
 - **Modal System** (`core/modal.js`)
-  - Modal management
-  - Focus handling
-  - Accessibility features
-  - Event coordination
+    - Modal management
+    - Focus handling
+    - Accessibility features
+    - Event coordination
 
 - **Download System** (`core/downloads.js`)
-  - Base64 response processing
-  - File download handling
-  - Download status notifications
-  - Error handling for downloads
-  - HTMX integration for download events
+    - Base64 response processing
+    - File download handling
+    - Download status notifications
+    - Error handling for downloads
+    - HTMX integration for download events
 
 - **Loading States** (`core/loading.js`)
-  - Loading indicator management
-  - State transitions
-  - HTMX loading integration
-  - Progress feedback
+    - Loading indicator management
+    - State transitions
+    - HTMX loading integration
+    - Progress feedback
 
 - **Error Handler** (`core/error-handler.js`)
-  - Centralized error processing
-  - Error type management
-  - User-friendly error messages
-  - Error recovery options
+    - Centralized error processing
+    - Error type management
+    - User-friendly error messages
+    - Error recovery options
 
 #### Design System Components
 
 - **Notifications** (`components/notifications.css`)
-  - Toast notification styling
-  - Type-specific themes
-  - Animation and transitions
-  - Responsive design
-  - Accessibility styles
+    - Toast notification styling
+    - Type-specific themes
+    - Animation and transitions
+    - Responsive design
+    - Accessibility styles
 
 #### HTMX Integration
 
 - **Configuration** (`htmx/config.js`)
-  - HTMX settings
-  - Security configuration
-  - Event bindings
-  - Extension setup
+    - HTMX settings
+    - Security configuration
+    - Event bindings
+    - Extension setup
 
 - **Event Handling** (`htmx/events.js`)
-  - Event listeners
-  - Response processing
-  - State management
-  - Error handling
+    - Event listeners
+    - Response processing
+    - State management
+    - Error handling
 
 #### Browser Components
 
 - **File Browser** (`browser/file-browser.js`)
-  - File listing
-  - Upload handling
-  - Download management
-  - UI interactions
+    - File listing
+    - Upload handling
+    - Download management
+    - UI interactions
 
 ## Workflow Patterns
 
@@ -298,4 +298,4 @@ For detailed implementation guides, see:
 - [Development Guide](development.md)
 - [API Reference](api-reference.md)
 - [Error Handling](error-handling.md)
-- [Performance Guide](performance.md) 
+- [Performance Guide](performance.md)

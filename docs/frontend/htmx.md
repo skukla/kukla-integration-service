@@ -62,6 +62,7 @@ const RESPONSE_CONFIG = {
 ### Response Types
 
 1. **Standard Response**
+
    ```javascript
    createResponse({
        html: string,          // HTML content
@@ -75,6 +76,7 @@ const RESPONSE_CONFIG = {
    ```
 
 2. **Validation Response**
+
    ```javascript
    validationResponse(errors: Object, options?: Object)
    ```
@@ -189,4 +191,4 @@ async function handleRequest(params) {
 
 - [HTMX Documentation](https://htmx.org/docs)
 - [Response Headers Reference](https://htmx.org/reference/#headers)
-- [Event System Details](https://htmx.org/reference/#events) 
+- [Event System Details](https://htmx.org/reference/#events)

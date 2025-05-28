@@ -7,18 +7,21 @@ The Product Export feature enables efficient extraction and transformation of pr
 ## Key Capabilities
 
 ### Export Formats
+
 - CSV (default)
 - JSON
 - XML
 - Custom formats via plugins
 
 ### Data Selection
+
 - Field-level selection
 - Custom attribute support
 - Localized content
 - Media gallery export
 
 ### Filtering Options
+
 - By category
 - By status
 - By type
@@ -62,6 +65,7 @@ graph TD
 ## Implementation
 
 ### Basic Export
+
 ```javascript
 const response = await client.products.export({
   format: 'csv',
@@ -71,6 +75,7 @@ const response = await client.products.export({
 ```
 
 ### Filtered Export
+
 ```javascript
 const response = await client.products.export({
   format: 'json',
@@ -136,4 +141,4 @@ Key metrics to track:
 - [API Reference](../../api/endpoints/product-export.md)
 - [Performance Optimization](performance-optimization.md)
 - [Caching Strategy](caching-strategy.md)
-- [Frontend Implementation](frontend-implementation.md) 
+- [Frontend Implementation](frontend-implementation.md)

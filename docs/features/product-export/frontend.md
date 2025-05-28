@@ -18,16 +18,19 @@ The frontend uses HTMX for dynamic interactions:
 ## Design System Components
 
 ### Product List
+
 - Responsive table layout
 - Sort and filter capabilities
 - Row selection
 
 ### Export Controls
+
 - Progress indicator
 - Download button
 - Status messages
 
 ### Notifications
+
 - Success/error toasts
 - Progress updates
 - Background job status
@@ -54,4 +57,4 @@ The frontend uses HTMX for dynamic interactions:
 
 1. User-friendly error messages
 2. Retry mechanisms
-3. Offline support 
+3. Offline support

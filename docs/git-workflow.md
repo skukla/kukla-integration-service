@@ -116,6 +116,7 @@ git push origin master --tags
 ### 6. Documentation Changes
 
 For documentation updates:
+
 ```bash
 git checkout docs/current
 git pull origin docs/current
@@ -178,4 +179,4 @@ git push origin --delete hotfix/critical-issue
 
 ## Questions and Support
 
-For questions about this workflow or assistance with Git operations, consult with the team lead or senior developers. 
+For questions about this workflow or assistance with Git operations, consult with the team lead or senior developers.

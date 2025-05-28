@@ -5,6 +5,7 @@
 ## Overview
 
 This guide documents the API endpoints, integration patterns, and implementation details. For related guides, see:
+
 - [Development Guide](development.md)
 - [Error Handling](error-handling.md)
 - [Performance Guide](performance.md)
@@ -18,6 +19,7 @@ All API endpoints are prefixed with: `/api/v1/web/kukla-integration-service`
 ### Response Format
 
 #### Success Response
+
 ```javascript
 {
   statusCode: 200,
@@ -32,6 +34,7 @@ All API endpoints are prefixed with: `/api/v1/web/kukla-integration-service`
 ```
 
 #### Error Response
+
 ```javascript
 {
   statusCode: <HTTP_STATUS_CODE>,
@@ -78,9 +81,11 @@ All API endpoints are prefixed with: `/api/v1/web/kukla-integration-service`
 ### Product Management
 
 #### GET /products
+
 Retrieves product data from Adobe Commerce.
 
 **Authentication Parameters:**
+
 ```javascript
 {
   commerce_url: string,           // Adobe Commerce instance URL
@@ -88,9 +93,11 @@ Retrieves product data from Adobe Commerce.
   commerce_admin_password: string  // Admin password
 }
 ```
+
 Note: Authentication parameters can be provided in either lowercase (commerce_url) or uppercase (COMMERCE_URL) format.
 
 **Optional Parameters:**
+
 ```javascript
 {
   fields: string,           // Comma-separated list of fields to include
@@ -102,12 +109,14 @@ Note: Authentication parameters can be provided in either lowercase (commerce_ur
 **Testing Environments:**
 
 1. Local Development:
+
 ```bash
 # Base URL for local testing
 http://localhost:9080/api/v1/web/kukla-integration-service/get-products
 ```
 
 2. Production:
+
 ```bash
 # Base URL for production testing
 https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/get-products
@@ -116,6 +125,7 @@ https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integr
 **Example Requests:**
 
 1. Local Testing:
+
 ```bash
 # Basic request with URL-encoded parameters
 curl -X POST "http://localhost:9080/api/v1/web/kukla-integration-service/get-products?commerce_url=https://your-commerce-instance.com&commerce_admin_username=admin&commerce_admin_password=your-password"
@@ -132,6 +142,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 ```
 
 2. Production Testing:
+
 ```bash
 # Basic request with URL-encoded parameters
 curl -X POST "https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/get-products?commerce_url=https://your-commerce-instance.com&commerce_admin_username=admin&commerce_admin_password=your-password"
@@ -150,6 +161,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 Note: If you deploy to a different namespace, replace the URL with your deployment URL.
 
 **Response:**
+
 ```javascript
 {
   statusCode: 200,
@@ -166,15 +178,18 @@ Note: If you deploy to a different namespace, replace the URL with your deployme
 Note: Product data is only available through the CSV file download. The direct JSON response no longer includes the product data to improve performance and reduce response size.
 
 **Possible Errors:**
+
 - 401: Commerce auth required
 - 403: No product access
 - 429: API rate limit
 - 500: Commerce API error
 
 #### POST /products/export
+
 Exports products to a file.
 
 **Request:**
+
 ```javascript
 {
   format: 'csv' | 'json',
@@ -186,6 +201,7 @@ Exports products to a file.
 ```
 
 **Response:**
+
 ```javascript
 {
   success: true,
@@ -198,6 +214,7 @@ Exports products to a file.
 ```
 
 **Possible Errors:**
+
 - 400: Invalid export config
 - 401: Commerce auth required
 - 403: No export permission
@@ -207,9 +224,11 @@ Exports products to a file.
 ### File Operations
 
 #### GET /files
+
 Lists available files.
 
 **Parameters:**
+
 ```javascript
 {
   type: string,      // File type filter
@@ -218,6 +237,7 @@ Lists available files.
 ```
 
 **Response:**
+
 ```javascript
 {
   success: true,
@@ -229,14 +249,17 @@ Lists available files.
 ```
 
 **Possible Errors:**
+
 - 401: Authentication required
 - 403: No access to file list
 - 500: System error
 
 #### POST /files/upload
+
 Uploads a new file.
 
 **Request:**
+
 ```javascript
 // multipart/form-data
 {
@@ -247,6 +270,7 @@ Uploads a new file.
 ```
 
 **Response:**
+
 ```javascript
 {
   success: true,
@@ -258,6 +282,7 @@ Uploads a new file.
 ```
 
 **Possible Errors:**
+
 - 400: Invalid file format
 - 401: Authentication required
 - 403: No upload permission
@@ -265,9 +290,11 @@ Uploads a new file.
 - 500: Upload failed
 
 #### DELETE /files/{id}
+
 Deletes a file.
 
 **Possible Errors:**
+
 - 400: Invalid file ID
 - 401: Authentication required
 - 403: No delete permission
@@ -279,6 +306,7 @@ Deletes a file.
 ### Response Format
 
 All HTMX responses follow this pattern:
+
 ```html
 <div id="target-id" 
      data-context="operation-context">
@@ -305,6 +333,7 @@ For header usage, see [HTMX Guide](htmx.md#response-headers).
 ### Error Responses
 
 Error responses include:
+
 ```html
 <div class="error-container"
      data-error-type="validation">
@@ -340,6 +369,7 @@ HTMX events are handled consistently:
 ## Security
 
 All endpoints require:
+
 - Adobe App Builder authentication
 - Valid API tokens
 - CSRF protection
@@ -349,6 +379,7 @@ For security details, see [Security Guide](security.md).
 ## Performance
 
 APIs implement:
+
 - Response caching
 - Compression
 - Rate limiting
@@ -369,6 +400,7 @@ POST /api/v1/web/kukla-integration-service/get-products
 ### Authentication
 
 Required parameters (passed as query parameters or in request body):
+
 - `commerce_url`: Adobe Commerce instance URL
 - `commerce_admin_username`: Admin username
 - `commerce_admin_password`: Admin password
@@ -439,21 +471,25 @@ Required parameters (passed as query parameters or in request body):
 ### Examples
 
 1. Basic request (all fields, JSON format):
+
 ```bash
 curl -X POST "http://localhost:9080/api/v1/web/kukla-integration-service/get-products?commerce_url=https://your-store.com&commerce_admin_username=admin&commerce_admin_password=password"
 ```
 
 2. Specific fields only:
+
 ```bash
 curl -X POST "http://localhost:9080/api/v1/web/kukla-integration-service/get-products?commerce_url=https://your-store.com&commerce_admin_username=admin&commerce_admin_password=password&fields=sku,name,price"
 ```
 
 3. CSV format with all data:
+
 ```bash
 curl -X POST "http://localhost:9080/api/v1/web/kukla-integration-service/get-products?commerce_url=https://your-store.com&commerce_admin_username=admin&commerce_admin_password=password&format=csv"
 ```
 
 4. Minimal data fetch:
+
 ```bash
 curl -X POST "http://localhost:9080/api/v1/web/kukla-integration-service/get-products?commerce_url=https://your-store.com&commerce_admin_username=admin&commerce_admin_password=password&fields=sku,name&include_inventory=false&include_categories=false"
 ```
@@ -478,8 +514,9 @@ curl -X POST "http://localhost:9080/api/v1/web/kukla-integration-service/get-pro
 ### Error Handling
 
 Common error scenarios:
+
 1. Missing or invalid authentication credentials
 2. Invalid field names in the `fields` parameter
 3. Commerce API connection issues
 4. Rate limiting or timeout errors
-5. Storage errors when generating CSV files 
+5. Storage errors when generating CSV files

@@ -3,66 +3,72 @@
 ## Current Configuration Files
 
 ### 1. Environment Variables (.env)
+
 - **Purpose**: Sensitive configuration and credentials
 - **Contents**:
-  - Commerce API credentials
-  - Adobe I/O Runtime credentials
-  - Service API keys
-  - IMS configuration
+    - Commerce API credentials
+    - Adobe I/O Runtime credentials
+    - Service API keys
+    - IMS configuration
 - **Used By**: Backend actions and deployment
 - **Issues**:
-  - Sensitive data mixed with non-sensitive configuration
-  - No validation of required values
-  - No type checking
-  - No environment-specific overrides
+    - Sensitive data mixed with non-sensitive configuration
+    - No validation of required values
+    - No type checking
+    - No environment-specific overrides
 
 ### 2. App Builder Configuration (app.config.yaml)
+
 - **Purpose**: Action configuration and runtime settings
 - **Contents**:
-  - Action definitions
-  - Runtime configurations
-  - Input/parameter definitions
-  - Web export settings
+    - Action definitions
+    - Runtime configurations
+    - Input/parameter definitions
+    - Web export settings
 - **Used By**: App Builder deployment
 - **Issues**:
-  - No validation of environment variables
-  - Duplicate configuration of runtime versions
-  - Mixed concerns (deployment vs runtime)
+    - No validation of environment variables
+    - Duplicate configuration of runtime versions
+    - Mixed concerns (deployment vs runtime)
 
 ### 3. Frontend Configuration (web-src/src/config.json)
+
 - **Purpose**: Frontend API endpoint configuration
 - **Contents**: API endpoint URLs for local development
 - **Used By**: Frontend application
 - **Issues**:
-  - Hardcoded URLs
-  - No environment switching
-  - No integration with urls.js
-  - Manual updates required
+    - Hardcoded URLs
+    - No environment switching
+    - No integration with urls.js
+    - Manual updates required
 
 ### 4. URL Configuration (config/urls.js)
+
 - **Purpose**: Environment-specific URL management
 - **Contents**: Base URLs for different environments
 - **Used By**: Backend services
 - **Issues**:
-  - Not used by frontend
-  - No validation
-  - Limited environment support
-  - No URL pattern management
+    - Not used by frontend
+    - No validation
+    - Limited environment support
+    - No URL pattern management
 
 ### 5. Performance Configuration
+
 - **Purpose**: Performance testing and baselines
 - **Contents**:
-  - Test configuration (test-performance.js)
-  - Baseline metrics (baseline-metrics.json)
+    - Test configuration (test-performance.js)
+    - Baseline metrics (baseline-metrics.json)
 - **Used By**: Performance testing suite
 - **Issues**:
-  - Mixed configuration and data
-  - No environment-specific baselines
-  - Manual baseline updates
+    - Mixed configuration and data
+    - No environment-specific baselines
+    - Manual baseline updates
 
 ## Consolidation Plan
 
 ### 1. Create Unified Configuration Structure
+
 ```text
 config/
 ├── environments/           # Environment-specific configuration
@@ -80,6 +86,7 @@ config/
 ```
 
 ### 2. Configuration Categories
+
 1. **App Configuration**
    - Runtime settings
    - Feature flags
@@ -105,6 +112,7 @@ config/
    - Query parameter schemas
 
 ### 3. Implementation Steps
+
 1. **Schema Definition**
    - Define JSON schemas for all configuration
    - Add validation rules
@@ -161,4 +169,4 @@ config/
 2. Set up new configuration structure
 3. Create environment-specific configurations
 4. Update application to use new configuration
-5. Add validation and testing 
+5. Add validation and testing
