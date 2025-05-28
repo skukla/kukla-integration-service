@@ -8,6 +8,7 @@
  * - Storage and caching operations
  * - Error monitoring and performance tracking
  * - Configuration management
+ * - URL management and routing
  * 
  * @example
  * // Import specific modules
@@ -28,20 +29,18 @@
  * }
  * 
  * @example
- * // Access configuration
- * const { config } = require('./core');
- * const apiUrl = config.storage.buildApiUrl({
- *   org: 'my-org',
- *   service: 'my-service',
- *   action: 'my-action'
- * });
+ * // Access configuration and build URLs
+ * const { config, url } = require('./core');
+ * const { commerce } = config.loadConfig();
+ * const productUrl = url.buildCommerceUrl('products', { id: '123' });
  */
 
 const http = require('./http');
 const data = require('./data');
 const storage = require('./storage');
 const monitoring = require('./monitoring');
-const config = require('./config');
+const config = require('../../config');
+const routing = require('./routing');
 
 // Export public APIs only
 module.exports = {
@@ -49,7 +48,6 @@ module.exports = {
     data: data.public,
     storage: storage.public,
     monitoring: monitoring.public,
-    config: {
-        storage: config.storage
-    }
+    config,
+    routing
 }; 
