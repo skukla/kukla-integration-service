@@ -49,7 +49,9 @@ LOG_LEVEL=info
 We have two main deployment scripts:
 
 #### Full Deployment (`npm run deploy:full`)
+
 Deploys both the web assets and serverless actions:
+
 ```bash
 # This will:
 # 1. Clean the dist directory
@@ -60,7 +62,9 @@ npm run deploy:full
 ```
 
 #### Web-Only Deployment (`npm run deploy:web`)
+
 Deploys only the web assets (faster for frontend-only changes):
+
 ```bash
 # This will:
 # 1. Clean the web-src/dist directory
@@ -154,6 +158,7 @@ jobs:
 1. Identify the last stable version tag
 2. Check out that version
 3. Run appropriate deployment command:
+
    ```bash
    # Full rollback
    npm run deploy:full
@@ -191,6 +196,7 @@ jobs:
 ### Common Deployment Issues
 
 1. Build Failures
+
    ```bash
    # Clean and rebuild
    npm run clean
@@ -250,4 +256,4 @@ aio app list deployments
 - Dependency updates
 - Platform upgrades
 - Security patches
-- Feature deployments 
+- Feature deployments

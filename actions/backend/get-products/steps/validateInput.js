@@ -2,7 +2,7 @@
  * Step to validate input parameters
  * @module steps/validateInput
  */
-const { checkMissingParams } = require('../../../core/http');
+const { checkMissingParams } = require('../../../../src/core/http/client');
 
 /**
  * Validates the input parameters for the action

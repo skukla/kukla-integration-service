@@ -1,32 +1,35 @@
 /**
- * Handles storage of compressed CSV files
+ * CSV storage step for product export
  * @module steps/storeCsv
  */
-const { decompress } = require('../lib/api/compression');
+
+const { 
+    storage: { files },
+    config: { storage: storageConfig }
+} = require('../../../../src/core');
 
 /**
- * Stores a compressed CSV file and returns access information
- * @param {Object} csvData - CSV generation result
- * @param {Buffer} csvData.content - Compressed CSV content
- * @param {Object} csvData.stats - Compression statistics
- * @returns {Promise<{fileName: string, downloadUrl: string}>} File storage information
- * @throws {Error} If file storage fails
+ * Stores a CSV file in the configured storage location
+ * @param {Object} csvResult - CSV generation result
+ * @param {Buffer} csvResult.content - CSV content to store
+ * @param {Object} csvResult.stats - Compression statistics
+ * @returns {Promise<Object>} Storage result with file information
  */
-async function storeCsv(csvData) {
-  try {
-    // For now, we'll use a fixed filename
+async function storeCsv(csvResult) {
     const fileName = 'products.csv';
+    const publicFileName = `${storageConfig.files.publicDir}/${fileName}`;
     
-    // In a real implementation, this would store the compressed data
-    // and handle decompression on download
+    // Store the file using core file operations
+    await files.writeFile(publicFileName, csvResult.content);
+    
+    // Get file properties to verify storage
+    const properties = await files.getFileProperties(publicFileName);
     
     return {
-      fileName: `public/${fileName}`,
-      downloadUrl: `/api/v1/web/kukla-integration-service/download-file?fileName=public%2F${fileName}`
+        fileName: publicFileName,
+        downloadUrl: files.buildDownloadUrl(publicFileName),
+        properties
     };
-  } catch (error) {
-    throw new Error(`Failed to store CSV: ${error.message}`);
-  }
 }
 
 module.exports = storeCsv; 

@@ -1,20 +1,9 @@
 /**
- * URL utilities for the application
+ * URL utilities for the frontend application
  * @module core/urls
  */
 
-import { showNotification } from './notifications.js';
-
-// Base API path
-const API_PREFIX = '/api/v1/web/kukla-integration-service';
-
-// Action URL configuration
-const ACTION_URLS = {
-    'browse-files': `${API_PREFIX}/browse-files`,
-    'download-file': `${API_PREFIX}/download-file`,
-    'upload-file': `${API_PREFIX}/upload-file`,
-    'delete-file': `${API_PREFIX}/delete-file`
-};
+import { actionUrls } from '../config';
 
 /**
  * Get the URL for an action
@@ -24,12 +13,12 @@ const ACTION_URLS = {
  * @throws {Error} If the action is unknown
  */
 export function getActionUrl(action, params = {}) {
-    const baseUrl = ACTION_URLS[action];
+    const baseUrl = actionUrls[action];
     if (!baseUrl) {
         throw new Error(`Unknown action: ${action}`);
     }
 
-    const url = new URL(baseUrl, window.location.origin);
+    const url = new URL(baseUrl);
     Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
     });

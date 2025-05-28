@@ -156,4 +156,4 @@ async function processFile(files, path) {
 2. Check for specific error types
 3. Validate paths before operations
 4. Use the provided formatting utilities
-5. Handle errors appropriately for your context 
+5. Handle errors appropriately for your context

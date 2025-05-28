@@ -3,51 +3,51 @@
  * @module lib/api/commerce-endpoints
  */
 
+const { buildCommerceUrl } = require('../../../../../src/core/routing');
+
 /**
- * Builds the products endpoint path with pagination
+ * Get products endpoint with pagination
  * @param {Object} options - Endpoint options
+ * @param {number} [options.pageSize=20] - Number of products per page
  * @param {number} [options.currentPage=1] - Current page number
- * @param {number} [options.pageSize=50] - Items per page
  * @returns {string} Products endpoint path
  */
-function products(options = {}) {
-  const {
-    currentPage = 1,
-    pageSize = 50
-  } = options;
-
-  return `/V1/products?searchCriteria[currentPage]=${currentPage}&searchCriteria[pageSize]=${pageSize}`;
+function getProductsEndpoint(options = {}) {
+    return buildCommerceUrl('products', {
+        pageSize: options.pageSize || 20,
+        currentPage: options.currentPage || 1
+    });
 }
 
 /**
- * Builds the stock item endpoint path for a specific SKU
+ * Get stock item endpoint for a specific SKU
  * @param {string} sku - Product SKU
  * @returns {string} Stock item endpoint path
  */
-function stockItem(sku) {
-  return `/V1/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]=${sku}&searchCriteria[filter_groups][0][filters][0][condition_type]=eq`;
+function getStockItemEndpoint(sku) {
+    return buildCommerceUrl('stockItem', { sku });
 }
 
 /**
- * Builds the category endpoint path for a specific category ID
- * @param {string|number} categoryId - Category ID
+ * Get category endpoint for a specific category ID
+ * @param {string} id - Category ID
  * @returns {string} Category endpoint path
  */
-function category(categoryId) {
-  return `/V1/categories/${categoryId}`;
+function getCategoryEndpoint(id) {
+    return buildCommerceUrl('category', { id });
 }
 
 /**
- * Builds the admin token endpoint path
+ * Get admin token endpoint
  * @returns {string} Admin token endpoint path
  */
-function adminToken() {
-  return '/V1/integration/admin/token';
+function getAdminTokenEndpoint() {
+    return buildCommerceUrl('adminToken');
 }
 
 module.exports = {
-  products,
-  stockItem,
-  category,
-  adminToken
+    getProductsEndpoint,
+    getStockItemEndpoint,
+    getCategoryEndpoint,
+    getAdminTokenEndpoint
 }; 

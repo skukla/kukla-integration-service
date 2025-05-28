@@ -5,6 +5,7 @@
 ## Core Principles
 
 Our architecture follows these key principles:
+
 - Simple, focused components
 - Clear separation of concerns
 - Practical performance optimization
@@ -15,7 +16,7 @@ Our architecture follows these key principles:
 
 ### Backend (actions/)
 
-```
+```text
 actions/
 ├── core/                      # Core utilities
 │   ├── http.js               # HTTP client and response handling
@@ -38,31 +39,37 @@ actions/
 ```
 
 #### Core Layer
+
 - **HTTP Module** (`core/http.js`)
+
   - Standardized API communication
   - Response handling patterns
   - Request formatting
   - Error handling integration
 
 - **Cache Module** (`core/cache.js`)
+
   - Response caching strategies
   - Cache invalidation
   - Performance optimization
   - Resource management
 
 - **Files Module** (`core/files.js`)
+
   - Secure file operations
   - Path validation
   - Metadata handling
   - Storage integration
 
 - **Error Module** (`core/errors.js`)
+
   - Error type definitions
   - Error handling patterns
   - Debug context management
   - Retry capability handling
 
 - **Validation Module** (`core/validation.js`)
+
   - Input validation rules
   - Data sanitization
   - Type checking
@@ -75,7 +82,9 @@ actions/
   - Load management
 
 #### Commerce Layer
+
 - **Integration Module** (`commerce/integration.js`)
+
   - Adobe Commerce API integration
   - Product data management
   - API response handling
@@ -88,6 +97,7 @@ actions/
   - Session handling
 
 #### HTMX Layer
+
 - **Response Module** (`htmx/responses.js`)
   - Dynamic UI updates
   - Response formatting
@@ -96,7 +106,7 @@ actions/
 
 ### Frontend (web-src/)
 
-```
+```text
 web-src/src/js/
 ├── core/                     # Core utilities
 │   ├── http.js              # HTTP client handling
@@ -124,19 +134,23 @@ web-src/src/styles/design-system/
 ```
 
 #### Core Features
+
 - **HTTP Module** (`core/http.js`)
+
   - API communication
   - Request formatting
   - Response handling
   - Error management
 
 - **URL Module** (`core/urls.js`)
+
   - Centralized URL construction
   - Action-based routing
   - Commerce API URL handling
   - Clean separation between frontend and Commerce URLs
 
 - **Notifications** (`core/notifications.js`)
+
   - User notifications
   - Toast messages
   - Status updates
@@ -146,12 +160,14 @@ web-src/src/styles/design-system/
   - Animation handling
 
 - **Modal System** (`core/modal.js`)
+
   - Modal management
   - Focus handling
   - Accessibility features
   - Event coordination
 
 - **Download System** (`core/downloads.js`)
+
   - Base64 response processing
   - File download handling
   - Download status notifications
@@ -159,6 +175,7 @@ web-src/src/styles/design-system/
   - HTMX integration for download events
 
 - **Loading States** (`core/loading.js`)
+
   - Loading indicator management
   - State transitions
   - HTMX loading integration
@@ -171,6 +188,7 @@ web-src/src/styles/design-system/
   - Error recovery options
 
 #### Design System Components
+
 - **Notifications** (`components/notifications.css`)
   - Toast notification styling
   - Type-specific themes
@@ -179,7 +197,9 @@ web-src/src/styles/design-system/
   - Accessibility styles
 
 #### HTMX Integration
+
 - **Configuration** (`htmx/config.js`)
+
   - HTMX settings
   - Security configuration
   - Event bindings
@@ -192,6 +212,7 @@ web-src/src/styles/design-system/
   - Error handling
 
 #### Browser Components
+
 - **File Browser** (`browser/file-browser.js`)
   - File listing
   - Upload handling
@@ -201,14 +222,17 @@ web-src/src/styles/design-system/
 ## Workflow Patterns
 
 ### Product Management
+
 The product management workflow follows a simple, efficient pattern:
 
 1. **Request Handling**
+
    - Frontend sends requests through `core/http.js`
    - HTMX triggers appropriate backend actions
    - Validation occurs in `core/validation.js`
 
 2. **Commerce Integration**
+
    - `commerce/integration.js` handles Adobe Commerce API calls
    - Authentication managed by `commerce/auth.js`
    - Response caching via `core/cache.js`
@@ -219,14 +243,17 @@ The product management workflow follows a simple, efficient pattern:
    - UI updates via HTMX events
 
 ### File Operations
+
 File operations follow a secure, validated flow:
 
 1. **Request Processing**
+
    - File requests validated by `core/validation.js`
    - Security checks in `core/files.js`
    - Path validation and sanitization
 
 2. **Storage Operations**
+
    - Secure file handling in `core/files.js`
    - Metadata management and validation
    - Performance optimization via `core/performance.js`
@@ -238,7 +265,7 @@ File operations follow a secure, validated flow:
 
 ## Documentation Structure
 
-```
+```text
 docs/
 ├── core/                    # Core architecture and development
 │   ├── architecture.md     # System design and patterns
@@ -254,6 +281,7 @@ docs/
 ```
 
 Each directory serves a specific purpose:
+
 - **core/** - Core system documentation, architecture, and development guides
 - **frontend/** - Frontend-specific documentation and component guides
 - **backend/** - Backend services, API documentation, and integration guides
@@ -283,7 +311,8 @@ Each directory serves a specific purpose:
 - Retry capabilities
 
 For detailed implementation guides, see:
+
 - [Development Guide](development.md)
 - [API Reference](api-reference.md)
 - [Error Handling](error-handling.md)
-- [Performance Guide](performance.md) 
+- [Performance Guide](performance.md)

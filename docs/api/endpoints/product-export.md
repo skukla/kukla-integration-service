@@ -13,6 +13,7 @@ POST /api/products/export
 ```
 
 #### Request Parameters
+
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | fields | string[] | No | List of fields to export |
@@ -21,6 +22,7 @@ POST /api/products/export
 | storeId | string | Yes | Store view identifier |
 
 #### Example Request
+
 ```json
 {
   "fields": ["sku", "name", "price", "description"],
@@ -34,6 +36,7 @@ POST /api/products/export
 ```
 
 #### Response
+
 ```json
 {
   "success": true,
@@ -52,6 +55,7 @@ GET /api/products/export/{jobId}
 ```
 
 #### Response
+
 ```json
 {
   "success": true,
@@ -71,6 +75,7 @@ GET /api/products/export/{jobId}/download
 ```
 
 #### Response Headers
+
 ```http
 Content-Type: text/csv
 Content-Disposition: attachment; filename="products_export.csv"
@@ -79,6 +84,7 @@ Content-Disposition: attachment; filename="products_export.csv"
 ## Error Responses
 
 ### Invalid Parameters
+
 ```json
 {
   "success": false,
@@ -90,6 +96,7 @@ Content-Disposition: attachment; filename="products_export.csv"
 ```
 
 ### Export Failed
+
 ```json
 {
   "success": false,
@@ -127,6 +134,7 @@ See [Rate Limiting Overview](../rate-limiting/overview.md) for details.
 ## Examples
 
 ### Basic Export
+
 ```javascript
 async function exportProducts() {
   // Start export
@@ -149,6 +157,7 @@ async function exportProducts() {
 ```
 
 ### Filtered Export
+
 ```javascript
 const filters = {
   status: 'enabled',
@@ -167,4 +176,4 @@ const response = await api.post('/products/export', {
 
 - [API Overview](../overview.md)
 - [Authentication](../authentication/overview.md)
-- [Rate Limiting](../rate-limiting/overview.md) 
+- [Rate Limiting](../rate-limiting/overview.md)

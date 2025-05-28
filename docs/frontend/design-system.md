@@ -1,10 +1,6 @@
-# Design System Guide
+# Adobe Commerce File Browser Design System
 
 [← Back to README](../README.md) | Documentation: Design System
-
----
-
-# Adobe Commerce File Browser Design System
 
 This document outlines the design system used in the Adobe Commerce File Browser application. Our design system is built on a foundation of consistent tokens, components, and patterns that ensure a cohesive user experience.
 
@@ -13,6 +9,7 @@ This document outlines the design system used in the Adobe Commerce File Browser
 ### Colors
 
 #### Grayscale
+
 Our grayscale palette provides a range of neutral colors for backgrounds, text, and borders:
 
 - `--color-white: #FFFFFF` - Pure white, used for card backgrounds
@@ -31,6 +28,7 @@ Our grayscale palette provides a range of neutral colors for backgrounds, text, 
 - `--color-gray-900: #0F0F0F` - Near black
 
 #### Brand Colors
+
 Adobe's brand colors for interactive elements:
 
 - `--color-blue-50: #F5F9FF` - Lightest blue, hover states
@@ -41,6 +39,7 @@ Adobe's brand colors for interactive elements:
 - `--color-blue-active: #095ABA` - Active state
 
 #### Semantic Colors
+
 Colors that convey meaning:
 
 - Success: `#2D9D78` (hover: `#268E6C`, active: `#1F7355`)
@@ -50,11 +49,13 @@ Colors that convey meaning:
 ### Typography
 
 #### Font Family
+
 ```css
 --font-family-primary: -apple-system, BlinkMacSystemFont, 'Adobe Clean', 'Segoe UI', sans-serif
 ```
 
 #### Font Sizes
+
 - XS: `0.75rem` (12px)
 - SM: `0.875rem` (14px)
 - MD: `1rem` (16px)
@@ -64,6 +65,7 @@ Colors that convey meaning:
 - 3XL: `1.875rem` (30px)
 
 #### Font Weights
+
 - Regular: 400
 - Medium: 500
 - Semibold: 600
@@ -84,12 +86,14 @@ Our spacing system uses a consistent scale:
 ### Borders & Radius
 
 #### Border Radius
+
 - Small: `4px`
 - Medium: `8px`
 - Large: `12px`
 - Full: `9999px`
 
 #### Border Widths
+
 - XS: `1px`
 - SM: `2px`
 - MD: `4px`
@@ -97,6 +101,7 @@ Our spacing system uses a consistent scale:
 ### Shadows
 
 Three levels of elevation:
+
 ```css
 --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05)
 --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1)
@@ -106,6 +111,7 @@ Three levels of elevation:
 ### Animation & Timing
 
 #### Durations
+
 - Instant: 100ms
 - Fast: 150ms
 - Normal: 200ms
@@ -115,6 +121,7 @@ Three levels of elevation:
 - Notification: 300ms
 
 #### Easing Functions
+
 - Default: `cubic-bezier(0.4, 0, 0.2, 1)`
 - In: `cubic-bezier(0.4, 0, 1, 1)`
 - Out: `cubic-bezier(0, 0, 0.2, 1)`
@@ -137,7 +144,9 @@ The main component for displaying and managing files:
 ```
 
 #### Grid Layout
+
 Uses a 4-column grid:
+
 - File Name: 30%
 - Size: 15%
 - Last Modified: 25%
@@ -146,12 +155,14 @@ Uses a 4-column grid:
 ### Notifications
 
 Toast notifications for user feedback:
+
 - Success: Green with checkmark
 - Error: Red with warning icon
 - Warning: Orange with caution icon
 - Info: Blue with info icon
 
 Features:
+
 - Auto-dismiss after timeout
 - Slide-in animation
 - Stacking support
@@ -160,6 +171,7 @@ Features:
 ### Loading States
 
 #### Skeleton Loading
+
 - Animated pulse effect
 - Maintains layout structure
 - Prevents content shift
@@ -189,12 +201,14 @@ Features:
 ### Responsive Design
 
 Breakpoints:
+
 - SM: 640px
 - MD: 768px
 - LG: 1024px
 - XL: 1280px
 
 Mobile Adaptations:
+
 - Stacked layout for table rows
 - Adjusted padding and margins
 - Full-width notifications
@@ -229,4 +243,4 @@ Mobile Adaptations:
 - ARIA labels and roles
 - Focus management
 - Screen reader support
-- Reduced motion preferences 
+- Reduced motion preferences

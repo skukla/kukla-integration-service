@@ -36,11 +36,13 @@ sequenceDiagram
 ## Token Types
 
 ### Access Token
+
 - Used for API authentication
 - 24-hour expiration
 - Must be included in all requests
 
 ### Refresh Token
+
 - Used to obtain new access tokens
 - 14-day expiration
 - Store securely
@@ -57,6 +59,7 @@ X-Api-Key: <client_id>
 ## Error Handling
 
 ### Invalid Token
+
 ```json
 {
   "success": false,
@@ -68,6 +71,7 @@ X-Api-Key: <client_id>
 ```
 
 ### Expired Token
+
 ```json
 {
   "success": false,
@@ -95,4 +99,4 @@ X-Api-Key: <client_id>
    - Regularly audit access
    - Follow least privilege principle
 
-For detailed token management information, see [Token Management](token-management.md). 
+For detailed token management information, see [Token Management](token-management.md).

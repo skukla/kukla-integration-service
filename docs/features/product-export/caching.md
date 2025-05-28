@@ -7,16 +7,19 @@ The product export feature implements a multi-level caching strategy to optimize
 ## Cache Levels
 
 ### 1. Product Data Cache
+
 - Cache Duration: 24 hours
 - Storage: App Builder State Store
 - Key Format: `products:${storeId}:${timestamp}`
 
 ### 2. Export Job Cache
+
 - Cache Duration: 1 hour
 - Storage: Memory Cache
 - Key Format: `export:${jobId}`
 
 ### 3. Download URL Cache
+
 - Cache Duration: 15 minutes
 - Storage: Redis
 - Key Format: `download:${fileId}`
@@ -24,30 +27,33 @@ The product export feature implements a multi-level caching strategy to optimize
 ## Implementation
 
 ### Cache Keys
+
 ```javascript
 function generateCacheKey(type, identifier) {
-  const timestamp = Math.floor(Date.now() / (1000 * 60 * 60)); // hourly timestamp
-  return `${type}:${identifier}:${timestamp}`;
+    const timestamp = Math.floor(Date.now() / (1000 * 60 * 60)); // hourly timestamp
+    return `${type}:${identifier}:${timestamp}`;
 }
 ```
 
 ### Cache Operations
 
 #### Write
+
 ```javascript
 async function cacheProducts(products, storeId) {
-  const key = generateCacheKey('products', storeId);
-  await cache.set(key, products, {
-    ttl: 24 * 60 * 60 // 24 hours
-  });
+    const key = generateCacheKey('products', storeId);
+    await cache.set(key, products, {
+        ttl: 24 * 60 * 60 // 24 hours
+    });
 }
 ```
 
 #### Read
+
 ```javascript
 async function getProductsFromCache(storeId) {
-  const key = generateCacheKey('products', storeId);
-  return await cache.get(key);
+    const key = generateCacheKey('products', storeId);
+    return await cache.get(key);
 }
 ```
 
@@ -73,40 +79,43 @@ async function getProductsFromCache(storeId) {
 ## Monitoring
 
 ### Cache Metrics
+
 - Hit Rate
 - Miss Rate
 - Eviction Rate
 - Memory Usage
 
 ### Health Checks
+
 ```javascript
 async function checkCacheHealth() {
-  try {
-    const testKey = 'health-check';
-    await cache.set(testKey, 'test');
-    const value = await cache.get(testKey);
-    await cache.delete(testKey);
-    return value === 'test';
-  } catch (error) {
-    return false;
-  }
+    try {
+        const testKey = 'health-check';
+        await cache.set(testKey, 'test');
+        const value = await cache.get(testKey);
+        await cache.delete(testKey);
+        return value === 'test';
+    } catch (error) {
+        return false;
+    }
 }
 ```
 
 ## Error Handling
 
 ### Cache Failures
+
 ```javascript
 async function getProductsWithFallback(storeId) {
-  try {
-    const cached = await getProductsFromCache(storeId);
-    if (cached) return cached;
-  } catch (error) {
-    logger.warn('Cache read failed', { error });
-  }
-  
-  // Fallback to API
-  return await fetchProductsFromApi(storeId);
+    try {
+        const cached = await getProductsFromCache(storeId);
+        if (cached) return cached;
+    } catch (error) {
+        logger.warn('Cache read failed', { error });
+    }
+    
+    // Fallback to API
+    return await fetchProductsFromApi(storeId);
 }
 ```
 
@@ -125,4 +134,4 @@ async function getProductsWithFallback(storeId) {
 3. Consistency
    - Version cache keys
    - Handle stale data
-   - Implement cache stampede protection 
+   - Implement cache stampede protection

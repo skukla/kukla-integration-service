@@ -24,6 +24,7 @@ All API endpoints return responses in the following format:
 ## Error Handling
 
 Standard error codes and their meanings:
+
 - 400: Bad Request - Invalid parameters
 - 401: Unauthorized - Missing or invalid authentication
 - 403: Forbidden - Insufficient permissions
@@ -32,4 +33,4 @@ Standard error codes and their meanings:
 
 ## Versioning
 
-API versioning follows semantic versioning principles. Breaking changes will result in a new major version. 
+API versioning follows semantic versioning principles. Breaking changes will result in a new major version.
