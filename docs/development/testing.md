@@ -38,22 +38,23 @@ chmod +x scripts/test-api.sh
 The testing script requires explicit environment specification to prevent accidental testing in the wrong environment:
 
 - **Development** (`--env dev`)
-    - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
-    - Uses self-signed certificates (automatically handled)
-    - Requires local development server to be running
+
+  - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
+  - Uses self-signed certificates (automatically handled)
+  - Requires local development server to be running
 
 - **Production** (`--env prod`)
-    - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
-    - Requires valid production credentials
+  - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
+  - Requires valid production credentials
 
 ### Available Options
 
-| Option | Description | Default | Example |
-|--------|-------------|---------|---------|
-| `--env` | Testing environment (required) | none | `--env dev` |
-| `--endpoint` | API endpoint to test | get-products | `--endpoint get-categories` |
-| `--fields` | Fields to include in response | all fields | `--fields sku,name,price` |
-| `--format` | Response format | json | `--format csv` |
+| Option       | Description                    | Default      | Example                     |
+| ------------ | ------------------------------ | ------------ | --------------------------- |
+| `--env`      | Testing environment (required) | none         | `--env dev`                 |
+| `--endpoint` | API endpoint to test           | get-products | `--endpoint get-categories` |
+| `--fields`   | Fields to include in response  | all fields   | `--fields sku,name,price`   |
+| `--format`   | Response format                | json         | `--format csv`              |
 
 ### Available Fields
 
@@ -216,11 +217,13 @@ npm run logs:clear
 ### Best Practices
 
 1. **Environment Safety**
+
    - Always explicitly specify the environment with `--env prod` when testing in production
    - Use `npm run test:api` for development testing (defaults to dev environment)
    - Double-check environment flag when testing in production
 
 2. **Performance**
+
    - Request only needed fields using `--fields`
    - Use `--no-inventory` and `--no-categories` when that data isn't needed
    - Consider using CSV format for large data sets
