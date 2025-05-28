@@ -6,31 +6,30 @@
 module.exports = {
   app: {
     runtime: {
-      environment: 'development',
-      features: {
-        debugLogging: true,
-        performanceMonitoring: true
-      }
-    },
-    logging: {
-      level: 'debug',
-      format: 'text'
-    },
-    performance: {
-      monitoring: {
-        enabled: true,
-        sampleRate: 1.0 // Monitor all requests in development
-      }
+      environment: 'development'
     }
   },
   url: {
     runtime: {
       baseUrl: 'https://localhost:9080',
       namespace: 'local',
-      package: 'kukla-integration-service'
+      package: 'kukla-integration-service',
+      version: 'v1',
+      paths: {
+        web: '/web',
+        base: '/api'
+      }
     },
-    frontend: {
-      baseUrl: 'http://localhost:8080'
+    commerce: {
+      baseUrl: 'https://citisignal-com774-dev.adobedemo.com',
+      version: 'V1',
+      paths: {
+        adminToken: '/integration/admin/token',
+        products: '/products',
+        stockItem: '/inventory/source-items',
+        category: '/categories/:id',
+        categoryList: '/categories'
+      }
     }
   },
   commerce: {
@@ -56,9 +55,63 @@ module.exports = {
           enabled: false // Disable token refresh in development
         }
       }
+    }
+  },
+  testing: {
+    api: {
+      local: {
+        baseUrl: 'https://localhost:9080',
+        port: 9080
+      },
+      staging: {
+        baseUrl: 'https://285361-188maroonwallaby-stage.adobeio-static.net'
+      },
+      production: {
+        baseUrl: 'https://285361-188maroonwallaby.adobeio-static.net'
+      },
+      defaults: {
+        endpoint: 'get-products',
+        method: 'POST',
+        fields: 'sku,name,price,qty,categories,images'
+      }
     },
-    rateLimit: {
-      enabled: false // Disable rate limiting in development
+    performance: {
+      scenarios: {
+        small: {
+          name: 'Small Dataset',
+          params: {
+            limit: 50,
+            include_inventory: true,
+            include_categories: true
+          }
+        },
+        medium: {
+          name: 'Medium Dataset',
+          params: {
+            limit: 100,
+            include_inventory: true,
+            include_categories: true
+          }
+        },
+        large: {
+          name: 'Large Dataset',
+          params: {
+            limit: 200,
+            include_inventory: true,
+            include_categories: true
+          }
+        }
+      },
+      thresholds: {
+        executionTime: 0.15,
+        memory: 0.10,
+        products: 0,
+        categories: 0,
+        compression: 0.05
+      },
+      baseline: {
+        maxAgeDays: 7
+      }
     }
   }
 }; 

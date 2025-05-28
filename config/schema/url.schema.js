@@ -5,7 +5,7 @@
 
 const urlSchema = {
   type: 'object',
-  required: ['runtime', 'commerce', 'frontend'],
+  required: ['runtime', 'commerce'],
   properties: {
     runtime: {
       type: 'object',
@@ -80,49 +80,6 @@ const urlSchema = {
               type: 'string',
               description: 'Inventory path template',
               default: '/inventory/:sku/source-items'
-            }
-          }
-        }
-      }
-    },
-    frontend: {
-      type: 'object',
-      required: ['baseUrl'],
-      description: 'Frontend URL configuration',
-      properties: {
-        baseUrl: {
-          type: 'string',
-          description: 'Base URL for frontend',
-          pattern: '^https?://.+'
-        },
-        routes: {
-          type: 'object',
-          description: 'Frontend route definitions',
-          properties: {
-            home: {
-              type: 'string',
-              description: 'Home route',
-              default: '/'
-            },
-            products: {
-              type: 'string',
-              description: 'Products route',
-              default: '/products'
-            },
-            categories: {
-              type: 'string',
-              description: 'Categories route',
-              default: '/categories'
-            },
-            files: {
-              type: 'string',
-              description: 'Files route',
-              default: '/files'
-            },
-            download: {
-              type: 'string',
-              description: 'Download route',
-              default: '/download/:filename'
             }
           }
         }
