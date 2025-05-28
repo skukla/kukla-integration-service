@@ -1,15 +1,45 @@
 #!/bin/bash
 
+# Load configuration using Node.js
+load_config() {
+    node -e "
+        const { loadConfig } = require('../config');
+        const config = loadConfig();
+        const { test } = config;
+        
+        console.log(JSON.stringify({
+            local: test.api.local,
+            staging: test.api.staging,
+            production: test.api.production,
+            defaults: test.defaults
+        }));
+    "
+}
+
+# Load and parse configuration
+CONFIG=$(load_config)
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to load configuration"
+    exit 1
+fi
+
+# Parse configuration values using jq
+LOCAL_URL=$(echo $CONFIG | jq -r '.local.baseUrl')
+STAGING_URL=$(echo $CONFIG | jq -r '.staging.baseUrl')
+PROD_URL=$(echo $CONFIG | jq -r '.production.baseUrl')
+LOCAL_PORT=$(echo $CONFIG | jq -r '.local.port')
+ENDPOINT=$(echo $CONFIG | jq -r '.defaults.endpoint')
+METHOD=$(echo $CONFIG | jq -r '.defaults.method')
+FIELDS=$(echo $CONFIG | jq -r '.defaults.fields')
+
 # Default values
-ENDPOINT="get-products"
-METHOD="POST"
 LOCAL_URL="https://localhost:9080/api/v1/web/kukla-integration-service"
 PROD_URL="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service"
 FIELDS="sku,name,price,qty,categories,images"
 
 # Function to check if dev server is running
 check_dev_server() {
-    curl -k -s -o /dev/null -w "%{http_code}" "https://localhost:9080" > /dev/null 2>&1
+    curl -k -s -o /dev/null -w "%{http_code}" "https://localhost:${LOCAL_PORT}" > /dev/null 2>&1
     return $?
 }
 
@@ -173,6 +203,8 @@ fi
 BASE_URL="$LOCAL_URL"
 if [ "$ENV" = "prod" ]; then
     BASE_URL="$PROD_URL"
+elif [ "$ENV" = "staging" ]; then
+    BASE_URL="$STAGING_URL"
 fi
 
 # Build query parameters
