@@ -24,12 +24,12 @@ module.exports = {
     }
   },
   url: {
-    api: {
-      baseUrl: 'https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service',
-      version: 'v1'
+    runtime: {
+      baseUrl: 'https://adobeioruntime.net',
+      namespace: '285361-188maroonwallaby-stage'
     },
     frontend: {
-      baseUrl: 'https://staging.example.com'
+      baseUrl: 'https://285361-188maroonwallaby-stage.adobeio-static.net'
     }
   },
   commerce: {
