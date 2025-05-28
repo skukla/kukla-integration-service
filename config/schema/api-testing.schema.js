@@ -1,9 +1,9 @@
 /**
- * Test configuration schema
- * @module config/schema/test
+ * API Testing configuration schema
+ * @module config/schema/api-testing
  */
 
-const testSchema = {
+const apiTestSchema = {
   type: 'object',
   required: ['api'],
   properties: {
@@ -75,4 +75,4 @@ const testSchema = {
   }
 };
 
-module.exports = testSchema; 
+module.exports = apiTestSchema; 
