@@ -3,7 +3,10 @@
  * @module steps/createCsv
  */
 
-const { storage: { csv } } = require('../../../../src/core');
+const { 
+    storage: { csv },
+    http: { compression: { COMPRESSION_LEVELS } }
+} = require('../../../../src/core');
 const { transform: { product: { mapProductToCsvRow } } } = require('../../../../src/commerce');
 
 /**
@@ -30,7 +33,7 @@ async function createCsv(products) {
         headers: CSV_HEADERS,
         rowMapper: mapProductToCsvRow,
         compression: {
-            level: csv.CSV_CONFIG.COMPRESSION_LEVEL
+            level: COMPRESSION_LEVELS.HIGH
         }
     });
 }

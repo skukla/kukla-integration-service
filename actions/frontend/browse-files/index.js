@@ -6,8 +6,15 @@
 const { Core } = require('@adobe/aio-sdk');
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { 
-    storage: { listFiles },
-    http: { createHtmxResponse, createErrorResponse }
+    storage: { files: { listFiles, deleteFile, createDirectory } },
+    http: { 
+        createHtmxResponse, 
+        createErrorResponse,
+        extractActionParams 
+    },
+    monitoring: { 
+        errors: { handleError }
+    }
 } = require('../../../src/core');
 
 /**
@@ -24,30 +31,12 @@ function createHtmlResponse(html, status = 200) {
 }
 
 /**
- * Creates an error response
- * @param {string} message - Error message
- * @param {number} [status=500] - HTTP status code
- * @returns {Object} Response object
- */
-function createErrorResponse(message, status = 500) {
-    return createHtmxResponse({
-        html: `
-            <div class="error-message" role="alert">
-                <p>${message}</p>
-            </div>
-        `,
-        status
-    });
-}
-
-/**
  * Handles GET requests for file browsing and modal operations
  * @param {Object} params - Request parameters
- * @param {Object} files - Files SDK instance
  * @param {Object} logger - Logger instance
  * @returns {Promise<Object>} Response object
  */
-async function handleGetRequest(params, files, logger) {
+async function handleGetRequest(params, logger) {
     try {
         // Handle modal requests
         if (params.modal === 'delete' && params.fileName) {
@@ -57,7 +46,7 @@ async function handleGetRequest(params, files, logger) {
         // List and process files
         logger.info('Checking public directory');
         try {
-            await files.createDirectory('public');
+            await createDirectory('public');
             logger.info('Public directory ensured');
         } catch (error) {
             // Ignore error if directory already exists
@@ -66,7 +55,7 @@ async function handleGetRequest(params, files, logger) {
 
         // Get file list with metadata using shared operations
         logger.info('Listing files from public directory');
-        const allFiles = await listFiles(files, 'public');
+        const allFiles = await listFiles('public');
         
         // Filter for CSV files
         const csvFiles = allFiles.filter(file => file.name.endsWith('.csv'));
@@ -76,30 +65,17 @@ async function handleGetRequest(params, files, logger) {
         return createHtmlResponse(getFileListHtml(csvFiles));
     } catch (error) {
         logger.error('Error in GET request:', error);
-        
-        if (error.isFileOperationError) {
-            switch (error.type) {
-                case FileErrorType.PERMISSION_DENIED:
-                    return createErrorResponse('File storage credentials not configured properly', 400);
-                case FileErrorType.INVALID_PATH:
-                    return createErrorResponse(error.message, 400);
-                default:
-                    return createErrorResponse(`Failed to list files: ${error.message}`);
-            }
-        }
-
-        return createErrorResponse(error.message);
+        return handleError(error);
     }
 }
 
 /**
  * Handles DELETE requests for file deletion
  * @param {Object} params - Request parameters
- * @param {Object} files - Files SDK instance
  * @param {Object} logger - Logger instance
  * @returns {Promise<Object>} Response object
  */
-async function handleDeleteRequest(params, files, logger) {
+async function handleDeleteRequest(params, logger) {
     try {
         const fileName = params.fileName;
         if (!fileName) {
@@ -107,50 +83,36 @@ async function handleDeleteRequest(params, files, logger) {
         }
 
         logger.info(`Deleting file: ${fileName}`);
-        await deleteFile(files, fileName);
+        await deleteFile(fileName);
         return createHtmlResponse('');
     } catch (error) {
         logger.error('Error in DELETE request:', error);
-
-        if (error.isFileOperationError) {
-            switch (error.type) {
-                case FileErrorType.NOT_FOUND:
-                    return createErrorResponse(`File not found: ${params.fileName}`, 404);
-                case FileErrorType.INVALID_PATH:
-                    return createErrorResponse(error.message, 400);
-                default:
-                    return createErrorResponse(`Failed to delete file: ${error.message}`);
-            }
-        }
-
-        return createErrorResponse(error.message);
+        return handleError(error);
     }
 }
 
 /**
  * Main function that handles file browsing and management
- * @param {Object} params - Action parameters
+ * @param {Object} rawParams - Action parameters
  * @returns {Promise<Object>} Action response
  */
-async function main(params) {
+async function main(rawParams) {
+    const params = extractActionParams(rawParams);
     const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
     try {
-        logger.info('Initializing Files SDK');
-        const files = await FilesLib.init();
-
         // Route request based on HTTP method
         switch (params.__ow_method) {
             case 'get':
-                return handleGetRequest(params, files, logger);
+                return handleGetRequest(params, logger);
             case 'delete':
-                return handleDeleteRequest(params, files, logger);
+                return handleDeleteRequest(params, logger);
             default:
                 return createErrorResponse('Method not allowed', 405);
         }
     } catch (error) {
-        logger.error('Error initializing Files SDK:', error);
-        return createErrorResponse(error.message);
+        logger.error('Error in main:', error);
+        return handleError(error);
     }
 }
 
