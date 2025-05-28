@@ -1,4 +1,3 @@
-const { default: ora } = require('ora');
 const chalk = require('chalk').default;
 
 // Add delay utility
@@ -57,11 +56,11 @@ function createTestRunner(options = {}) {
         }
     }
 
-    async function defaultExecuteLocalTest(scenario) {
+    async function defaultExecuteLocalTest() {
         throw new Error('executeLocalTest must be implemented');
     }
 
-    async function defaultExecuteDeployedTest(scenario) {
+    async function defaultExecuteDeployedTest() {
         throw new Error('executeDeployedTest must be implemented');
     }
 
