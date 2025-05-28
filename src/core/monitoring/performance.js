@@ -99,19 +99,19 @@ function createPerformanceMiddleware(logger) {
     try {
       metricsState = startMeasurement(metricsState, operation);
       const result = await action(params);
-      const { results } = endMeasurement(metricsState, operation, { success: true });
+      const metrics = endMeasurement(metricsState, operation, { success: true });
       
       // Add performance metrics to response if appropriate
       if (result && typeof result === 'object') {
         return {
           ...result,
-          performance: results
+          performance: metrics
         };
       }
       
       return result;
     } catch (error) {
-      const { results } = endMeasurement(metricsState, operation, { 
+      endMeasurement(metricsState, operation, { 
         success: false, 
         error: error.message 
       });
@@ -142,11 +142,59 @@ class PerformanceMonitor {
   }
 }
 
+/**
+ * Track memory usage during batch processing
+ * @param {Array} items - Items to process
+ * @param {Function} processItem - Function to process a single item
+ * @param {Object} options - Processing options
+ * @returns {Promise<Array>} Processed items
+ */
+async function trackMemory(items, processItem, options = {}) {
+    const { 
+        batchSize = 100,
+        gcThreshold = 50 * 1024 * 1024, // 50MB
+        onProgress = () => {}
+    } = options;
+
+    const processedItems = [];
+    let currentBatch = [];
+
+    for (let i = 0; i < items.length; i++) {
+        currentBatch.push(items[i]);
+
+        if (currentBatch.length >= batchSize || i === items.length - 1) {
+            // Process current batch
+            const batchResults = await Promise.all(
+                currentBatch.map(item => processItem(item))
+            );
+            processedItems.push(...batchResults);
+
+            // Clear the batch
+            currentBatch = [];
+
+            // Report progress
+            await onProgress({
+                processed: processedItems.length,
+                total: items.length,
+                memory: process.memoryUsage().heapUsed
+            });
+
+            // Run garbage collection if memory usage is high
+            if (process.memoryUsage().heapUsed > gcThreshold) {
+                global.gc && global.gc();
+            }
+        }
+    }
+
+    return processedItems;
+}
+
 module.exports = {
   MetricTypes,
   createMetricsState,
   startMeasurement,
   endMeasurement,
   createPerformanceMiddleware,
-  PerformanceMonitor
+  PerformanceMonitor,
+  trackMemory
 }; 
