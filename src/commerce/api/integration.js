@@ -4,19 +4,8 @@
  */
 
 const { http: { buildHeaders } } = require('../../core');
+const { buildCommerceUrl } = require('../../core/routing');
 const { makeRequest, batchRequests } = require('./client');
-
-/**
- * Builds a Commerce API URL
- * @param {string} baseUrl - Base Commerce URL
- * @param {string} endpoint - API endpoint
- * @returns {string} Full URL
- */
-function buildCommerceUrl(baseUrl, endpoint) {
-    const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    return `${base}/rest${path}`;
-}
 
 /**
  * Makes a Commerce API request with commerce-specific handling
@@ -44,7 +33,7 @@ async function makeCommerceRequest(url, options = {}, context = {}) {
  * @returns {Promise<Object>} Validation result
  */
 async function validateAdminCredentials(params) {
-    const url = buildCommerceUrl(params.url, '/V1/integration/admin/token');
+    const url = buildCommerceUrl('adminToken');
     return makeCommerceRequest(url, {
         method: 'POST',
         body: JSON.stringify({
@@ -78,7 +67,6 @@ async function batchCommerceRequests(requests, options = {}) {
 }
 
 module.exports = {
-    buildCommerceUrl,
     makeCommerceRequest,
     validateAdminCredentials,
     batchCommerceRequests
