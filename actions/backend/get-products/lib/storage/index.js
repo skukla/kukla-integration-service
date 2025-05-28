@@ -4,13 +4,15 @@
  */
 
 const { getStorageConfig } = require('./config');
-const { APP_PREFIX } = require('../../../../core/http');
-const {
-    writeFile,
-    getFileProperties,
-    FileOperationError,
-    FileErrorType
-} = require('../../../../core/files');
+const { 
+    http: { APP_PREFIX },
+    storage: {
+        writeFile,
+        getFileProperties,
+        FileOperationError,
+        FileErrorType
+    }
+} = require('../../../../src/core');
 
 /**
  * Builds a download URL for a file

@@ -2,15 +2,11 @@
  * Category-related API calls to Adobe Commerce
  * @module lib/api/categories
  */
-const { buildHeaders } = require('../../../../core/http');
-const { buildCommerceUrl, makeCommerceRequest } = require('../../../../commerce/integration');
-const { processConcurrently } = require('./concurrency');
-const cache = require('./cache');
+const { http: { buildHeaders } } = require('../../../../src/core');
+const { buildCommerceUrl, makeCommerceRequest } = require('../../../../src/commerce/api/integration');
 const endpoints = require('./commerce-endpoints');
-const { default: ora } = require('ora');
 
 // Optimal values for category operations
-const MAX_CONCURRENT_REQUESTS = 10;
 const CATEGORY_BATCH_SIZE = 20;
 const REQUEST_RETRIES = 2;
 const RETRY_DELAY = 1000;

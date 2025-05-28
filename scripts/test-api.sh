@@ -1,15 +1,51 @@
 #!/bin/bash
 
-# Default values
-ENDPOINT="get-products"
-METHOD="POST"
-LOCAL_URL="https://localhost:9080/api/v1/web/kukla-integration-service"
-PROD_URL="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service"
-FIELDS="sku,name,price,qty,categories,images"
+# Load configuration using Node.js
+load_config() {
+    node -e "
+        const { loadConfig } = require('../config');
+        const { buildRuntimeUrl } = require('../src/core/routing');
+        const config = loadConfig();
+        
+        console.log(JSON.stringify({
+            local: {
+                baseUrl: 'https://localhost:9080' + buildRuntimeUrl('get-products').split('adobeioruntime.net')[1]
+            },
+            staging: {
+                baseUrl: buildRuntimeUrl('get-products')
+            },
+            production: {
+                baseUrl: buildRuntimeUrl('get-products')
+            },
+            defaults: config.test.defaults
+        }));
+    "
+}
+
+# Load and parse configuration
+CONFIG=$(load_config)
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to load configuration"
+    exit 1
+fi
+
+# Parse configuration values using jq
+LOCAL_URL=$(echo $CONFIG | jq -r '.local.baseUrl')
+STAGING_URL=$(echo $CONFIG | jq -r '.staging.baseUrl')
+PROD_URL=$(echo $CONFIG | jq -r '.production.baseUrl')
+LOCAL_PORT=$(echo $CONFIG | jq -r '.local.port')
+ENDPOINT=$(echo $CONFIG | jq -r '.defaults.endpoint')
+METHOD=$(echo $CONFIG | jq -r '.defaults.method')
+FIELDS=$(echo $CONFIG | jq -r '.defaults.fields')
+
+# Default values for fields if not set
+if [ -z "$FIELDS" ]; then
+    FIELDS="sku,name,price,qty,categories,images"
+fi
 
 # Function to check if dev server is running
 check_dev_server() {
-    curl -k -s -o /dev/null -w "%{http_code}" "https://localhost:9080" > /dev/null 2>&1
+    curl -k -s -o /dev/null -w "%{http_code}" "https://localhost:${LOCAL_PORT}" > /dev/null 2>&1
     return $?
 }
 
@@ -173,6 +209,8 @@ fi
 BASE_URL="$LOCAL_URL"
 if [ "$ENV" = "prod" ]; then
     BASE_URL="$PROD_URL"
+elif [ "$ENV" = "staging" ]; then
+    BASE_URL="$STAGING_URL"
 fi
 
 # Build query parameters

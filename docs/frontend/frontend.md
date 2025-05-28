@@ -15,6 +15,7 @@ For high-level architectural decisions and rationale, see the [Architecture Guid
 ### Core Principles
 
 1. **Hypermedia-Driven**
+
    - Server returns HTML instead of JSON
    - UI updates through HTML fragment swaps
    - Progressive enhancement where needed
@@ -56,7 +57,7 @@ export function setupHtmx() {
     includeIndicatorStyles: false,
     globalViewTransitions: true,
     allowScriptTags: false,
-    allowEval: false
+    allowEval: false,
   };
 }
 ```
@@ -88,7 +89,9 @@ export function setupEventHandlers() {
 Our application uses the following HTMX events to handle various aspects of the UI:
 
 #### Modal Events
+
 - `htmx:afterSwap`
+
   - **Purpose**: Handles showing modals after content is swapped
   - **Implementation**: Shows modal if the target is a modal container
   - **Example**: Used when loading modal content dynamically
@@ -99,12 +102,15 @@ Our application uses the following HTMX events to handle various aspects of the 
   - **Example**: Used when closing modals before updating content
 
 #### Request Lifecycle Events
+
 - `htmx:beforeRequest`
+
   - **Purpose**: Manages loading states when requests start
   - **Implementation**: Adds loading class to the requesting element
   - **Example**: Shows loading spinner on buttons during requests
 
 - `htmx:afterRequest`
+
   - **Purpose**: Handles request completion and success states
   - **Implementation**: Removes loading class and shows success notifications
   - **Example**: Shows success message after file deletion
@@ -115,6 +121,7 @@ Our application uses the following HTMX events to handle various aspects of the 
   - **Example**: Displays error message when file operation fails
 
 #### Configuration Events
+
 - `htmx:configRequest`
   - **Purpose**: Sets up request headers and security tokens
   - **Implementation**: Configures XHR indicators and CSRF tokens
@@ -149,11 +156,13 @@ export class Modal {
 ### 1. List Views
 
 ```html
-<div id="file-list"
-     hx-get="/api/files"
-     hx-trigger="load, fileDeleted from:body"
-     hx-target="this"
-     hx-indicator="#loading">
+<div
+  id="file-list"
+  hx-get="/api/files"
+  hx-trigger="load, fileDeleted from:body"
+  hx-target="this"
+  hx-indicator="#loading"
+>
   <!-- Content -->
 </div>
 ```
@@ -161,10 +170,8 @@ export class Modal {
 ### 2. Forms
 
 ```html
-<form hx-post="/api/files/create"
-      hx-target="#file-list"
-      hx-swap="beforeend">
-  <input type="text" name="filename" required>
+<form hx-post="/api/files/create" hx-target="#file-list" hx-swap="beforeend">
+  <input type="text" name="filename" required />
   <button type="submit">Create</button>
 </form>
 ```
@@ -172,19 +179,14 @@ export class Modal {
 ### 3. Modals
 
 ```html
-<div class="modal" 
-     data-modal-id="delete-confirm"
-     role="dialog"
-     aria-labelledby="modal-title">
+<div class="modal" data-modal-id="delete-confirm" role="dialog" aria-labelledby="modal-title">
   <div class="modal-content">
     <h2 id="modal-title">Confirm Delete</h2>
     <div class="modal-body">
       <!-- Content -->
     </div>
     <div class="modal-footer">
-      <button hx-delete="/api/files/delete"
-              hx-target="#file-list"
-              hx-trigger="click">
+      <button hx-delete="/api/files/delete" hx-target="#file-list" hx-trigger="click">
         Delete
       </button>
     </div>
@@ -197,10 +199,13 @@ export class Modal {
 ### 1. Data Attributes
 
 Use data attributes for configuration:
+
 ```html
-<div data-modal-id="file-delete"
-     data-action-url="/api/files/delete"
-     data-confirm-message="Are you sure?">
+<div
+  data-modal-id="file-delete"
+  data-action-url="/api/files/delete"
+  data-confirm-message="Are you sure?"
+></div>
 ```
 
 ### 2. Event Handling
@@ -220,10 +225,10 @@ Use data attributes for configuration:
 ```javascript
 function handleError(detail) {
   const { error, target } = detail;
-  
+
   // Show error message
   showNotification('error', error.message);
-  
+
   // Reset loading state
   target.classList.remove('loading');
 }
@@ -248,11 +253,13 @@ function handleError(detail) {
 ## Performance Considerations
 
 1. **Response Size**
+
    - Return minimal HTML fragments
    - Avoid duplicate content
    - Use appropriate swap strategies
 
 2. **Loading States**
+
    - Show immediate feedback
    - Use appropriate indicators
    - Handle timeouts gracefully
@@ -265,11 +272,13 @@ function handleError(detail) {
 ## Accessibility
 
 1. **Modal Management**
+
    - Trap focus within modals
    - Handle keyboard navigation
    - Manage ARIA states
 
 2. **Loading States**
+
    - Use ARIA live regions
    - Provide progress indicators
    - Handle screen reader announcements
@@ -285,4 +294,4 @@ function handleError(detail) {
 - [API Reference](api-reference.md#htmx-integration) - HTMX API integration details
 - [Design System](design-system.md) - UI components and styling
 - [Development Guide](development.md) - General development workflow
-- [Troubleshooting Guide](troubleshooting.md) - Common issues and solutions 
+- [Troubleshooting Guide](troubleshooting.md) - Common issues and solutions

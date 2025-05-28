@@ -5,6 +5,7 @@
 ## Core Concepts
 
 Our error handling follows these principles:
+
 - Simple, informative errors
 - Clear user feedback
 - Easy debugging
@@ -88,6 +89,7 @@ htmx.on('htmx:error', (event) => {
 ## Error Patterns
 
 ### 1. Validation Errors
+
 ```javascript
 throw new ValidationError('Invalid input', {
   field: 'username',
@@ -96,6 +98,7 @@ throw new ValidationError('Invalid input', {
 ```
 
 ### 2. Commerce Errors
+
 ```javascript
 throw new CommerceError('API error', {
   endpoint: '/products',
@@ -104,6 +107,7 @@ throw new CommerceError('API error', {
 ```
 
 ### 3. File Operation Errors
+
 ```javascript
 throw new FileError('Upload failed', {
   file: filename,
@@ -114,12 +118,14 @@ throw new FileError('Upload failed', {
 ## User Feedback
 
 ### 1. Error Messages
+
 - Clear, actionable messages
 - User-friendly language
 - Suggested next steps
 - Retry options when applicable
 
 ### 2. Loading States
+
 - Clear progress indication
 - Operation status
 - Cancellation options
@@ -128,12 +134,14 @@ throw new FileError('Upload failed', {
 ## Debugging
 
 ### 1. Error Context
+
 - Operation details
 - Input parameters
 - System state
 - Stack traces in development
 
 ### 2. Logging
+
 - Error type and code
 - Operation context
 - Timestamp and request ID
@@ -160,5 +168,6 @@ throw new FileError('Upload failed', {
    - Maintain data integrity
 
 For implementation details, see:
+
 - [API Reference](api-reference.md)
-- [Development Guide](development.md) 
+- [Development Guide](development.md)
