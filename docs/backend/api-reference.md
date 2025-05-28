@@ -393,7 +393,7 @@ Exports product data from Adobe Commerce with optional enrichment and formatting
 
 ### Endpoint
 
-```
+```http
 POST /api/v1/web/kukla-integration-service/get-products
 ```
 

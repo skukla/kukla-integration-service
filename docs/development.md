@@ -11,7 +11,7 @@ npm run dev
 
 2. Ensure environment variables are set in `.env`:
 
-```
+```env
 COMMERCE_URL=
 COMMERCE_ADMIN_USERNAME=
 COMMERCE_ADMIN_PASSWORD=
