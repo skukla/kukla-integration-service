@@ -12,13 +12,9 @@ application:
             runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
-              COMMERCE_URL: $COMMERCE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
             parameters:
-              COMMERCE_URL:
-                type: string
-                description: Adobe Commerce instance URL
               COMMERCE_ADMIN_USERNAME:
                 type: string
                 description: Admin username for authentication

@@ -4,13 +4,19 @@
 load_config() {
     node -e "
         const { loadConfig } = require('../config');
-        const { buildRuntimeUrl } = require('../src/core/url');
+        const { buildRuntimeUrl } = require('../src/core/routing');
         const config = loadConfig();
         
         console.log(JSON.stringify({
-            local: buildRuntimeUrl('get-products'),
-            staging: buildRuntimeUrl('get-products'),
-            production: buildRuntimeUrl('get-products'),
+            local: {
+                baseUrl: 'https://localhost:9080' + buildRuntimeUrl('get-products').split('adobeioruntime.net')[1]
+            },
+            staging: {
+                baseUrl: buildRuntimeUrl('get-products')
+            },
+            production: {
+                baseUrl: buildRuntimeUrl('get-products')
+            },
             defaults: config.test.defaults
         }));
     "
@@ -32,10 +38,10 @@ ENDPOINT=$(echo $CONFIG | jq -r '.defaults.endpoint')
 METHOD=$(echo $CONFIG | jq -r '.defaults.method')
 FIELDS=$(echo $CONFIG | jq -r '.defaults.fields')
 
-# Default values
-LOCAL_URL="https://localhost:9080/api/v1/web/kukla-integration-service"
-PROD_URL="https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service"
-FIELDS="sku,name,price,qty,categories,images"
+# Default values for fields if not set
+if [ -z "$FIELDS" ]; then
+    FIELDS="sku,name,price,qty,categories,images"
+fi
 
 # Function to check if dev server is running
 check_dev_server() {
