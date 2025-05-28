@@ -24,39 +24,41 @@ A streamlined Adobe App Builder application that integrates with Adobe Commerce 
 ## Getting Started
 
 1. **Prerequisites**
-    - Node.js 18+
-    - Adobe Developer Console access
-    - Adobe Commerce instance
-    - Adobe I/O CLI
+
+- Node.js 18+
+- Adobe Developer Console access
+- Adobe Commerce instance
+- Adobe I/O CLI
 
 2. **Installation**
 
-    ```bash
-    git clone <repository-url>
-    cd kukla-integration-service
-    npm install
-    ```
+   ```bash
+   git clone <repository-url>
+   cd kukla-integration-service
+   npm install
+   ```
 
 3. **Configuration**
 
-    ```bash
-    cp .env.example .env
-    # Edit .env with your settings
-    ```
+   ```bash
+   cp .env.example .env
+   # Edit .env with your settings
+   ```
 
-    The application uses a comprehensive configuration system:
-    - Environment-specific settings in `config/environments/`
-    - Default values in `config/defaults/`
-    - Schema validation for all settings
-    - See [Configuration Guide](docs/configuration.md) for details
+The application uses a comprehensive configuration system:
+
+- Environment-specific settings in `config/environments/`
+- Default values in `config/defaults/`
+- Schema validation for all settings
+- See [Configuration Guide](docs/configuration.md) for details
 
 4. **Development**
 
-    ```bash
-    npm run dev      # Start development
-    npm run build    # Build the app
-    npm run deploy   # Deploy to App Builder
-    ```
+   ```bash
+   npm run dev      # Start development
+   npm run build    # Build the app
+   npm run deploy   # Deploy to App Builder
+   ```
 
 ## Project Structure
 
@@ -85,18 +87,20 @@ kukla-integration-service/
 Our documentation is organized into focused guides:
 
 - **Core Guides**
-    - [Architecture](docs/architecture.md) - System design and patterns
-    - [Development](docs/development.md) - Development workflow
-    - [Security](docs/security.md) - Security practices
-    - [Deployment](docs/deployment.md) - Deployment process
-    - [Debugging](docs/debugging.md) - Debugging workflow and tools
-    - [Configuration](docs/configuration.md) - Configuration system
+
+  - [Architecture](docs/architecture.md) - System design and patterns
+  - [Development](docs/development.md) - Development workflow
+  - [Security](docs/security.md) - Security practices
+  - [Deployment](docs/deployment.md) - Deployment process
+  - [Debugging](docs/debugging.md) - Debugging workflow and tools
+  - [Configuration](docs/configuration.md) - Configuration system
 
 - **Technical Guides**
-    - [API Reference](docs/api-reference.md) - API endpoints
-    - [Error Handling](docs/error-handling.md) - Error patterns
-    - [File Operations](docs/file-operations.md) - File handling
-    - [Performance](docs/performance.md) - Optimization guide
+
+  - [API Reference](docs/api-reference.md) - API endpoints
+  - [Error Handling](docs/error-handling.md) - Error patterns
+  - [File Operations](docs/file-operations.md) - File handling
+  - [Performance](docs/performance.md) - Optimization guide
 
 - [Testing Guide](docs/testing.md) - API testing process and tools
 

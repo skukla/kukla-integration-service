@@ -218,22 +218,27 @@ src/commerce/
 
 ### Phase 4: Configuration Consolidation
 
-- [x] 1. Audit current configuration
+1. **Audit current configuration**
 
-  - [x] Map all configuration files and their purposes
-    - [x] Environment variables (.env) for sensitive data and credentials
-    - [x] App Builder config (app.config.yaml) for runtime settings
-    - [x] Frontend config (web-src/src/config.json) for API endpoints
-    - [x] URL config (config/urls.js) for environment URLs
-    - [x] Performance config (test-performance.js, baseline-metrics.json)
-  - [x] Identify configuration duplication
-  - [x] Document environment-specific configuration needs
-  - [x] Review App Builder configuration requirements
-  - [x] Analyze commerce API configuration requirements - [x] Review src/commerce/api/config.js settings - [x] Document commerce endpoint patterns - [x] Map environment-specific commerce settings
-    > Completed 2024-03-26: Completed comprehensive audit of all configuration files and their purposes
-    > Updated 2024-03-27: Moved performance testing configuration and baselines to tests/performance directory
+- Map all configuration files and their purposes
+- Environment variables (.env) for sensitive data and credentials
+- App Builder config (app.config.yaml) for runtime settings
+- Frontend config (web-src/src/config.json) for API endpoints
+- URL config (config/urls.js) for environment URLs
+- Performance config (test-performance.js, baseline-metrics.json)
+- Identify configuration duplication
+- Document environment-specific configuration needs
+- Review App Builder configuration requirements
+- Analyze commerce API configuration requirements
+- Review src/commerce/api/config.js settings
+- Document commerce endpoint patterns
+- Map environment-specific commerce settings
+  > Completed 2024-03-26: Completed comprehensive audit of all configuration files and their purposes
+  > Updated 2024-03-27: Moved performance testing configuration and baselines to tests/performance directory
 
-- [x] 2. Design consolidated configuration - [x] Plan unified configuration structure in root config/
+2. **Design consolidated configuration**
+
+Plan unified configuration structure in root config/:
 
 ```tree
 config/
@@ -251,123 +256,126 @@ config/
 └── index.js              # Configuration entry point
 ```
 
-    - [x] Define environment configuration strategy
-    - [x] Design configuration validation approach
-    - [x] Plan migration path for existing configuration
-    - [x] Design configuration categories and schemas
-    > Completed 2024-03-26: Created initial configuration structure with environment-specific files and schemas
-    > Updated 2024-03-28: Flattened schema directory structure by moving testing schemas to root schema directory
-    > Updated 2024-03-28: Removed nested api.api configuration in favor of flatter structure
+- Define environment configuration strategy
+- Design configuration validation approach
+- Plan migration path for existing configuration
+- Design configuration categories and schemas
+  > Completed 2024-03-26: Created initial configuration structure with environment-specific files and schemas
+  > Updated 2024-03-28: Flattened schema directory structure by moving testing schemas to root schema directory
+  > Updated 2024-03-28: Removed nested api.api configuration in favor of flatter structure
 
-- [x] 3. Implement configuration validation
+3. **Implement configuration validation**
 
-  - [x] Create JSON schemas for all configuration
-    - [x] App configuration schema
-    - [x] URL configuration schema
-    - [x] Commerce API schema
-    - [x] Security settings schema
-    - [x] Testing configuration schemas
-  - [x] Implement schema validation using AJV
-  - [x] Add validation to configuration loading
-  - [x] Add helpful error messages for validation failures
-    > Completed 2024-03-26: Created comprehensive JSON schemas for all configuration categories
-    > Updated 2024-03-28: Improved schema organization and validation error messages
+- Create JSON schemas for all configuration
+- App configuration schema
+- URL configuration schema
+- Commerce API schema
+- Security settings schema
+- Testing configuration schemas
+- Implement schema validation using AJV
+- Add validation to configuration loading
+- Add helpful error messages for validation failures
+  > Completed 2024-03-26: Created comprehensive JSON schemas for all configuration categories
+  > Updated 2024-03-28: Improved schema organization and validation error messages
 
-- [x] 4. Move URL handling to core/routing
+4. **Move URL handling to core/routing**
 
-  - [x] Create routing module for URL construction
-  - [x] Move URL utilities from core/url.js to core/routing/url.js
-  - [x] Create routing/index.js entry point
-  - [x] Update all imports to use new routing module
-    > Completed 2024-03-28: Created routing module and moved URL functionality from core/url.js
-    > Updated 2024-03-28: Updated all imports to use new routing module location
+- Create routing module for URL construction
+- Move URL utilities from core/url.js to core/routing/url.js
+- Create routing/index.js entry point
+- Update all imports to use new routing module
+  > Completed 2024-03-28: Created routing module and moved URL functionality from core/url.js
+  > Updated 2024-03-28: Updated all imports to use new routing module location
 
-- [x] 5. Update dependent modules
+5. **Update dependent modules**
 
-  - [x] Update commerce API to use new configuration
-  - [x] Update testing modules to use new schemas
-  - [x] Update environment-specific code
-  - [x] Remove deprecated configuration files
-    > Completed 2024-03-26: Updated all modules to use new configuration structure
-    > Updated 2024-03-28: Removed deprecated configuration files and updated all imports
+- Update commerce API to use new configuration
+- Update testing modules to use new schemas
+- Update environment-specific code
+- Remove deprecated configuration files
+  > Completed 2024-03-26: Updated all modules to use new configuration structure
+  > Updated 2024-03-28: Removed deprecated configuration files and updated all imports
 
-- [x] 6. Documentation
-  - [x] Document configuration structure
-  - [x] Add schema documentation
-  - [x] Document environment configuration
-  - [x] Add configuration examples
-  - [x] Document validation process
-    > Completed 2024-03-26: Added comprehensive documentation for configuration system
-    > Updated 2024-03-28: Updated documentation to reflect flattened schema structure and routing changes
+6. **Documentation**
+
+- Document configuration structure
+- Add schema documentation
+- Document environment configuration
+- Add configuration examples
+- Document validation process
+  > Completed 2024-03-26: Added comprehensive documentation for configuration system
+  > Updated 2024-03-28: Updated documentation to reflect flattened schema structure and routing changes
 
 ### Phase 5: Code Quality Improvements
 
-- [x] 1. Documentation Linting
+1. **Documentation Linting**
 
-  - [x] Fix markdown linting issues in architecture.md
-    > Completed 2024-03-25: Fixed spacing, indentation, and formatting issues
-  - [x] Fix markdown linting issues in caching.md
-    > Completed 2024-03-25: Fixed list indentation and trailing spaces
-  - [x] Ensure consistent markdown formatting across docs
-    > Completed 2024-03-25: Applied consistent formatting rules across documentation
-  - [x] Fix markdownlint issues
-    > Completed 2024-03-29: Fixed language specifiers in code blocks, blank lines around fences, and multiple consecutive blank lines across all documentation files
+- Fix markdown linting issues in architecture.md
+  > Completed 2024-03-25: Fixed spacing, indentation, and formatting issues
+- Fix markdown linting issues in caching.md
+  > Completed 2024-03-25: Fixed list indentation and trailing spaces
+- Ensure consistent markdown formatting across docs
+  > Completed 2024-03-25: Applied consistent formatting rules across documentation
+- Fix markdownlint issues
+  > Completed 2024-03-29: Fixed language specifiers in code blocks, blank lines around fences, and multiple consecutive blank lines across all documentation files
 
-- [x] 2. ESLint Configuration
+2. **ESLint Configuration**
 
-  - [x] Review and update ESLint rules
-    > Completed 2024-03-29: Added comprehensive rules for error prevention, imports, promises, and code style
-  - [x] Configure import sorting
-    > Completed 2024-03-29: Added import/order rule with group organization and alphabetical sorting
-  - [x] Document linting guidelines
-    > Completed 2024-03-29: Created docs/development/linting.md with detailed guidelines and examples
-  - [x] Remove TypeScript configuration
-    > Completed 2024-03-30: Removed TypeScript-related settings and extensions from ESLint config as we're using pure JavaScript
+- Review and update ESLint rules
+  > Completed 2024-03-29: Added comprehensive rules for error prevention, imports, promises, and code style
+- Configure import sorting
+  > Completed 2024-03-29: Added import/order rule with group organization and alphabetical sorting
+- Document linting guidelines
+  > Completed 2024-03-29: Created docs/development/linting.md with detailed guidelines and examples
+- Remove TypeScript configuration
+  > Completed 2024-03-30: Removed TypeScript-related settings and extensions from ESLint config as we're using pure JavaScript
 
-- [ ] 3. Code Style Standardization
-  - [x] Define code formatting standards
-    > Completed 2024-03-30: Created .prettierrc.json with project-wide formatting rules
-  - [x] Configure Prettier integration
-    > Completed 2024-03-30: Added Prettier configuration and npm scripts for formatting
-  - [x] Add pre-commit hooks
-    > Completed 2024-03-30: Set up husky and lint-staged for pre-commit code quality checks
-  - [x] Document style guidelines
-    > Completed 2024-03-30: Created comprehensive code style documentation in docs/development/code-style.md
+3. **Code Style Standardization**
+
+- Define code formatting standards
+  > Completed 2024-03-30: Created .prettierrc.json with project-wide formatting rules
+- Configure Prettier integration
+  > Completed 2024-03-30: Added Prettier configuration and npm scripts for formatting
+- Add pre-commit hooks
+  > Completed 2024-03-30: Set up husky and lint-staged for pre-commit code quality checks
+- Document style guidelines
+  > Completed 2024-03-30: Created comprehensive code style documentation in docs/development/code-style.md
 
 ### Phase 6: Testing and Validation
 
-- [ ] 1. API Testing
+1. **API Testing**
 
-  - [ ] Execute API tests using scripts/test-api.js
-  - [ ] Verify all API endpoints return expected responses
-  - [ ] Test error handling and edge cases
-  - [ ] Validate response formats and headers
+- Execute API tests using scripts/test-api.js
+- Verify all API endpoints return expected responses
+- Test error handling and edge cases
+- Validate response formats and headers
 
-- [ ] 2. Performance Testing
+2. **Performance Testing**
 
-  - [ ] Run performance tests from tests/performance
-  - [ ] Compare metrics against baseline
-  - [ ] Verify no performance regressions
-  - [ ] Document any performance improvements
+- Run performance tests from tests/performance
+- Compare metrics against baseline
+- Verify no performance regressions
+- Document any performance improvements
 
-- [ ] 3. Integration Testing
-  - [ ] Test commerce API integration
-  - [ ] Test file operations
-  - [ ] Test caching behavior
-  - [ ] Test compression functionality
+3. **Integration Testing**
+
+- Test commerce API integration
+- Test file operations
+- Test caching behavior
+- Test compression functionality
 
 ### Phase 7: Cleanup and Finalization
 
-- [ ] 1. Remove all deprecated/unused code
-- [ ] 2. Update README with new architecture
-- [ ] 3. Update any deployment scripts
-- [ ] 4. Final testing of complete system
+1. Remove all deprecated/unused code
+2. Update README with new architecture
+3. Update any deployment scripts
+4. Final testing of complete system
 
 ### Phase 8: Cleanup Documentation
 
-- [ ] 1. Gather documentation .md files by date created to find the most recent files
-- [ ] 2. Remove old documentation after review
-- [ ] 3. Create new documentation based on this refactor process.
+1. Gather documentation .md files by date created to find the most recent files
+2. Remove old documentation after review
+3. Create new documentation based on this refactor process.
 
 ## Progress Tracking
 
