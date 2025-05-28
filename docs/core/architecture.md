@@ -5,6 +5,7 @@
 ## Core Principles
 
 Our architecture follows these key principles:
+
 - Simple, focused components
 - Clear separation of concerns
 - Practical performance optimization
@@ -15,7 +16,7 @@ Our architecture follows these key principles:
 
 ### Backend (actions/)
 
-```
+```text
 actions/
 ├── core/                      # Core utilities
 │   ├── http.js               # HTTP client and response handling
@@ -38,6 +39,7 @@ actions/
 ```
 
 #### Core Layer
+
 - **HTTP Module** (`core/http.js`)
   - Standardized API communication
   - Response handling patterns
@@ -75,6 +77,7 @@ actions/
   - Load management
 
 #### Commerce Layer
+
 - **Integration Module** (`commerce/integration.js`)
   - Adobe Commerce API integration
   - Product data management
@@ -88,6 +91,7 @@ actions/
   - Session handling
 
 #### HTMX Layer
+
 - **Response Module** (`htmx/responses.js`)
   - Dynamic UI updates
   - Response formatting
@@ -96,7 +100,7 @@ actions/
 
 ### Frontend (web-src/)
 
-```
+```text
 web-src/src/js/
 ├── core/                     # Core utilities
 │   ├── http.js              # HTTP client handling
@@ -124,6 +128,7 @@ web-src/src/styles/design-system/
 ```
 
 #### Core Features
+
 - **HTTP Module** (`core/http.js`)
   - API communication
   - Request formatting
@@ -171,6 +176,7 @@ web-src/src/styles/design-system/
   - Error recovery options
 
 #### Design System Components
+
 - **Notifications** (`components/notifications.css`)
   - Toast notification styling
   - Type-specific themes
@@ -179,6 +185,7 @@ web-src/src/styles/design-system/
   - Accessibility styles
 
 #### HTMX Integration
+
 - **Configuration** (`htmx/config.js`)
   - HTMX settings
   - Security configuration
@@ -192,6 +199,7 @@ web-src/src/styles/design-system/
   - Error handling
 
 #### Browser Components
+
 - **File Browser** (`browser/file-browser.js`)
   - File listing
   - Upload handling
@@ -201,6 +209,7 @@ web-src/src/styles/design-system/
 ## Workflow Patterns
 
 ### Product Management
+
 The product management workflow follows a simple, efficient pattern:
 
 1. **Request Handling**
@@ -219,6 +228,7 @@ The product management workflow follows a simple, efficient pattern:
    - UI updates via HTMX events
 
 ### File Operations
+
 File operations follow a secure, validated flow:
 
 1. **Request Processing**
@@ -238,7 +248,7 @@ File operations follow a secure, validated flow:
 
 ## Documentation Structure
 
-```
+```text
 docs/
 ├── core/                    # Core architecture and development
 │   ├── architecture.md     # System design and patterns
@@ -254,6 +264,7 @@ docs/
 ```
 
 Each directory serves a specific purpose:
+
 - **core/** - Core system documentation, architecture, and development guides
 - **frontend/** - Frontend-specific documentation and component guides
 - **backend/** - Backend services, API documentation, and integration guides
@@ -283,6 +294,7 @@ Each directory serves a specific purpose:
 - Retry capabilities
 
 For detailed implementation guides, see:
+
 - [Development Guide](development.md)
 - [API Reference](api-reference.md)
 - [Error Handling](error-handling.md)

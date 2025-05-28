@@ -20,29 +20,31 @@ npm run test:api:help
 ### Environment Setup
 
 1. Create a `.env` file with your credentials:
-```bash
-COMMERCE_URL=your-commerce-instance
-COMMERCE_ADMIN_USERNAME=admin
-COMMERCE_ADMIN_PASSWORD=your-password
-```
+
+    ```bash
+    COMMERCE_URL=your-commerce-instance
+    COMMERCE_ADMIN_USERNAME=admin
+    COMMERCE_ADMIN_PASSWORD=your-password
+    ```
 
 2. Ensure the testing script is executable:
-```bash
-chmod +x scripts/test-api.sh
-```
+
+    ```bash
+    chmod +x scripts/test-api.sh
+    ```
 
 ### Testing Environments
 
 The testing script requires explicit environment specification to prevent accidental testing in the wrong environment:
 
 - **Development** (`--env dev`)
-  - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
-  - Uses self-signed certificates (automatically handled)
-  - Requires local development server to be running
+    - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
+    - Uses self-signed certificates (automatically handled)
+    - Requires local development server to be running
 
 - **Production** (`--env prod`)
-  - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
-  - Requires valid production credentials
+    - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
+    - Requires valid production credentials
 
 ### Available Options
 
@@ -56,6 +58,7 @@ The testing script requires explicit environment specification to prevent accide
 ### Available Fields
 
 The following fields can be requested using the `--fields` option:
+
 - `sku` - Product SKU
 - `name` - Product name
 - `price` - Product price
@@ -68,22 +71,24 @@ Note: The API always fetches complete product data internally but returns only t
 ### Common Testing Scenarios
 
 1. **Basic Development Testing**
-```bash
-# Test get-products endpoint with all fields
-npm run test:api
 
-# Test specific endpoint
-npm run test:api -- --endpoint get-categories
-```
+    ```bash
+    # Test get-products endpoint with all fields
+    npm run test:api
+
+    # Test specific endpoint
+    npm run test:api -- --endpoint get-categories
+    ```
 
 2. **Production Testing**
-```bash
-# Test with all fields in production
-npm run test:api -- --env prod
 
-# Test with minimal data in production
-npm run test:api -- --env prod --fields sku,name
-```
+    ```bash
+    # Test with all fields in production
+    npm run test:api -- --env prod
+
+    # Test with minimal data in production
+    npm run test:api -- --env prod --fields sku,name
+    ```
 
 3. **Field Selection**
 ```bash

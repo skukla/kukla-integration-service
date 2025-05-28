@@ -4,7 +4,7 @@ This document outlines our Git branching strategy and workflow procedures for th
 
 ## Branch Structure
 
-```
+```text
 master
 ├── feature/new-feature-1
 ├── feature/new-feature-2
@@ -47,6 +47,7 @@ git push origin feature/your-feature-name
 ### 2. Making Regular Commits
 
 Follow these commit message conventions:
+
 - `feat:` for new features
 - `fix:` for bug fixes
 - `docs:` for documentation changes
@@ -55,6 +56,7 @@ Follow these commit message conventions:
 - `chore:` for maintenance tasks
 
 Example:
+
 ```bash
 git add specific-file.js
 git commit -m "feat: implement user authentication flow"
