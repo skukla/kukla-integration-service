@@ -5,23 +5,8 @@
 
 const { 
     storage: { files },
-    config: { storage: { buildApiUrl, STORAGE_CONFIG } }
+    config: { storage: STORAGE_CONFIG }
 } = require('../../../../src/core');
-const { Files: FilesLib } = require('@adobe/aio-sdk');
-
-/**
- * Builds a download URL for a file
- * @param {string} fileName - Name of the file
- * @returns {string} Download URL
- */
-function buildDownloadUrl(fileName) {
-    return buildApiUrl({
-        org: 'adobe-demo-org',
-        service: 'kukla-integration-service',
-        action: 'download-file',
-        params: { fileName }
-    });
-}
 
 /**
  * Stores a CSV file in the configured storage location
@@ -34,18 +19,15 @@ async function storeCsv(csvResult) {
     const fileName = 'products.csv';
     const publicFileName = `${STORAGE_CONFIG.FILES.PUBLIC_DIR}/${fileName}`;
     
-    // Initialize Files SDK
-    const filesLib = await FilesLib.init();
-    
     // Store the file using core file operations
-    await files.writeFile(filesLib, publicFileName, csvResult.content);
+    await files.writeFile(publicFileName, csvResult.content);
     
     // Get file properties to verify storage
-    const properties = await files.getFileProperties(filesLib, publicFileName);
+    const properties = await files.getFileProperties(publicFileName);
     
     return {
         fileName: publicFileName,
-        downloadUrl: buildDownloadUrl(publicFileName),
+        downloadUrl: files.buildDownloadUrl(publicFileName),
         properties
     };
 }

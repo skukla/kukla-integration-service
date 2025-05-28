@@ -3,7 +3,9 @@
  * @module browse-files/templates
  */
 
-const { APP_PREFIX } = require('../../../src/core/http');
+const { 
+    http: { APP_PREFIX, buildApiUrl }
+} = require('../../../src/core');
 
 /**
  * Build a download URL for a file
@@ -11,7 +13,10 @@ const { APP_PREFIX } = require('../../../src/core/http');
  * @returns {string} Download URL
  */
 function buildDownloadUrl(fileName) {
-    return `https://285361-188maroonwallaby-stage.adobeio-static.net${APP_PREFIX}/download-file?fileName=${encodeURIComponent(fileName)}`;
+    return buildApiUrl({
+        action: 'download-file',
+        params: { fileName: encodeURIComponent(fileName) }
+    });
 }
 
 /**

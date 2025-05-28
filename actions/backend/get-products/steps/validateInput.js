@@ -3,7 +3,6 @@
  * @module steps/validateInput
  */
 const { checkMissingParams } = require('../../../../src/core/http/client');
-const { createErrorResponse } = require('../../../../src/core/responses');
 
 /**
  * Validates the input parameters for the action

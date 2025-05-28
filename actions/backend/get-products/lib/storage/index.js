@@ -4,7 +4,6 @@
  */
 
 const { getStorageConfig } = require('./config');
-const { Files: FilesLib } = require('@adobe/aio-sdk');
 const { 
     http: { APP_PREFIX },
     storage: {
