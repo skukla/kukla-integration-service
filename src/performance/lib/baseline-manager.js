@@ -2,17 +2,19 @@ const fs = require('fs');
 const path = require('path');
 const { default: ora } = require('ora');
 const chalk = require('chalk').default;
+const { loadConfig } = require('../../../config');
 
 function createBaselineManager(options = {}) {
-    const config = {
-        baselineFile: options.baselineFile || path.join(__dirname, '../../../../config/baseline-metrics.json'),
-        maxAgeDays: options.maxAgeDays || 7,
+    const config = loadConfig().performance;
+    const baselineConfig = {
+        baselineFile: options.baselineFile || path.join(__dirname, 'metrics.json'),
+        maxAgeDays: options.maxAgeDays || config.baseline.maxAgeDays,
         thresholds: {
-            executionTime: 0.10,
-            memory: 0.10,
-            products: 0.01,
-            categories: 0.01,
-            compression: 0.10,
+            executionTime: config.thresholds.executionTime,
+            memory: config.thresholds.memory,
+            products: config.thresholds.products,
+            categories: config.thresholds.categories,
+            compression: config.thresholds.compression,
             ...options.thresholds
         }
     };
@@ -20,8 +22,8 @@ function createBaselineManager(options = {}) {
 
     function loadBaselines() {
         try {
-            if (fs.existsSync(config.baselineFile)) {
-                return JSON.parse(fs.readFileSync(config.baselineFile, 'utf8'));
+            if (fs.existsSync(baselineConfig.baselineFile)) {
+                return JSON.parse(fs.readFileSync(baselineConfig.baselineFile, 'utf8'));
             }
         } catch (error) {
             spinner.warn('No baseline metrics found or error loading baseline');
@@ -32,8 +34,8 @@ function createBaselineManager(options = {}) {
     function saveBaseline(scenarioName, metrics, environment) {
         try {
             let baselines = {};
-            if (fs.existsSync(config.baselineFile)) {
-                baselines = JSON.parse(fs.readFileSync(config.baselineFile, 'utf8'));
+            if (fs.existsSync(baselineConfig.baselineFile)) {
+                baselines = JSON.parse(fs.readFileSync(baselineConfig.baselineFile, 'utf8'));
             }
             if (!baselines[environment]) {
                 baselines[environment] = {};
@@ -42,7 +44,7 @@ function createBaselineManager(options = {}) {
                 timestamp: new Date().toISOString(),
                 metrics
             };
-            fs.writeFileSync(config.baselineFile, JSON.stringify(baselines, null, 2));
+            fs.writeFileSync(baselineConfig.baselineFile, JSON.stringify(baselines, null, 2));
             spinner.succeed(`Baseline metrics saved for ${scenarioName} in ${environment} environment`);
         } catch (error) {
             spinner.fail('Error saving baseline metrics');
@@ -61,7 +63,7 @@ function createBaselineManager(options = {}) {
         const now = new Date();
         const daysOld = (now - baselineDate) / (1000 * 60 * 60 * 24);
 
-        if (daysOld > config.maxAgeDays) {
+        if (daysOld > baselineConfig.maxAgeDays) {
             spinner.warn(`Baseline for "${scenarioName}" in ${environment} environment is ${daysOld.toFixed(1)} days old`);
             return { needsBaseline: true };
         }
@@ -102,14 +104,14 @@ function createBaselineManager(options = {}) {
 
         // Compare metrics
         const comparisons = [
-            { name: 'Execution time', current: currentMetrics.executionTime, baseline: baseline.executionTime, unit: 's', scale: 1000, threshold: config.thresholds.executionTime },
-            { name: 'Memory used', current: currentMetrics.memory, baseline: baseline.memory, unit: 'MB', scale: 1024 * 1024, threshold: config.thresholds.memory },
-            { name: 'Products', current: currentMetrics.products, baseline: baseline.products, threshold: config.thresholds.products },
-            { name: 'Categories', current: currentMetrics.categories, baseline: baseline.categories, threshold: config.thresholds.categories }
+            { name: 'Execution time', current: currentMetrics.executionTime, baseline: baseline.executionTime, unit: 's', scale: 1000, threshold: baselineConfig.thresholds.executionTime },
+            { name: 'Memory used', current: currentMetrics.memory, baseline: baseline.memory, unit: 'MB', scale: 1024 * 1024, threshold: baselineConfig.thresholds.memory },
+            { name: 'Products', current: currentMetrics.products, baseline: baseline.products, threshold: baselineConfig.thresholds.products },
+            { name: 'Categories', current: currentMetrics.categories, baseline: baseline.categories, threshold: baselineConfig.thresholds.categories }
         ];
 
         if (baseline.compression !== null && currentMetrics.compression !== null) {
-            comparisons.push({ name: 'Compression', current: currentMetrics.compression, baseline: baseline.compression, unit: '%', threshold: config.thresholds.compression });
+            comparisons.push({ name: 'Compression', current: currentMetrics.compression, baseline: baseline.compression, unit: '%', threshold: baselineConfig.thresholds.compression });
         }
 
         // Print comparisons
