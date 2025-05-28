@@ -1,19 +1,32 @@
 /**
- * URL utilities for the application
+ * URL utilities for the frontend application
  * @module core/urls
  */
 
-import { showNotification } from './notifications.js';
+// Runtime configuration
+const RUNTIME_CONFIG = {
+    baseUrl: process.env.RUNTIME_BASE_URL || 'https://adobeioruntime.net',
+    namespace: process.env.RUNTIME_NAMESPACE || '285361-188maroonwallaby',
+    package: process.env.RUNTIME_PACKAGE || 'kukla-integration-service',
+    version: process.env.RUNTIME_VERSION || 'v1'
+};
 
-// Base API path
-const API_PREFIX = '/api/v1/web/kukla-integration-service';
+/**
+ * Build a runtime URL for an action
+ * @param {string} action - The action name
+ * @returns {string} The complete runtime URL
+ */
+function buildRuntimeUrl(action) {
+    const { baseUrl, namespace, package: pkg, version } = RUNTIME_CONFIG;
+    return `${baseUrl}/api/${version}/web/${namespace}/${pkg}/${action}`;
+}
 
 // Action URL configuration
 const ACTION_URLS = {
-    'browse-files': `${API_PREFIX}/browse-files`,
-    'download-file': `${API_PREFIX}/download-file`,
-    'upload-file': `${API_PREFIX}/upload-file`,
-    'delete-file': `${API_PREFIX}/delete-file`
+    'browse-files': buildRuntimeUrl('browse-files'),
+    'download-file': buildRuntimeUrl('download-file'),
+    'upload-file': buildRuntimeUrl('upload-file'),
+    'delete-file': buildRuntimeUrl('delete-file')
 };
 
 /**
@@ -29,7 +42,7 @@ export function getActionUrl(action, params = {}) {
         throw new Error(`Unknown action: ${action}`);
     }
 
-    const url = new URL(baseUrl, window.location.origin);
+    const url = new URL(baseUrl, document.location.origin);
     Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
     });
