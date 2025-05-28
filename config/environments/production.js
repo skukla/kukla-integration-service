@@ -25,7 +25,7 @@ module.exports = {
   },
   url: {
     api: {
-      baseUrl: 'https://api.example.com',
+      baseUrl: 'https://285361-188maroonwallaby.adobeio-static.net/api/v1/web/kukla-integration-service',
       version: 'v1'
     },
     frontend: {
