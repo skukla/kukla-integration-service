@@ -4,24 +4,12 @@
  * @module core/storage/files
  */
 
-const { Files } = require('@adobe/aio-sdk');
+const { 
+    storage: { 
+        FileErrorType 
+    }
+} = require('../errors');
 const { formatFileSize, formatDate } = require('../data/transformation');
-
-/**
- * File operation error types
- * @enum {string}
- */
-const FileErrorType = {
-    NOT_FOUND: 'FILE_NOT_FOUND',
-    PERMISSION_DENIED: 'PERMISSION_DENIED',
-    INVALID_PATH: 'INVALID_PATH',
-    ALREADY_EXISTS: 'ALREADY_EXISTS',
-    UNKNOWN: 'UNKNOWN_ERROR'
-};
-
-// Size formatting constants
-const BYTES_PER_UNIT = 1024;
-const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
 /**
  * Creates a file operation error object

@@ -58,12 +58,12 @@ function createCsvStringifier(headers) {
  * @param {Array<Object>} options.records - Array of records to convert to CSV
  * @param {Array<Object>} options.headers - CSV header definitions
  * @param {function} options.rowMapper - Function to map a record to a CSV row
- * @param {Object} [options.compression] - Compression options
+ * @param {Object|boolean} [options.compression] - Compression options or false to disable
  * @param {number} [options.chunkSize=100] - Number of records to process in each chunk
  * @returns {Promise<{content: Buffer, stats: Object}>} Compressed CSV content and stats
  * @throws {Error} If records array is empty or if CSV generation fails
  */
-async function generateCsv({ records, headers, rowMapper, compression: compressionOpts, chunkSize = CSV_CONFIG.CHUNK_SIZE }) {
+async function generateCsv({ records, headers, rowMapper, compression: compressionOptions, chunkSize = CSV_CONFIG.CHUNK_SIZE }) {
     if (!Array.isArray(records) || records.length === 0) {
         throw new Error('No records provided for CSV generation');
     }
@@ -91,7 +91,7 @@ async function generateCsv({ records, headers, rowMapper, compression: compressi
 
     // Compress the CSV content if compression is enabled
     const originalBuffer = Buffer.from(csvContent);
-    if (compressionOpts === false) {
+    if (compressionOptions === false) {
         return {
             content: originalBuffer,
             stats: {
@@ -102,7 +102,7 @@ async function generateCsv({ records, headers, rowMapper, compression: compressi
         };
     }
 
-    const compressedContent = await compression.compress(originalBuffer, compressionOpts);
+    const compressedContent = await compression.compress(originalBuffer, compressionOptions);
     const stats = compression.getCompressionStats(originalBuffer, compressedContent);
 
     return {
@@ -116,10 +116,9 @@ async function generateCsv({ records, headers, rowMapper, compression: compressi
  * @param {Object} options - Stream options
  * @param {Array<Object>} options.headers - CSV header definitions
  * @param {function} options.rowMapper - Function to map a record to a CSV row
- * @param {Object} [options.compression] - Compression options
  * @returns {Transform} Transform stream that converts objects to CSV rows
  */
-function createCsvStream({ headers, rowMapper, compression: compressionOpts }) {
+function createCsvStream({ headers, rowMapper }) {
     if (!Array.isArray(headers) || headers.length === 0) {
         throw new Error('CSV headers must be provided');
     }
