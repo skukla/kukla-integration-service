@@ -212,25 +212,63 @@ src/
   - [ ] Identify configuration duplication
   - [ ] Document environment-specific configuration needs
   - [ ] Review App Builder configuration requirements
+  - [ ] Analyze commerce API configuration requirements
+    - [ ] Review src/commerce/api/config.js settings
+    - [ ] Document commerce endpoint patterns
+    - [ ] Map environment-specific commerce settings
 
 - [ ] 2. Design consolidated configuration
   - [ ] Plan unified configuration structure in root config/
+    ```text
+    config/
+    ├── environments/           # Environment-specific configuration
+    │   ├── development.js     
+    │   ├── staging.js         
+    │   └── production.js      
+    ├── schema/                # Configuration schemas
+    │   ├── app.schema.js      
+    │   ├── api.schema.js      
+    │   ├── url.schema.js      
+    │   └── commerce.schema.js # Commerce API schema
+    ├── defaults/              # Default configuration
+    │   ├── app.defaults.js    
+    │   ├── api.defaults.js    
+    │   └── commerce.defaults.js
+    └── index.js              # Configuration entry point
+    ```
   - [ ] Define environment configuration strategy
   - [ ] Design configuration validation approach
   - [ ] Plan migration path for existing configuration
+  - [ ] Design commerce configuration schema
+    - [ ] Define timeout and retry settings
+    - [ ] Plan cache duration configuration
+    - [ ] Document batch processing settings
+    - [ ] Define endpoint configuration structure
 
 - [ ] 3. Implement configuration changes
   - [ ] Remove src/core/config
-  - [ ] Consolidate all configuration into root config/
-  - [ ] Update all configuration imports
+  - [ ] Create new configuration structure
+    - [ ] Implement schema definitions
+    - [ ] Create default configurations
+    - [ ] Set up environment-specific overrides
+  - [ ] Migrate commerce configuration
+    - [ ] Move commerce API settings to new structure
+    - [ ] Implement commerce schema validation
+    - [ ] Update commerce client to use new config
   - [ ] Add configuration validation
   - [ ] Update environment handling
+  - [ ] Create configuration documentation
 
 - [ ] 4. Update documentation
   - [ ] Document new configuration structure
   - [ ] Update environment setup instructions
   - [ ] Add configuration management guidelines
   - [ ] Document configuration best practices
+  - [ ] Add commerce configuration guide
+    - [ ] Document available settings
+    - [ ] Provide configuration examples
+    - [ ] Explain environment overrides
+    - [ ] Detail validation rules
 
 - [ ] 5. URL Configuration Consolidation
   - [ ] Audit current URL usage
@@ -238,16 +276,44 @@ src/
     - [ ] Identify URL patterns across environments
     - [ ] Document URL dependencies in both frontend and backend
     - [ ] Review environment-specific URL requirements
+    - [ ] Catalog commerce API endpoints
+      - [ ] Map product endpoints
+      - [ ] Document category endpoints
+      - [ ] List inventory endpoints
   
   - [ ] 6. Design URL configuration structure
     - [ ] Create unified URL configuration schema
     - [ ] Define environment-specific URL overrides
     - [ ] Plan URL validation strategy
     - [ ] Design URL generation utilities
+    - [ ] Create commerce URL patterns
+      - [ ] Define product URL templates
+      - [ ] Create category URL structure
+      - [ ] Plan inventory URL patterns
   
   - [ ] 7. Implement URL configuration
     - [ ] Create config/urls.js for centralized URL management
     - [ ] Implement environment-aware URL resolution
+    - [ ] Add commerce URL utilities
+      - [ ] Create commerce endpoint builder
+      - [ ] Add URL validation for commerce
+      - [ ] Implement environment switching
+    - [ ] Update commerce client to use URL config
+    - [ ] Add URL configuration tests
+
+- [ ] 8. Testing and Validation
+  - [ ] Create configuration test suite
+    - [ ] Test schema validation
+    - [ ] Verify environment switching
+    - [ ] Validate commerce settings
+  - [ ] Add integration tests
+    - [ ] Test commerce client with new config
+    - [ ] Verify URL resolution
+    - [ ] Check environment handling
+  - [ ] Performance testing
+    - [ ] Measure configuration load time
+    - [ ] Test URL resolution performance
+    - [ ] Verify cache settings impact
 
 ### Phase 5: Code Quality Improvements
 
