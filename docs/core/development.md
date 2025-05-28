@@ -41,7 +41,7 @@ npm run deploy      # Deploy to App Builder
 
 ### 2. Code Organization
 
-```
+```tree
 actions/
 ├── core/           # Shared utilities
 ├── commerce/       # Commerce integration

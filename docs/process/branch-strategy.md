@@ -25,7 +25,7 @@
 
 ### Commit Message Format
 
-```
+```text
 <type>: <subject>
 
 [body]

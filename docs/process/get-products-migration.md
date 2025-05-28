@@ -24,7 +24,7 @@ git checkout -b feature/get-products-clean
 
 - [x] Create directory structure:
 
-```
+```tree
 actions/backend/get-products/
 ├── steps/
 ├── lib/

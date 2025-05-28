@@ -142,7 +142,7 @@ This document tracks the progress of our architectural simplification project. E
 
 1. Created New Structure
 
-   ```
+   ```tree
    web-src/src/js/
    ├── htmx/
    │   ├── config.js      - HTMX configuration and components
@@ -167,7 +167,7 @@ This document tracks the progress of our architectural simplification project. E
 
 1. Created New Structure
 
-   ```
+   ```tree
    actions/
    ├── core/
    │   ├── http.js        - HTTP and URL utilities
@@ -476,7 +476,7 @@ This document tracks the progress of our architectural simplification project. E
 
 #### Documentation Structure
 
-```
+```tree
 docs/
 ├── README.md           # Main entry point
 ├── Core Guides/

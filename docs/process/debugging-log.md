@@ -341,7 +341,6 @@ Each issue will be documented in the following format:
     - Infinite loading state in file browser
     - Console errors:
 
-
     ```plaintext
     GET https://285361-188maroonwallaby-stage.adobeio-static.net/api/files/browse 404 (Not Found)
     Response Status Error Code 404 from https://285361-188maroonwallaby-stage.adobeio-static.net/api/files/browse

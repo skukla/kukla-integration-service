@@ -63,7 +63,7 @@ For practical debugging workflows and tools, please refer to the [Debugging Guid
 
 ### 3. Code Location Guidelines
 
-```
+```tree
 Frontend Changes:
 web-src/src/js/
 ├── htmx/      # HTMX-related fixes
@@ -93,7 +93,7 @@ Before marking any fix as complete, review:
 
 For each fix, verify against the implemented architecture:
 
-```
+```tree
 Backend Structure:              Frontend Structure:
 actions/                       web-src/src/js/
 ├── core/                     ├── core/
@@ -259,7 +259,7 @@ For each fix, validate against relevant simplification phases:
 - [ ] Maintains flat directory structure
 - [ ] Follows domain-driven organization:
 
-  ```
+  ```tree
   Frontend:                    Backend:
   web-src/src/js/             actions/
   ├── htmx/                   ├── core/

@@ -2,7 +2,7 @@
 
 ## Documentation Structure
 
-```
+```tree
 docs/
 ├── getting-started/
 │   ├── introduction.md

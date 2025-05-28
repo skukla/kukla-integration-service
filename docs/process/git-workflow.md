@@ -4,7 +4,7 @@ This document outlines our Git branching strategy and workflow procedures for th
 
 ## Branch Structure
 
-```
+```tree
 master
 ├── develop
 │   ├── feature/feed-implementation
