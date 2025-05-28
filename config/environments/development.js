@@ -24,9 +24,10 @@ module.exports = {
     }
   },
   url: {
-    api: {
-      baseUrl: 'https://localhost:9080/api/v1/web/kukla-integration-service',
-      version: 'v1'
+    runtime: {
+      baseUrl: 'https://localhost:9080',
+      namespace: 'local',
+      package: 'kukla-integration-service'
     },
     frontend: {
       baseUrl: 'http://localhost:8080'
