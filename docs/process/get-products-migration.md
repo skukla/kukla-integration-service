@@ -39,43 +39,41 @@ actions/backend/get-products/
 #### 2.1 API Layer (`lib/api/`) ✅
 
 - [x] `products.js`
-    - Migrated product fetching functionality
-    - Implemented pagination handling
-    - Added inventory data fetching
-    - Maintained error handling patterns
+
+  - Migrated product fetching functionality
+  - Implemented pagination handling
+  - Added inventory data fetching
+  - Maintained error handling patterns
 
 - [x] `categories.js`
-    - Migrated category API integration
-    - Included category data fetching
-    - Added category mapping functionality
-    - Functions migrated:
-        - `fetchCategory()`
-        - `getCategoryIds()`
-        - `getUniqueCategoryIds()`
-        - `buildCategoryMap()`
+  - Migrated category API integration
+  - Included category data fetching
+  - Added category mapping functionality
+  - Functions migrated: - `fetchCategory()` - `getCategoryIds()` - `getUniqueCategoryIds()` - `buildCategoryMap()`
 
 #### 2.2 Support Libraries ✅
 
 - [x] `product-transformer.js`
-    - Data transformation logic
-    - Category data integration
-    - Field mapping functionality
+
+  - Data transformation logic
+  - Category data integration
+  - Field mapping functionality
 
 - [x] `auth.js`
-    - Authentication handling
-    - Token management
+  - Authentication handling
+  - Token management
 
 ### 3. Step Implementation ✅
 
 #### 3.1 Input Validation (`steps/validateInput.js`) ✅
 
 - [x] Required parameters:
-    - COMMERCE_URL
-    - COMMERCE_ADMIN_USERNAME
-    - COMMERCE_ADMIN_PASSWORD
+  - COMMERCE_URL
+  - COMMERCE_ADMIN_USERNAME
+  - COMMERCE_ADMIN_PASSWORD
 - [x] Optional parameters:
-    - include_inventory
-    - include_categories
+  - include_inventory
+  - include_categories
 
 #### 3.2 Product Fetching (`steps/fetchAndEnrichProducts.js`) ✅
 
@@ -124,10 +122,10 @@ actions/backend/get-products/
 #### 4.3 Testing get-products Action
 
 - [ ] Manual testing plan:
-    - Test with different parameter combinations
-    - Verify CSV generation
-    - Validate storage functionality
-    - Check error scenarios
+  - Test with different parameter combinations
+  - Verify CSV generation
+  - Validate storage functionality
+  - Check error scenarios
 
 ### 5. Download-File Action Migration 🔜
 
