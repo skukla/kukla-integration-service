@@ -12,7 +12,7 @@ const appSchema = require('./schema/app.schema');
 const urlSchema = require('./schema/url.schema');
 const commerceSchema = require('./schema/commerce.schema');
 const securitySchema = require('./schema/security.schema');
-const testSchema = require('./schema/test.schema');
+const { api: apiTestSchema, performance: performanceSchema } = require('./schema/testing');
 
 // Initialize JSON Schema validator
 const ajv = new Ajv({ allErrors: true, useDefaults: true });
@@ -23,7 +23,8 @@ ajv.addSchema(appSchema, 'app');
 ajv.addSchema(urlSchema, 'url');
 ajv.addSchema(commerceSchema, 'commerce');
 ajv.addSchema(securitySchema, 'security');
-ajv.addSchema(testSchema, 'test');
+ajv.addSchema(apiTestSchema, 'api-test');
+ajv.addSchema(performanceSchema, 'performance');
 
 /**
  * Loads environment-specific configuration
@@ -64,11 +65,6 @@ function loadSensitiveConfig() {
           }
         }
       }
-    },
-    commerce: {
-      api: {
-        baseUrl: process.env.COMMERCE_URL
-      }
     }
   };
 }
@@ -102,27 +98,19 @@ function loadConfig() {
   
   // Merge configurations with environment-specific overrides
   const config = {
-    app: {
-      ...require('./defaults/app.defaults'),
-      ...envConfig.app
-    },
-    url: {
-      ...require('./defaults/url.defaults'),
-      ...envConfig.url
-    },
+    app: envConfig.app,
+    url: envConfig.url,
     commerce: {
-      ...require('./defaults/commerce.defaults'),
       ...envConfig.commerce,
       ...sensitiveConfig.commerce
     },
     security: {
-      ...require('./defaults/security.defaults'),
       ...envConfig.security,
       ...sensitiveConfig.security
     },
-    test: {
-      ...require('./defaults/test.defaults'),
-      ...envConfig.test
+    testing: {
+      api: envConfig.testing?.api,
+      performance: envConfig.testing?.performance
     }
   };
 
@@ -131,7 +119,8 @@ function loadConfig() {
   validateConfig(config.url, 'url');
   validateConfig(config.commerce, 'commerce');
   validateConfig(config.security, 'security');
-  validateConfig(config.test, 'test');
+  validateConfig(config.testing.api, 'api-test');
+  validateConfig(config.testing.performance, 'performance');
 
   return config;
 }
