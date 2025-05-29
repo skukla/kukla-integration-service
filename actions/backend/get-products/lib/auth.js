@@ -1,5 +1,8 @@
-const { buildCommerceUrl, makeCommerceRequest } = require('../../../src/commerce/api/integration');
 const endpoints = require('./api/commerce-endpoints');
+const { makeCommerceRequest } = require('../../../../src/commerce/api/integration');
+const {
+  routing: { buildCommerceUrl },
+} = require('../../../../src/core');
 /**
  * Get authentication token from Adobe Commerce
  * @param {Object} params - Authentication parameters
@@ -16,8 +19,8 @@ async function getAuthToken(params) {
       method: 'POST',
       body: JSON.stringify({
         username: params.COMMERCE_ADMIN_USERNAME,
-        password: params.COMMERCE_ADMIN_PASSWORD
-      })
+        password: params.COMMERCE_ADMIN_PASSWORD,
+      }),
     });
 
     if (response.statusCode !== 200) {
@@ -35,5 +38,5 @@ async function getAuthToken(params) {
   }
 }
 module.exports = {
-  getAuthToken
-}; 
+  getAuthToken,
+};
