@@ -3,9 +3,11 @@
  * @module commerce/api/integration
  */
 
-const { http: { buildHeaders } } = require('../../core');
-const { buildCommerceUrl } = require('../../core/routing');
 const { makeRequest, batchRequests } = require('./client');
+const {
+  http: { buildHeaders },
+  routing: { buildCommerceUrl },
+} = require('../../core');
 
 /**
  * Makes a Commerce API request with commerce-specific handling
@@ -15,13 +17,17 @@ const { makeRequest, batchRequests } = require('./client');
  * @returns {Promise<Object>} Response data
  */
 async function makeCommerceRequest(url, options = {}, context = {}) {
-    return makeRequest(url, {
-        ...options,
-        headers: {
-            ...buildHeaders(),
-            ...(options.headers || {})
-        }
-    }, context);
+  return makeRequest(
+    url,
+    {
+      ...options,
+      headers: {
+        ...buildHeaders(),
+        ...(options.headers || {}),
+      },
+    },
+    context
+  );
 }
 
 /**
@@ -33,17 +39,21 @@ async function makeCommerceRequest(url, options = {}, context = {}) {
  * @returns {Promise<Object>} Validation result
  */
 async function validateAdminCredentials(params) {
-    const url = buildCommerceUrl('adminToken');
-    return makeCommerceRequest(url, {
-        method: 'POST',
-        body: JSON.stringify({
-            username: params.username,
-            password: params.password
-        })
-    }, {
-        url,
-        username: params.username
-    });
+  const url = buildCommerceUrl('adminToken');
+  return makeCommerceRequest(
+    url,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        username: params.username,
+        password: params.password,
+      }),
+    },
+    {
+      url,
+      username: params.username,
+    }
+  );
 }
 
 /**
@@ -53,21 +63,21 @@ async function validateAdminCredentials(params) {
  * @returns {Promise<Array>} Array of responses
  */
 async function batchCommerceRequests(requests, options = {}) {
-    const commerceRequests = requests.map(req => ({
-        ...req,
-        options: {
-            ...req.options,
-            headers: {
-                ...buildHeaders(),
-                ...(req.options?.headers || {})
-            }
-        }
-    }));
-    return batchRequests(commerceRequests, options);
+  const commerceRequests = requests.map((req) => ({
+    ...req,
+    options: {
+      ...req.options,
+      headers: {
+        ...buildHeaders(),
+        ...(req.options?.headers || {}),
+      },
+    },
+  }));
+  return batchRequests(commerceRequests, options);
 }
 
 module.exports = {
-    makeCommerceRequest,
-    validateAdminCredentials,
-    batchCommerceRequests
-}; 
+  makeCommerceRequest,
+  validateAdminCredentials,
+  batchCommerceRequests,
+};
