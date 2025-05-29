@@ -3,7 +3,9 @@
  * @module lib/api/commerce-endpoints
  */
 
-const { buildCommerceUrl } = require('../../../../../src/core/routing');
+const {
+  routing: { buildCommerceUrl },
+} = require('../../../../../src/core');
 
 /**
  * Get products endpoint with pagination
@@ -13,10 +15,10 @@ const { buildCommerceUrl } = require('../../../../../src/core/routing');
  * @returns {string} Products endpoint path
  */
 function getProductsEndpoint(options = {}) {
-    return buildCommerceUrl('products', {
-        pageSize: options.pageSize || 20,
-        currentPage: options.currentPage || 1
-    });
+  return buildCommerceUrl('products', {
+    pageSize: options.pageSize || 20,
+    currentPage: options.currentPage || 1,
+  });
 }
 
 /**
@@ -25,7 +27,7 @@ function getProductsEndpoint(options = {}) {
  * @returns {string} Stock item endpoint path
  */
 function getStockItemEndpoint(sku) {
-    return buildCommerceUrl('stockItem', { sku });
+  return buildCommerceUrl('stockItem', { sku });
 }
 
 /**
@@ -34,7 +36,7 @@ function getStockItemEndpoint(sku) {
  * @returns {string} Category endpoint path
  */
 function getCategoryEndpoint(id) {
-    return buildCommerceUrl('category', { id });
+  return buildCommerceUrl('category', { id });
 }
 
 /**
@@ -42,12 +44,12 @@ function getCategoryEndpoint(id) {
  * @returns {string} Admin token endpoint path
  */
 function getAdminTokenEndpoint() {
-    return buildCommerceUrl('adminToken');
+  return buildCommerceUrl('adminToken');
 }
 
 module.exports = {
-    getProductsEndpoint,
-    getStockItemEndpoint,
-    getCategoryEndpoint,
-    getAdminTokenEndpoint
-}; 
+  getProductsEndpoint,
+  getStockItemEndpoint,
+  getCategoryEndpoint,
+  getAdminTokenEndpoint,
+};
