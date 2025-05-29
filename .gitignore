@@ -44,3 +44,6 @@ dev.log
 # Contains sensitive information like API keys and client secrets that should not be committed
 workspace.json
 .vite/
+
+# Development server
+.pid
