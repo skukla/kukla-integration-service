@@ -8,11 +8,12 @@ const addFormats = require('ajv-formats');
 const dotenv = require('dotenv');
 
 // Load schemas
+const apiTestSchema = require('./schema/api-testing.schema');
 const appSchema = require('./schema/app.schema');
-const urlSchema = require('./schema/url.schema');
 const commerceSchema = require('./schema/commerce.schema');
+const performanceSchema = require('./schema/performance-testing.schema');
 const securitySchema = require('./schema/security.schema');
-const { api: apiTestSchema, performance: performanceSchema } = require('./schema/testing');
+const urlSchema = require('./schema/url.schema');
 
 // Initialize JSON Schema validator
 const ajv = new Ajv({ allErrors: true, useDefaults: true });
@@ -55,17 +56,17 @@ function loadSensitiveConfig() {
           credentials: {
             username: process.env.COMMERCE_ADMIN_USERNAME,
             password: process.env.COMMERCE_ADMIN_PASSWORD,
-            token: process.env.COMMERCE_API_TOKEN
-          }
+            token: process.env.COMMERCE_API_TOKEN,
+          },
         },
         adobe: {
           imsConfig: {
             clientId: process.env.ADOBE_CLIENT_ID,
-            clientSecret: process.env.ADOBE_CLIENT_SECRET
-          }
-        }
-      }
-    }
+            clientSecret: process.env.ADOBE_CLIENT_SECRET,
+          },
+        },
+      },
+    },
   };
 }
 
@@ -78,9 +79,11 @@ function loadSensitiveConfig() {
 function validateConfig(config, schemaName) {
   const validate = ajv.getSchema(schemaName);
   if (!validate(config)) {
-    const errors = validate.errors.map(error => {
-      return `${error.instancePath} ${error.message}`;
-    }).join('\n');
+    const errors = validate.errors
+      .map((error) => {
+        return `${error.instancePath} ${error.message}`;
+      })
+      .join('\n');
     throw new Error(`Configuration validation failed for ${schemaName}:\n${errors}`);
   }
 }
@@ -92,26 +95,26 @@ function validateConfig(config, schemaName) {
 function loadConfig() {
   // Load environment-specific configuration
   const envConfig = loadEnvironmentConfig();
-  
+
   // Load sensitive configuration from environment
   const sensitiveConfig = loadSensitiveConfig();
-  
+
   // Merge configurations with environment-specific overrides
   const config = {
     app: envConfig.app,
     url: envConfig.url,
     commerce: {
       ...envConfig.commerce,
-      ...sensitiveConfig.commerce
+      ...sensitiveConfig.commerce,
     },
     security: {
       ...envConfig.security,
-      ...sensitiveConfig.security
+      ...sensitiveConfig.security,
     },
     testing: {
       api: envConfig.testing?.api,
-      performance: envConfig.testing?.performance
-    }
+      performance: envConfig.testing?.performance,
+    },
   };
 
   // Validate each configuration section
@@ -130,5 +133,5 @@ module.exports = {
   loadConfig,
   validateConfig,
   loadEnvironmentConfig,
-  loadSensitiveConfig
-}; 
+  loadSensitiveConfig,
+};
