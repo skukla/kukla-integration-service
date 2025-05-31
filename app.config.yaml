@@ -8,13 +8,17 @@ application:
         actions:
           get-products:
             function: actions/backend/get-products/index.js
-            web: "yes"
-            runtime: nodejs:22
+            web: 'yes'
+            runtime: nodejs:18
             inputs:
               LOG_LEVEL: debug
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
+              COMMERCE_URL: $COMMERCE_URL
             parameters:
+              COMMERCE_URL:
+                type: string
+                description: Adobe Commerce instance URL
               COMMERCE_ADMIN_USERNAME:
                 type: string
                 description: Admin username for authentication
@@ -25,17 +29,18 @@ application:
               require-adobe-auth: false
               final: true
               web-export: true
+              raw-http: true
           download-file:
             function: actions/backend/download-file/index.js
-            web: "yes"
+            web: 'yes'
             runtime: nodejs:18
             annotations:
               require-adobe-auth: false
               final: true
           browse-files:
             function: actions/frontend/browse-files/index.js
-            web: "yes"
-            runtime: nodejs:22
+            web: 'yes'
+            runtime: nodejs:18
             inputs:
               LOG_LEVEL: debug
             annotations:
@@ -43,7 +48,7 @@ application:
               final: true
           delete-file:
             function: actions/backend/delete-file/index.js
-            web: "yes"
+            web: 'yes'
             runtime: nodejs:18
             annotations:
               require-adobe-auth: false
