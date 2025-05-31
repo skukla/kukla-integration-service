@@ -194,7 +194,28 @@ async function enrichWithInventory(products, token, params) {
   return enrichedProducts;
 }
 
+/**
+ * Get products from Adobe Commerce
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @param {boolean} [params.include_inventory=false] - Whether to include inventory data
+ * @returns {Promise<Object[]>} Array of product objects
+ */
+async function getProducts(token, params) {
+  // Fetch all products
+  const products = await fetchAllProducts(token, params);
+
+  // If inventory data is requested, enrich products with it
+  if (params.include_inventory) {
+    return enrichWithInventory(products, token, params);
+  }
+
+  return products;
+}
+
 module.exports = {
+  getProducts,
   fetchAllProducts,
   enrichWithInventory,
 };

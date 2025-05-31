@@ -7,6 +7,7 @@ const { makeCommerceRequest } = require('../../../../../src/commerce/api/integra
 const {
   http: { buildHeaders },
   routing: { buildCommerceUrl },
+  cache,
 } = require('../../../../../src/core');
 
 // Optimal values for category operations
@@ -201,7 +202,91 @@ async function buildCategoryMap(products, token, params) {
   return cachedCategories;
 }
 
+/**
+ * Make a cached request
+ * @private
+ * @param {string} url - Request URL
+ * @param {Object} options - Request options
+ * @returns {Promise<Object>} Response data
+ */
+async function makeCachedRequest(url, options) {
+  const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
+
+  const cached = await cache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await makeCommerceRequest(url, options);
+  await cache.set(cacheKey, response, CACHE_TTL);
+
+  return response;
+}
+
+/**
+ * Get category details by ID
+ * @param {string} categoryId - Category ID
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object>} Category details
+ */
+async function getCategory(categoryId, token, params) {
+  const url = buildCommerceUrl(params.COMMERCE_URL, endpoints.category(categoryId));
+  const response = await makeCachedRequest(url, {
+    method: 'GET',
+    headers: buildHeaders(token),
+  });
+
+  if (response.statusCode !== 200) {
+    throw new Error(`Failed to fetch category ${categoryId}: ${JSON.stringify(response.body)}`);
+  }
+
+  return response.body;
+}
+
+/**
+ * Enrich products with category data
+ * @param {Object[]} products - Array of product objects
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object[]>} Products enriched with category data
+ */
+async function enrichProductsWithCategories(products, token, params) {
+  // Create a map to store category details
+  const categoryMap = new Map();
+
+  // Get unique category IDs from all products
+  const categoryIds = new Set();
+  products.forEach((product) => {
+    if (Array.isArray(product.category_ids)) {
+      product.category_ids.forEach((id) => categoryIds.add(id));
+    }
+  });
+
+  // Fetch category details for each unique ID
+  await Promise.all(
+    Array.from(categoryIds).map(async (categoryId) => {
+      try {
+        const category = await getCategory(categoryId, token, params);
+        categoryMap.set(categoryId, category.name);
+      } catch (error) {
+        console.warn(`Failed to fetch category ${categoryId}:`, error.message);
+      }
+    })
+  );
+
+  // Enrich products with category names
+  return products.map((product) => ({
+    ...product,
+    categories: Array.isArray(product.category_ids)
+      ? product.category_ids.map((id) => categoryMap.get(id)).filter(Boolean)
+      : [],
+  }));
+}
+
 module.exports = {
   getCategoryIds,
   buildCategoryMap,
+  enrichProductsWithCategories,
+  getCategory,
 };
