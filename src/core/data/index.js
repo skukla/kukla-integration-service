@@ -3,15 +3,25 @@
  * @module core/data
  */
 
-const { checkMissingRequestInputs, validateInput } = require('./validation');
 const { transformData, formatResponse } = require('./transformation');
+const { checkMissingRequestInputs, validateInput } = require('./validation');
+
+// Internal utilities
+const internal = {
+  checkMissingRequestInputs,
+  validateInput,
+  transformData,
+  formatResponse,
+};
+
+// Public API
+const publicApi = {
+  validateInput,
+  transformData,
+  formatResponse,
+};
 
 module.exports = {
-    // Validation utilities
-    checkMissingRequestInputs,
-    validateInput,
-    
-    // Transformation utilities
-    transformData,
-    formatResponse
-}; 
+  ...internal,
+  public: publicApi,
+};
