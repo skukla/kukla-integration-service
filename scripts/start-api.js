@@ -1,67 +1,63 @@
 #!/usr/bin/env node
 
-const { execSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const ora = require('ora').default;
+const ora = require('ora');
 const kill = require('tree-kill');
 
 const PID_FILE = path.join(__dirname, '..', '.pid');
 
-function execCommand(command) {
-  return execSync(command, { stdio: 'pipe', encoding: 'utf-8' });
-}
-
 async function cleanupProcesses() {
-  const spinner = ora('Cleaning up existing processes').start();
-  try {
-    if (fs.existsSync(PID_FILE)) {
-      const pid = fs.readFileSync(PID_FILE, 'utf-8');
-      try {
-        kill(parseInt(pid));
-      } catch (e) {
-        // Process may not exist anymore
-      }
-      fs.unlinkSync(PID_FILE);
+  if (fs.existsSync(PID_FILE)) {
+    const pid = fs.readFileSync(PID_FILE, 'utf-8');
+    try {
+      kill(parseInt(pid));
+    } catch (e) {
+      // Process may not exist anymore
     }
-    spinner.succeed();
-  } catch (error) {
-    spinner.fail(`Failed to cleanup processes: ${error.message}`);
-    throw error;
-  }
-}
-
-async function cleanupArtifacts() {
-  const spinner = ora('Cleaning up artifacts').start();
-  try {
-    execCommand('rm -rf .tmp dist');
-    spinner.succeed();
-  } catch (error) {
-    spinner.fail(`Failed to cleanup artifacts: ${error.message}`);
-    throw error;
+    fs.unlinkSync(PID_FILE);
   }
 }
 
 async function generateConfig() {
   const spinner = ora('Generating runtime configuration').start();
   try {
-    execCommand('npm run predev');
-    spinner.succeed();
+    require('./generate-runtime-config');
+    spinner.succeed('Runtime configuration generated');
   } catch (error) {
     spinner.fail(`Failed to generate config: ${error.message}`);
     throw error;
   }
 }
 
+async function buildActions() {
+  const spinner = ora('Building actions...').start();
+  try {
+    const { execSync } = require('child_process');
+    execSync('aio app build', { stdio: 'pipe' });
+    spinner.succeed('Actions built successfully');
+  } catch (error) {
+    spinner.fail(`Failed to build actions: ${error.message}`);
+    throw error;
+  }
+}
+
 async function startServer() {
-  let buildSpinner = null;
-  let serverSpinner = null;
-  let currentPhase = 'init';
+  const spinner = ora('Starting development server...').start();
 
   return new Promise((resolve, reject) => {
+    // Set higher log level for Adobe I/O CLI
+    const env = {
+      ...process.env,
+      LOG_LEVEL: 'info',
+      DEBUG: '', // Disable debug logging
+    };
+
     const server = spawn('aio', ['app', 'dev'], {
       stdio: ['ignore', 'pipe', 'pipe'],
+      env,
     });
 
     // Save PID for later cleanup
@@ -79,49 +75,31 @@ async function startServer() {
         const trimmedLine = line.trim();
         if (!trimmedLine) return;
 
-        // Handle build phase
-        if (trimmedLine.includes('Building the app')) {
-          if (currentPhase !== 'building') {
-            currentPhase = 'building';
-            buildSpinner = ora('Building the app...').start();
+        // Only show important messages
+        if (
+          line.includes('http') || // URLs
+          line.includes('actions:') || // Action endpoints
+          line.includes('Development server started') || // Server status
+          line.includes('press CTRL+C') // Control instructions
+        ) {
+          // Remove timestamp prefixes and debug info
+          const cleanLine = trimmedLine.replace(
+            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\s+\[[^\]]+\]\s+\w+:\s*/,
+            ''
+          );
+
+          if (line.includes('http')) {
+            spinner.succeed('Development server started');
+            console.log('🔗', cleanLine);
+          } else {
+            console.log(cleanLine);
           }
-        }
-        // Handle server start phase
-        else if (trimmedLine.includes('Starting development server')) {
-          if (buildSpinner) {
-            buildSpinner.succeed('Build completed');
-            buildSpinner = null;
-          }
-          if (currentPhase !== 'starting') {
-            currentPhase = 'starting';
-            serverSpinner = ora('Starting development server...').start();
-          }
-        }
-        // Handle URLs
-        else if (line.includes('http')) {
-          if (buildSpinner) {
-            buildSpinner.succeed('Build completed');
-            buildSpinner = null;
-          }
-          if (serverSpinner) {
-            serverSpinner.succeed('Development server started');
-            serverSpinner = null;
-          }
-          console.log('🔗', trimmedLine);
-        }
-        // Handle other output
-        else if (!line.includes('watching') && !line.includes('bundling')) {
-          console.log(trimmedLine);
         }
       });
 
       // Check for server ready
       if (chunk.includes('press CTRL+C to terminate') && !serverStarted) {
         serverStarted = true;
-        if (serverSpinner) {
-          serverSpinner.succeed('Development server started');
-          serverSpinner = null;
-        }
         console.log('\n👉 Press Ctrl+C to stop the server\n');
         resolve(server);
       }
@@ -129,21 +107,21 @@ async function startServer() {
 
     server.stderr.on('data', (data) => {
       const chunk = data.toString();
-      output += chunk;
-      console.error(chunk);
+      // Only show actual errors, not debug info
+      if (!chunk.includes('debug:')) {
+        console.error(chunk);
+      }
     });
 
     server.on('error', (error) => {
-      if (buildSpinner) buildSpinner.fail();
-      if (serverSpinner) serverSpinner.fail();
-      reject(new Error(`Failed to start server: ${error.message}\nOutput: ${output}`));
+      spinner.fail();
+      reject(new Error(`Failed to start server: ${error.message}`));
     });
 
     // Add timeout
     setTimeout(() => {
       if (!serverStarted) {
-        if (buildSpinner) buildSpinner.fail();
-        if (serverSpinner) serverSpinner.fail();
+        spinner.fail();
         kill(server.pid);
         reject(new Error(`Timeout waiting for server\nServer logs:\n${output}`));
       }
@@ -152,12 +130,12 @@ async function startServer() {
 }
 
 async function main() {
-  console.log('🚀 Starting API server...\n');
+  console.log('🚀 Starting API server in dev mode...\n');
 
   try {
     await cleanupProcesses();
-    await cleanupArtifacts();
     await generateConfig();
+    await buildActions();
     const server = await startServer();
 
     // Handle process termination
@@ -172,4 +150,9 @@ async function main() {
   }
 }
 
-main();
+// Run directly if called from command line
+if (require.main === module) {
+  main();
+}
+
+module.exports = { main };
