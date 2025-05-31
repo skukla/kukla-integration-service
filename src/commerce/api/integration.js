@@ -3,7 +3,7 @@
  * @module commerce/api/integration
  */
 
-const { makeRequest, batchRequests } = require('./client');
+const { createClient } = require('./client');
 const {
   http: { buildHeaders },
   routing: { buildCommerceUrl },
@@ -13,71 +13,68 @@ const {
  * Makes a Commerce API request with commerce-specific handling
  * @param {string} url - Request URL
  * @param {Object} options - Request options
- * @param {Object} context - Additional context
  * @returns {Promise<Object>} Response data
  */
-async function makeCommerceRequest(url, options = {}, context = {}) {
-  return makeRequest(
-    url,
-    {
-      ...options,
-      headers: {
-        ...buildHeaders(),
-        ...(options.headers || {}),
-      },
+async function makeCommerceRequest(url, options = {}) {
+  const client = createClient();
+  return client.request(url, {
+    ...options,
+    headers: {
+      ...buildHeaders(),
+      ...(options.headers || {}),
     },
-    context
-  );
+  });
 }
 
 /**
- * Validates admin credentials against Adobe Commerce
+ * Gets an authentication token from Adobe Commerce
  * @param {Object} params - Authentication parameters
- * @param {string} params.url - Commerce instance URL
- * @param {string} params.username - Admin username
- * @param {string} params.password - Admin password
- * @returns {Promise<Object>} Validation result
+ * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username
+ * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password
+ * @returns {Promise<string>} Authentication token
  */
-async function validateAdminCredentials(params) {
-  const url = buildCommerceUrl('adminToken');
-  return makeCommerceRequest(
-    url,
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        username: params.username,
-        password: params.password,
-      }),
-    },
-    {
-      url,
-      username: params.username,
-    }
-  );
+async function getAuthToken(params) {
+  const url = buildCommerceUrl(params.COMMERCE_URL, '/rest/V1/integration/admin/token');
+  const response = await makeCommerceRequest(url, {
+    method: 'POST',
+    body: JSON.stringify({
+      username: params.COMMERCE_ADMIN_USERNAME,
+      password: params.COMMERCE_ADMIN_PASSWORD,
+    }),
+  });
+
+  if (response.statusCode !== 200) {
+    throw new Error(`Failed to get auth token: ${response.body}`);
+  }
+
+  return response.body;
 }
 
 /**
  * Batches multiple Commerce API requests with commerce-specific handling
  * @param {Array<Object>} requests - Array of request objects
- * @param {Object} options - Batch options
  * @returns {Promise<Array>} Array of responses
  */
-async function batchCommerceRequests(requests, options = {}) {
-  const commerceRequests = requests.map((req) => ({
-    ...req,
-    options: {
-      ...req.options,
-      headers: {
-        ...buildHeaders(),
-        ...(req.options?.headers || {}),
-      },
-    },
-  }));
-  return batchRequests(commerceRequests, options);
+async function batchCommerceRequests(requests) {
+  const client = createClient();
+  return client.processBatch(requests, async (batch) => {
+    return Promise.all(
+      batch.map((req) =>
+        makeCommerceRequest(req.url, {
+          ...req.options,
+          headers: {
+            ...buildHeaders(),
+            ...(req.options?.headers || {}),
+          },
+        })
+      )
+    );
+  });
 }
 
 module.exports = {
   makeCommerceRequest,
-  validateAdminCredentials,
+  getAuthToken,
   batchCommerceRequests,
 };

@@ -3,17 +3,17 @@
  * @module commerce/api/client
  */
 
-const { http } = require('../../core');
 const config = require('../../../config');
-
-// Load configuration
-const { commerce, security } = config.loadConfig();
+const { http } = require('../../core');
 
 /**
  * Creates a configured commerce API client
  * @returns {Object} Commerce API client
  */
 function createClient() {
+  // Load configuration when creating client
+  const { commerce, security } = config.loadConfig();
+
   return {
     request: async (endpoint, options = {}) => {
       const requestOptions = {
@@ -21,31 +21,35 @@ function createClient() {
         timeout: commerce.api.timeout,
         retry: {
           attempts: commerce.api.retry.attempts,
-          delay: commerce.api.retry.delay
-        }
+          delay: commerce.api.retry.delay,
+        },
       };
 
       // Add authentication
       if (security.authentication.commerce.type === 'basic') {
         requestOptions.auth = {
           username: security.authentication.commerce.credentials.username,
-          password: security.authentication.commerce.credentials.password
+          password: security.authentication.commerce.credentials.password,
         };
       } else if (security.authentication.commerce.type === 'token') {
         requestOptions.headers = {
           ...requestOptions.headers,
-          Authorization: `Bearer ${security.authentication.commerce.credentials.token}`
+          Authorization: `Bearer ${security.authentication.commerce.credentials.token}`,
         };
       }
 
       // Add caching for GET requests
       if (options.method === 'GET' && commerce.api.cache.duration > 0) {
         requestOptions.cache = {
-          duration: commerce.api.cache.duration
+          duration: commerce.api.cache.duration,
         };
       }
 
-      const url = `${commerce.api.baseUrl}${endpoint}`;
+      // Normalize base URL and endpoint
+      const baseUrl = commerce.api.baseUrl.replace(/\/$/, '');
+      const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      const url = `${baseUrl}${normalizedEndpoint}`;
+
       return http.request(url, requestOptions);
     },
 
@@ -63,10 +67,10 @@ function createClient() {
         results.push(...batchResults);
       }
       return results;
-    }
+    },
   };
 }
 
 module.exports = {
-  createClient
-}; 
+  createClient,
+};

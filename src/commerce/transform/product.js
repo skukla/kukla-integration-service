@@ -3,14 +3,15 @@
  * @module commerce/transform/product
  */
 
-const { data: { transformObject } } = require('../../core');
-const { category: { getCategoryIds } } = require('../data');
-
-/**
- * Default fields to include if none specified
- * @constant {Array<string>}
- */
-const DEFAULT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
+const {
+  data: { transformObject },
+} = require('../../core');
+const {
+  category: { getCategoryIds },
+} = require('../data');
+const {
+  product: { PRODUCT_FIELDS, getRequestedFields: getProductFields },
+} = require('../data');
 
 /**
  * Returns the list of fields to include in the response.
@@ -19,17 +20,7 @@ const DEFAULT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
  * @returns {Array<string>} Array of field names to include in the response
  */
 function getRequestedFields(params) {
-    if (!Array.isArray(params.fields) || params.fields.length === 0) {
-        return DEFAULT_FIELDS;
-    }
-    
-    // Validate that all requested fields are available
-    const invalidFields = params.fields.filter(field => !DEFAULT_FIELDS.includes(field));
-    if (invalidFields.length > 0) {
-        throw new Error(`Invalid fields requested: ${invalidFields.join(', ')}. Available fields are: ${DEFAULT_FIELDS.join(', ')}`);
-    }
-    
-    return params.fields;
+  return getProductFields(params);
 }
 
 /**
@@ -42,15 +33,15 @@ function getRequestedFields(params) {
  * @returns {Object} Simplified image object
  */
 function transformImageEntry(img) {
-    const imageObj = {
-        filename: img.file,
-        url: img.url || `catalog/product${img.file}`,  // Add URL if present or construct from file path
-        position: img.position
-    };
-    if (img.types && img.types.length > 0) {
-        imageObj.roles = img.types;
-    }
-    return imageObj;
+  const imageObj = {
+    filename: img.file,
+    url: img.url || `catalog/product${img.file}`, // Add URL if present or construct from file path
+    position: img.position,
+  };
+  if (img.types && img.types.length > 0) {
+    imageObj.roles = img.types;
+  }
+  return imageObj;
 }
 
 /**
@@ -60,11 +51,11 @@ function transformImageEntry(img) {
  * @returns {string} Primary image URL or empty string if none exists
  */
 function getPrimaryImageUrl(images) {
-    if (!Array.isArray(images) || images.length === 0) {
-        return '';
-    }
-    // Handle both URL and filename formats
-    return images[0].url || images[0].filename || '';
+  if (!Array.isArray(images) || images.length === 0) {
+    return '';
+  }
+  // Handle both URL and filename formats
+  return images[0].url || images[0].filename || '';
 }
 
 /**
@@ -75,31 +66,28 @@ function getPrimaryImageUrl(images) {
  * @returns {Object} Filtered product object with only requested fields
  */
 function buildProductObject(product, requestedFields, categoryMap) {
-    const fieldMappings = {
-        sku: () => product.sku,
-        name: () => product.name,
-        price: () => product.price,
-        qty: () => product.qty || 0,
-        categories: () => {
-            const categoryIds = getCategoryIds(product);
-            const categoryNames = categoryIds
-                .map(id => categoryMap[String(id)])
-                .filter(Boolean);
-            return categoryNames;
-        },
-        images: () => (product.media_gallery_entries || [])
-            .map(transformImageEntry)
-    };
+  const fieldMappings = {
+    sku: () => product.sku,
+    name: () => product.name,
+    price: () => product.price,
+    qty: () => product.qty || 0,
+    categories: () => {
+      const categoryIds = getCategoryIds(product);
+      const categoryNames = categoryIds.map((id) => categoryMap[String(id)]).filter(Boolean);
+      return categoryNames;
+    },
+    images: () => (product.media_gallery_entries || []).map(transformImageEntry),
+  };
 
-    const result = transformObject(product, fieldMappings, requestedFields);
+  const result = transformObject(product, fieldMappings, requestedFields);
 
-    // Add performance metrics
-    result.performance = {
-        productCount: 1,
-        categoryCount: result.categories ? result.categories.length : 0
-    };
+  // Add performance metrics
+  result.performance = {
+    productCount: 1,
+    categoryCount: result.categories ? result.categories.length : 0,
+  };
 
-    return result;
+  return result;
 }
 
 /**
@@ -108,19 +96,19 @@ function buildProductObject(product, requestedFields, categoryMap) {
  * @returns {Object} CSV row object
  */
 function mapProductToCsvRow(product) {
-    return {
-        sku: product.sku,
-        name: product.name,
-        price: product.price,
-        qty: product.qty,
-        categories: Array.isArray(product.categories) ? product.categories.join(',') : '',
-        base_image: getPrimaryImageUrl(product.images)
-    };
+  return {
+    sku: product.sku,
+    name: product.name,
+    price: product.price,
+    qty: product.qty,
+    categories: Array.isArray(product.categories) ? product.categories.join(',') : '',
+    base_image: getPrimaryImageUrl(product.images),
+  };
 }
 
 module.exports = {
-    DEFAULT_FIELDS,
-    getRequestedFields,
-    buildProductObject,
-    mapProductToCsvRow
-}; 
+  PRODUCT_FIELDS,
+  getRequestedFields,
+  buildProductObject,
+  mapProductToCsvRow,
+};
