@@ -5,9 +5,12 @@
 
 module.exports = {
   app: {
+    name: 'kukla-integration-service',
+    version: '0.0.1',
+    environment: 'development',
     runtime: {
-      environment: 'development'
-    }
+      environment: 'development',
+    },
   },
   url: {
     runtime: {
@@ -17,8 +20,8 @@ module.exports = {
       version: 'v1',
       paths: {
         web: '/web',
-        base: '/api'
-      }
+        base: '/api',
+      },
     },
     commerce: {
       baseUrl: 'https://citisignal-com774-dev.adobedemo.com',
@@ -28,90 +31,72 @@ module.exports = {
         products: '/products',
         stockItem: '/inventory/source-items',
         category: '/categories/:id',
-        categoryList: '/categories'
-      }
-    }
+        categoryList: '/categories',
+      },
+    },
   },
   commerce: {
     api: {
-      timeout: 60000, // Longer timeout for debugging
+      timeout: 30000,
       retry: {
-        attempts: 1, // Fewer retries in development
-        delay: 1000
+        attempts: 3,
+        delay: 1000,
       },
       batch: {
-        size: 10 // Smaller batch size for easier debugging
+        size: 50,
       },
       cache: {
-        duration: 0 // Disable caching in development
-      }
-    }
+        duration: 300,
+      },
+    },
   },
   security: {
     authentication: {
       commerce: {
         type: 'basic',
         tokenRefresh: {
-          enabled: false // Disable token refresh in development
-        }
-      }
-    }
+          enabled: true,
+          interval: 3600,
+        },
+      },
+    },
   },
   testing: {
     api: {
-      local: {
-        baseUrl: 'https://localhost:9080',
-        port: 9080
-      },
-      staging: {
-        baseUrl: 'https://285361-188maroonwallaby-stage.adobeio-static.net'
-      },
-      production: {
-        baseUrl: 'https://285361-188maroonwallaby.adobeio-static.net'
-      },
-      defaults: {
-        endpoint: 'get-products',
-        method: 'POST',
-        fields: 'sku,name,price,qty,categories,images'
-      }
+      baseUrl: 'https://localhost:9080',
+      timeout: 30000, // 30 seconds
+      retries: 3,
+      delay: 1000,
+      logLevel: 'info',
     },
     performance: {
-      scenarios: {
-        small: {
-          name: 'Small Dataset',
-          params: {
-            limit: 50,
-            include_inventory: true,
-            include_categories: true
-          }
-        },
-        medium: {
-          name: 'Medium Dataset',
-          params: {
-            limit: 100,
-            include_inventory: true,
-            include_categories: true
-          }
-        },
-        large: {
-          name: 'Large Dataset',
-          params: {
-            limit: 200,
-            include_inventory: true,
-            include_categories: true
-          }
-        }
-      },
+      concurrency: 10,
+      duration: 60,
+      rampUp: 10,
       thresholds: {
-        executionTime: 0.15,
-        memory: 0.10,
-        products: 0,
-        categories: 0,
-        compression: 0.05
+        responseTime: {
+          p95: 1000,
+          p99: 2000,
+        },
+        errorRate: 1,
       },
-      baseline: {
-        maxAgeDays: 7
-      }
-    }
-  }
-}; 
+      scenarios: [
+        {
+          name: 'get-products',
+          weight: 60,
+          think: 1000,
+        },
+        {
+          name: 'browse-files',
+          weight: 30,
+          think: 500,
+        },
+        {
+          name: 'download-file',
+          weight: 10,
+          think: 2000,
+        },
+      ],
+    },
+  },
+};

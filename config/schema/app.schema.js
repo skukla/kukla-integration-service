@@ -5,7 +5,7 @@
 
 const appSchema = {
   type: 'object',
-  required: ['runtime', 'performance'],
+  required: ['runtime'],
   properties: {
     runtime: {
       type: 'object',
@@ -14,70 +14,67 @@ const appSchema = {
         environment: {
           type: 'string',
           description: 'Current runtime environment',
-          enum: ['development', 'staging', 'production']
-        }
-      }
+          enum: ['development', 'staging', 'production'],
+        },
+      },
     },
     performance: {
       type: 'object',
-      required: ['thresholds'],
+      description: 'Optional performance monitoring configuration',
       properties: {
+        enabled: {
+          type: 'boolean',
+          description: 'Whether performance monitoring is enabled',
+          default: false,
+        },
         thresholds: {
           type: 'object',
-          required: ['api', 'rendering'],
           properties: {
             api: {
               type: 'object',
-              required: ['warning', 'critical'],
               properties: {
                 warning: {
                   type: 'number',
                   description: 'Warning threshold for API response time (ms)',
-                  default: 1000
+                  default: 1000,
                 },
                 critical: {
                   type: 'number',
                   description: 'Critical threshold for API response time (ms)',
-                  default: 3000
-                }
-              }
+                  default: 3000,
+                },
+              },
             },
             rendering: {
               type: 'object',
-              required: ['warning', 'critical'],
               properties: {
                 warning: {
                   type: 'number',
                   description: 'Warning threshold for page rendering time (ms)',
-                  default: 300
+                  default: 300,
                 },
                 critical: {
                   type: 'number',
                   description: 'Critical threshold for page rendering time (ms)',
-                  default: 1000
-                }
-              }
-            }
-          }
+                  default: 1000,
+                },
+              },
+            },
+          },
         },
         monitoring: {
           type: 'object',
           properties: {
-            enabled: {
-              type: 'boolean',
-              description: 'Enable performance monitoring',
-              default: true
-            },
             sampleRate: {
               type: 'number',
               description: 'Performance monitoring sample rate (0-1)',
               minimum: 0,
               maximum: 1,
-              default: 0.1
-            }
-          }
-        }
-      }
+              default: 0.1,
+            },
+          },
+        },
+      },
     },
     storage: {
       type: 'object',
@@ -88,19 +85,19 @@ const appSchema = {
             publicDir: {
               type: 'string',
               description: 'Public files directory',
-              default: 'public'
+              default: 'public',
             },
             tempDir: {
               type: 'string',
               description: 'Temporary files directory',
-              default: 'temp'
+              default: 'temp',
             },
             maxFileSize: {
               type: 'number',
               description: 'Maximum file size in bytes',
-              default: 104857600 // 100MB
-            }
-          }
+              default: 104857600, // 100MB
+            },
+          },
         },
         csv: {
           type: 'object',
@@ -108,25 +105,25 @@ const appSchema = {
             chunkSize: {
               type: 'number',
               description: 'CSV processing chunk size',
-              default: 100
+              default: 100,
             },
             compressionLevel: {
               type: 'number',
               description: 'CSV compression level (0-9)',
               minimum: 0,
               maximum: 9,
-              default: 6
+              default: 6,
             },
             streamBufferSize: {
               type: 'number',
               description: 'CSV stream buffer size in bytes',
-              default: 16384
-            }
-          }
-        }
-      }
-    }
-  }
+              default: 16384,
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
-module.exports = appSchema; 
+module.exports = appSchema;

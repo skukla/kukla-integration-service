@@ -1,78 +1,41 @@
 /**
- * API Testing configuration schema
- * @module config/schema/api-testing
+ * Schema definitions for API testing configuration
+ * @module schema/api-testing
  */
 
-const apiTestSchema = {
+const schema = {
   type: 'object',
-  required: ['api'],
+  required: ['baseUrl', 'timeout'],
   properties: {
-    api: {
-      type: 'object',
-      required: ['local', 'staging', 'production'],
-      properties: {
-        local: {
-          type: 'object',
-          required: ['baseUrl'],
-          properties: {
-            baseUrl: {
-              type: 'string',
-              description: 'Local development API base URL',
-              pattern: '^https?://.+'
-            },
-            port: {
-              type: 'number',
-              description: 'Local development server port',
-              default: 9080
-            }
-          }
-        },
-        staging: {
-          type: 'object',
-          required: ['baseUrl'],
-          properties: {
-            baseUrl: {
-              type: 'string',
-              description: 'Staging API base URL',
-              pattern: '^https?://.+'
-            }
-          }
-        },
-        production: {
-          type: 'object',
-          required: ['baseUrl'],
-          properties: {
-            baseUrl: {
-              type: 'string',
-              description: 'Production API base URL',
-              pattern: '^https?://.+'
-            }
-          }
-        }
-      }
+    baseUrl: {
+      type: 'string',
+      format: 'uri',
+      description: 'Base URL for API endpoints',
     },
-    defaults: {
-      type: 'object',
-      properties: {
-        endpoint: {
-          type: 'string',
-          description: 'Default endpoint to test',
-          default: 'get-products'
-        },
-        method: {
-          type: 'string',
-          description: 'Default HTTP method',
-          enum: ['GET', 'POST', 'PUT', 'DELETE'],
-          default: 'POST'
-        },
-        fields: {
-          type: 'string',
-          description: 'Default fields to request',
-          default: 'sku,name,price,qty,categories,images'
-        }
-      }
-    }
-  }
+    timeout: {
+      type: 'number',
+      minimum: 1000,
+      description: 'Request timeout in milliseconds',
+    },
+    retries: {
+      type: 'number',
+      minimum: 0,
+      default: 3,
+      description: 'Number of retry attempts for failed requests',
+    },
+    delay: {
+      type: 'number',
+      minimum: 0,
+      default: 1000,
+      description: 'Delay between retry attempts in milliseconds',
+    },
+    logLevel: {
+      type: 'string',
+      enum: ['debug', 'info', 'warn', 'error'],
+      default: 'info',
+      description: 'Logging level for tests',
+    },
+  },
 };
 
-module.exports = apiTestSchema; 
+module.exports = schema;
