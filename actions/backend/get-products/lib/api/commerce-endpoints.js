@@ -3,10 +3,6 @@
  * @module lib/api/commerce-endpoints
  */
 
-const {
-  routing: { buildCommerceUrl },
-} = require('../../../../../src/core');
-
 /**
  * Get products endpoint with pagination
  * @param {Object} options - Endpoint options
@@ -14,11 +10,8 @@ const {
  * @param {number} [options.currentPage=1] - Current page number
  * @returns {string} Products endpoint path
  */
-function getProductsEndpoint(options = {}) {
-  return buildCommerceUrl('products', {
-    pageSize: options.pageSize || 20,
-    currentPage: options.currentPage || 1,
-  });
+function products(options = {}) {
+  return `/rest/V1/products?searchCriteria[pageSize]=${options.pageSize || 20}&searchCriteria[currentPage]=${options.currentPage || 1}`;
 }
 
 /**
@@ -26,8 +19,8 @@ function getProductsEndpoint(options = {}) {
  * @param {string} sku - Product SKU
  * @returns {string} Stock item endpoint path
  */
-function getStockItemEndpoint(sku) {
-  return buildCommerceUrl('stockItem', { sku });
+function stockItem(sku) {
+  return `/rest/V1/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]=${sku}`;
 }
 
 /**
@@ -35,21 +28,21 @@ function getStockItemEndpoint(sku) {
  * @param {string} id - Category ID
  * @returns {string} Category endpoint path
  */
-function getCategoryEndpoint(id) {
-  return buildCommerceUrl('category', { id });
+function category(id) {
+  return `/rest/V1/categories/${id}`;
 }
 
 /**
  * Get admin token endpoint
  * @returns {string} Admin token endpoint path
  */
-function getAdminTokenEndpoint() {
-  return buildCommerceUrl('adminToken');
+function adminToken() {
+  return '/rest/V1/integration/admin/token';
 }
 
 module.exports = {
-  getProductsEndpoint,
-  getStockItemEndpoint,
-  getCategoryEndpoint,
-  getAdminTokenEndpoint,
+  products,
+  stockItem,
+  category,
+  adminToken,
 };
