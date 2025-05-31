@@ -3,6 +3,8 @@
  * @module core/monitoring/performance
  */
 
+const { loadConfig } = require('../../../config');
+
 /**
  * Performance metric types
  * @enum {string}
@@ -11,190 +13,148 @@ const MetricTypes = {
   RESPONSE_TIME: 'response_time',
   MEMORY_USAGE: 'memory_usage',
   FILE_OPERATION: 'file_operation',
-  COMMERCE_API: 'commerce_api'
+  COMMERCE_API: 'commerce_api',
 };
-
-/**
- * Creates a new performance metrics state
- * @param {Object} logger - Logger instance
- * @returns {Object} Performance metrics state
- */
-function createMetricsState(logger) {
-  return {
-    logger,
-    measurements: new Map()
-  };
-}
-
-/**
- * Start measuring an operation
- * @param {Object} state - Performance metrics state
- * @param {string} operation - Operation name
- * @param {string} type - Metric type from MetricTypes
- * @returns {Object} Updated state
- */
-function startMeasurement(state, operation, type = MetricTypes.RESPONSE_TIME) {
-  const newMeasurements = new Map(state.measurements);
-  newMeasurements.set(operation, {
-    type,
-    startTime: process.hrtime(),
-    startMemory: process.memoryUsage()
-  });
-
-  return {
-    ...state,
-    measurements: newMeasurements
-  };
-}
-
-/**
- * End measuring an operation and calculate metrics
- * @param {Object} state - Performance metrics state
- * @param {string} operation - Operation name
- * @param {Object} [context] - Additional context
- * @returns {Object} Metrics results
- */
-function endMeasurement(state, operation, context = {}) {
-  const measurement = state.measurements.get(operation);
-  if (!measurement) {
-    return { results: null };
-  }
-
-  const endTime = process.hrtime(measurement.startTime);
-  const endMemory = process.memoryUsage();
-  
-  const durationMs = (endTime[0] * 1000) + (endTime[1] / 1000000);
-  const memoryDiff = {
-    heapUsed: endMemory.heapUsed - measurement.startMemory.heapUsed,
-    heapTotal: endMemory.heapTotal - measurement.startMemory.heapTotal,
-    external: endMemory.external - measurement.startMemory.external
-  };
-
-  const results = {
-    operation,
-    type: measurement.type,
-    duration: durationMs,
-    memory: memoryDiff,
-    success: context.success !== false,
-    timestamp: new Date().toISOString(),
-    ...context
-  };
-
-  // Log the results
-  state.logger.info('Performance measurement:', results);
-
-  return { results };
-}
-
-/**
- * Creates performance monitoring middleware for actions
- * @param {Object} logger - Logger instance
- * @returns {Function} Middleware function
- */
-function createPerformanceMiddleware(logger) {
-  return async (params, action) => {
-    let metricsState = createMetricsState(logger);
-    const operation = action.name || 'unknown_action';
-
-    try {
-      metricsState = startMeasurement(metricsState, operation);
-      const result = await action(params);
-      const metrics = endMeasurement(metricsState, operation, { success: true });
-      
-      // Add performance metrics to response if appropriate
-      if (result && typeof result === 'object') {
-        return {
-          ...result,
-          performance: metrics
-        };
-      }
-      
-      return result;
-    } catch (error) {
-      endMeasurement(metricsState, operation, { 
-        success: false, 
-        error: error.message 
-      });
-      throw error;
-    }
-  };
-}
 
 /**
  * Performance monitoring class for easier usage
  */
 class PerformanceMonitor {
-  constructor(logger) {
-    this.state = createMetricsState(logger);
+  constructor(logger, options = {}) {
+    this.logger = logger;
+    this.measurements = new Map();
+    this.config = loadConfig();
+    this.isEnabled = this._isPerformanceEnabled();
+    this.options = {
+      sampleRate: options.sampleRate || this.config.app?.performance?.monitoring?.sampleRate || 0.1,
+      ...options,
+    };
   }
 
-  start(operation, type) {
-    this.state = startMeasurement(this.state, operation, type);
+  /**
+   * Check if performance monitoring is enabled
+   * @private
+   */
+  _isPerformanceEnabled() {
+    return this.config.app?.performance?.enabled ?? false;
   }
 
-  end(operation, context) {
-    const { results } = endMeasurement(this.state, operation, context);
+  /**
+   * Should this operation be sampled
+   * @private
+   */
+  _shouldSample() {
+    return Math.random() < this.options.sampleRate;
+  }
+
+  /**
+   * Start measuring an operation
+   * @param {string} operation - Operation name
+   * @param {string} type - Metric type from MetricTypes
+   * @returns {void}
+   */
+  start(operation, type = MetricTypes.RESPONSE_TIME) {
+    if (!this.isEnabled || !this._shouldSample()) return;
+
+    this.measurements.set(operation, {
+      type,
+      startTime: process.hrtime(),
+      startMemory: process.memoryUsage(),
+    });
+  }
+
+  /**
+   * End measuring an operation and calculate metrics
+   * @param {string} operation - Operation name
+   * @param {Object} [context] - Additional context
+   * @returns {Object|null} Metrics results or null if monitoring disabled
+   */
+  end(operation, context = {}) {
+    if (!this.isEnabled || !this.measurements.has(operation)) return null;
+
+    const measurement = this.measurements.get(operation);
+    const endTime = process.hrtime(measurement.startTime);
+    const endMemory = process.memoryUsage();
+
+    const durationMs = endTime[0] * 1000 + endTime[1] / 1000000;
+    const memoryDiff = {
+      heapUsed: endMemory.heapUsed - measurement.startMemory.heapUsed,
+      heapTotal: endMemory.heapTotal - measurement.startMemory.heapTotal,
+      external: endMemory.external - measurement.startMemory.external,
+    };
+
+    const results = {
+      operation,
+      type: measurement.type,
+      duration: durationMs,
+      memory: memoryDiff,
+      success: context.success !== false,
+      timestamp: new Date().toISOString(),
+      ...context,
+    };
+
+    // Log the results if enabled
+    if (this.logger) {
+      this.logger.info('Performance measurement:', results);
+    }
+
+    this.measurements.delete(operation);
     return results;
   }
 
+  /**
+   * Get current memory usage
+   * @returns {Object} Memory usage stats
+   */
   getMemoryUsage() {
     return process.memoryUsage();
   }
-}
 
-/**
- * Track memory usage during batch processing
- * @param {Array} items - Items to process
- * @param {Function} processItem - Function to process a single item
- * @param {Object} options - Processing options
- * @returns {Promise<Array>} Processed items
- */
-async function trackMemory(items, processItem, options = {}) {
-    const { 
-        batchSize = 100,
-        gcThreshold = 50 * 1024 * 1024, // 50MB
-        onProgress = () => {}
-    } = options;
+  /**
+   * Process items in batches with performance monitoring
+   * @param {Array} items - Items to process
+   * @param {Function} processor - Processing function for each item
+   * @param {Object} options - Processing options
+   * @returns {Promise<Array>} Processed results
+   */
+  async processBatch(items, processor, options = {}) {
+    const { batchSize = 100, onProgress = null, operationName = 'batch_processing' } = options;
 
-    const processedItems = [];
-    let currentBatch = [];
+    this.start(operationName, MetricTypes.RESPONSE_TIME);
+    const results = [];
 
-    for (let i = 0; i < items.length; i++) {
-        currentBatch.push(items[i]);
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      const batchResults = await Promise.all(
+        batch.map((item) => processor(item).catch((error) => ({ error })))
+      );
 
-        if (currentBatch.length >= batchSize || i === items.length - 1) {
-            // Process current batch
-            const batchResults = await Promise.all(
-                currentBatch.map(item => processItem(item))
-            );
-            processedItems.push(...batchResults);
+      results.push(...batchResults);
 
-            // Clear the batch
-            currentBatch = [];
-
-            // Report progress
-            await onProgress({
-                processed: processedItems.length,
-                total: items.length,
-                memory: process.memoryUsage().heapUsed
-            });
-
-            // Run garbage collection if memory usage is high
-            if (process.memoryUsage().heapUsed > gcThreshold) {
-                global.gc && global.gc();
-            }
-        }
+      if (onProgress) {
+        const progress = {
+          processed: i + batch.length,
+          total: items.length,
+          percentage: Math.round(((i + batch.length) / items.length) * 100),
+        };
+        onProgress(progress);
+      }
     }
 
-    return processedItems;
+    const metrics = this.end(operationName, {
+      itemCount: items.length,
+      batchCount: Math.ceil(items.length / batchSize),
+    });
+
+    return {
+      results,
+      metrics,
+    };
+  }
 }
 
+// Export performance monitoring API
 module.exports = {
   MetricTypes,
-  createMetricsState,
-  startMeasurement,
-  endMeasurement,
-  createPerformanceMiddleware,
   PerformanceMonitor,
-  trackMemory
-}; 
+};
