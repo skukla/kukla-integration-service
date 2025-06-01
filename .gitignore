@@ -12,6 +12,7 @@ config.json
 .env*
 .aio
 config/generated/
+web-src/src/config/generated/
 
 # Adobe I/O console config
 console.json
