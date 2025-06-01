@@ -5,9 +5,38 @@
 
 module.exports = {
   app: {
+    name: 'kukla-integration-service',
+    version: '0.0.1',
+    environment: 'staging',
     runtime: {
-      environment: 'staging'
-    }
+      environment: 'staging',
+    },
+    performance: {
+      enabled: true,
+      thresholds: {
+        api: {
+          warning: 800, // Moderate threshold for staging
+          critical: 2500,
+        },
+        rendering: {
+          warning: 250,
+          critical: 900,
+        },
+      },
+    },
+    monitoring: {
+      tracing: {
+        enabled: true, // Enable tracing in staging
+        logLevel: 'info',
+        stepLogging: true, // Log each step execution
+        errorVerbosity: 'summary', // Include error summaries
+        performance: {
+          enabled: true,
+          includeMemory: true, // Track memory usage in traces
+          includeTimings: true, // Track detailed timings
+        },
+      },
+    },
   },
   url: {
     runtime: {
@@ -17,101 +46,139 @@ module.exports = {
       version: 'v1',
       paths: {
         web: '/web',
-        base: '/api'
-      }
+        base: '/api',
+      },
     },
     commerce: {
-      baseUrl: 'https://citisignal-com774-dev.adobedemo.com',
+      baseUrl: 'https://citisignal-com774.adobedemo.com',
       version: 'V1',
       paths: {
         adminToken: '/integration/admin/token',
         products: '/products',
         stockItem: '/inventory/source-items',
         category: '/categories/:id',
-        categoryList: '/categories'
-      }
-    }
+        categoryList: '/categories',
+      },
+    },
   },
   commerce: {
     api: {
-      timeout: 45000, // 45 second timeout
+      timeout: 30000,
       retry: {
-        attempts: 2,
-        delay: 1000
+        attempts: 3,
+        delay: 1000,
       },
       batch: {
-        size: 25 // Moderate batch size for staging
+        size: 50,
+        inventory: 25, // Intermediate batch size for staging
+        delay: 75, // Intermediate delay for staging
       },
       cache: {
-        duration: 60 // 1 minute cache in staging
-      }
-    }
+        duration: 1800, // 30 minutes cache in staging
+      },
+      concurrency: {
+        maxRequests: 15, // Moderate concurrency for staging
+      },
+    },
+    product: {
+      pagination: {
+        pageSize: 50, // Moderate page size for staging
+        maxPages: 20, // Moderate number of pages for staging
+      },
+    },
   },
   security: {
     authentication: {
       commerce: {
         type: 'token',
         tokenRefresh: {
-          enabled: true
-        }
-      }
-    }
+          enabled: true,
+          interval: 3600, // 1 hour refresh interval
+        },
+      },
+    },
+  },
+  storage: {
+    csv: {
+      chunkSize: 200,
+      compressionLevel: 6,
+      streamBufferSize: 32768,
+    },
   },
   testing: {
     api: {
       local: {
-        baseUrl: 'https://localhost:9080',
-        port: 9080
-      },
-      staging: {
-        baseUrl: 'https://285361-188maroonwallaby-stage.adobeio-static.net'
-      },
-      production: {
-        baseUrl: 'https://285361-188maroonwallaby.adobeio-static.net'
+        baseUrl: 'https://285361-188maroonwallaby-stage.adobeioruntime.net',
+        port: 443,
       },
       defaults: {
-        endpoint: 'get-products',
-        method: 'POST',
-        fields: 'sku,name,price,qty,categories,images'
-      }
+        endpoint: '/products',
+        method: 'GET',
+      },
+      timeout: 30000,
+      retry: {
+        attempts: 3,
+        delay: 1000,
+      },
+      logLevel: 'info', // Standard logging in staging
     },
     performance: {
       scenarios: {
-        small: {
-          name: 'Small Dataset',
-          params: {
-            limit: 50,
-            include_inventory: true,
-            include_categories: true
-          }
+        productExport: {
+          name: 'Product Export',
+          description: 'Test product export performance',
+          steps: [
+            {
+              name: 'Fetch Products',
+              type: 'api',
+              config: {
+                endpoint: '/products',
+                method: 'GET',
+              },
+              weight: 60,
+              think: 1500,
+            },
+            {
+              name: 'Process Data',
+              type: 'data',
+              config: {
+                transform: true,
+                validate: true,
+              },
+              weight: 30,
+              think: 750,
+            },
+            {
+              name: 'Store Results',
+              type: 'storage',
+              config: {
+                format: 'csv',
+                compress: true,
+              },
+              weight: 10,
+              think: 500,
+            },
+          ],
+          concurrency: 10, // Moderate concurrency for staging
+          duration: 60, // Standard duration for staging
+          rampUp: 10, // Moderate ramp up for staging
         },
-        medium: {
-          name: 'Medium Dataset',
-          params: {
-            limit: 100,
-            include_inventory: true,
-            include_categories: true
-          }
-        },
-        large: {
-          name: 'Large Dataset',
-          params: {
-            limit: 200,
-            include_inventory: true,
-            include_categories: true
-          }
-        }
       },
       thresholds: {
-        executionTime: 0.15,
-        memory: 0.10,
-        products: 0,
-        categories: 0,
-        compression: 0.05
+        executionTime: 20000, // Moderate threshold for staging
+        memory: 384, // Moderate memory threshold for staging
+        products: 75, // Moderate product processing threshold
+        categories: 35, // Moderate category processing threshold
+        compression: 0.4, // Moderate compression ratio for staging
+        responseTime: {
+          p95: 750, // Moderate response time thresholds for staging
+          p99: 1500,
+        },
+        errorRate: 2, // Moderate error rate tolerance in staging
       },
       baseline: {
-        maxAgeDays: 7
-      }
-    }
-  }
-}; 
+        maxAgeDays: 14, // Two weeks baseline age for staging
+      },
+    },
+  },
+};
