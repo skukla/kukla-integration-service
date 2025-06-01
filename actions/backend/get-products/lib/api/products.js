@@ -2,50 +2,20 @@
  * Product-related API calls to Adobe Commerce
  * @module lib/api/products
  */
-const endpoints = require('./commerce-endpoints');
-const { makeCommerceRequest } = require('../../../../../src/commerce/api/integration');
+const commerceEndpoints = require('./commerce-endpoints');
+const { loadConfig } = require('../../../../../config');
+const { getRequestedFields } = require('../../../../../src/commerce/data/product');
+const { request, buildHeaders } = require('../../../../../src/core/http/client');
+const { buildCommerceUrl } = require('../../../../../src/core/routing');
+const { MemoryCache } = require('../../../../../src/core/storage/cache');
+
+// Load configuration
+const config = loadConfig();
 const {
-  http: { buildHeaders },
-  routing: { buildCommerceUrl },
-  cache,
-} = require('../../../../../src/core');
-
-// Configuration constants
-const DEFAULT_PAGE_SIZE = 100;
-const INVENTORY_BATCH_SIZE = 20;
-const MAX_CONCURRENT_REQUESTS = 10;
-const CACHE_TTL = 3600;
-
-/**
- * Process items in batches with concurrency control
- * @private
- * @param {Array} items - Items to process
- * @param {function} processItem - Function to process a single item
- * @param {Object} options - Processing options
- * @returns {Promise<Array>} Processed results
- */
-async function processBatch(items, processItem, { batchSize = 10 } = {}) {
-  const results = [];
-
-  for (let i = 0; i < items.length; i += batchSize) {
-    const batch = items.slice(i, i + batchSize);
-    const batchPromises = batch.map(processItem);
-
-    // Process batch with concurrency limit
-    const batchResults = await Promise.all(
-      batchPromises.map((p) => p.catch((error) => ({ error })))
-    );
-
-    results.push(...batchResults);
-
-    // Optional delay between batches to prevent rate limiting
-    if (i + batchSize < items.length) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-
-  return results;
-}
+  api: {
+    cache: { duration: CACHE_TTL },
+  },
+} = config.commerce;
 
 /**
  * Make a cached request
@@ -56,81 +26,48 @@ async function processBatch(items, processItem, { batchSize = 10 } = {}) {
  */
 async function makeCachedRequest(url, options) {
   const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
-
-  const cached = await cache.get(cacheKey);
+  const cached = MemoryCache.get(cacheKey, { ttl: CACHE_TTL });
   if (cached) {
     return cached;
   }
-
-  const response = await makeCommerceRequest(url, options);
-  await cache.set(cacheKey, response, CACHE_TTL);
-
+  const response = await request(url, options);
+  MemoryCache.set(cacheKey, response);
   return response;
 }
 
 /**
- * Fetch products from Adobe Commerce with pagination
- * @param {string} token - Authentication token
- * @param {Object} params - Request parameters
- * @param {string} params.COMMERCE_URL - Commerce instance URL
- * @param {number} [params.limit] - Maximum number of products to fetch
- * @returns {Promise<Object[]>} Array of product objects
+ * Filter product data to include only requested fields
+ * @private
+ * @param {Object} product - Raw product data
+ * @param {Array<string>} fields - Fields to include
+ * @returns {Object} Filtered product data
  */
-async function fetchAllProducts(token, params) {
-  const products = [];
-  let currentPage = 1;
-  let hasMorePages = true;
-
-  while (hasMorePages) {
-    const url = buildCommerceUrl(
-      params.COMMERCE_URL,
-      endpoints.products({
-        pageSize: DEFAULT_PAGE_SIZE,
-        currentPage,
-      })
-    );
-
-    const response = await makeCommerceRequest(url, {
-      method: 'GET',
-      headers: buildHeaders(token),
-    });
-
-    if (response.statusCode !== 200) {
-      throw new Error(`Failed to fetch products: ${JSON.stringify(response.body)}`);
+function filterProductFields(product, fields) {
+  const filtered = {};
+  fields.forEach((field) => {
+    if (product[field] !== undefined) {
+      filtered[field] = product[field];
     }
-
-    const pageProducts = response.body.items || [];
-    products.push(...pageProducts);
-
-    // Check if we've reached the limit
-    if (params.limit && products.length >= params.limit) {
-      return products.slice(0, params.limit);
-    }
-
-    // Check if there are more pages
-    const totalPages = Math.ceil((response.body.total_count || 0) / DEFAULT_PAGE_SIZE);
-    hasMorePages = currentPage < totalPages;
-    currentPage++;
-  }
-
-  return products;
+  });
+  return filtered;
 }
 
 /**
  * Fetch inventory data for a product
  * @param {string} sku - Product SKU
  * @param {string} token - Authentication token
- * @param {Object} params - Request parameters
+ * @param {string} baseUrl - Commerce base URL
  * @returns {Promise<Object>} Inventory data
  */
-async function getInventory(sku, token, params) {
-  const url = buildCommerceUrl(params.COMMERCE_URL, endpoints.stockItem(sku));
+async function getInventory(sku, token, baseUrl) {
+  const endpoint = commerceEndpoints.stockItem(sku);
+  const url = buildCommerceUrl(baseUrl, endpoint);
   const response = await makeCachedRequest(url, {
     method: 'GET',
     headers: buildHeaders(token),
   });
 
-  if (response.statusCode === 200 && response.body.items && response.body.items.length > 0) {
+  if (response.body && Array.isArray(response.body.items) && response.body.items.length > 0) {
     const totalQty = response.body.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
     const isInStock = response.body.items.some((item) => item.status === 1);
     return {
@@ -138,7 +75,6 @@ async function getInventory(sku, token, params) {
       is_in_stock: isInStock,
     };
   }
-
   return {
     qty: 0,
     is_in_stock: false,
@@ -146,76 +82,60 @@ async function getInventory(sku, token, params) {
 }
 
 /**
- * Enrich products with inventory data using batch processing
- * @param {Object[]} products - Array of product objects
+ * Fetches all products with pagination and enriches them with inventory data
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
- * @returns {Promise<Object[]>} Products enriched with inventory data
+ * @returns {Promise<Array>} Array of products
  */
-async function enrichWithInventory(products, token, params) {
-  // Filter products that need inventory data
-  const productsNeedingInventory = products.filter(
-    (product) => product.type_id === 'simple' || product.type_id === 'virtual'
+async function fetchAllProducts(token, params = {}) {
+  const { COMMERCE_URL } = params;
+  if (!COMMERCE_URL) {
+    throw new Error('COMMERCE_URL is required');
+  }
+
+  const endpoint = commerceEndpoints.products(params);
+  console.log('Fetching products from endpoint:', endpoint);
+
+  const url = buildCommerceUrl(COMMERCE_URL, endpoint);
+  const response = await makeCachedRequest(url, {
+    method: 'GET',
+    headers: buildHeaders(token),
+  });
+
+  if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
+    console.log('No items found in response:', response);
+    return [];
+  }
+
+  // Get the fields to include
+  const fields = getRequestedFields(params);
+
+  // Enrich products with inventory data and filter fields
+  const products = await Promise.all(
+    response.body.items.map(async (product) => {
+      const inventory = await getInventory(product.sku, token, COMMERCE_URL);
+      const enrichedProduct = {
+        ...product,
+        ...inventory,
+      };
+      return filterProductFields(enrichedProduct, fields);
+    })
   );
 
-  // Process inventory requests in batches
-  const inventoryResults = await processBatch(
-    productsNeedingInventory,
-    async (product) => {
-      try {
-        const inventory = await getInventory(product.sku, token, params);
-        return { sku: product.sku, inventory };
-      } catch (error) {
-        return {
-          sku: product.sku,
-          inventory: { qty: 0, is_in_stock: false },
-        };
-      }
-    },
-    {
-      batchSize: INVENTORY_BATCH_SIZE,
-      maxConcurrent: MAX_CONCURRENT_REQUESTS,
-    }
-  );
-
-  // Build inventory map from results
-  const inventoryMap = inventoryResults.reduce((map, result) => {
-    map[result.sku] = result.inventory;
-    return map;
-  }, {});
-
-  // Enrich all products with inventory data
-  const enrichedProducts = products.map((product) => ({
-    ...product,
-    qty: inventoryMap[product.sku]?.qty || 0,
-    is_in_stock: inventoryMap[product.sku]?.is_in_stock || false,
-  }));
-
-  return enrichedProducts;
+  return products;
 }
 
 /**
  * Get products from Adobe Commerce
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
- * @param {string} params.COMMERCE_URL - Commerce instance URL
- * @param {boolean} [params.include_inventory=false] - Whether to include inventory data
  * @returns {Promise<Object[]>} Array of product objects
  */
 async function getProducts(token, params) {
-  // Fetch all products
-  const products = await fetchAllProducts(token, params);
-
-  // If inventory data is requested, enrich products with it
-  if (params.include_inventory) {
-    return enrichWithInventory(products, token, params);
-  }
-
-  return products;
+  return fetchAllProducts(token, params);
 }
 
 module.exports = {
   getProducts,
   fetchAllProducts,
-  enrichWithInventory,
 };
