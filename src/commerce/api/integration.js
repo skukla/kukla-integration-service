@@ -4,27 +4,19 @@
  */
 
 const { createClient } = require('./client');
+const { loadConfig } = require('../../../config');
 const {
   http: { buildHeaders },
-  routing: { buildCommerceUrl },
 } = require('../../core');
 
-/**
- * Makes a Commerce API request with commerce-specific handling
- * @param {string} url - Request URL
- * @param {Object} options - Request options
- * @returns {Promise<Object>} Response data
- */
-async function makeCommerceRequest(url, options = {}) {
-  const client = createClient();
-  return client.request(url, {
-    ...options,
-    headers: {
-      ...buildHeaders(),
-      ...(options.headers || {}),
+// Load configuration with proper destructuring
+const {
+  url: {
+    commerce: {
+      paths: { adminToken: ADMIN_TOKEN_PATH },
     },
-  });
-}
+  },
+} = loadConfig();
 
 /**
  * Gets an authentication token from Adobe Commerce
@@ -35,8 +27,8 @@ async function makeCommerceRequest(url, options = {}) {
  * @returns {Promise<string>} Authentication token
  */
 async function getAuthToken(params) {
-  const url = buildCommerceUrl(params.COMMERCE_URL, '/rest/V1/integration/admin/token');
-  const response = await makeCommerceRequest(url, {
+  const client = createClient();
+  const response = await client.request(ADMIN_TOKEN_PATH, {
     method: 'POST',
     body: JSON.stringify({
       username: params.COMMERCE_ADMIN_USERNAME,
@@ -45,18 +37,52 @@ async function getAuthToken(params) {
   });
 
   if (response.statusCode !== 200) {
-    throw new Error(`Failed to get auth token: ${response.body}`);
+    throw new Error(`Failed to get auth token: ${JSON.stringify(response.body)}`);
   }
 
-  return response.body;
+  // Remove quotes if present in the token
+  return response.body.replace(/^"|"$/g, '');
 }
 
 /**
- * Batches multiple Commerce API requests with commerce-specific handling
+ * Makes a Commerce API request with proper authentication
+ * @param {string} url - Request URL
+ * @param {Object} options - Request options
+ * @param {Object} params - Request parameters including auth credentials
+ * @returns {Promise<Object>} Response data
+ */
+async function makeCommerceRequest(url, options = {}, params = {}) {
+  // Get auth token if not provided
+  let token = options.headers?.Authorization?.replace('Bearer ', '');
+  if (!token && params.COMMERCE_ADMIN_USERNAME && params.COMMERCE_ADMIN_PASSWORD) {
+    token = await getAuthToken(params);
+  }
+
+  if (!token) {
+    throw new Error('No authentication token available');
+  }
+
+  const client = createClient();
+  return client.request(url, {
+    ...options,
+    headers: {
+      ...buildHeaders(),
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+}
+
+/**
+ * Batches multiple Commerce API requests
  * @param {Array<Object>} requests - Array of request objects
+ * @param {Object} params - Request parameters including auth credentials
  * @returns {Promise<Array>} Array of responses
  */
-async function batchCommerceRequests(requests) {
+async function batchCommerceRequests(requests, params = {}) {
+  // Get auth token once for all requests
+  const token = await getAuthToken(params);
+
   const client = createClient();
   return client.processBatch(requests, async (batch) => {
     return Promise.all(
@@ -64,7 +90,7 @@ async function batchCommerceRequests(requests) {
         makeCommerceRequest(req.url, {
           ...req.options,
           headers: {
-            ...buildHeaders(),
+            Authorization: `Bearer ${token}`,
             ...(req.options?.headers || {}),
           },
         })
