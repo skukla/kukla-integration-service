@@ -16,11 +16,17 @@ function initializeValidator() {
   addFormats(ajv);
 
   // Load schemas
+  const commonPatterns = require('./schema/common.schema');
   const appSchema = require('./schema/app.schema');
   const commerceSchema = require('./schema/commerce.schema');
   const securitySchema = require('./schema/security.schema');
   const storageSchema = require('./schema/storage.schema');
   const urlSchema = require('./schema/url.schema');
+  const productSchema = require('./schema/product.schema');
+  const testingSchema = require('./schema/testing.schema');
+
+  // Register common patterns first
+  ajv.addSchema(commonPatterns, 'common');
 
   // Register required schemas
   ajv.addSchema(appSchema, 'app');
@@ -28,12 +34,8 @@ function initializeValidator() {
   ajv.addSchema(commerceSchema, 'commerce');
   ajv.addSchema(securitySchema, 'security');
   ajv.addSchema(storageSchema, 'storage');
-
-  // Register optional testing schemas if they exist
-  const apiTestSchema = require('./schema/api-testing.schema');
-  const performanceSchema = require('./schema/performance-testing.schema');
-  ajv.addSchema(apiTestSchema, 'api-test');
-  ajv.addSchema(performanceSchema, 'performance');
+  ajv.addSchema(productSchema, 'product');
+  ajv.addSchema(testingSchema, 'testing');
 
   return ajv;
 }
@@ -67,7 +69,6 @@ function loadSensitiveConfig(params = {}) {
   const token = params.COMMERCE_API_TOKEN || process.env.COMMERCE_API_TOKEN;
   const clientId = params.ADOBE_CLIENT_ID || process.env.ADOBE_CLIENT_ID;
   const clientSecret = params.ADOBE_CLIENT_SECRET || process.env.ADOBE_CLIENT_SECRET;
-  const commerceUrl = params.COMMERCE_URL || process.env.COMMERCE_URL;
 
   return {
     security: {
@@ -90,11 +91,6 @@ function loadSensitiveConfig(params = {}) {
             clientSecret,
           },
         },
-      },
-    },
-    url: {
-      commerce: {
-        baseUrl: commerceUrl,
       },
     },
   };
@@ -149,42 +145,17 @@ function loadConfig(params = {}) {
   // Merge configurations with environment-specific overrides
   const config = {
     app: envConfig.app,
-    url: {
-      runtime: {
-        baseUrl: 'https://localhost:9080',
-        namespace: 'local',
-        package: 'kukla-integration-service',
-        version: 'v1',
-      },
-      commerce: {
-        baseUrl: sensitiveConfig.url.commerce.baseUrl || 'https://your-commerce-instance.com',
-        version: 'V1',
-        paths: {
-          products: '/products',
-          categories: '/categories',
-          inventory: '/inventory/:sku/source-items',
-        },
-      },
-    },
+    url: envConfig.url,
     commerce: {
       ...envConfig.commerce,
-      ...sensitiveConfig.commerce,
+      ...sensitiveConfig.security?.authentication?.commerce,
     },
     security: {
       ...envConfig.security,
       ...sensitiveConfig.security,
     },
-    storage: {
-      csv: {
-        chunkSize: 100,
-        compressionLevel: 6,
-        streamBufferSize: 16384,
-      },
-    },
-    testing: {
-      api: envConfig.testing?.api,
-      performance: envConfig.testing?.performance,
-    },
+    storage: envConfig.storage,
+    testing: envConfig.testing,
   };
 
   // Validate required configuration sections
@@ -194,12 +165,9 @@ function loadConfig(params = {}) {
   validateConfig(ajv, config.security, 'security');
   validateConfig(ajv, config.storage, 'storage');
 
-  // Validate optional testing configuration if it exists
-  if (config.testing?.api) {
-    validateConfig(ajv, config.testing.api, 'api-test', false);
-  }
-  if (config.testing?.performance) {
-    validateConfig(ajv, config.testing.performance, 'performance', false);
+  // Validate testing configuration
+  if (config.testing) {
+    validateConfig(ajv, config.testing, 'testing');
   }
 
   return config;
