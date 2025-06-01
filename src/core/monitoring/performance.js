@@ -23,12 +23,55 @@ class PerformanceMonitor {
   constructor(logger, options = {}) {
     this.logger = logger;
     this.measurements = new Map();
-    this.config = loadConfig();
-    this.isEnabled = this._isPerformanceEnabled();
+
+    // Load configuration with proper destructuring
+    const {
+      app: {
+        performance: {
+          enabled: PERFORMANCE_ENABLED = true,
+          thresholds: {
+            api: { warning: API_WARNING_THRESHOLD, critical: API_CRITICAL_THRESHOLD },
+            rendering: { warning: RENDER_WARNING_THRESHOLD, critical: RENDER_CRITICAL_THRESHOLD },
+          },
+        },
+      },
+      testing: {
+        performance: {
+          thresholds: {
+            executionTime: EXECUTION_THRESHOLD,
+            memory: MEMORY_THRESHOLD,
+            responseTime: { p95: P95_THRESHOLD, p99: P99_THRESHOLD },
+            errorRate: ERROR_RATE_THRESHOLD,
+          },
+        },
+      },
+    } = loadConfig();
+
+    this.thresholds = {
+      api: {
+        warning: API_WARNING_THRESHOLD,
+        critical: API_CRITICAL_THRESHOLD,
+      },
+      rendering: {
+        warning: RENDER_WARNING_THRESHOLD,
+        critical: RENDER_CRITICAL_THRESHOLD,
+      },
+      execution: EXECUTION_THRESHOLD,
+      memory: MEMORY_THRESHOLD,
+      responseTime: {
+        p95: P95_THRESHOLD,
+        p99: P99_THRESHOLD,
+      },
+      errorRate: ERROR_RATE_THRESHOLD,
+    };
+
     this.options = {
-      sampleRate: options.sampleRate || this.config.app?.performance?.monitoring?.sampleRate || 0.1,
+      enabled: PERFORMANCE_ENABLED,
+      sampleRate: options.sampleRate || 0.1,
       ...options,
     };
+
+    this.isEnabled = this._isPerformanceEnabled();
   }
 
   /**
@@ -36,7 +79,7 @@ class PerformanceMonitor {
    * @private
    */
   _isPerformanceEnabled() {
-    return this.config.app?.performance?.enabled ?? false;
+    return this.options.enabled;
   }
 
   /**

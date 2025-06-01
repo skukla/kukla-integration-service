@@ -1,17 +1,54 @@
 /**
  * Default configuration for API testing
  */
+
+const { loadConfig } = require('../../../config');
+
+// Load configuration with proper destructuring
+const {
+  testing: {
+    api: {
+      defaults: { fields: DEFAULT_FIELDS, endpoint: DEFAULT_ENDPOINT, method: DEFAULT_METHOD },
+      timeout: API_TIMEOUT,
+      retry: { attempts: RETRY_ATTEMPTS, delay: RETRY_DELAY },
+      logLevel: LOG_LEVEL,
+    },
+    performance: {
+      thresholds: {
+        executionTime: EXECUTION_THRESHOLD,
+        memory: MEMORY_THRESHOLD,
+        responseTime: { p95: P95_THRESHOLD, p99: P99_THRESHOLD },
+        errorRate: ERROR_RATE_THRESHOLD,
+      },
+    },
+  },
+} = loadConfig();
+
 const defaultConfig = {
-  // Default fields for product tests
-  products: {
-    defaultFields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
+  // Default API test settings
+  api: {
+    endpoint: DEFAULT_ENDPOINT,
+    method: DEFAULT_METHOD,
+    fields: DEFAULT_FIELDS,
+    timeout: API_TIMEOUT,
+    retry: {
+      attempts: RETRY_ATTEMPTS,
+      delay: RETRY_DELAY,
+    },
+    logLevel: LOG_LEVEL,
   },
 
-  // Default timeouts and retries
-  request: {
-    timeout: 30000,
-    retries: 2,
-    retryDelay: 1000,
+  // Default performance settings
+  performance: {
+    thresholds: {
+      executionTime: EXECUTION_THRESHOLD,
+      memory: MEMORY_THRESHOLD,
+      responseTime: {
+        p95: P95_THRESHOLD,
+        p99: P99_THRESHOLD,
+      },
+      errorRate: ERROR_RATE_THRESHOLD,
+    },
   },
 
   // Validation settings
@@ -30,13 +67,25 @@ function getConfig(overrides = {}) {
   return {
     ...defaultConfig,
     ...overrides,
-    products: {
-      ...defaultConfig.products,
-      ...overrides.products,
+    api: {
+      ...defaultConfig.api,
+      ...overrides.api,
+      retry: {
+        ...defaultConfig.api.retry,
+        ...overrides.api?.retry,
+      },
     },
-    request: {
-      ...defaultConfig.request,
-      ...overrides.request,
+    performance: {
+      ...defaultConfig.performance,
+      ...overrides.performance,
+      thresholds: {
+        ...defaultConfig.performance.thresholds,
+        ...overrides.performance?.thresholds,
+        responseTime: {
+          ...defaultConfig.performance.thresholds.responseTime,
+          ...overrides.performance?.thresholds?.responseTime,
+        },
+      },
     },
     validation: {
       ...defaultConfig.validation,

@@ -5,7 +5,6 @@
 const https = require('https');
 
 const fetch = require('node-fetch');
-
 /**
  * Creates an HTTPS agent that accepts self-signed certificates
  * @returns {https.Agent} HTTPS agent
@@ -15,7 +14,6 @@ function createHttpsAgent() {
     rejectUnauthorized: false,
   });
 }
-
 /**
  * Builds standard headers for HTTP requests
  * @param {string} [token] - Optional bearer token
@@ -33,7 +31,6 @@ function buildHeaders(token, additional = {}) {
   }
   return headers;
 }
-
 /**
  * Extracts and returns the bearer token from request parameters
  * @param {Object} params - Request parameters
@@ -45,7 +42,6 @@ function getBearerToken(params) {
   const match = authHeader.match(/^Bearer (.+)$/);
   return match ? match[1] : undefined;
 }
-
 /**
  * Generic HTTP client for making requests
  * @param {string} url - The URL to make the request to
@@ -54,10 +50,8 @@ function getBearerToken(params) {
  */
 async function request(url, options = {}) {
   const agent = url.startsWith('https:') ? createHttpsAgent() : undefined;
-
   // Ensure method is uppercase
   const method = (options.method || 'GET').toUpperCase();
-
   // Build request options
   const requestOptions = {
     ...options,
@@ -68,39 +62,37 @@ async function request(url, options = {}) {
     },
     agent,
   };
-
   // Handle request body
   if (method !== 'GET' && method !== 'HEAD' && options.body) {
     requestOptions.body =
       typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
   }
-
-  const response = await fetch(url, requestOptions);
-
-  const contentType = response.headers.get('content-type');
-  let body;
-
-  if (contentType && contentType.includes('application/json')) {
-    body = await response.json();
-  } else {
-    body = await response.text();
-  }
-
-  if (!response.ok) {
-    const error = new Error(`HTTP error! status: ${response.status}`);
-    error.status = response.status;
-    error.statusText = response.statusText;
-    error.body = body;
+  try {
+    const response = await fetch(url, requestOptions);
+    const contentType = response.headers.get('content-type');
+    let body;
+    if (contentType && contentType.includes('application/json')) {
+      body = await response.json();
+    } else {
+      body = await response.text();
+    }
+    if (!response.ok) {
+      const error = new Error(`HTTP error! status: ${response.status}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.body = body;
+      throw error;
+    }
+    return {
+      statusCode: response.status,
+      headers: response.headers,
+      body,
+    };
+  } catch (error) {
+    console.warn(`Request failed for ${url}:`, error.message);
     throw error;
   }
-
-  return {
-    statusCode: response.status,
-    headers: response.headers,
-    body,
-  };
 }
-
 /**
  * Normalizes parameter names to uppercase for consistency
  * @param {Object} params - Parameters to normalize
@@ -119,7 +111,6 @@ function normalizeParams(params) {
   });
   return normalized;
 }
-
 /**
  * Extracts and processes parameters from a web action request
  * @param {Object} params - Raw parameters from the request
@@ -127,28 +118,24 @@ function normalizeParams(params) {
  */
 function extractActionParams(params) {
   let bodyParams = {};
-
   // Handle parameters passed in __ow_body (common in web actions)
   if (params.__ow_body) {
     try {
       // If body is base64 encoded
       const bodyStr = Buffer.from(params.__ow_body, 'base64').toString('utf8');
       bodyParams = JSON.parse(bodyStr);
-    } catch (e) {
-      console.warn('Failed to parse request body:', e);
+    } catch (error) {
+      console.warn('Failed to parse body parameters:', error.message);
     }
   }
-
   // Remove OpenWhisk specific parameters
   const cleanParams = { ...params };
   ['__ow_body', '__ow_headers', '__ow_method', '__ow_path', '__ow_query'].forEach((key) => {
     delete cleanParams[key];
   });
-
   // Merge and normalize parameters
   return normalizeParams({ ...cleanParams, ...bodyParams });
 }
-
 /**
  * Checks for missing required parameters
  * @param {Object} params - Parameters to check
@@ -162,7 +149,6 @@ function checkMissingParams(params, requiredParams) {
   }
   return null;
 }
-
 module.exports = {
   // Headers utilities
   buildHeaders,

@@ -12,19 +12,42 @@ const { loadConfig } = require('../../../config');
  * @returns {Object} Baseline manager methods
  */
 function createBaselineManager(options = {}) {
-  const config = loadConfig().performance;
+  // Load configuration with proper destructuring
+  const {
+    testing: {
+      performance: {
+        baseline: { maxAgeDays: DEFAULT_MAX_AGE },
+        thresholds: {
+          executionTime: EXECUTION_THRESHOLD,
+          memory: MEMORY_THRESHOLD,
+          products: PRODUCTS_THRESHOLD,
+          categories: CATEGORIES_THRESHOLD,
+          compression: COMPRESSION_THRESHOLD,
+          responseTime: { p95: P95_THRESHOLD, p99: P99_THRESHOLD },
+          errorRate: ERROR_RATE_THRESHOLD,
+        },
+      },
+    },
+  } = loadConfig();
+
   const baselineConfig = {
     baselineFile: options.baselineFile || path.join(process.cwd(), 'config/baseline-metrics.json'),
-    maxAgeDays: options.maxAgeDays || config.baseline.maxAgeDays,
+    maxAgeDays: options.maxAgeDays || DEFAULT_MAX_AGE,
     thresholds: {
-      executionTime: config.thresholds.executionTime,
-      memory: config.thresholds.memory,
-      products: config.thresholds.products,
-      categories: config.thresholds.categories,
-      compression: config.thresholds.compression,
+      executionTime: EXECUTION_THRESHOLD,
+      memory: MEMORY_THRESHOLD,
+      products: PRODUCTS_THRESHOLD,
+      categories: CATEGORIES_THRESHOLD,
+      compression: COMPRESSION_THRESHOLD,
+      responseTime: {
+        p95: P95_THRESHOLD,
+        p99: P99_THRESHOLD,
+      },
+      errorRate: ERROR_RATE_THRESHOLD,
       ...options.thresholds,
     },
   };
+
   const spinner = ora();
 
   function loadBaselines() {
@@ -141,6 +164,27 @@ function createBaselineManager(options = {}) {
         baseline: baseline.categories,
         threshold: baselineConfig.thresholds.categories,
       },
+      {
+        name: 'Response p95',
+        current: currentMetrics.responseTime?.p95,
+        baseline: baseline.responseTime?.p95,
+        unit: 'ms',
+        threshold: baselineConfig.thresholds.responseTime.p95,
+      },
+      {
+        name: 'Response p99',
+        current: currentMetrics.responseTime?.p99,
+        baseline: baseline.responseTime?.p99,
+        unit: 'ms',
+        threshold: baselineConfig.thresholds.responseTime.p99,
+      },
+      {
+        name: 'Error rate',
+        current: currentMetrics.errorRate,
+        baseline: baseline.errorRate,
+        unit: '%',
+        threshold: baselineConfig.thresholds.errorRate,
+      },
     ];
 
     if (baseline.compression !== null && currentMetrics.compression !== null) {
@@ -156,6 +200,9 @@ function createBaselineManager(options = {}) {
     // Print comparisons
     spinner.info('📊 Performance Comparison:');
     comparisons.forEach((comp) => {
+      if (comp.current === undefined || comp.baseline === undefined) {
+        return;
+      }
       const status = getStatus(comp.current, comp.baseline, comp.threshold);
       verdicts.push(status.icon);
       const value = comp.scale
@@ -199,6 +246,8 @@ function createBaselineManager(options = {}) {
     saveBaseline,
     compareWithBaseline,
     getThresholds: () => baselineConfig.thresholds,
+    loadBaselines,
+    config: baselineConfig,
   };
 }
 
