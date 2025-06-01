@@ -4,7 +4,6 @@
  */
 const { getAuthToken: getCommerceAuthToken } = require('../../../../src/commerce/api/integration');
 const { createTraceContext, traceStep } = require('../../../../src/core/tracing');
-
 /**
  * Gets an authentication token from Adobe Commerce
  * @param {Object} params - Action parameters containing credentials
@@ -12,7 +11,6 @@ const { createTraceContext, traceStep } = require('../../../../src/core/tracing'
  */
 async function getAuthToken(params) {
   const trace = createTraceContext('auth', params);
-
   try {
     return await traceStep(trace, 'get-commerce-token', () => getCommerceAuthToken(params));
   } catch (error) {
@@ -20,7 +18,6 @@ async function getAuthToken(params) {
     throw new Error(`Authentication failed: ${error.message}`);
   }
 }
-
 module.exports = {
   getAuthToken,
 };

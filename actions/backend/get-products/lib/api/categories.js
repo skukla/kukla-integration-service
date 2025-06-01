@@ -9,16 +9,13 @@ const {
   routing: { buildCommerceUrl },
   cache,
 } = require('../../../../../src/core');
-
 // Optimal values for category operations
 const CATEGORY_BATCH_SIZE = 20;
 const REQUEST_RETRIES = 2;
 const RETRY_DELAY = 1000;
 const CACHE_TTL = 3600; // 1 hour cache TTL
-
 // In-memory cache for category data
 const categoryCache = new Map();
-
 /**
  * Get cached category data
  * @private
@@ -35,7 +32,6 @@ function getCachedCategory(categoryId) {
   }
   return null;
 }
-
 /**
  * Cache category data
  * @private
@@ -48,7 +44,6 @@ function cacheCategory(categoryId, data) {
     data,
   });
 }
-
 /**
  * Extract category IDs from a product
  * @param {Object} product - Product object
@@ -56,12 +51,10 @@ function cacheCategory(categoryId, data) {
  */
 function getCategoryIds(product) {
   const categoryIds = new Set();
-
   // Check category_ids array
   if (Array.isArray(product.category_ids)) {
     product.category_ids.forEach((id) => categoryIds.add(String(id)));
   }
-
   // Check extension_attributes.category_links
   if (Array.isArray(product.extension_attributes?.category_links)) {
     product.extension_attributes.category_links.forEach((link) => {
@@ -70,10 +63,8 @@ function getCategoryIds(product) {
       }
     });
   }
-
   return Array.from(categoryIds);
 }
-
 /**
  * Process categories in parallel with retries
  * @private
@@ -89,7 +80,6 @@ async function processCategoriesParallel(categoryIds, token, params) {
     if (cached) {
       return { id: categoryId, ...cached };
     }
-
     let retryCount = 0;
     while (retryCount < REQUEST_RETRIES) {
       try {
@@ -100,7 +90,6 @@ async function processCategoriesParallel(categoryIds, token, params) {
             headers: buildHeaders(token),
           }
         );
-
         if (response.statusCode === 200) {
           const category = {
             id: categoryId,
@@ -110,13 +99,10 @@ async function processCategoriesParallel(categoryIds, token, params) {
             parent_id: response.body.parent_id,
             children: response.body.children,
           };
-
           // Cache the result
           cacheCategory(categoryId, category);
           return category;
         }
-
-        console.warn(`Failed to fetch category ${categoryId} - Status: ${response.statusCode}`);
         return null;
       } catch (error) {
         retryCount++;
@@ -125,14 +111,11 @@ async function processCategoriesParallel(categoryIds, token, params) {
         }
       }
     }
-    console.warn(`Failed to fetch category ${categoryId} after ${REQUEST_RETRIES} retries`);
     return null;
   });
-
   const results = await Promise.all(batchPromises);
   return results.filter(Boolean);
 }
-
 /**
  * Process categories in batches with parallel execution
  * @private
@@ -143,29 +126,23 @@ async function processCategoriesParallel(categoryIds, token, params) {
  */
 async function processCategoriesInBatches(categoryIds, token, params) {
   const results = {};
-
   for (let i = 0; i < categoryIds.length; i += CATEGORY_BATCH_SIZE) {
     const batchIds = categoryIds.slice(i, i + CATEGORY_BATCH_SIZE);
-
     // Process batch in parallel
     const batchResults = await processCategoriesParallel(batchIds, token, params);
-
     // Add successful results to map
     batchResults.forEach((category) => {
       if (category) {
         results[category.id] = category;
       }
     });
-
     // Add small delay between batches to prevent rate limiting
     if (i + CATEGORY_BATCH_SIZE < categoryIds.length) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
-
   return results;
 }
-
 /**
  * Builds a map of category IDs to category names with caching
  * @param {Array<Object>} products - Array of product objects
@@ -177,7 +154,6 @@ async function buildCategoryMap(products, token, params) {
   // Get all category IDs from all products and deduplicate them
   const allCategoryIds = products.flatMap((product) => getCategoryIds(product));
   const categoryIds = [...new Set(allCategoryIds)];
-
   // Check cache for all categories first
   const cachedCategories = {};
   const uncachedIds = categoryIds.filter((id) => {
@@ -188,20 +164,16 @@ async function buildCategoryMap(products, token, params) {
     }
     return true;
   });
-
   if (uncachedIds.length > 0) {
     const newCategories = await processCategoriesInBatches(uncachedIds, token, params);
-
     // Merge cached and new categories
     return {
       ...cachedCategories,
       ...newCategories,
     };
   }
-
   return cachedCategories;
 }
-
 /**
  * Make a cached request
  * @private
@@ -211,18 +183,14 @@ async function buildCategoryMap(products, token, params) {
  */
 async function makeCachedRequest(url, options) {
   const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
-
   const cached = await cache.get(cacheKey);
   if (cached) {
     return cached;
   }
-
   const response = await makeCommerceRequest(url, options);
   await cache.set(cacheKey, response, CACHE_TTL);
-
   return response;
 }
-
 /**
  * Get category details by ID
  * @param {string} categoryId - Category ID
@@ -236,14 +204,11 @@ async function getCategory(categoryId, token, params) {
     method: 'GET',
     headers: buildHeaders(token),
   });
-
   if (response.statusCode !== 200) {
     throw new Error(`Failed to fetch category ${categoryId}: ${JSON.stringify(response.body)}`);
   }
-
   return response.body;
 }
-
 /**
  * Enrich products with category data
  * @param {Object[]} products - Array of product objects
@@ -254,7 +219,6 @@ async function getCategory(categoryId, token, params) {
 async function enrichProductsWithCategories(products, token, params) {
   // Create a map to store category details
   const categoryMap = new Map();
-
   // Get unique category IDs from all products
   const categoryIds = new Set();
   products.forEach((product) => {
@@ -262,7 +226,6 @@ async function enrichProductsWithCategories(products, token, params) {
       product.category_ids.forEach((id) => categoryIds.add(id));
     }
   });
-
   // Fetch category details for each unique ID
   await Promise.all(
     Array.from(categoryIds).map(async (categoryId) => {
@@ -274,7 +237,6 @@ async function enrichProductsWithCategories(products, token, params) {
       }
     })
   );
-
   // Enrich products with category names
   return products.map((product) => ({
     ...product,
@@ -283,10 +245,31 @@ async function enrichProductsWithCategories(products, token, params) {
       : [],
   }));
 }
+/**
+ * Fetches all categories from Adobe Commerce
+ * @param {string} token - Authentication token
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object[]>} Array of category objects
+ */
+async function getCategories(token, params) {
+  const { COMMERCE_URL } = params;
+  if (!COMMERCE_URL) {
+    throw new Error('COMMERCE_URL is required');
+  }
 
+  const endpoint = endpoints.categoryList();
+  const url = buildCommerceUrl(COMMERCE_URL, endpoint);
+  const response = await makeCommerceRequest(url, {
+    method: 'GET',
+    headers: buildHeaders(token),
+  });
+
+  return response.body;
+}
 module.exports = {
   getCategoryIds,
   buildCategoryMap,
   enrichProductsWithCategories,
   getCategory,
+  getCategories,
 };
