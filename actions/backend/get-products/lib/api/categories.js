@@ -3,19 +3,27 @@
  * @module lib/api/categories
  */
 const endpoints = require('./commerce-endpoints');
+const { loadConfig } = require('../../../../../config');
 const { makeCommerceRequest } = require('../../../../../src/commerce/api/integration');
 const {
   http: { buildHeaders },
   routing: { buildCommerceUrl },
   cache,
 } = require('../../../../../src/core');
-// Optimal values for category operations
-const CATEGORY_BATCH_SIZE = 20;
-const REQUEST_RETRIES = 2;
-const RETRY_DELAY = 1000;
-const CACHE_TTL = 3600; // 1 hour cache TTL
+
+// Load configuration with proper destructuring
+const {
+  category: {
+    batchSize: BATCH_SIZE,
+    requestRetries: REQUEST_RETRIES,
+    retryDelay: RETRY_DELAY,
+    cacheTtl: CACHE_TTL,
+  },
+} = loadConfig();
+
 // In-memory cache for category data
 const categoryCache = new Map();
+
 /**
  * Get cached category data
  * @private
@@ -32,6 +40,7 @@ function getCachedCategory(categoryId) {
   }
   return null;
 }
+
 /**
  * Cache category data
  * @private
@@ -44,6 +53,7 @@ function cacheCategory(categoryId, data) {
     data,
   });
 }
+
 /**
  * Extract category IDs from a product
  * @param {Object} product - Product object
@@ -65,6 +75,7 @@ function getCategoryIds(product) {
   }
   return Array.from(categoryIds);
 }
+
 /**
  * Process categories in parallel with retries
  * @private
@@ -116,6 +127,7 @@ async function processCategoriesParallel(categoryIds, token, params) {
   const results = await Promise.all(batchPromises);
   return results.filter(Boolean);
 }
+
 /**
  * Process categories in batches with parallel execution
  * @private
@@ -126,8 +138,9 @@ async function processCategoriesParallel(categoryIds, token, params) {
  */
 async function processCategoriesInBatches(categoryIds, token, params) {
   const results = {};
-  for (let i = 0; i < categoryIds.length; i += CATEGORY_BATCH_SIZE) {
-    const batchIds = categoryIds.slice(i, i + CATEGORY_BATCH_SIZE);
+
+  for (let i = 0; i < categoryIds.length; i += BATCH_SIZE) {
+    const batchIds = categoryIds.slice(i, i + BATCH_SIZE);
     // Process batch in parallel
     const batchResults = await processCategoriesParallel(batchIds, token, params);
     // Add successful results to map
@@ -137,12 +150,13 @@ async function processCategoriesInBatches(categoryIds, token, params) {
       }
     });
     // Add small delay between batches to prevent rate limiting
-    if (i + CATEGORY_BATCH_SIZE < categoryIds.length) {
+    if (i + BATCH_SIZE < categoryIds.length) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
   return results;
 }
+
 /**
  * Builds a map of category IDs to category names with caching
  * @param {Array<Object>} products - Array of product objects
@@ -174,6 +188,7 @@ async function buildCategoryMap(products, token, params) {
   }
   return cachedCategories;
 }
+
 /**
  * Make a cached request
  * @private
@@ -191,6 +206,7 @@ async function makeCachedRequest(url, options) {
   await cache.set(cacheKey, response, CACHE_TTL);
   return response;
 }
+
 /**
  * Get category details by ID
  * @param {string} categoryId - Category ID
@@ -209,6 +225,7 @@ async function getCategory(categoryId, token, params) {
   }
   return response.body;
 }
+
 /**
  * Enrich products with category data
  * @param {Object[]} products - Array of product objects
@@ -245,6 +262,7 @@ async function enrichProductsWithCategories(products, token, params) {
       : [],
   }));
 }
+
 /**
  * Fetches all categories from Adobe Commerce
  * @param {string} token - Authentication token
@@ -266,6 +284,7 @@ async function getCategories(token, params) {
 
   return response.body;
 }
+
 module.exports = {
   getCategoryIds,
   buildCategoryMap,

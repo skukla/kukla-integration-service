@@ -186,4 +186,10 @@ module.exports = {
       },
     },
   },
+  category: {
+    batchSize: 20,
+    requestRetries: 2,
+    retryDelay: 1000, // milliseconds
+    cacheTtl: 3600, // 1 hour in seconds
+  },
 };
