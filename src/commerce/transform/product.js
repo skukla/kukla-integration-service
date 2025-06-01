@@ -10,18 +10,8 @@ const {
   category: { getCategoryIds },
 } = require('../data');
 const {
-  product: { PRODUCT_FIELDS, getRequestedFields: getProductFields },
+  product: { PRODUCT_FIELDS },
 } = require('../data');
-
-/**
- * Returns the list of fields to include in the response.
- * @param {Object} params - The action input parameters
- * @param {Array<string>} [params.fields] - Optional array of field names to include
- * @returns {Array<string>} Array of field names to include in the response
- */
-function getRequestedFields(params) {
-  return getProductFields(params);
-}
 
 /**
  * Transforms a media gallery entry into a simplified image object.
@@ -59,13 +49,12 @@ function getPrimaryImageUrl(images) {
 }
 
 /**
- * Builds a product object with only the requested fields.
+ * Builds a product object with all fields.
  * @param {Object} product - The product object from Adobe Commerce
- * @param {Array<string>} requestedFields - Fields to include in the output
  * @param {Object<string, string>} categoryMap - Map of category IDs to names
- * @returns {Object} Filtered product object with only requested fields
+ * @returns {Object} Transformed product object
  */
-function buildProductObject(product, requestedFields, categoryMap) {
+function buildProductObject(product, categoryMap) {
   const fieldMappings = {
     sku: () => product.sku,
     name: () => product.name,
@@ -79,7 +68,7 @@ function buildProductObject(product, requestedFields, categoryMap) {
     images: () => (product.media_gallery_entries || []).map(transformImageEntry),
   };
 
-  const result = transformObject(product, fieldMappings, requestedFields);
+  const result = transformObject(product, fieldMappings, PRODUCT_FIELDS);
 
   // Add performance metrics
   result.performance = {
@@ -108,7 +97,6 @@ function mapProductToCsvRow(product) {
 
 module.exports = {
   PRODUCT_FIELDS,
-  getRequestedFields,
   buildProductObject,
   mapProductToCsvRow,
 };
