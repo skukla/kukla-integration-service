@@ -3,22 +3,36 @@
  * @module core/storage/csv
  */
 
-const csvWriter = require('csv-writer');
 const { Transform } = require('stream');
-const { compression } = require('../http');
-const { loadConfig } = require('../../../config');
 
-// Load storage configuration
-const { storage: { csv: csvConfig } } = loadConfig();
+const csvWriter = require('csv-writer');
+
+const { loadConfig } = require('../../../config');
+const { compression } = require('../http');
+
+// Load configuration with proper destructuring
+const {
+  storage: {
+    csv: {
+      chunkSize: CHUNK_SIZE,
+      compressionLevel: COMPRESSION_LEVEL,
+      streamBufferSize: BUFFER_SIZE,
+    },
+  },
+} = loadConfig();
 
 /**
- * Configuration for CSV generation
- * @constant {Object}
+ * CSV processing configuration
+ * @type {Object}
  */
 const CSV_CONFIG = {
-    CHUNK_SIZE: csvConfig.chunkSize,
-    COMPRESSION_LEVEL: csvConfig.compressionLevel,
-    STREAM_HIGH_WATER_MARK: csvConfig.streamBufferSize
+  chunkSize: CHUNK_SIZE,
+  compression: {
+    level: COMPRESSION_LEVEL,
+  },
+  stream: {
+    bufferSize: BUFFER_SIZE,
+  },
 };
 
 /**
@@ -27,17 +41,17 @@ const CSV_CONFIG = {
  * @returns {Transform} Transform stream
  */
 function createRowTransformer(rowMapper) {
-    return new Transform({
-        objectMode: true,
-        transform(record, encoding, callback) {
-            try {
-                const row = rowMapper(record);
-                callback(null, row);
-            } catch (error) {
-                callback(error);
-            }
-        }
-    });
+  return new Transform({
+    objectMode: true,
+    transform(record, encoding, callback) {
+      try {
+        const row = rowMapper(record);
+        callback(null, row);
+      } catch (error) {
+        callback(error);
+      }
+    },
+  });
 }
 
 /**
@@ -48,12 +62,12 @@ function createRowTransformer(rowMapper) {
  * @returns {Object} CSV stringifier
  */
 function createCsvStringifier(headers) {
-    return csvWriter.createObjectCsvStringifier({
-        header: headers.map(h => ({
-            id: h.id || h,
-            title: h.title || h.id || h
-        }))
-    });
+  return csvWriter.createObjectCsvStringifier({
+    header: headers.map((h) => ({
+      id: h.id || h,
+      title: h.title || h.id || h,
+    })),
+  });
 }
 
 /**
@@ -67,52 +81,58 @@ function createCsvStringifier(headers) {
  * @returns {Promise<{content: Buffer, stats: Object}>} Compressed CSV content and stats
  * @throws {Error} If records array is empty or if CSV generation fails
  */
-async function generateCsv({ records, headers, rowMapper, compression: compressionOptions, chunkSize = CSV_CONFIG.CHUNK_SIZE }) {
-    if (!Array.isArray(records) || records.length === 0) {
-        throw new Error('No records provided for CSV generation');
-    }
+async function generateCsv({
+  records,
+  headers,
+  rowMapper,
+  compression: compressionOptions,
+  chunkSize = CSV_CONFIG.chunkSize,
+}) {
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new Error('No records provided for CSV generation');
+  }
 
-    if (!Array.isArray(headers) || headers.length === 0) {
-        throw new Error('CSV headers must be provided');
-    }
+  if (!Array.isArray(headers) || headers.length === 0) {
+    throw new Error('CSV headers must be provided');
+  }
 
-    if (typeof rowMapper !== 'function') {
-        throw new Error('Row mapper function must be provided');
-    }
+  if (typeof rowMapper !== 'function') {
+    throw new Error('Row mapper function must be provided');
+  }
 
-    // Create CSV stringifier
-    const stringifier = createCsvStringifier(headers);
-    
-    // Generate CSV content with streaming for memory efficiency
-    const headerString = stringifier.getHeaderString();
-    let csvContent = headerString;
-    
-    // Process records in chunks for memory efficiency
-    for (let i = 0; i < records.length; i += chunkSize) {
-        const chunk = records.slice(i, i + chunkSize);
-        csvContent += stringifier.stringifyRecords(chunk.map(rowMapper));
-    }
+  // Create CSV stringifier
+  const stringifier = createCsvStringifier(headers);
 
-    // Compress the CSV content if compression is enabled
-    const originalBuffer = Buffer.from(csvContent);
-    if (compressionOptions === false) {
-        return {
-            content: originalBuffer,
-            stats: {
-                originalSize: originalBuffer.length,
-                compressedSize: originalBuffer.length,
-                savingsPercent: 0
-            }
-        };
-    }
+  // Generate CSV content with streaming for memory efficiency
+  const headerString = stringifier.getHeaderString();
+  let csvContent = headerString;
 
-    const compressedContent = await compression.compress(originalBuffer, compressionOptions);
-    const stats = compression.getCompressionStats(originalBuffer, compressedContent);
+  // Process records in chunks for memory efficiency
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    csvContent += stringifier.stringifyRecords(chunk.map(rowMapper));
+  }
 
+  // Compress the CSV content if compression is enabled
+  const originalBuffer = Buffer.from(csvContent);
+  if (compressionOptions === false) {
     return {
-        content: compressedContent,
-        stats
+      content: originalBuffer,
+      stats: {
+        originalSize: originalBuffer.length,
+        compressedSize: originalBuffer.length,
+        savingsPercent: 0,
+      },
     };
+  }
+
+  const compressedContent = await compression.compress(originalBuffer, compressionOptions);
+  const stats = compression.getCompressionStats(originalBuffer, compressedContent);
+
+  return {
+    content: compressedContent,
+    stats,
+  };
 }
 
 /**
@@ -123,36 +143,58 @@ async function generateCsv({ records, headers, rowMapper, compression: compressi
  * @returns {Transform} Transform stream that converts objects to CSV rows
  */
 function createCsvStream({ headers, rowMapper }) {
-    if (!Array.isArray(headers) || headers.length === 0) {
-        throw new Error('CSV headers must be provided');
+  if (!Array.isArray(headers) || headers.length === 0) {
+    throw new Error('CSV headers must be provided');
+  }
+
+  if (typeof rowMapper !== 'function') {
+    throw new Error('Row mapper function must be provided');
+  }
+
+  const stringifier = createCsvStringifier(headers);
+  const transformer = createRowTransformer(rowMapper);
+
+  // Add header to the stream
+  transformer.push(stringifier.getHeaderString());
+
+  // Transform records to CSV rows
+  transformer._transform = (record, encoding, callback) => {
+    try {
+      const row = stringifier.stringifyRecords([rowMapper(record)]);
+      callback(null, row);
+    } catch (error) {
+      callback(error);
     }
+  };
 
-    if (typeof rowMapper !== 'function') {
-        throw new Error('Row mapper function must be provided');
-    }
+  return transformer;
+}
 
-    const stringifier = createCsvStringifier(headers);
-    const transformer = createRowTransformer(rowMapper);
+/**
+ * Creates a transform stream for CSV processing
+ * @param {Object} options - Stream options
+ * @returns {Transform} Transform stream
+ */
+function createCsvTransform(options = {}) {
+  const config = {
+    ...CSV_CONFIG,
+    ...options,
+  };
 
-    // Add header to the stream
-    transformer.push(stringifier.getHeaderString());
-
-    // Transform records to CSV rows
-    transformer._transform = (record, encoding, callback) => {
-        try {
-            const row = stringifier.stringifyRecords([rowMapper(record)]);
-            callback(null, row);
-        } catch (error) {
-            callback(error);
-        }
-    };
-
-    return transformer;
+  return new Transform({
+    objectMode: true,
+    highWaterMark: config.stream.bufferSize,
+    transform(chunk, encoding, callback) {
+      // Process chunk
+      callback(null, chunk);
+    },
+  });
 }
 
 module.exports = {
-    CSV_CONFIG,
-    generateCsv,
-    createCsvStream,
-    createRowTransformer
-}; 
+  CSV_CONFIG,
+  generateCsv,
+  createCsvStream,
+  createRowTransformer,
+  createCsvTransform,
+};
