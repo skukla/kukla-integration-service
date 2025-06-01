@@ -8,17 +8,13 @@ const { getConfig } = require('./config');
 const { createTraceContext, traceStep, formatTrace } = require('../tracing');
 
 const { request } = http;
-
 // Get default configuration
 const config = getConfig();
-
 // Default base URL for local development
 const DEFAULT_BASE_URL = 'https://285361-188maroonwallaby-stage.adobeio-static.net';
-
 // Initialize JSON Schema validator
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
-
 /**
  * Test a single API endpoint
  * @param {string} endpoint - The endpoint to test
@@ -39,16 +35,12 @@ async function testEndpoint(
   // Create a copy of params and remove schema
   const requestParams = { ...params };
   delete requestParams.schema;
-
   const trace = createTraceContext(`test-${endpoint}`, { endpoint, method, requestParams });
-
   try {
     // Get the endpoint URL
     const url = await traceStep(trace, 'build-url', () =>
       buildRuntimeUrl(DEFAULT_BASE_URL, endpoint)
     );
-    console.log('\n🎯 Testing endpoint:', url);
-
     // Validate request parameters against schema if provided
     if (schema.request) {
       await traceStep(trace, 'validate-request', () => {
@@ -60,7 +52,6 @@ async function testEndpoint(
         return true;
       });
     }
-
     // Debug log the request
     console.log('\n📤 Request:', {
       url,
@@ -70,7 +61,6 @@ async function testEndpoint(
       }),
       body: requestParams,
     });
-
     // Make the request with configured timeout and retries
     const response = await traceStep(trace, 'make-request', () =>
       request(url, {
@@ -85,19 +75,16 @@ async function testEndpoint(
         rejectUnauthorized: false, // Allow self-signed certificates for local testing
       })
     );
-
     // Debug log the response
     console.log('\n📥 Response:', {
       statusCode: response.statusCode,
       headers: response.headers,
       body: response.body,
     });
-
     // Process and validate the response
     await traceStep(trace, 'process-response', async () => {
       // Extract and normalize response parameters
       const responseParams = response.body;
-
       // Validate response against schema if provided
       if (schema.response) {
         const validateResponse = ajv.compile(schema.response);
@@ -106,25 +93,20 @@ async function testEndpoint(
           throw new Error(`Response validation failed: ${ajv.errorsText(validateResponse.errors)}`);
         }
       }
-
       // Validate status code
       if (response.statusCode !== expectedStatus) {
         throw new Error(`Expected status ${expectedStatus}, got ${response.statusCode}`);
       }
-
       // Validate success field if configured
       if (config.validation.requireSuccessField && response.body.success === false) {
         throw new Error('Response indicates failure');
       }
-
       // Run custom validation if provided
       if (validate) {
         await validate(responseParams);
       }
-
       return responseParams;
     });
-
     // Return both the response and trace data
     return {
       response,
@@ -133,14 +115,15 @@ async function testEndpoint(
   } catch (error) {
     // Attach trace data to error
     error.trace = formatTrace(trace);
-    console.error('\n❌ Error:', error.message);
     if (error.response) {
-      console.error('Response:', error.response.data);
+      error.responseBody = error.response.body;
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Test API request failed:', error.message);
     }
     throw error;
   }
 }
-
 // Common validation functions
 const validations = {
   validateArray: (fieldName) => async (response) => {
@@ -153,7 +136,6 @@ const validations = {
     }
     return true;
   },
-
   validateFields: (requiredFields) => async (response) => {
     for (const field of requiredFields) {
       if (!response.body[field]) {
@@ -163,7 +145,6 @@ const validations = {
     return true;
   },
 };
-
 // Pre-configured test functions for common endpoints
 const tests = {
   async products(options = {}) {
@@ -177,7 +158,6 @@ const tests = {
       schema
     );
   },
-
   async browseFiles(options = {}) {
     const { schema, ...params } = options;
     return testEndpoint(
@@ -189,7 +169,6 @@ const tests = {
       schema
     );
   },
-
   async downloadFile(filename, options = {}) {
     const { schema, ...params } = options;
     return testEndpoint(
@@ -207,7 +186,6 @@ const tests = {
     );
   },
 };
-
 module.exports = {
   testEndpoint,
   validations,

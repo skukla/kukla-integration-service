@@ -14,30 +14,26 @@ function buildRuntimeUrl(baseUrl, action) {
 }
 
 /**
- * Builds a commerce URL for the given path
+ * Builds a Commerce API URL following Adobe Commerce REST API conventions
  * @param {string} baseUrl - The base URL for the commerce instance
- * @param {string} path - The path to append
- * @param {Object} [params] - Path parameters
- * @returns {string} The complete commerce URL
+ * @param {string} path - The API endpoint path
+ * @param {Object} [params] - Path parameters to replace
+ * @returns {string} The complete Commerce API URL
  */
 function buildCommerceUrl(baseUrl, path, params = {}) {
   if (!baseUrl) {
     throw new Error('Commerce base URL is required');
   }
 
-  // Remove trailing slash from base URL
+  // Remove trailing slash from base URL and leading slash from path
   const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
+  const normalizedPath = path.replace(/^\/+/, '');
 
-  // For admin token endpoint
-  if (path === 'adminToken') {
-    return `${normalizedBaseUrl}/rest/V1/integration/admin/token`;
-  }
-
-  // Ensure path starts with a slash and remove any trailing slashes
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  // Construct the API path with proper prefixes
+  const apiPath = `/rest/all/V1/${normalizedPath}`;
 
   // Replace path parameters
-  let url = normalizedPath;
+  let url = apiPath;
   Object.entries(params).forEach(([key, value]) => {
     url = url.replace(`:${key}`, value);
   });
