@@ -55,7 +55,7 @@ async function startServer() {
       DEBUG: '', // Disable debug logging
     };
 
-    const server = spawn('aio', ['app', 'dev'], {
+    const server = spawn('aio', ['app', 'dev', '-e', 'application'], {
       stdio: ['ignore', 'pipe', 'pipe'],
       env,
     });
@@ -98,7 +98,7 @@ async function startServer() {
       });
 
       // Check for server ready
-      if (chunk.includes('press CTRL+C to terminate') && !serverStarted) {
+      if (chunk.includes('Local Dev Server Ready') && !serverStarted) {
         serverStarted = true;
         console.log('\n👉 Press Ctrl+C to stop the server\n');
         resolve(server);
