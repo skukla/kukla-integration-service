@@ -1,48 +1,83 @@
 /**
- * Adobe Commerce REST API endpoint definitions
+ * Commerce API endpoint configuration
  * @module lib/api/commerce-endpoints
  */
 
+const { loadConfig } = require('../../../../../config');
+
+// Load configuration with proper destructuring
+const {
+  url: {
+    commerce: {
+      paths: {
+        products: PRODUCTS_PATH,
+        stockItem: STOCK_ITEM_PATH,
+        category: CATEGORY_PATH,
+        categoryList: CATEGORY_LIST_PATH,
+      },
+    },
+  },
+} = loadConfig();
+
 /**
- * Get products endpoint with pagination
- * @param {Object} options - Endpoint options
- * @param {number} [options.pageSize=20] - Number of products per page
- * @param {number} [options.currentPage=1] - Current page number
- * @returns {string} Products endpoint path
+ * Builds product endpoint URL with query parameters
+ * @param {Object} params - Query parameters
+ * @returns {string} Product endpoint URL
  */
-function products(options = {}) {
-  return `/rest/V1/products?searchCriteria[pageSize]=${options.pageSize || 20}&searchCriteria[currentPage]=${options.currentPage || 1}`;
+function products(params = {}) {
+  const queryParams = new URLSearchParams();
+
+  // Add pagination criteria
+  if (params.pageSize) {
+    queryParams.append('searchCriteria[pageSize]', params.pageSize);
+  }
+
+  if (params.currentPage) {
+    queryParams.append('searchCriteria[currentPage]', params.currentPage);
+  }
+
+  // Add visibility filter
+  queryParams.append('searchCriteria[filter_groups][0][filters][0][field]', 'visibility');
+  queryParams.append('searchCriteria[filter_groups][0][filters][0][value]', '4');
+  queryParams.append('searchCriteria[filter_groups][0][filters][0][condition_type]', 'eq');
+
+  const query = queryParams.toString();
+  return `${PRODUCTS_PATH}${query ? `?${query}` : ''}`;
 }
 
 /**
- * Get stock item endpoint for a specific SKU
+ * Builds stock item endpoint URL
  * @param {string} sku - Product SKU
- * @returns {string} Stock item endpoint path
+ * @returns {string} Stock item endpoint URL
  */
 function stockItem(sku) {
-  return `/rest/V1/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]=${sku}`;
+  const queryParams = new URLSearchParams();
+  queryParams.append('searchCriteria[filter_groups][0][filters][0][field]', 'sku');
+  queryParams.append('searchCriteria[filter_groups][0][filters][0][value]', sku);
+  queryParams.append('searchCriteria[filter_groups][0][filters][0][condition_type]', 'eq');
+  return `${STOCK_ITEM_PATH}?${queryParams.toString()}`;
 }
 
 /**
- * Get category endpoint for a specific category ID
+ * Builds category endpoint URL
  * @param {string} id - Category ID
- * @returns {string} Category endpoint path
+ * @returns {string} Category endpoint URL
  */
 function category(id) {
-  return `/rest/V1/categories/${id}`;
+  return CATEGORY_PATH.replace(':id', id);
 }
 
 /**
- * Get admin token endpoint
- * @returns {string} Admin token endpoint path
+ * Gets category list endpoint URL
+ * @returns {string} Category list endpoint URL
  */
-function adminToken() {
-  return '/rest/V1/integration/admin/token';
+function categoryList() {
+  return CATEGORY_LIST_PATH;
 }
 
 module.exports = {
   products,
   stockItem,
   category,
-  adminToken,
+  categoryList,
 };
