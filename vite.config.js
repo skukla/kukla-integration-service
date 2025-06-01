@@ -1,18 +1,18 @@
-import { defineConfig } from 'vite';
-import legacy from '@vitejs/plugin-legacy';
 import { resolve } from 'path';
+
+import { defineConfig } from 'vite';
 
 export default defineConfig(({ command, mode }) => ({
   root: resolve(__dirname, 'web-src'),
   base: './',
-  
+
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     sourcemap: mode === 'development',
     rollupOptions: {
       input: {
-        index: resolve(__dirname, 'web-src/index.html')
+        index: resolve(__dirname, 'web-src/index.html'),
       },
       output: {
         manualChunks(id) {
@@ -30,27 +30,26 @@ export default defineConfig(({ command, mode }) => ({
             return 'assets/images/[name]-[hash][extname]';
           }
           return 'assets/[name]-[hash][extname]';
-        }
-      }
+        },
+      },
     },
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: command === 'build',
-        drop_debugger: command === 'build'
-      }
-    }
+        drop_debugger: command === 'build',
+      },
+    },
   },
 
   css: {
     devSourcemap: true,
     modules: {
       localsConvention: 'camelCase',
-      generateScopedName: mode === 'production' 
-        ? '[hash:base64:8]' 
-        : '[name]__[local]__[hash:base64:5]',
-      exclude: '**/design-system/**'
-    }
+      generateScopedName:
+        mode === 'production' ? '[hash:base64:8]' : '[name]__[local]__[hash:base64:5]',
+      exclude: '**/design-system/**',
+    },
   },
 
   resolve: {
@@ -62,7 +61,7 @@ export default defineConfig(({ command, mode }) => ({
       '@styles': resolve(__dirname, 'web-src/src/styles'),
       '@js': resolve(__dirname, 'web-src/src/js'),
       '@components': resolve(__dirname, 'web-src/src/components'),
-    }
+    },
   },
 
   server: {
@@ -71,32 +70,20 @@ export default defineConfig(({ command, mode }) => ({
     host: true,
     open: true,
     hmr: {
-      overlay: true
+      overlay: true,
     },
     watch: {
-      include: [
-        'web-src/src/**',
-        'web-src/index.html'
-      ]
-    }
+      include: ['web-src/src/**', 'web-src/index.html'],
+    },
   },
 
   preview: {
     port: 9080,
     strictPort: true,
-    host: true
+    host: true,
   },
 
-  plugins: [
-    legacy({
-      targets: ['defaults', 'not IE 11']
-    })
-  ],
-
   optimizeDeps: {
-    include: [
-      'htmx.org',
-      'hyperscript.org'
-    ]
-  }
-})); 
+    include: ['htmx.org', 'hyperscript.org'],
+  },
+}));
