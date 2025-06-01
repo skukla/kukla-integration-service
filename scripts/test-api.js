@@ -4,239 +4,102 @@
  * Consolidated test script for all API endpoints
  */
 
+const ora = require('ora');
+
+const { getProducts } = require('../actions/backend/get-products/lib/api/products');
 const { loadConfig } = require('../config');
-const {
-  request: browseFilesRequestSchema,
-  response: browseFilesResponseSchema,
-} = require('../config/schema/api/browse-files.schema');
-const {
-  request: downloadFileRequestSchema,
-  response: downloadFileResponseSchema,
-} = require('../config/schema/api/download-file.schema');
-const {
-  request: getProductsRequestSchema,
-  response: getProductsResponseSchema,
-} = require('../config/schema/api/get-products.schema');
-const { parseArgs } = require('../src/core/cli/args');
-const { tests } = require('../src/core/testing/api');
-const { defaultConfig } = require('../src/core/testing/config');
+const { getAuthToken } = require('../src/commerce/api/integration');
+
 require('dotenv').config();
 
-// Parse command line arguments
-const args = parseArgs(process.argv.slice(2), {
-  flags: {
-    endpoint: '', // --endpoint <n>
-    verbose: false, // --verbose
+// Load configuration with proper destructuring
+const {
+  url: {
+    commerce: { baseUrl: COMMERCE_URL },
   },
-});
+  commerce: {
+    product: {
+      pagination: { pageSize: DEFAULT_PAGE_SIZE },
+      fields: PRODUCT_FIELDS,
+    },
+  },
+} = loadConfig();
 
-// Convert string 'verbose' from colon notation to boolean
-if (args.verbose === 'verbose') {
-  args.verbose = true;
-}
+console.log('Commerce URL:', COMMERCE_URL);
 
-async function testGetProducts(config) {
-  console.log('\n📦 Testing get-products API...');
-
+/**
+ * Tests a specific API endpoint
+ * @param {Object} config - Test configuration
+ * @returns {Promise<Object>} Test results
+ */
+async function testEndpoint(config) {
   try {
-    // Test with default configuration
-    console.log('\n🧪 Testing get-products with default configuration...');
-    const result = await tests.products({
-      fields: defaultConfig.products.defaultFields,
-      COMMERCE_URL: config.url.commerce.baseUrl,
+    console.log('Using config:', config);
+
+    // Get auth token using URL from config but credentials from env
+    const token = await getAuthToken({
+      COMMERCE_URL: COMMERCE_URL, // Use URL from config
       COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
       COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
-      LOG_LEVEL: args.verbose ? 'debug' : 'info',
-      env: 'dev',
-      schema: {
-        request: getProductsRequestSchema,
-        response: getProductsResponseSchema,
-      },
     });
 
-    // Show trace output if available
-    if (result.trace) {
-      console.log('\n📊 Test Execution Trace:');
-      console.log(JSON.stringify(result.trace, null, 2));
-    }
+    console.log('Got auth token:', token ? 'yes' : 'no');
 
-    // Show response if available
-    if (result.response && result.response.body) {
-      console.log('\n📄 Response:');
-      console.log(JSON.stringify(result.response.body, null, 2));
-    }
+    // Test the endpoint using URL from config
+    const response = await getProducts(token, {
+      COMMERCE_URL: COMMERCE_URL, // Use URL from config
+      pageSize: config.pageSize,
+      fields: PRODUCT_FIELDS, // Use fields from config
+    });
+
+    return {
+      success: true,
+      data: response,
+    };
   } catch (error) {
-    console.error('\n❌ Error:', error.message);
-
-    // Show trace output from error if available
-    if (error.trace) {
-      console.log('\n📊 Error Trace:');
-      console.log(JSON.stringify(error.trace, null, 2));
-    }
-
-    // Show response if available
-    if (error.response && error.response.body) {
-      console.log('\n📄 Error Response:');
-      console.log(JSON.stringify(error.response.body, null, 2));
-    }
-
-    throw error;
+    console.error('Error details:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
   }
 }
 
-async function testBrowseFiles(config) {
-  console.log('\n📂 Testing browse-files API...');
+/**
+ * Runs API tests
+ * @param {Object} options - Test options
+ */
+async function runTests(options = {}) {
+  const spinner = ora('Running API tests').start();
 
   try {
-    // Test browsing root directory
-    console.log('\n🧪 Testing browse-files with root directory...');
-    const result = await tests.browseFiles({
-      params: {
-        COMMERCE_URL: config.url.commerce.baseUrl,
-        COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
-        COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
-        LOG_LEVEL: args.verbose ? 'debug' : 'info',
-        env: 'dev',
-      },
-      schema: {
-        request: browseFilesRequestSchema,
-        response: browseFilesResponseSchema,
-      },
-    });
+    const testConfig = {
+      baseUrl: COMMERCE_URL, // Always use URL from config
+      pageSize: options.pageSize || DEFAULT_PAGE_SIZE,
+    };
 
-    // Show trace output if available
-    if (result.trace) {
-      console.log('\n📊 Test Execution Trace:');
-      console.log(JSON.stringify(result.trace, null, 2));
-    }
+    // Run the tests
+    const results = await testEndpoint(testConfig);
 
-    // Test browsing specific directory with filter
-    console.log('\n🧪 Testing browse-files with specific path and filter...');
-    const result2 = await tests.browseFiles({
-      params: {
-        path: '/exports',
-        filter: '*.csv',
-        COMMERCE_URL: config.url.commerce.baseUrl,
-        COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
-        COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
-        LOG_LEVEL: args.verbose ? 'debug' : 'info',
-        env: 'dev',
-      },
-      schema: {
-        request: browseFilesRequestSchema,
-        response: browseFilesResponseSchema,
-      },
-    });
-
-    // Show trace output if available
-    if (result2.trace) {
-      console.log('\n📊 Test Execution Trace:');
-      console.log(JSON.stringify(result2.trace, null, 2));
-    }
-  } catch (error) {
-    // Show trace output from error if available
-    if (error.trace) {
-      console.log('\n📊 Error Trace:');
-      console.log(JSON.stringify(error.trace, null, 2));
-    }
-    throw error;
-  }
-}
-
-async function testDownloadFile(config) {
-  console.log('\n📥 Testing download-file API...');
-
-  try {
-    // Test downloading a file in raw format
-    console.log('\n🧪 Testing download-file with raw format...');
-    const result = await tests.downloadFile('test.csv', {
-      params: {
-        format: 'raw',
-        COMMERCE_URL: config.url.commerce.baseUrl,
-        COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
-        COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
-        LOG_LEVEL: args.verbose ? 'debug' : 'info',
-        env: 'dev',
-      },
-      schema: {
-        request: downloadFileRequestSchema,
-        response: downloadFileResponseSchema,
-      },
-    });
-
-    // Show trace output if available
-    if (result.trace) {
-      console.log('\n📊 Test Execution Trace:');
-      console.log(JSON.stringify(result.trace, null, 2));
-    }
-
-    // Test downloading a file in base64 format
-    console.log('\n🧪 Testing download-file with base64 format...');
-    const result2 = await tests.downloadFile('test.csv', {
-      params: {
-        format: 'base64',
-        COMMERCE_URL: config.url.commerce.baseUrl,
-        COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
-        COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
-        LOG_LEVEL: args.verbose ? 'debug' : 'info',
-        env: 'dev',
-      },
-      schema: {
-        request: downloadFileRequestSchema,
-        response: downloadFileResponseSchema,
-      },
-    });
-
-    // Show trace output if available
-    if (result2.trace) {
-      console.log('\n📊 Test Execution Trace:');
-      console.log(JSON.stringify(result2.trace, null, 2));
-    }
-  } catch (error) {
-    // Show trace output from error if available
-    if (error.trace) {
-      console.log('\n📊 Error Trace:');
-      console.log(JSON.stringify(error.trace, null, 2));
-    }
-    throw error;
-  }
-}
-
-async function main() {
-  try {
-    // Load configuration
-    const config = loadConfig();
-
-    // Run specific test based on argument or all tests
-    if (args.endpoint === 'get-products') {
-      await testGetProducts(config);
-    } else if (args.endpoint === 'browse-files') {
-      await testBrowseFiles(config);
-    } else if (args.endpoint === 'download-file') {
-      await testDownloadFile(config);
-    } else if (!args.endpoint) {
-      // Run all tests if no specific endpoint provided
-      await testGetProducts(config);
-      await testBrowseFiles(config);
-      await testDownloadFile(config);
+    if (results.success) {
+      spinner.succeed('API tests passed');
+      console.log('Test results:', JSON.stringify(results.data, null, 2));
     } else {
-      console.error(`\n❌ Unknown endpoint: ${args.endpoint}`);
-      console.log('\nAvailable endpoints:');
-      console.log('- get-products');
-      console.log('- browse-files');
-      console.log('- download-file');
-      console.log('\nOptions:');
-      console.log('--endpoint <n>  Test specific endpoint');
-      console.log('--verbose         Enable debug logging');
+      spinner.fail(`API tests failed: ${results.error}`);
       process.exit(1);
     }
-
-    console.log('\n✅ All specified tests passed!');
-    process.exit(0);
   } catch (error) {
-    console.error('\n❌ Tests failed:', error.message);
+    spinner.fail(`Test execution failed: ${error.message}`);
     process.exit(1);
   }
 }
 
-main();
+// Run tests if called directly
+if (require.main === module) {
+  runTests();
+}
+
+module.exports = {
+  runTests,
+  testEndpoint, // Export for testing
+};
