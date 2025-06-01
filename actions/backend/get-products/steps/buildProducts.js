@@ -4,9 +4,6 @@
  */
 
 const {
-  data: {
-    product: { getRequestedFields },
-  },
   transform: {
     product: { buildProductObject },
   },
@@ -15,15 +12,11 @@ const {
 /**
  * Transforms raw product data into the required format
  * @param {Object[]} products - Raw product data from Adobe Commerce
- * @param {Object} params - Action parameters
  * @returns {Promise<Object[]>} Transformed product objects ready for CSV
  * @throws {Error} If product transformation fails
  */
-async function buildProducts(products, params) {
+async function buildProducts(products) {
   try {
-    // Get the list of fields to include (either specified or default)
-    const requestedFields = getRequestedFields(params);
-
     // Build category map from enriched products
     const categoryMap = {};
     products.forEach((product) => {
@@ -34,8 +27,8 @@ async function buildProducts(products, params) {
       }
     });
 
-    // Transform each product with the requested fields
-    return products.map((product) => buildProductObject(product, requestedFields, categoryMap));
+    // Transform each product
+    return products.map((product) => buildProductObject(product, categoryMap));
   } catch (error) {
     throw new Error(`Failed to build products: ${error.message}`);
   }
