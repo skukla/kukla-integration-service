@@ -1,8 +1,8 @@
-const { Core } = require('@adobe/aio-sdk');
 const chalk = require('chalk');
 const yaml = require('js-yaml');
 const fs = require('fs');
 const path = require('path');
+const fetch = require('node-fetch');
 
 // Get the action name from command line
 const actionName = process.argv[2];
