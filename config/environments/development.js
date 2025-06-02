@@ -34,7 +34,7 @@ module.exports = {
         stepLogging: true, // Log each step execution
         errorVerbosity: 'full', // Include full stack traces
         performance: {
-          enabled: true,
+          enabled: false,
           includeMemory: true, // Track memory usage in traces
           includeTimings: true, // Track detailed timings
         },
