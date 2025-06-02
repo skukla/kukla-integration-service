@@ -1,8 +1,13 @@
-const chalk = require('chalk');
-const yaml = require('js-yaml');
+const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
+
+const chalk = require('chalk');
+const yaml = require('js-yaml');
 const fetch = require('node-fetch');
+
+const execAsync = util.promisify(exec);
 
 // Get the action name from command line
 const actionName = process.argv[2];
@@ -11,21 +16,37 @@ if (!actionName) {
   console.log(chalk.yellow('Usage: node test-action.js <action-name>'));
   console.log(chalk.yellow('Available actions:'));
   const config = yaml.load(fs.readFileSync(path.join(__dirname, '../app.config.yaml'), 'utf8'));
-  const actions = Object.keys(config.application.runtimeManifest.packages['kukla-integration-service'].actions);
-  actions.forEach(action => console.log(chalk.cyan(`  - ${action}`)));
+  const actions = Object.keys(
+    config.application.runtimeManifest.packages['kukla-integration-service'].actions
+  );
+  actions.forEach((action) => console.log(chalk.cyan(`  - ${action}`)));
   process.exit(1);
+}
+
+async function getNamespace() {
+  try {
+    const { stdout } = await execAsync('aio runtime namespace list');
+    // Skip the header lines and get the first namespace
+    const lines = stdout.trim().split('\n');
+    const namespaceLines = lines.filter(
+      (line) => !line.includes('Namespaces') && !line.includes('─')
+    );
+    if (namespaceLines.length === 0) {
+      throw new Error(
+        'No namespace found. Make sure you are logged in and have selected a project.'
+      );
+    }
+    return namespaceLines[0].trim();
+  } catch (error) {
+    throw new Error(
+      'Failed to get namespace. Make sure you are logged in with `aio auth login` and have selected a project with `aio app use`'
+    );
+  }
 }
 
 async function main() {
   try {
-    // Initialize the SDK
-    const orgId = process.env.AIO_ORG_ID;
-    const apiKey = process.env.AIO_API_KEY;
-    const namespace = process.env.AIO_RUNTIME_NAMESPACE;
-
-    if (!orgId || !apiKey || !namespace) {
-      throw new Error('Missing required environment variables. Make sure you are logged in with `aio runtime auth`');
-    }
+    const namespace = await getNamespace();
 
     // Get the action URL
     const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
@@ -36,7 +57,7 @@ async function main() {
 
     const response = await fetch(actionUrl);
     const data = await response.json();
-    
+
     console.log(JSON.stringify(data, null, 2));
   } catch (error) {
     console.error(chalk.red('Error:'), error.message);
@@ -44,4 +65,4 @@ async function main() {
   }
 }
 
-main(); 
+main();
