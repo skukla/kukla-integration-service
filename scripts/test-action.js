@@ -8,6 +8,7 @@ const yaml = require('js-yaml');
 const fetch = require('node-fetch');
 
 const execAsync = util.promisify(exec);
+const { loadConfig } = require('../config');
 
 // Get the action name from command line
 const actionName = process.argv[2];
@@ -44,8 +45,19 @@ async function getNamespace() {
   }
 }
 
+function formatResponse(data, showTrace) {
+  if (!showTrace && data.trace) {
+    const { trace, ...rest } = data;
+    return rest;
+  }
+  return data;
+}
+
 async function main() {
   try {
+    const config = loadConfig();
+    const tracingEnabled = config.app?.monitoring?.tracing?.enabled ?? false;
+
     const namespace = await getNamespace();
 
     // Get the action URL
@@ -58,7 +70,9 @@ async function main() {
     const response = await fetch(actionUrl);
     const data = await response.json();
 
-    console.log(JSON.stringify(data, null, 2));
+    // Format response based on tracing configuration
+    const formattedData = formatResponse(data, tracingEnabled);
+    console.log(JSON.stringify(formattedData, null, 2));
   } catch (error) {
     console.error(chalk.red('Error:'), error.message);
     process.exit(1);
