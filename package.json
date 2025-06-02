@@ -38,16 +38,9 @@
     "deploy": "node scripts/deploy.js",
     "deploy:web": "node scripts/deploy.js --web-only",
     "deploy:actions": "node scripts/deploy.js --actions-only",
+    "test:action": "node scripts/test-action.js",
     "test:perf": "node scripts/test-performance.js --env local",
-    "test:perf:deploy": "node scripts/test-performance.js --env deployed",
-    "test:api:products": "node scripts/test-api.js --endpoint get-products",
-    "test:api:products:verbose": "node scripts/test-api.js --endpoint get-products --verbose",
-    "test:api:browse": "node scripts/test-api.js --endpoint browse-files",
-    "test:api:browse:verbose": "node scripts/test-api.js --endpoint browse-files --verbose",
-    "test:api:download": "node scripts/test-api.js --endpoint download-file",
-    "test:api:download:verbose": "node scripts/test-api.js --endpoint download-file --verbose",
-    "test:all": "npm run test:api:products && npm run test:api:browse && npm run test:api:download",
-    "test:all:verbose": "npm run test:api:products:verbose && npm run test:api:browse:verbose && npm run test:api:download:verbose"
+    "test:perf:deploy": "node scripts/test-performance.js --env deployed"
   },
   "engines": {
     "node": ">=18"
