@@ -8,7 +8,7 @@
     "@adobe/aio-sdk": "^6",
     "ajv": "^8.17.1",
     "ajv-formats": "^2.1.1",
-    "chalk": "^5.4.1",
+    "chalk": "^4.1.2",
     "csv-writer": "^1.6.0",
     "dotenv": "^16.5.0",
     "node-fetch": "^2.7.0",
