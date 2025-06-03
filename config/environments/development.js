@@ -86,6 +86,23 @@ module.exports = {
     product: {
       fields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
       required: ['sku', 'name'],
+      validation: {
+        sku: {
+          pattern: '^[A-Za-z0-9_-]+$',
+          minLength: 1,
+          maxLength: 64,
+          message: 'SKU must be alphanumeric with dashes or underscores, 1-64 characters',
+        },
+        name: {
+          minLength: 1,
+          maxLength: 255,
+          message: 'Product name must be 1-255 characters',
+        },
+        price: {
+          min: 0,
+          message: 'Price must be non-negative',
+        },
+      },
       pagination: {
         pageSize: 20, // Smaller page size for easier debugging
         maxPages: 10, // Fewer pages in development for faster testing
@@ -104,10 +121,19 @@ module.exports = {
     },
   },
   storage: {
+    provider: 'app-builder', // Options: 'app-builder' or 's3'
     csv: {
       chunkSize: 100,
       compressionLevel: 6,
       streamBufferSize: 16384,
+      filename: 'products.csv',
+    },
+    s3: {
+      region: 'us-east-1',
+      bucket: 'your-s3-bucket-name', // Configure this for S3 usage
+      prefix: 'files/', // Optional: prefix for all files
+      // accessKeyId and secretAccessKey can be set via environment variables:
+      // AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
     },
   },
   testing: {

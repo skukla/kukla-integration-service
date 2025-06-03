@@ -5,6 +5,7 @@
   "description": "Adobe Commerce integration service for product data export",
   "dependencies": {
     "@adobe/aio-cli": "^10.3.4",
+    "@adobe/aio-lib-files": "^4",
     "@adobe/aio-sdk": "^6",
     "ajv": "^8.17.1",
     "ajv-formats": "^2.1.1",
