@@ -44,6 +44,13 @@ async function makeCachedRequest(url, options) {
  */
 function filterProductFields(product, fields) {
   const filtered = {};
+
+  // Defensive programming: ensure fields is an array
+  if (!Array.isArray(fields)) {
+    console.warn('Fields is not an array, returning original product:', fields);
+    return product;
+  }
+
   fields.forEach((field) => {
     if (product[field] !== undefined) {
       filtered[field] = product[field];
@@ -93,36 +100,81 @@ async function fetchAllProducts(token, params = {}) {
     throw new Error('COMMERCE_URL is required');
   }
 
-  const endpoint = commerceEndpoints.products(params);
-  console.log('Fetching products from endpoint:', endpoint);
+  try {
+    // Get pagination settings from config
+    const { product: { pagination: { pageSize = 100, maxPages = 50 } = {} } = {} } =
+      config.commerce || {};
 
-  const url = buildCommerceUrl(COMMERCE_URL, endpoint);
-  const response = await makeCachedRequest(url, {
-    method: 'GET',
-    headers: buildHeaders(token),
-  });
+    let allProducts = [];
+    let currentPage = 1;
+    let totalPages = 1;
 
-  if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
-    console.log('No items found in response:', response);
-    return [];
-  }
-
-  // Get the fields to include
-  const fields = getRequestedFields(params);
-
-  // Enrich products with inventory data and filter fields
-  const products = await Promise.all(
-    response.body.items.map(async (product) => {
-      const inventory = await getInventory(product.sku, token, COMMERCE_URL);
-      const enrichedProduct = {
-        ...product,
-        ...inventory,
+    do {
+      const paginatedParams = {
+        ...params,
+        pageSize,
+        currentPage,
       };
-      return filterProductFields(enrichedProduct, fields);
-    })
-  );
 
-  return products;
+      const endpoint = commerceEndpoints.products(paginatedParams);
+      const url = buildCommerceUrl(COMMERCE_URL, endpoint);
+
+      const response = await makeCachedRequest(url, {
+        method: 'GET',
+        headers: buildHeaders(token),
+      });
+
+      if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
+        break;
+      }
+
+      // Get total pages on first request
+      if (currentPage === 1) {
+        totalPages = Math.ceil(response.body.total_count / pageSize);
+        // Respect maxPages configuration
+        totalPages = Math.min(totalPages, maxPages);
+      }
+
+      // Get the fields to include
+      let fields;
+      try {
+        fields = getRequestedFields(params);
+      } catch (error) {
+        console.warn('Error getting requested fields, using default fields:', error.message);
+        fields = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
+      }
+
+      // Enrich products with inventory data and filter fields
+      const enrichedProducts = await Promise.all(
+        response.body.items.map(async (product) => {
+          try {
+            const inventory = await getInventory(product.sku, token, COMMERCE_URL);
+            const enrichedProduct = {
+              ...product,
+              ...inventory,
+            };
+            return filterProductFields(enrichedProduct, fields);
+          } catch (inventoryError) {
+            console.warn(`Failed to get inventory for ${product.sku}:`, inventoryError.message);
+            return filterProductFields(product, fields);
+          }
+        })
+      );
+
+      allProducts = allProducts.concat(enrichedProducts);
+      currentPage++;
+
+      // Add a small delay between requests to avoid rate limiting
+      if (currentPage <= totalPages) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } while (currentPage <= totalPages);
+
+    return allProducts;
+  } catch (error) {
+    console.error('Error in fetchAllProducts:', error.message);
+    throw error;
+  }
 }
 
 /**
