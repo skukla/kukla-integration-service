@@ -1,54 +1,37 @@
 /**
- * Fetch and enrich products with inventory and category information
+ * Fetch and enrich products step for product export
  * @module steps/fetchAndEnrichProducts
  */
-
-const { createTraceContext, traceStep } = require('../../../../src/core/tracing');
 const { enrichProductsWithCategories } = require('../lib/api/categories');
-const { getInventory } = require('../lib/api/inventory');
 const { getProducts } = require('../lib/api/products');
 const { getAuthToken } = require('../lib/auth');
 
 /**
- * Fetch products and enrich them with inventory and category data
- * @param {Object} params - Action parameters
- * @returns {Promise<Array>} Enriched product data
+ * Fetch products from Commerce API and enrich with category data
+ * @param {Object} params - Action parameters with Commerce URL and credentials
+ * @returns {Promise<Array>} Array of enriched product objects
  */
 async function fetchAndEnrichProducts(params) {
-  const trace = createTraceContext('fetch-and-enrich', params);
+  const { COMMERCE_URL } = params;
+
+  if (!COMMERCE_URL) {
+    throw new Error('COMMERCE_URL is required for product export');
+  }
 
   try {
     // Get authentication token
-    const token = await traceStep(trace, 'get-auth-token', () => getAuthToken(params));
+    const token = await getAuthToken(params);
 
-    // Fetch base product data
-    const products = await traceStep(trace, 'get-products', () => getProducts(token, params));
+    // Fetch products from Commerce API
+    const rawProducts = await getProducts(token, params);
 
-    // Enrich products with categories
-    const productsWithCategories = await traceStep(trace, 'enrich-categories', () =>
-      enrichProductsWithCategories(products, token, params)
-    );
+    // Enrich with category data
+    const enrichedProducts = await enrichProductsWithCategories(rawProducts, token, params);
 
-    // Get inventory data for all products
-    const inventory = await traceStep(trace, 'get-inventory', () =>
-      getInventory(
-        products.map((product) => product.sku),
-        token,
-        params
-      )
-    );
-
-    // Enrich products with inventory data
-    return productsWithCategories.map((product) => ({
-      ...product,
-      inventory: inventory[product.sku] || { qty: 0, is_in_stock: false },
-    }));
+    return enrichedProducts;
   } catch (error) {
-    error.trace = trace;
-    throw error;
+    throw new Error(`Commerce API failed: ${error.message}`);
   }
 }
 
-module.exports = {
-  fetchAndEnrichProducts,
-};
+module.exports = fetchAndEnrichProducts;
