@@ -21,6 +21,7 @@ const {
     } = {},
   } = {},
 } = loadConfig();
+
 /**
  * Creates a new trace context for tracking API execution
  * @param {string} actionName - Name of the action being traced
@@ -33,18 +34,19 @@ function createTraceContext(actionName, params) {
   }
   const trace = {
     id: crypto.randomUUID(),
-    actionName,
+    action: actionName,
     startTime: Date.now(),
-    steps: [],
     params: { ...params },
     errors: [],
     currentStep: null,
+    metrics: [],
   };
   if (PERFORMANCE_ENABLED && INCLUDE_MEMORY) {
     trace.startMemory = process.memoryUsage();
   }
   return trace;
 }
+
 /**
  * Records a step in the trace context
  * @param {Object} context - Trace context
@@ -66,28 +68,27 @@ async function traceStep(context, stepName, stepFn) {
     const result = await stepFn();
     const stepEnd = Date.now();
     const duration = stepEnd - stepStart;
-    const stepInfo = {
+    const metric = {
       name: stepName,
-      status: 'success',
       duration,
     };
     if (PERFORMANCE_ENABLED) {
       if (INCLUDE_MEMORY) {
         const endMemory = process.memoryUsage();
-        stepInfo.memory = {
+        metric.memory = {
           heapUsed: endMemory.heapUsed - startMemory.heapUsed,
           heapTotal: endMemory.heapTotal - startMemory.heapTotal,
           external: endMemory.external - startMemory.external,
         };
       }
       if (INCLUDE_TIMINGS) {
-        stepInfo.timing = {
+        metric.timing = {
           start: stepStart,
           end: stepEnd,
         };
       }
     }
-    context.steps.push(stepInfo);
+    context.metrics.push(metric);
     return result;
   } catch (error) {
     const stepEnd = Date.now();
@@ -107,16 +108,11 @@ async function traceStep(context, stepName, stepFn) {
         external: endMemory.external - startMemory.external,
       };
     }
-    context.steps.push({
-      name: stepName,
-      status: 'error',
-      error: traceError,
-      duration,
-    });
     context.errors.push(traceError);
     throw error;
   }
 }
+
 /**
  * Formats the trace context into a readable summary
  * @param {Object} context - Trace context
@@ -130,16 +126,9 @@ function formatTrace(context) {
   const duration = endTime - context.startTime;
   const summary = {
     id: context.id,
-    action: context.actionName,
+    action: context.action,
     duration,
-    steps: context.steps.map((step) => ({
-      name: step.name,
-      status: step.status,
-      duration: step.duration,
-      ...(step.error && { error: step.error }),
-      ...(step.memory && { memory: step.memory }),
-      ...(step.timing && { timing: step.timing }),
-    })),
+    metrics: context.metrics,
     errors: context.errors,
     params: context.params,
   };
@@ -153,6 +142,7 @@ function formatTrace(context) {
   }
   return summary;
 }
+
 module.exports = {
   createTraceContext,
   traceStep,

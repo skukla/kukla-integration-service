@@ -4,21 +4,21 @@
  */
 
 module.exports = {
-  runtime: {
-    baseUrl: 'https://localhost',
-    port: 9080,
-    paths: {
-      base: '/api',
-      web: '/v1/web',
+  "runtime": {
+    "baseUrl": "https://localhost",
+    "port": 9080,
+    "paths": {
+      "base": "/api",
+      "web": "/v1/web"
     },
-    version: 'v1',
-    namespace: 'kukla-integration-service',
-    package: 'kukla-integration-service',
-    actions: {
-      'get-products': 'get-products',
-      'download-file': 'download-file',
-      'browse-files': 'browse-files',
-      'delete-file': 'delete-file',
-    },
-  },
+    "version": "v1",
+    "namespace": "kukla-integration-service",
+    "package": "kukla-integration-service",
+    "actions": {
+      "get-products": "get-products",
+      "download-file": "download-file",
+      "browse-files": "browse-files",
+      "delete-file": "delete-file"
+    }
+  }
 };
