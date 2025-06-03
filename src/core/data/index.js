@@ -3,21 +3,21 @@
  * @module core/data
  */
 
-const { transformData, formatResponse } = require('./transformation');
+const { transformObject, formatResponse } = require('./transformation');
 const { checkMissingRequestInputs, validateInput } = require('./validation');
 
 // Internal utilities
 const internal = {
   checkMissingRequestInputs,
   validateInput,
-  transformData,
+  transformObject,
   formatResponse,
 };
 
 // Public API
 const publicApi = {
   validateInput,
-  transformData,
+  transformObject,
   formatResponse,
 };
 

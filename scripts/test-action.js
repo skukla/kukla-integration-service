@@ -9,7 +9,6 @@ const fetch = require('node-fetch');
 const ora = require('ora');
 
 const execAsync = util.promisify(exec);
-const { loadConfig } = require('../config');
 
 // Get the action name from command line
 const actionName = process.argv[2];
@@ -46,31 +45,42 @@ async function getNamespace() {
   }
 }
 
-function formatResponse(data, showTrace) {
-  if (!showTrace && data.trace) {
-    const { trace, ...rest } = data; // eslint-disable-line no-unused-vars
-    return rest;
-  }
-  return data;
+async function testAction(actionUrl) {
+  const response = await fetch(actionUrl);
+  const responseData = await response.json();
+
+  return {
+    statusCode: response.status,
+    body: responseData,
+  };
 }
 
-async function testAction(actionUrl, tracingEnabled) {
-  try {
-    const response = await fetch(actionUrl);
-    const data = await response.json();
+function formatResponse(response) {
+  const { statusCode, body } = response;
+  const status = statusCode === 200 ? 'success' : 'error';
+  const color = status === 'success' ? 'green' : 'red';
 
-    // Format response based on tracing configuration
-    const formattedData = formatResponse(data, tracingEnabled);
+  console.log(chalk[color](`Status: ${status.toUpperCase()} (${statusCode})`));
 
-    return {
-      success: true,
-      data: formattedData,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-    };
+  if (body.success) {
+    console.log(chalk.white('Message:'), body.message);
+
+    if (body.steps?.length > 0) {
+      console.log(chalk.white('\nSteps:'));
+      body.steps.forEach((step, index) => {
+        console.log(chalk.green(`${index + 1}. ${step}`));
+      });
+    }
+  } else if (body.error) {
+    console.log(chalk.red('Error:'), body.error);
+    if (body.steps?.length > 0) {
+      console.log(chalk.white('\nSteps before error:'));
+      body.steps.forEach((step, index) => {
+        console.log(chalk.red(`${index + 1}. ${step}`));
+      });
+    }
+  } else {
+    console.log(chalk.yellow('Response:'), JSON.stringify(body, null, 2));
   }
 }
 
@@ -78,25 +88,15 @@ async function main() {
   const spinner = ora('Initializing test').start();
 
   try {
-    const config = loadConfig();
-    const tracingEnabled = config.app?.monitoring?.tracing?.enabled ?? false;
-
     spinner.text = 'Getting namespace...';
     const namespace = await getNamespace();
     const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
 
     spinner.text = `Testing action: ${actionName}`;
-    const results = await testAction(actionUrl, tracingEnabled);
+    const response = await testAction(actionUrl);
 
-    if (results.success) {
-      spinner.succeed(`Successfully tested action: ${actionName}`);
-      console.log(chalk.gray(`URL: ${actionUrl}`));
-      console.log(chalk.yellow('Response:'));
-      console.log(JSON.stringify(results.data, null, 2));
-    } else {
-      spinner.fail(`Action test failed: ${results.error}`);
-      process.exit(1);
-    }
+    spinner.succeed(`Action tested: ${actionName}`);
+    formatResponse(response);
   } catch (error) {
     spinner.fail(`Test execution failed: ${error.message}`);
     process.exit(1);
