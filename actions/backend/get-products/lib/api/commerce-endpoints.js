@@ -36,11 +36,6 @@ function products(params = {}) {
     queryParams.append('searchCriteria[currentPage]', params.currentPage);
   }
 
-  // Add visibility filter
-  queryParams.append('searchCriteria[filter_groups][0][filters][0][field]', 'visibility');
-  queryParams.append('searchCriteria[filter_groups][0][filters][0][value]', '4');
-  queryParams.append('searchCriteria[filter_groups][0][filters][0][condition_type]', 'eq');
-
   const query = queryParams.toString();
   return `${PRODUCTS_PATH}${query ? `?${query}` : ''}`;
 }
