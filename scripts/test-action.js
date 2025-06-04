@@ -10,12 +10,17 @@ const ora = require('ora');
 
 const execAsync = util.promisify(exec);
 
-// Get the action name from command line
-const actionName = process.argv[2];
+// Parse command line arguments
+const args = process.argv.slice(2);
+const actionName = args.find((arg) => !arg.startsWith('--'));
+const rawOutput = args.includes('--raw');
+
 if (!actionName) {
   console.error(chalk.red('Please provide an action name'));
-  console.log(chalk.yellow('Usage: node test-action.js <action-name>'));
-  console.log(chalk.yellow('Available actions:'));
+  console.log(chalk.yellow('Usage: node test-action.js <action-name> [--raw]'));
+  console.log(chalk.yellow('Options:'));
+  console.log(chalk.cyan('  --raw    Output raw JSON response only'));
+  console.log(chalk.yellow('\nAvailable actions:'));
   const config = yaml.load(fs.readFileSync(path.join(__dirname, '../app.config.yaml'), 'utf8'));
   const actions = Object.keys(
     config.application.runtimeManifest.packages['kukla-integration-service'].actions
@@ -47,10 +52,25 @@ async function getNamespace() {
 
 async function testAction(actionUrl) {
   const response = await fetch(actionUrl);
-  const responseData = await response.json();
+  let responseData;
+
+  // Get the response text first, then try to parse as JSON
+  const text = await response.text();
+
+  try {
+    responseData = JSON.parse(text);
+  } catch (error) {
+    // Handle non-JSON responses (like HTML)
+    responseData = {
+      error: 'Non-JSON response received',
+      contentType: response.headers.get('content-type'),
+      response: text.substring(0, 200) + (text.length > 200 ? '...' : ''),
+    };
+  }
 
   return {
     statusCode: response.status,
+    headers: Object.fromEntries(response.headers.entries()),
     body: responseData,
   };
 }
@@ -71,6 +91,10 @@ function formatResponse(response) {
         console.log(chalk.green(`${index + 1}. ${step}`));
       });
     }
+
+    if (body.data) {
+      console.log(chalk.white('\nData:'), JSON.stringify(body.data, null, 2));
+    }
   } else if (body.error) {
     console.log(chalk.red('Error:'), body.error);
     if (body.steps?.length > 0) {
@@ -79,27 +103,45 @@ function formatResponse(response) {
         console.log(chalk.red(`${index + 1}. ${step}`));
       });
     }
+    if (body.response) {
+      console.log(chalk.yellow('\nResponse Preview:'), body.response);
+    }
   } else {
     console.log(chalk.yellow('Response:'), JSON.stringify(body, null, 2));
   }
 }
 
 async function main() {
-  const spinner = ora('Initializing test').start();
+  if (rawOutput) {
+    // Raw mode: just output JSON
+    try {
+      const namespace = await getNamespace();
+      const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
+      const response = await testAction(actionUrl);
+      console.log(JSON.stringify(response, null, 2));
+    } catch (error) {
+      console.error(JSON.stringify({ error: error.message }, null, 2));
+      process.exit(1);
+    }
+  } else {
+    // Enhanced mode: user-friendly output with ora spinners
+    const spinner = ora('Initializing test').start();
 
-  try {
-    spinner.text = 'Getting namespace...';
-    const namespace = await getNamespace();
-    const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
+    try {
+      spinner.text = 'Getting namespace...';
+      const namespace = await getNamespace();
+      const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
 
-    spinner.text = `Testing action: ${actionName}`;
-    const response = await testAction(actionUrl);
+      spinner.text = `Testing action: ${actionName}`;
+      const response = await testAction(actionUrl);
 
-    spinner.succeed(`Action tested: ${actionName}`);
-    formatResponse(response);
-  } catch (error) {
-    spinner.fail(`Test execution failed: ${error.message}`);
-    process.exit(1);
+      spinner.succeed(`Action tested: ${actionName}`);
+      console.log(`🔗 URL: ${actionUrl}\n`);
+      formatResponse(response);
+    } catch (error) {
+      spinner.fail(`Test execution failed: ${error.message}`);
+      process.exit(1);
+    }
   }
 }
 
