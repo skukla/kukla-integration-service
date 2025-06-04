@@ -42,10 +42,10 @@ function initializeValidator() {
 
 /**
  * Loads environment-specific configuration
- * @param {string} [env] - Environment name (development, staging, production)
+ * @param {string} [env] - Environment name (staging, production)
  * @returns {Object} Environment configuration
  */
-function loadEnvironmentConfig(env = process.env.NODE_ENV || 'development') {
+function loadEnvironmentConfig(env = process.env.NODE_ENV || 'staging') {
   try {
     return require(`./environments/${env}`);
   } catch (error) {
