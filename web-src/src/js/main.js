@@ -3,13 +3,19 @@
  * @module main
  */
 import { initializeFileBrowser } from './browser/file-browser.js';
+import { checkBackendConnection } from './config.js';
 import { initializeModal } from './core/modal.js';
 import { showNotification } from './core/notifications.js';
 import { initializeHtmx } from './htmx/config.js';
 
 // Initialize application on load
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Initializing application...');
+
   try {
+    // Check backend connection and SSL certificate
+    checkBackendConnection();
+
     // Initialize HTMX
     console.log('Initializing HTMX...');
     initializeHtmx();
