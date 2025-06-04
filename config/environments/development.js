@@ -6,6 +6,21 @@
 // Load environment variables
 require('dotenv').config();
 
+// Determine if this is for deployed development or local development
+const isDeployed = process.env.DEV_DEPLOYED === 'true';
+
+const localConfig = {
+  baseUrl: 'https://localhost:9080',
+  namespace: 'local',
+};
+
+const deployedConfig = {
+  baseUrl: 'https://adobeioruntime.net/api/v1/web/285361-188maroonwallaby-dev',
+  namespace: '285361-188maroonwallaby-dev',
+};
+
+const runtimeConfig = isDeployed ? deployedConfig : localConfig;
+
 module.exports = {
   app: {
     name: 'kukla-integration-service',
@@ -13,6 +28,7 @@ module.exports = {
     environment: 'development',
     runtime: {
       environment: 'development',
+      deployed: isDeployed,
     },
     performance: {
       enabled: true,
@@ -43,8 +59,8 @@ module.exports = {
   },
   url: {
     runtime: {
-      baseUrl: 'https://localhost:9080',
-      namespace: 'local',
+      baseUrl: runtimeConfig.baseUrl,
+      namespace: runtimeConfig.namespace,
       package: 'kukla-integration-service',
       version: 'v1',
       paths: {
