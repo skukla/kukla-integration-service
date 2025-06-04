@@ -17,6 +17,10 @@ const {
   },
 } = config.commerce;
 
+// Extract product fields at module load time to ensure availability
+const FALLBACK_PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
+const PRODUCT_FIELDS = config.commerce?.product?.fields || FALLBACK_PRODUCT_FIELDS;
+
 /**
  * Make a cached request
  * @private
@@ -45,10 +49,15 @@ async function makeCachedRequest(url, options) {
 function filterProductFields(product, fields) {
   const filtered = {};
 
-  // Defensive programming: ensure fields is an array
+  // Defensive programming: ensure fields is an array and product exists
   if (!Array.isArray(fields)) {
-    console.warn('Fields is not an array, returning original product:', fields);
-    return product;
+    console.warn('Fields is not an array in filterProductFields:', typeof fields, fields);
+    return product || {};
+  }
+
+  if (!product || typeof product !== 'object') {
+    console.warn('Product is not a valid object in filterProductFields:', typeof product);
+    return {};
   }
 
   fields.forEach((field) => {
@@ -109,6 +118,24 @@ async function fetchAllProducts(token, params = {}) {
     let currentPage = 1;
     let totalPages = 1;
 
+    // Get the fields to include (declare once outside the loop)
+    let fields;
+    try {
+      fields = getRequestedFields(params);
+    } catch (error) {
+      console.warn('Error getting requested fields, using default fields:', error.message);
+      fields = PRODUCT_FIELDS;
+    }
+
+    // Ensure fields is always an array (defensive programming)
+    if (!Array.isArray(fields)) {
+      console.warn('Fields configuration is not an array, using fallback:', fields);
+      fields = PRODUCT_FIELDS;
+    }
+
+    // Create immutable copy to ensure proper closure capture
+    const fieldsForProcessing = [...fields];
+
     do {
       const paginatedParams = {
         ...params,
@@ -135,15 +162,6 @@ async function fetchAllProducts(token, params = {}) {
         totalPages = Math.min(totalPages, maxPages);
       }
 
-      // Get the fields to include
-      let fields;
-      try {
-        fields = getRequestedFields(params);
-      } catch (error) {
-        console.warn('Error getting requested fields, using default fields:', error.message);
-        fields = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
-      }
-
       // Enrich products with inventory data and filter fields
       const enrichedProducts = await Promise.all(
         response.body.items.map(async (product) => {
@@ -153,10 +171,10 @@ async function fetchAllProducts(token, params = {}) {
               ...product,
               ...inventory,
             };
-            return filterProductFields(enrichedProduct, fields);
+            return filterProductFields(enrichedProduct, fieldsForProcessing);
           } catch (inventoryError) {
             console.warn(`Failed to get inventory for ${product.sku}:`, inventoryError.message);
-            return filterProductFields(product, fields);
+            return filterProductFields(product, fieldsForProcessing);
           }
         })
       );
