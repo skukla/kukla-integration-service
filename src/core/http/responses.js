@@ -3,11 +3,72 @@
  * @module core/http/responses
  */
 
+const { loadConfig } = require('../../../config');
+
+// Load configuration
+const {
+  url: {
+    runtime: { namespace, baseUrl },
+  },
+} = loadConfig();
+
+/**
+ * Get CORS headers for the response
+ * @private
+ * @param {Object} params - OpenWhisk parameters containing request headers
+ * @returns {Object} CORS headers
+ */
+function getCorsHeaders(params = {}) {
+  // Get request origin from headers
+  const requestOrigin = params.__ow_headers?.origin;
+
+  // Define allowed origins including development
+  const allowedOrigins = [
+    `https://${namespace}.adobeio-static.net`,
+    baseUrl,
+    'http://localhost:9080', // Development server
+    'http://127.0.0.1:9080', // Alternative development URL
+  ];
+
+  // Set CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, X-Requested-With',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400', // 24 hours
+  };
+
+  // Only set Allow-Origin if we have a request origin and it's in our allowed list
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    corsHeaders['Access-Control-Allow-Origin'] = requestOrigin;
+  }
+
+  return corsHeaders;
+}
+
+/**
+ * Handle preflight requests
+ * @param {Object} params - OpenWhisk parameters
+ * @returns {Object} Preflight response
+ */
+function handlePreflight(params) {
+  return {
+    statusCode: 204,
+    headers: getCorsHeaders(params),
+    body: null,
+  };
+}
+
 /**
  * Standard response format for OpenWhisk web actions
  */
 const response = {
-  success: (data = {}, message = 'Success', options = {}) => {
+  success: (data = {}, message = 'Success', options = {}, params = {}) => {
+    // Handle preflight requests
+    if (params.__ow_method === 'options') {
+      return handlePreflight(params);
+    }
+
     const body = JSON.stringify({
       success: true,
       message,
@@ -20,12 +81,18 @@ const response = {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': options.cacheControl || 'no-cache',
+        ...getCorsHeaders(params),
       },
       body,
     };
   },
 
-  error: (error, context = {}) => {
+  error: (error, context = {}, params = {}) => {
+    // Handle preflight requests
+    if (params.__ow_method === 'options') {
+      return handlePreflight(params);
+    }
+
     const body = JSON.stringify({
       success: false,
       error: error.message,
@@ -38,12 +105,18 @@ const response = {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
+        ...getCorsHeaders(params),
       },
       body,
     };
   },
 
-  badRequest: (message, context = {}) => {
+  badRequest: (message, context = {}, params = {}) => {
+    // Handle preflight requests
+    if (params.__ow_method === 'options') {
+      return handlePreflight(params);
+    }
+
     const body = JSON.stringify({
       success: false,
       error: message,
@@ -55,6 +128,7 @@ const response = {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
+        ...getCorsHeaders(params),
       },
       body,
     };

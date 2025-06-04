@@ -9,6 +9,7 @@ const storeCsv = require('./steps/storeCsv');
 const validateInput = require('./steps/validateInput');
 const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
+const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
 
 /**
@@ -82,6 +83,11 @@ function formatStepMessage(name, status, details = {}) {
  * @returns {Promise<Object>} Action response
  */
 async function main(params) {
+  // Handle preflight requests first
+  if (params.__ow_method === 'options') {
+    return response.success({}, 'Preflight success', {}, params);
+  }
+
   const trace = createTraceContext('get-products', params);
   const steps = [];
 
@@ -114,10 +120,7 @@ async function main(params) {
       });
     } catch (error) {
       steps.push(formatStepMessage('validate-input', 'error', { error: error.message }));
-      return {
-        statusCode: 400,
-        body: { success: false, error: error.message, steps },
-      };
+      return response.badRequest(error.message, { steps }, params);
     }
 
     // Step 2: Fetch and enrich products
@@ -132,10 +135,7 @@ async function main(params) {
       });
     } catch (error) {
       steps.push(formatStepMessage('fetch-and-enrich', 'error', { error: error.message }));
-      return {
-        statusCode: 500,
-        body: { success: false, error: error.message, steps },
-      };
+      return response.error(error, { steps }, params);
     }
 
     // Step 3: Build product data structure
@@ -148,10 +148,7 @@ async function main(params) {
       });
     } catch (error) {
       steps.push(formatStepMessage('build-products', 'error', { error: error.message }));
-      return {
-        statusCode: 500,
-        body: { success: false, error: error.message, steps },
-      };
+      return response.error(error, { steps }, params);
     }
 
     // Step 4: Create CSV file
@@ -165,10 +162,7 @@ async function main(params) {
       });
     } catch (error) {
       steps.push(formatStepMessage('create-csv', 'error', { error: error.message }));
-      return {
-        statusCode: 500,
-        body: { success: false, error: error.message, steps },
-      };
+      return response.error(error, { steps }, params);
     }
 
     // Step 5: Store CSV in cloud storage
@@ -181,30 +175,12 @@ async function main(params) {
       });
     } catch (error) {
       steps.push(formatStepMessage('store-csv', 'error', { error: error.message }));
-      return {
-        statusCode: 500,
-        body: { success: false, error: error.message, steps },
-      };
+      return response.error(error, { steps }, params);
     }
 
-    return {
-      statusCode: 200,
-      body: {
-        success: true,
-        message: steps[steps.length - 1],
-        file: fileInfo,
-        steps,
-      },
-    };
+    return response.success({ file: fileInfo }, steps[steps.length - 1], { steps }, params);
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: {
-        success: false,
-        error: error.message,
-        steps,
-      },
-    };
+    return response.error(error, { steps }, params);
   }
 }
 
