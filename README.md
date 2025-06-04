@@ -55,16 +55,47 @@ The application uses a comprehensive configuration system:
 
 4. **Development**
 
-   ```bash
-   # Local Development (recommended for daily work)
-   npm start            # Start local development server
+   This App Builder application uses staging workspace for all development.
 
-   # Cloud Deployment
-   npm run deploy:staging     # Deploy to staging workspace
-   npm run deploy:production  # Deploy to production workspace
+   ### Prerequisites
+
+   1. **Adobe I/O Project**: Configure your project with proper credentials
+   2. **AIO CLI**: Install and configure with your credentials
+   3. **Workspace**: Set up staging workspace with Files SDK access
+
+   ### Development Workflow
+
+   ```bash
+   # Quick development cycle
+   npm start                   # Fast deploy to staging for development
+
+   # Reliable deployment
+   npm run deploy              # Clean deploy to staging
+   npm run deploy:prod         # Clean deploy to production
    ```
 
-   See [Development Modes Guide](docs/development-modes.md) for detailed explanation of local vs staging vs production environments.
+   ### Why Staging-Only Development?
+
+   Adobe I/O Files SDK requires proper credentials and runs best in Adobe's environment. By developing directly on staging:
+
+   - ✅ **Reliable**: No local server proxy issues
+   - ✅ **Real Environment**: Identical to production
+   - ✅ **Team Friendly**: Everyone accesses the same staging URL
+   - ✅ **Fast**: Adobe's deployment is quick enough for development
+   - ✅ **Simple**: One environment, one URL
+
+   ### Key URLs
+
+   - **Staging App**: Check Adobe Developer Console after `npm start`
+   - **Adobe Experience Platform**: Links provided during deployment
+
+   ### Development Process
+
+   1. Make your changes locally
+   2. Run `npm start` for quick testing or `npm run deploy` for reliable deployment
+   3. Test your changes on the staging URL
+   4. Repeat until ready for production
+   5. Deploy to production with `npm run deploy:prod`
 
 ## Project Structure
 
@@ -115,3 +146,48 @@ Our documentation is organized into focused guides:
 
 - Submit issues via [GitHub Issues](https://github.com/your-repo/issues)
 - Check [Adobe App Builder Documentation](https://developer.adobe.com/app-builder/)
+
+## Available Scripts
+
+```bash
+# Quick Development
+npm start                    # Fast deploy to staging (no clean)
+
+# Reliable Deployment
+npm run deploy              # Clean build and deploy to staging
+npm run deploy:prod         # Clean build and deploy to production
+
+# Building and Utilities
+npm run build               # Build application only
+npm run clean               # Clean build artifacts
+
+# Testing
+npm run test:action         # Test individual actions
+npm run test:perf           # Performance testing (staging)
+npm run test:perf:prod      # Performance testing (production)
+```
+
+### Simplified Workflow
+
+Our development approach uses staging workspace for all development:
+
+1. **Quick Development**: `npm start` - Fast deploy for iteration
+2. **Reliable Deploy**: `npm run deploy` - Clean deploy to staging
+3. **Production**: `npm run deploy:prod` - Clean deploy to production
+
+**Why staging-only?** Adobe I/O Files SDK requires proper credentials and works best in Adobe's environment. This approach eliminates local development complexity while providing a fast, reliable development experience.
+
+### Testing Individual Actions
+
+```bash
+# Enhanced mode (default) - shows formatted output with spinners
+npm run test:action get-products
+npm run test:action browse-files
+
+# Raw mode - outputs pure JSON for scripting/automation
+npm run test:action get-products -- --raw
+npm run test:action browse-files -- --raw
+
+# Show available actions
+npm run test:action
+```
