@@ -7,7 +7,7 @@ const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
 
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { extractActionParams } = require('../../../src/core/http/client');
-const { response } = require('../../../src/core/http/responses');
+const { response, getCorsHeaders } = require('../../../src/core/http/responses');
 const { listFiles, deleteFile } = require('../../../src/core/storage/files');
 const { createHtmxResponse } = require('../../../src/htmx/formatting');
 
@@ -24,14 +24,11 @@ function createHtmlResponse(html, status = 200, params = {}) {
     status,
   });
 
-  // Add CORS headers using the standardized response utility
-  const corsResponse = response.success({ html }, 'HTML content', {}, params);
-
   return {
     ...baseResponse,
     headers: {
       ...baseResponse.headers,
-      ...corsResponse.headers,
+      ...getCorsHeaders(params),
     },
   };
 }

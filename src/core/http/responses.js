@@ -22,18 +22,23 @@ function getCorsHeaders(params = {}) {
   // Get request origin from headers
   const requestOrigin = params.__ow_headers?.origin;
 
-  // Define allowed origins including development
+  // Define allowed origins including development and all deployment environments
   const allowedOrigins = [
-    `https://${namespace}.adobeio-static.net`,
-    baseUrl,
+    `https://${namespace}.adobeio-static.net`, // Current environment's static domain
+    baseUrl, // Current environment's base URL
     'http://localhost:9080', // Development server
-    'http://127.0.0.1:9080', // Alternative development URL
+    'http://localhost:3000', // Frontend development server
+    'https://localhost:9080', // HTTPS development server
+    // Additional staging/production domains
+    'https://285361-188maroonwallaby-stage.adobeio-static.net', // Staging domain
+    'https://285361-188maroonwallaby-prod.adobeio-static.net', // Production domain (if exists)
   ];
 
   // Set CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cache-Control, X-Requested-With',
+    'Access-Control-Allow-Headers':
+      'Content-Type, Authorization, Cache-Control, X-Requested-With, hx-current-url, hx-request, hx-target, hx-trigger, hx-trigger-name, hx-prompt, hx-boosted',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400', // 24 hours
   };
@@ -137,4 +142,5 @@ const response = {
 
 module.exports = {
   response,
+  getCorsHeaders,
 };
