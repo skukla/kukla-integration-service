@@ -3,6 +3,6 @@
  * @module web-src/config/url
  */
 
-const runtimeConfig = require('./generated/runtime.config');
+import runtimeConfig from './generated/runtime.config.js';
 
 export const urlConfig = runtimeConfig.runtime;
