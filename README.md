@@ -8,6 +8,7 @@ A streamlined Adobe App Builder application that integrates with Adobe Commerce 
 
 📚 [Architecture Guide](docs/architecture.md) - System design and components  
 🛠️ [Development Guide](docs/development.md) - Setup and workflow  
+🚀 [Development Modes](docs/development-modes.md) - Local vs Staging vs Production  
 🔒 [Security Guide](docs/security.md) - Security practices  
 🐛 [Debugging Guide](docs/debugging.md) - Debugging process and tools  
 ⚙️ [Configuration Guide](docs/configuration.md) - Configuration system
@@ -55,10 +56,15 @@ The application uses a comprehensive configuration system:
 4. **Development**
 
    ```bash
-   npm run dev      # Start development
-   npm run build    # Build the app
-   npm run deploy   # Deploy to App Builder
+   # Local Development (recommended for daily work)
+   npm start            # Start local development server
+
+   # Cloud Deployment
+   npm run deploy:staging     # Deploy to staging workspace
+   npm run deploy:production  # Deploy to production workspace
    ```
+
+   See [Development Modes Guide](docs/development-modes.md) for detailed explanation of local vs staging vs production environments.
 
 ## Project Structure
 
@@ -90,6 +96,7 @@ Our documentation is organized into focused guides:
 
   - [Architecture](docs/architecture.md) - System design and patterns
   - [Development](docs/development.md) - Development workflow
+  - [Development Modes](docs/development-modes.md) - Local vs Staging vs Production
   - [Security](docs/security.md) - Security practices
   - [Deployment](docs/deployment.md) - Deployment process
   - [Debugging](docs/debugging.md) - Debugging workflow and tools
