@@ -10,25 +10,11 @@ import { initializeHtmx } from './htmx/config.js';
 
 // Initialize application on load
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Initializing application...');
-
   try {
-    // Check backend connection and SSL certificate
     checkBackendConnection();
-
-    // Initialize HTMX
-    console.log('Initializing HTMX...');
     initializeHtmx();
-
-    // Initialize modal system
-    console.log('Initializing modal system...');
     initializeModal();
-
-    // Initialize file browser
-    console.log('Initializing file browser...');
     initializeFileBrowser();
-
-    console.log('Application initialized successfully');
   } catch (error) {
     // Enhanced error logging
     console.error('Application initialization failed:', error);
