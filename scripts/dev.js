@@ -23,6 +23,84 @@ const apiOnly = args.includes('--api-only');
 const children = new Set();
 const PID_FILE = path.join(__dirname, '..', '.pid');
 
+/**
+ * Kill processes on specific ports
+ * @param {number[]} ports - Array of ports to clear
+ */
+function killProcessesOnPorts(ports) {
+  ports.forEach((port) => {
+    try {
+      const result = execSync(`lsof -ti:${port}`, { stdio: 'pipe', encoding: 'utf8' });
+      const pids = result
+        .trim()
+        .split('\n')
+        .filter((pid) => pid);
+
+      pids.forEach((pid) => {
+        try {
+          execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+        } catch (e) {
+          // Process may already be dead
+        }
+      });
+    } catch (e) {
+      // No processes on this port
+    }
+  });
+}
+
+/**
+ * Kill remaining development server processes
+ */
+function killDevelopmentProcesses() {
+  try {
+    // Kill any remaining vite, aio, or node dev processes
+    const patterns = ['vite.*--port', 'aio.*app.*dev', 'node.*dev\\.js'];
+    patterns.forEach((pattern) => {
+      try {
+        execSync(`pkill -f "${pattern}"`, { stdio: 'ignore' });
+      } catch (e) {
+        // No matching processes
+      }
+    });
+  } catch (e) {
+    // No processes to kill
+  }
+}
+
+/**
+ * Clean up existing development environment
+ */
+async function cleanupExistingEnvironment() {
+  const spinner = ora('Cleaning up existing development processes...').start();
+
+  try {
+    // Kill processes on ports we need
+    const portsToClean = [3000, 9080, 35729];
+    killProcessesOnPorts(portsToClean);
+
+    // Kill any remaining development processes
+    killDevelopmentProcesses();
+
+    // Clean up PID file
+    if (fs.existsSync(PID_FILE)) {
+      try {
+        fs.unlinkSync(PID_FILE);
+      } catch (e) {
+        // File may not exist
+      }
+    }
+
+    // Wait a moment for processes to fully terminate
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    spinner.succeed('Existing processes cleaned up');
+  } catch (error) {
+    spinner.fail('Failed to clean up existing processes');
+    // Continue anyway, as this shouldn't be fatal
+  }
+}
+
 function cleanup() {
   console.log('\n👋 Shutting down development environment...');
   children.forEach((child) => {
@@ -233,6 +311,7 @@ async function main() {
   try {
     console.log('🚀 Starting development environment...\n');
 
+    await cleanupExistingEnvironment();
     await validateEnvironment();
     await generateConfig();
     await buildActions();
