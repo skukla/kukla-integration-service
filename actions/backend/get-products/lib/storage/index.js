@@ -4,15 +4,14 @@
  */
 
 const { getStorageConfig } = require('./config');
-const { 
-    http: { APP_PREFIX },
-    storage: {
-        writeFile,
-        getFileProperties,
-        FileOperationError,
-        FileErrorType
-    }
+const { loadConfig } = require('../../../../../config');
+const {
+  storage: { writeFile, getFileProperties, FileOperationError, FileErrorType },
 } = require('../../../../src/core');
+
+// Get the runtime configuration
+const config = loadConfig();
+const { baseUrl } = config.url.runtime;
 
 /**
  * Builds a download URL for a file
@@ -20,7 +19,7 @@ const {
  * @returns {string} Download URL
  */
 function buildDownloadUrl(fileName) {
-    return `${APP_PREFIX}/download-file?fileName=${encodeURIComponent(fileName)}`;
+  return `${baseUrl}/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(fileName)}`;
 }
 
 /**
@@ -35,43 +34,43 @@ function buildDownloadUrl(fileName) {
  * @throws {FileOperationError} If file operation fails
  */
 async function storeFile(content, fileName) {
-    try {
-        // Get storage configuration
-        const { location, files } = await getStorageConfig();
-        
-        // Create a buffer from the content
-        const buffer = Buffer.from(content);
-        
-        // Store the file in the public directory to make it accessible
-        const publicFileName = `public/${fileName}`;
-        
-        // Use shared file operations to write and verify the file
-        await writeFile(files, publicFileName, buffer);
-        await getFileProperties(files, publicFileName);
-        
-        // Get the download URL for the file
-        const downloadUrl = buildDownloadUrl(publicFileName);
-        
-        return {
-            fileName: publicFileName,
-            location,
-            downloadUrl
-        };
-    } catch (error) {
-        // If it's already a FileOperationError, rethrow it
-        if (error instanceof FileOperationError) {
-            throw error;
-        }
-        
-        // Otherwise, wrap it in a FileOperationError
-        throw new FileOperationError(
-            FileErrorType.UNKNOWN,
-            `Failed to store file: ${error.message}`,
-            error
-        );
+  try {
+    // Get storage configuration
+    const { location, files } = await getStorageConfig();
+
+    // Create a buffer from the content
+    const buffer = Buffer.from(content);
+
+    // Store the file in the public directory to make it accessible
+    const publicFileName = `public/${fileName}`;
+
+    // Use shared file operations to write and verify the file
+    await writeFile(files, publicFileName, buffer);
+    await getFileProperties(files, publicFileName);
+
+    // Get the download URL for the file
+    const downloadUrl = buildDownloadUrl(publicFileName);
+
+    return {
+      fileName: publicFileName,
+      location,
+      downloadUrl,
+    };
+  } catch (error) {
+    // If it's already a FileOperationError, rethrow it
+    if (error instanceof FileOperationError) {
+      throw error;
     }
+
+    // Otherwise, wrap it in a FileOperationError
+    throw new FileOperationError(
+      FileErrorType.UNKNOWN,
+      `Failed to store file: ${error.message}`,
+      error
+    );
+  }
 }
 
 module.exports = {
-    storeFile
-}; 
+  storeFile,
+};
