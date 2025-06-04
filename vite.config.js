@@ -73,7 +73,7 @@ export default defineConfig(({ mode }) => {
     },
 
     server: {
-      port: 9080,
+      port: 3000,
       strictPort: true,
       host: true,
       open: true,
@@ -86,7 +86,7 @@ export default defineConfig(({ mode }) => {
     },
 
     preview: {
-      port: 9080,
+      port: 3000,
       strictPort: true,
       host: true,
     },
