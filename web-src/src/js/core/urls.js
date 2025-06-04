@@ -13,17 +13,26 @@ import { actionUrls } from '../config';
  * @throws {Error} If the action is unknown
  */
 export function getActionUrl(action, params = {}) {
-    const baseUrl = actionUrls[action];
-    if (!baseUrl) {
-        throw new Error(`Unknown action: ${action}`);
-    }
+  const baseUrl = actionUrls[action];
+  if (!baseUrl) {
+    throw new Error(`Unknown action: ${action}`);
+  }
 
+  try {
     const url = new URL(baseUrl);
     Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value);
+      url.searchParams.append(key, value);
     });
-
     return url.toString();
+  } catch (error) {
+    console.error('Failed to construct URL:', {
+      action,
+      baseUrl,
+      params,
+      error: error.message,
+    });
+    throw error;
+  }
 }
 
 /**
@@ -33,10 +42,10 @@ export function getActionUrl(action, params = {}) {
  * @returns {string} The download URL
  */
 export function getDownloadUrl(fileName, path) {
-    return getActionUrl('download-file', {
-        fileName,
-        path
-    });
+  return getActionUrl('download-file', {
+    fileName,
+    path,
+  });
 }
 
 /**
@@ -46,8 +55,8 @@ export function getDownloadUrl(fileName, path) {
  * @returns {string} The delete URL
  */
 export function getDeleteUrl(fileName, path) {
-    return getActionUrl('delete-file', {
-        fileName,
-        path
-    });
-} 
+  return getActionUrl('delete-file', {
+    fileName,
+    path,
+  });
+}
