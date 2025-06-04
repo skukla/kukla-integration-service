@@ -3,9 +3,11 @@
  * @module browse-files/templates
  */
 
-const { 
-    http: { APP_PREFIX, buildApiUrl }
-} = require('../../../src/core');
+const { loadConfig } = require('../../../config');
+
+// Get the runtime configuration
+const config = loadConfig();
+const { baseUrl } = config.url.runtime;
 
 /**
  * Build a download URL for a file
@@ -13,10 +15,9 @@ const {
  * @returns {string} Download URL
  */
 function buildDownloadUrl(fileName) {
-    return buildApiUrl({
-        action: 'download-file',
-        params: { fileName: encodeURIComponent(fileName) }
-    });
+  // For staging/production, use the baseUrl from config
+  // For development, this will be localhost:9080
+  return `${baseUrl}/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(fileName)}`;
 }
 
 /**
@@ -24,7 +25,7 @@ function buildDownloadUrl(fileName) {
  * @returns {string} HTML content
  */
 function getEmptyStateHtml() {
-    return `
+  return `
         <div class="empty-state">
             <h2>No Files Found</h2>
             <p>There are no exported files to display.</p>
@@ -38,10 +39,10 @@ function getEmptyStateHtml() {
  * @returns {string} HTML content
  */
 function getActionButtonsHtml(file) {
-    const modalUrl = `${APP_PREFIX}/browse-files?modal=delete&fileName=${encodeURIComponent(file.name)}&fullPath=${encodeURIComponent(file.fullPath)}`;
-    const downloadUrl = buildDownloadUrl(file.fullPath);
+  const modalUrl = `${baseUrl}/browse-files?modal=delete&fileName=${encodeURIComponent(file.name)}&fullPath=${encodeURIComponent(file.fullPath)}`;
+  const downloadUrl = buildDownloadUrl(file.fullPath);
 
-    return `
+  return `
         <div class="actions-container">
             <div class="btn-group">
                 <button type="button" 
@@ -80,7 +81,7 @@ function getActionButtonsHtml(file) {
  * @returns {string} HTML content
  */
 function getFileRowHtml(file) {
-    return `
+  return `
         <div class="table-row" role="row" data-file-name="${file.name}">
             <div class="table-cell" role="cell">
                 <span>${file.name}</span>
@@ -104,10 +105,10 @@ function getFileRowHtml(file) {
  * @returns {string} HTML content
  */
 function getFileListHtml(files) {
-    if (!files || files.length === 0) {
-        return getEmptyStateHtml();
-    }
-    return files.map(file => getFileRowHtml(file)).join('');
+  if (!files || files.length === 0) {
+    return getEmptyStateHtml();
+  }
+  return files.map((file) => getFileRowHtml(file)).join('');
 }
 
 /**
@@ -117,9 +118,9 @@ function getFileListHtml(files) {
  * @returns {string} HTML content
  */
 function getDeleteModalHtml(fileName, fullPath) {
-    const deleteUrl = `${APP_PREFIX}/delete-file?fileName=${encodeURIComponent(fullPath)}`;
+  const deleteUrl = `${baseUrl}/delete-file?fileName=${encodeURIComponent(fullPath)}`;
 
-    return `
+  return `
         <div class="modal-content">
             <h2>Delete File</h2>
             <div class="modal-body">
@@ -148,9 +149,9 @@ function getDeleteModalHtml(fileName, fullPath) {
 }
 
 module.exports = {
-    getEmptyStateHtml,
-    getActionButtonsHtml,
-    getFileRowHtml,
-    getFileListHtml,
-    getDeleteModalHtml
-}; 
+  getEmptyStateHtml,
+  getActionButtonsHtml,
+  getFileRowHtml,
+  getFileListHtml,
+  getDeleteModalHtml,
+};
