@@ -40,7 +40,7 @@ module.exports = {
   },
   url: {
     runtime: {
-      baseUrl: 'https://adobeioruntime.net',
+      baseUrl: 'https://adobeioruntime.net/api/v1/web/285361-188maroonwallaby-stage',
       namespace: '285361-188maroonwallaby-stage',
       package: 'kukla-integration-service',
       version: 'v1',
