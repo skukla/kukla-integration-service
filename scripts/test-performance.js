@@ -13,10 +13,28 @@ const { createPerformanceTester, testScenario } = require('../src/core/testing/p
 // Parse command line arguments
 const args = parseArgs(process.argv.slice(2), {
   flags: {
-    env: 'local', // --env <environment>
+    env: 'staging', // --env <environment> (staging or prod)
     verbose: false, // --verbose
   },
 });
+
+// Validate environment and map to Adobe I/O workspace names
+const environmentMap = {
+  staging: 'Stage',
+  prod: 'Production',
+};
+
+const environment = args.env;
+const validEnvironments = Object.keys(environmentMap);
+
+if (!validEnvironments.includes(environment)) {
+  console.error(`❌ Invalid environment: ${environment}`);
+  console.error(`Valid environments: ${validEnvironments.join(', ')}`);
+  process.exit(1);
+}
+
+// Get the actual workspace name for Adobe I/O
+const workspaceName = environmentMap[environment];
 
 // Load configuration with proper destructuring
 const {
@@ -42,16 +60,17 @@ const {
  * @param {Object} options - Test options
  */
 async function runTests(options = {}) {
-  const spinner = ora('Running performance tests').start();
+  const spinner = ora(`Running performance tests on ${environment}`).start();
   const tester = createPerformanceTester({
-    environment: options.env || args.env,
+    environment: options.env || environment,
+    workspace: workspaceName,
     logLevel: options.verbose || args.verbose ? 'debug' : 'info',
   });
 
   try {
     // Run tests for each scenario
     for (const [name, scenario] of Object.entries(TEST_SCENARIOS)) {
-      spinner.text = `Testing scenario: ${scenario.name}`;
+      spinner.text = `Testing scenario: ${scenario.name} on ${environment}`;
 
       const results = await testScenario(scenario, {
         thresholds: {
@@ -70,9 +89,9 @@ async function runTests(options = {}) {
       });
 
       if (results.passed) {
-        spinner.succeed(`Scenario ${name} passed`);
+        spinner.succeed(`Scenario ${name} passed on ${environment}`);
       } else {
-        spinner.fail(`Scenario ${name} failed: ${results.error}`);
+        spinner.fail(`Scenario ${name} failed on ${environment}: ${results.error}`);
         if (results.metrics) {
           spinner.info('Performance metrics:');
           console.log(JSON.stringify(results.metrics, null, 2));
@@ -81,10 +100,10 @@ async function runTests(options = {}) {
     }
 
     const finalResults = await tester.getResults();
-    spinner.info('Performance test results:');
+    spinner.info(`Performance test results for ${environment}:`);
     console.log(JSON.stringify(finalResults, null, 2));
   } catch (error) {
-    spinner.fail(`Test execution failed: ${error.message}`);
+    spinner.fail(`Test execution failed on ${environment}: ${error.message}`);
     process.exit(1);
   }
 }
