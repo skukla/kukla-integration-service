@@ -43,7 +43,7 @@ dev.log
 
 # workspace
 # Contains sensitive information like API keys and client secrets that should not be committed
-workspace.json
+config/workspaces/
 .vite/
 
 # Development server
