@@ -8,7 +8,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 // Load environment-specific configuration
-const env = process.env.NODE_ENV || 'development';
+const env = process.env.NODE_ENV || 'staging';
 const envConfig = require(`../config/environments/${env}`);
 
 // Read app.config.yaml
