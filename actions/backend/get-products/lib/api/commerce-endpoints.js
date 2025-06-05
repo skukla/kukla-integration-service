@@ -36,6 +36,12 @@ function products(params = {}) {
     queryParams.append('searchCriteria[currentPage]', params.currentPage);
   }
 
+  // Add fields to include media gallery entries for images
+  queryParams.append(
+    'fields',
+    'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries,custom_attributes]'
+  );
+
   const query = queryParams.toString();
   return `${PRODUCTS_PATH}${query ? `?${query}` : ''}`;
 }
