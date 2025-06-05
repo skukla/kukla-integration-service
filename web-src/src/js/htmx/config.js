@@ -94,10 +94,12 @@ export function initializeHtmx() {
   window.htmx.config = {
     ...HTMX_CONFIG,
     defaultSwapStyle: 'innerHTML',
-    withCredentials: true,
+    withCredentials: false, // Disable credentials globally to avoid CORS issues
     timeout: 30000,
     wsReconnectDelay: 'full-jitter',
     defaultSwapDelay: HTMX_CONFIG.defaultSwapDelay, // Ensure swap delay is applied
+    // Allow requests to different origins since Adobe I/O Runtime uses wildcard CORS
+    selfRequestsOnly: false,
   };
   // Initialize extensions
   window.htmx.defineExtension('loading-states', LOADING_STATES_CONFIG);
@@ -139,7 +141,6 @@ function initializeComponents() {
 export function configureComponent(element, componentType) {
   const config = COMPONENT_CONFIG[componentType];
   if (!config) {
-    console.warn(`No configuration found for component type: ${componentType}`);
     return;
   }
   // Apply configuration
