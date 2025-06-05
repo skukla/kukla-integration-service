@@ -41,15 +41,69 @@ function initializeValidator() {
 }
 
 /**
+ * Detects the current environment based on runtime context
+ * @returns {string} Environment name (staging, production)
+ */
+function detectEnvironment() {
+  // Method 1: Check OpenWhisk namespace
+  const owNamespace = process.env.__OW_NAMESPACE;
+  if (owNamespace) {
+    // If namespace contains 'stage', it's staging environment
+    if (owNamespace.includes('stage')) {
+      return 'staging';
+    }
+    // If namespace doesn't contain 'stage' and has the expected production pattern, it's production
+    if (owNamespace.match(/^\d+-\w+$/)) {
+      return 'production';
+    }
+  }
+
+  // Method 2: Check explicit NODE_ENV
+  const nodeEnv = process.env.NODE_ENV;
+  if (nodeEnv && ['staging', 'production', 'development'].includes(nodeEnv)) {
+    return nodeEnv;
+  }
+
+  // Method 3: Check runtime URL context (if available)
+  const runtimeUrl = process.env.__OW_API_HOST;
+  if (runtimeUrl && runtimeUrl.includes('stage')) {
+    return 'staging';
+  }
+
+  // Default fallback to staging for safer development
+  console.warn('Environment detection fallback: using staging as default');
+  return 'staging';
+}
+
+/**
  * Loads environment-specific configuration
  * @param {string} [env] - Environment name (staging, production)
  * @returns {Object} Environment configuration
  */
-function loadEnvironmentConfig(env = process.env.NODE_ENV || 'staging') {
+function loadEnvironmentConfig(env = null) {
+  // Auto-detect environment if not explicitly provided
+  if (!env) {
+    env = detectEnvironment();
+  }
+
   try {
-    return require(`./environments/${env}`);
+    const config = require(`./environments/${env}`);
+    return config;
   } catch (error) {
-    console.warn(`No configuration found for environment: ${env}`);
+    console.error(`Failed to load ${env} configuration:`, error.message);
+
+    // Fallback to staging if production fails
+    if (env === 'production') {
+      console.warn('Falling back to staging configuration');
+      try {
+        const stagingConfig = require('./environments/staging');
+        return stagingConfig;
+      } catch (stagingError) {
+        console.error('Critical: Cannot load any configuration');
+        return {};
+      }
+    }
+
     return {};
   }
 }

@@ -5,12 +5,12 @@
 
 // Modal configuration
 const MODAL_CONFIG = {
-    CONTAINER_ID: 'modal-container',
-    OVERLAY_CLASS: 'modal-overlay',
-    MODAL_CLASS: 'modal',
-    ACTIVE_CLASS: 'is-active',
-    ANIMATION_DURATION: 300,
-    Z_INDEX: 1000
+  CONTAINER_ID: 'modal-container',
+  BACKDROP_CLASS: 'modal-backdrop',
+  MODAL_CLASS: 'modal',
+  ACTIVE_CLASS: 'active',
+  ANIMATION_DURATION: 300,
+  Z_INDEX: 1000,
 };
 
 let activeModal = null;
@@ -20,66 +20,58 @@ let previousFocus = null;
  * Show the modal
  */
 export function showModal() {
-    const container = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
-    if (!container) return;
+  const backdrop = document.querySelector(`.${MODAL_CONFIG.BACKDROP_CLASS}`);
+  const container = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
+  if (!backdrop || !container) return;
 
-    // Store current focus
-    previousFocus = document.activeElement;
+  // Store current focus
+  previousFocus = document.activeElement;
 
-    // Create and show overlay
-    const overlay = createOverlay();
-    document.body.appendChild(overlay);
+  // Show modal backdrop
+  backdrop.classList.add(MODAL_CONFIG.ACTIVE_CLASS);
+  activeModal = backdrop;
 
-    // Show modal
-    container.classList.add(MODAL_CONFIG.ACTIVE_CLASS);
-    activeModal = container;
+  // Focus first focusable element
+  focusFirstElement();
 
-    // Focus first focusable element
-    focusFirstElement();
-
-    // Add event listeners
-    document.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
+  // Add event listeners
+  document.addEventListener('keydown', handleKeyDown);
+  backdrop.addEventListener('click', handleBackdropClick);
+  document.body.style.overflow = 'hidden';
 }
 
 /**
  * Hide the modal
  */
 export function hideModal() {
-    if (!activeModal) return;
+  if (!activeModal) return;
 
-    // Remove overlay
-    const overlay = document.querySelector(`.${MODAL_CONFIG.OVERLAY_CLASS}`);
-    if (overlay) {
-        overlay.remove();
-    }
+  // Hide modal backdrop
+  activeModal.classList.remove(MODAL_CONFIG.ACTIVE_CLASS);
 
-    // Hide modal
-    activeModal.classList.remove(MODAL_CONFIG.ACTIVE_CLASS);
+  // Restore focus
+  if (previousFocus) {
+    previousFocus.focus();
+  }
 
-    // Restore focus
-    if (previousFocus) {
-        previousFocus.focus();
-    }
+  // Remove event listeners
+  document.removeEventListener('keydown', handleKeyDown);
+  activeModal.removeEventListener('click', handleBackdropClick);
+  document.body.style.overflow = '';
 
-    // Remove event listeners
-    document.removeEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = '';
-
-    activeModal = null;
-    previousFocus = null;
+  activeModal = null;
+  previousFocus = null;
 }
 
 /**
- * Create the modal overlay
- * @returns {HTMLElement} The overlay element
+ * Handle backdrop click to close modal
+ * @param {Event} event - The click event
  */
-function createOverlay() {
-    const overlay = document.createElement('div');
-    overlay.className = MODAL_CONFIG.OVERLAY_CLASS;
-    overlay.style.zIndex = MODAL_CONFIG.Z_INDEX - 1;
-    overlay.addEventListener('click', hideModal);
-    return overlay;
+function handleBackdropClick(event) {
+  // Only close if clicking the backdrop itself, not its children
+  if (event.target === activeModal) {
+    hideModal();
+  }
 }
 
 /**
@@ -87,16 +79,16 @@ function createOverlay() {
  * @param {KeyboardEvent} event - The keyboard event
  */
 function handleKeyDown(event) {
-    if (!activeModal) return;
+  if (!activeModal) return;
 
-    switch (event.key) {
-        case 'Escape':
-            hideModal();
-            break;
-        case 'Tab':
-            handleTabKey(event);
-            break;
-    }
+  switch (event.key) {
+    case 'Escape':
+      hideModal();
+      break;
+    case 'Tab':
+      handleTabKey(event);
+      break;
+  }
 }
 
 /**
@@ -104,23 +96,23 @@ function handleKeyDown(event) {
  * @param {KeyboardEvent} event - The keyboard event
  */
 function handleTabKey(event) {
-    const focusableElements = getFocusableElements();
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+  const focusableElements = getFocusableElements();
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
 
-    if (!firstElement) return;
+  if (!firstElement) return;
 
-    if (event.shiftKey) {
-        if (document.activeElement === firstElement) {
-            event.preventDefault();
-            lastElement.focus();
-        }
-    } else {
-        if (document.activeElement === lastElement) {
-            event.preventDefault();
-            firstElement.focus();
-        }
+  if (event.shiftKey) {
+    if (document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
     }
+  } else {
+    if (document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
 }
 
 /**
@@ -128,21 +120,23 @@ function handleTabKey(event) {
  * @returns {Array<HTMLElement>} Array of focusable elements
  */
 function getFocusableElements() {
-    if (!activeModal) return [];
+  if (!activeModal) return [];
 
-    return Array.from(activeModal.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    ));
+  return Array.from(
+    activeModal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+  );
 }
 
 /**
  * Focus the first focusable element in the modal
  */
 function focusFirstElement() {
-    const focusableElements = getFocusableElements();
-    if (focusableElements.length > 0) {
-        focusableElements[0].focus();
-    }
+  const focusableElements = getFocusableElements();
+  if (focusableElements.length > 0) {
+    focusableElements[0].focus();
+  }
 }
 
 /**
@@ -150,9 +144,9 @@ function focusFirstElement() {
  * @param {Event} event - HTMX afterSwap event
  */
 export function handleModalContentSwap(event) {
-    if (event.detail.target.id === MODAL_CONFIG.CONTAINER_ID) {
-        showModal();
-    }
+  if (event.detail.target.id === MODAL_CONFIG.CONTAINER_ID) {
+    showModal();
+  }
 }
 
 /**
@@ -160,9 +154,9 @@ export function handleModalContentSwap(event) {
  * @param {Event} event - HTMX beforeSwap event
  */
 export function handleModalBeforeSwap(event) {
-    if (event.detail.target.closest('.modal-content')) {
-        hideModal();
-    }
+  if (event.detail.target.closest('.modal-content')) {
+    hideModal();
+  }
 }
 
 /**
@@ -174,11 +168,11 @@ export function handleModalBeforeSwap(event) {
  * @param {Function} [options.onCancel] - Cancel callback
  */
 export function createModal({ content, title, onConfirm, onCancel }) {
-    const container = document.createElement('div');
-    container.id = MODAL_CONFIG.CONTAINER_ID;
-    container.className = MODAL_CONFIG.MODAL_CLASS;
+  const container = document.createElement('div');
+  container.id = MODAL_CONFIG.CONTAINER_ID;
+  container.className = MODAL_CONFIG.MODAL_CLASS;
 
-    container.innerHTML = `
+  container.innerHTML = `
         ${title ? `<h2 class="modal-title">${title}</h2>` : ''}
         <div class="modal-content">${content}</div>
         <div class="modal-actions">
@@ -187,30 +181,30 @@ export function createModal({ content, title, onConfirm, onCancel }) {
         </div>
     `;
 
-    // Add event listeners
-    if (onConfirm) {
-        container.querySelector('[data-action="confirm"]').addEventListener('click', () => {
-            onConfirm();
-            hideModal();
-        });
-    }
+  // Add event listeners
+  if (onConfirm) {
+    container.querySelector('[data-action="confirm"]').addEventListener('click', () => {
+      onConfirm();
+      hideModal();
+    });
+  }
 
-    if (onCancel) {
-        container.querySelector('[data-action="cancel"]').addEventListener('click', () => {
-            onCancel();
-            hideModal();
-        });
-    }
+  if (onCancel) {
+    container.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+      onCancel();
+      hideModal();
+    });
+  }
 
-    // Replace existing modal or add to body
-    const existingModal = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
-    if (existingModal) {
-        existingModal.replaceWith(container);
-    } else {
-        document.body.appendChild(container);
-    }
+  // Replace existing modal or add to body
+  const existingModal = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
+  if (existingModal) {
+    existingModal.replaceWith(container);
+  } else {
+    document.body.appendChild(container);
+  }
 
-    showModal();
+  showModal();
 }
 
 /**
@@ -218,16 +212,16 @@ export function createModal({ content, title, onConfirm, onCancel }) {
  * Sets up event listeners and creates the modal container if needed
  */
 export function initializeModal() {
-    // Create modal container if it doesn't exist
-    let container = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
-    if (!container) {
-        container = document.createElement('div');
-        container.id = MODAL_CONFIG.CONTAINER_ID;
-        container.className = MODAL_CONFIG.MODAL_CLASS;
-        document.body.appendChild(container);
-    }
+  // Create modal container if it doesn't exist
+  let container = document.getElementById(MODAL_CONFIG.CONTAINER_ID);
+  if (!container) {
+    container = document.createElement('div');
+    container.id = MODAL_CONFIG.CONTAINER_ID;
+    container.className = MODAL_CONFIG.MODAL_CLASS;
+    document.body.appendChild(container);
+  }
 
-    // Set up HTMX event listeners
-    document.body.addEventListener('htmx:afterSwap', handleModalContentSwap);
-    document.body.addEventListener('htmx:beforeSwap', handleModalBeforeSwap);
-} 
+  // Set up HTMX event listeners
+  document.body.addEventListener('htmx:afterSwap', handleModalContentSwap);
+  document.body.addEventListener('htmx:beforeSwap', handleModalBeforeSwap);
+}

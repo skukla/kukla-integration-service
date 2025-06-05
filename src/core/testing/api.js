@@ -39,7 +39,7 @@ async function testEndpoint(
   try {
     // Get the endpoint URL
     const url = await traceStep(trace, 'build-url', () =>
-      buildRuntimeUrl(DEFAULT_BASE_URL, endpoint)
+      buildRuntimeUrl(endpoint, DEFAULT_BASE_URL)
     );
     // Validate request parameters against schema if provided
     if (schema.request) {
