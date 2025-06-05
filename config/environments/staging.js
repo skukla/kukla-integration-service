@@ -81,6 +81,7 @@ module.exports = {
       },
     },
     product: {
+      fields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
       pagination: {
         pageSize: 50, // Moderate page size for staging
         maxPages: 20, // Moderate number of pages for staging
