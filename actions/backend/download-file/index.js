@@ -6,11 +6,10 @@
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
 
-const {
-  data: { checkMissingRequestInputs },
-  storage: { readFile, getFileProperties, FileOperationError, FileErrorType },
-} = require('../../../src/core');
+const { checkMissingRequestInputs } = require('../../../src/core/data');
+const { FileErrorType } = require('../../../src/core/errors');
 const { response } = require('../../../src/core/http/responses');
+const { readFile, getFileProperties } = require('../../../src/core/storage/files');
 
 /**
  * Main function that handles file download requests
@@ -68,25 +67,30 @@ async function main(params) {
       fileName: params.fileName,
     });
 
-    // Return file content with proper headers and CORS
+    // Return file content with proper headers (let platform handle CORS)
     logger.info('Sending file response');
-    const successResponse = response.success({}, 'File download successful', {}, params);
     return {
-      ...successResponse,
+      statusCode: 200,
       headers: {
-        ...successResponse.headers,
-        'Content-Type': fileProps.contentType,
+        'Content-Type': 'application/octet-stream', // Set generic binary type for HTMX handling
         'Content-Disposition': `attachment; filename="${fileProps.name}"`,
         'Cache-Control': 'no-cache',
         'X-Download-Success': 'true',
+        'X-File-Type': fileProps.contentType, // Keep original content type in custom header
+        'X-File-Name': fileProps.name,
+        // Explicitly expose custom headers for CORS
+        'Access-Control-Expose-Headers':
+          'X-Download-Success, X-File-Type, X-File-Name, Content-Disposition',
+        // Let Adobe I/O Runtime handle CORS automatically with wildcard
       },
       body: buffer.toString('base64'),
+      // Don't set isBase64Encoded to avoid double-encoding
     };
   } catch (error) {
     logger.error('Error in download-file action:', error);
 
     // Handle specific file operation errors
-    if (error instanceof FileOperationError) {
+    if (error.isFileOperationError) {
       switch (error.type) {
         case FileErrorType.NOT_FOUND:
           logger.warn('File not found:', { fileName: params.fileName });
