@@ -4,7 +4,6 @@
  */
 
 import { ErrorHandler } from '../core/error-handler.js';
-import { showLoading, hideLoading } from '../core/loading.js';
 import {
   showModal,
   hideModal,
@@ -78,7 +77,31 @@ function handleAfterRequest(event) {
   const target = event.detail.elt;
   const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
 
-  // Remove loading state
+  // For delete buttons, we keep the loading state until the modal closes
+  // This provides a smoother experience
+  if (target.classList.contains('delete-confirm-button')) {
+    // Store success message for delete operations to show after modal closes
+    if (event.detail.successful) {
+      const successMessage = target.getAttribute('data-success-message');
+      if (successMessage) {
+        // Store the message and the target element to clean up later
+        window._deleteSuccessMessage = successMessage;
+        window._deleteButtonTarget = target;
+      }
+    } else {
+      // If the request failed, remove loading state immediately
+      target.classList.remove(loadingClass);
+
+      // Restore original text
+      if (target.dataset.originalText) {
+        target.innerText = target.dataset.originalText;
+        delete target.dataset.originalText;
+      }
+    }
+    return; // Don't process further for delete buttons
+  }
+
+  // For all other buttons, remove loading state immediately
   target.classList.remove(loadingClass);
 
   // Restore original text
@@ -87,13 +110,46 @@ function handleAfterRequest(event) {
     delete target.dataset.originalText;
   }
 
-  // Handle success message
-  if (event.detail.successful) {
+  // Handle success message - but skip download buttons and delete buttons as they have special handling
+  if (
+    event.detail.successful &&
+    !target.classList.contains('download-button') &&
+    !target.classList.contains('delete-confirm-button')
+  ) {
     const successMessage = target.getAttribute('data-success-message');
     if (successMessage) {
       showNotification(successMessage, 'success');
     }
   }
+
+  // Set up modal close handlers for dynamically loaded content
+  if (event.detail.target && event.detail.target.id === 'modal-container') {
+    setupModalCloseHandlers();
+  }
+}
+
+/**
+ * Set up modal close button handlers for dynamically loaded content
+ */
+function setupModalCloseHandlers() {
+  const modalContainer = document.getElementById('modal-container');
+  if (!modalContainer) return;
+
+  // Remove any existing listeners to prevent duplicates
+  const existingCloseButtons = modalContainer.querySelectorAll('.modal-close');
+  existingCloseButtons.forEach((button) => {
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+  });
+
+  // Add click handler to all modal close buttons
+  modalContainer.addEventListener('click', (e) => {
+    const closeButton = e.target.closest('.modal-close');
+    if (closeButton) {
+      e.preventDefault();
+      hideModal();
+    }
+  });
 }
 
 /**
@@ -172,6 +228,44 @@ function handleAfterSwap(event) {
     showModal();
   }
 
+  // Handle file list updates after delete operation
+  if (event.detail.target.classList.contains('table-content')) {
+    // Check if the modal is currently open with delete content
+    const modalContainer = document.getElementById('modal-container');
+    const isDeleteModal = modalContainer && modalContainer.querySelector('.delete-confirm-button');
+
+    if (isDeleteModal) {
+      // Clean up the delete button loading state
+      if (window._deleteButtonTarget) {
+        const target = window._deleteButtonTarget;
+        const loadingClass =
+          target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
+
+        target.classList.remove(loadingClass);
+
+        // Restore original text
+        if (target.dataset.originalText) {
+          target.innerText = target.dataset.originalText;
+          delete target.dataset.originalText;
+        }
+
+        // Clean up the reference
+        delete window._deleteButtonTarget;
+      }
+
+      // Close the modal immediately for a smooth transition
+      hideModal();
+
+      // Show the success message after a brief delay to let the modal close animation start
+      if (window._deleteSuccessMessage) {
+        setTimeout(() => {
+          showNotification(window._deleteSuccessMessage, 'success');
+          delete window._deleteSuccessMessage;
+        }, 150); // Slightly longer delay for smoother experience
+      }
+    }
+  }
+
   // Handle any custom swap triggers
   const swapTrigger = event.detail.target.getAttribute('data-swap-trigger');
   if (swapTrigger) {
@@ -203,6 +297,7 @@ function handleAfterSettle(event) {
  * Handle history restoration
  * @param {Event} _event - HTMX event
  */
+// eslint-disable-next-line no-unused-vars
 function handleHistoryRestore(_event) {
   // Restore any necessary state
 }
@@ -211,6 +306,7 @@ function handleHistoryRestore(_event) {
  * Handle actions before history save
  * @param {Event} _event - HTMX event
  */
+// eslint-disable-next-line no-unused-vars
 function handleBeforeHistorySave(_event) {
   // Clean up any temporary state before saving to history
 }
@@ -219,6 +315,7 @@ function handleBeforeHistorySave(_event) {
  * Handle network send errors
  * @param {Event} _event - HTMX event
  */
+// eslint-disable-next-line no-unused-vars
 function handleSendError(_event) {
   showNotification('Network error. Please check your connection and try again.', 'error');
 }
@@ -227,6 +324,7 @@ function handleSendError(_event) {
  * Handle content swap errors
  * @param {Event} _event - HTMX event
  */
+// eslint-disable-next-line no-unused-vars
 function handleSwapError(_event) {
   showNotification('Failed to update content. Please refresh the page.', 'error');
 }
