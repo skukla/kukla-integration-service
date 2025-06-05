@@ -1,25 +1,67 @@
-const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const util = require('util');
 
 const chalk = require('chalk');
 const yaml = require('js-yaml');
 const fetch = require('node-fetch');
 const ora = require('ora');
 
-const execAsync = util.promisify(exec);
+// Import URL building utilities
+const { buildRuntimeUrl } = require('../src/core/routing');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-const actionName = args.find((arg) => !arg.startsWith('--'));
+const actionName = args.find((arg) => !arg.startsWith('--') && !arg.includes('='));
 const rawOutput = args.includes('--raw');
+
+// Parse parameters in key=value format
+const paramArgs = args.filter((arg) => arg.includes('=') && !arg.startsWith('--'));
+const params = {};
+paramArgs.forEach((param) => {
+  const [key, ...valueParts] = param.split('=');
+  const value = valueParts.join('='); // Handle values that contain '='
+
+  // Try to parse as JSON for complex values, otherwise keep as string
+  try {
+    params[key] = JSON.parse(value);
+  } catch {
+    params[key] = value;
+  }
+});
+
+/**
+ * Process parameters for specific actions to provide better UX
+ * @param {string} actionName - The action being called
+ * @param {Object} params - Raw parameters object
+ * @returns {Object} Processed parameters
+ */
+function processActionParameters(actionName, params) {
+  const processedParams = { ...params };
+
+  // For delete-file action, automatically prepend 'public/' to fileName if not already present
+  if (actionName === 'delete-file' && processedParams.fileName) {
+    if (!processedParams.fileName.startsWith('public/')) {
+      processedParams.fileName = `public/${processedParams.fileName}`;
+    }
+  }
+
+  return processedParams;
+}
 
 if (!actionName) {
   console.error(chalk.red('Please provide an action name'));
-  console.log(chalk.yellow('Usage: node test-action.js <action-name> [--raw]'));
+  console.log(chalk.yellow('Usage: node test-action.js <action-name> [key=value ...] [--raw]'));
+  console.log(chalk.yellow('Examples:'));
+  console.log(chalk.cyan('  node test-action.js get-products'));
+  console.log(chalk.cyan('  node test-action.js delete-file fileName=products.csv'));
+  console.log(chalk.cyan('  node test-action.js browse-files modal=true'));
   console.log(chalk.yellow('Options:'));
   console.log(chalk.cyan('  --raw    Output raw JSON response only'));
+  console.log(
+    chalk.yellow(
+      '\nNote: For delete-file, fileName will automatically prepend "public/" if not present'
+    )
+  );
   console.log(chalk.yellow('\nAvailable actions:'));
   const config = yaml.load(fs.readFileSync(path.join(__dirname, '../app.config.yaml'), 'utf8'));
   const actions = Object.keys(
@@ -29,29 +71,21 @@ if (!actionName) {
   process.exit(1);
 }
 
-async function getNamespace() {
-  try {
-    const { stdout } = await execAsync('aio runtime namespace list');
-    // Skip the header lines and get the first namespace
-    const lines = stdout.trim().split('\n');
-    const namespaceLines = lines.filter(
-      (line) => !line.includes('Namespaces') && !line.includes('─')
-    );
-    if (namespaceLines.length === 0) {
-      throw new Error(
-        'No namespace found. Make sure you are logged in and have selected a project.'
-      );
-    }
-    return namespaceLines[0].trim();
-  } catch (error) {
-    throw new Error(
-      'Failed to get namespace. Make sure you are logged in with `aio auth login` and have selected a project with `aio app use`'
-    );
-  }
-}
+async function testAction(actionUrl, requestParams) {
+  const hasParams = Object.keys(requestParams).length > 0;
 
-async function testAction(actionUrl) {
-  const response = await fetch(actionUrl);
+  const fetchOptions = {
+    method: hasParams ? 'POST' : 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  if (hasParams) {
+    fetchOptions.body = JSON.stringify(requestParams);
+  }
+
+  const response = await fetch(actionUrl, fetchOptions);
   let responseData;
 
   // Get the response text first, then try to parse as JSON
@@ -112,12 +146,14 @@ function formatResponse(response) {
 }
 
 async function main() {
+  // Process parameters for the specific action
+  const processedParams = processActionParameters(actionName, params);
+
   if (rawOutput) {
     // Raw mode: just output JSON
     try {
-      const namespace = await getNamespace();
-      const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
-      const response = await testAction(actionUrl);
+      const actionUrl = buildRuntimeUrl(actionName);
+      const response = await testAction(actionUrl, processedParams);
       console.log(JSON.stringify(response, null, 2));
     } catch (error) {
       console.error(JSON.stringify({ error: error.message }, null, 2));
@@ -128,12 +164,17 @@ async function main() {
     const spinner = ora('Initializing test').start();
 
     try {
-      spinner.text = 'Getting namespace...';
-      const namespace = await getNamespace();
-      const actionUrl = `https://adobeioruntime.net/api/v1/web/${namespace}/kukla-integration-service/${actionName}`;
+      spinner.text = 'Building action URL...';
+      const actionUrl = buildRuntimeUrl(actionName);
+
+      // Show parameters if any (show processed params to be transparent)
+      if (Object.keys(processedParams).length > 0) {
+        spinner.info(`Parameters: ${JSON.stringify(processedParams)}`);
+        spinner.start();
+      }
 
       spinner.text = `Testing action: ${actionName}`;
-      const response = await testAction(actionUrl);
+      const response = await testAction(actionUrl, processedParams);
 
       spinner.succeed(`Action tested: ${actionName}`);
       console.log(`🔗 URL: ${actionUrl}\n`);
