@@ -38,14 +38,17 @@ function getCorsHeaders(params = {}) {
   const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers':
-      'Content-Type, Authorization, Cache-Control, X-Requested-With, hx-current-url, hx-request, hx-target, hx-trigger, hx-trigger-name, hx-prompt, hx-boosted',
+      'Content-Type, Authorization, Cache-Control, X-Requested-With, hx-current-url, hx-request, hx-target, hx-trigger, hx-trigger-name, hx-prompt, hx-boosted, hx-swap, hx-swap-oob, hx-select, hx-select-oob, hx-push-url, hx-replace-url, hx-confirm, hx-disable, hx-encoding, hx-ext, hx-headers, hx-history, hx-history-elt, hx-include, hx-indicator, hx-params, hx-preserve, hx-sync, hx-validate, hx-vars',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400', // 24 hours
   };
 
-  // Only set Allow-Origin if we have a request origin and it's in our allowed list
+  // Set Allow-Origin based on request origin or use first allowed origin as fallback
   if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
     corsHeaders['Access-Control-Allow-Origin'] = requestOrigin;
+  } else {
+    // Fallback to the current environment's static domain for specific origin
+    corsHeaders['Access-Control-Allow-Origin'] = `https://${namespace}.adobeio-static.net`;
   }
 
   return corsHeaders;

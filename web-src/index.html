@@ -1,95 +1,119 @@
 <!-- <license header> -->
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>File Browser</title>
-    
+
     <!-- External Dependencies -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <!-- HTMX Extensions -->
     <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/class-tools.js"></script>
-    
+
     <!-- Application Entry Point -->
     <script type="module" src="./src/js/main.js"></script>
-    <link rel="stylesheet" href="./src/main.css">
-    <link rel="icon" href="data:,">
-</head>
-<body>
+    <link rel="stylesheet" href="./src/main.css" />
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
     <div class="app-container">
-        <!-- App Header -->
-        <header class="app-header">
-            <h1>File Browser</h1>
-        </header>
+      <!-- App Header -->
+      <header class="app-header">
+        <h1>File Browser</h1>
+      </header>
 
-        <!-- Table section -->
-        <section class="content-section">
-            <!-- Section header -->
-            <div class="section-header">
-                <h2 class="section-title">Exported Files</h2>
-                <p class="section-description">View and manage your exported CSV files</p>
-            </div>
+      <!-- Table section -->
+      <section class="content-section">
+        <!-- Section header -->
+        <div class="section-header">
+          <h2 class="section-title">Exported Files</h2>
+          <p class="section-description">View and manage your exported CSV files</p>
+        </div>
 
-            <!-- File list table -->
-            <div class="file-browser">
-                <div class="table-wrapper">
-                    <div class="table">
-                        <!-- Header Row -->
-                        <div class="table-row header">
-                            <div class="table-header">File Name</div>
-                            <div class="table-header">Size</div>
-                            <div class="table-header">Last Modified</div>
-                            <div class="table-header">Actions</div>
-                        </div>
-                        
-                        <!-- Content Area -->
-                        <div class="table-content" data-component="file-list">
-                            <!-- Skeleton Row -->
-                            <div class="table-row is-skeleton">
-                                <div class="table-cell skeleton-cell">
-                                    <div class="skeleton-block" style="--skeleton-width: var(--skeleton-width-lg);"></div>
-                                </div>
-                                <div class="table-cell skeleton-cell">
-                                    <div class="skeleton-block" style="--skeleton-width: var(--skeleton-width-sm);"></div>
-                                </div>
-                                <div class="table-cell skeleton-cell">
-                                    <div class="skeleton-block" style="--skeleton-width: var(--skeleton-width-md);"></div>
-                                </div>
-                                <div class="table-cell skeleton-cell">
-                                    <div class="skeleton-actions">
-                                        <div class="skeleton-button skeleton-button-primary"></div>
-                                        <div class="skeleton-button skeleton-button-secondary"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+        <!-- File list table -->
+        <div class="file-browser">
+          <div class="table-wrapper">
+            <div class="table">
+              <!-- Header Row -->
+              <div class="table-row header">
+                <div class="table-header">File Name</div>
+                <div class="table-header">Size</div>
+                <div class="table-header">Last Modified</div>
+                <div class="table-header">Actions</div>
+              </div>
+
+              <!-- Content Area -->
+              <div class="table-content" data-component="file-list">
+                <!-- Skeleton Row -->
+                <div class="table-row is-skeleton">
+                  <div class="table-cell skeleton-cell">
+                    <div
+                      class="skeleton-block"
+                      style="--skeleton-width: var(--skeleton-width-lg)"
+                    ></div>
+                  </div>
+                  <div class="table-cell skeleton-cell">
+                    <div
+                      class="skeleton-block"
+                      style="--skeleton-width: var(--skeleton-width-sm)"
+                    ></div>
+                  </div>
+                  <div class="table-cell skeleton-cell">
+                    <div
+                      class="skeleton-block"
+                      style="--skeleton-width: var(--skeleton-width-md)"
+                    ></div>
+                  </div>
+                  <div class="table-cell skeleton-cell">
+                    <div class="skeleton-actions">
+                      <div class="skeleton-button skeleton-button-primary"></div>
+                      <div class="skeleton-button skeleton-button-secondary"></div>
                     </div>
-
-                    <!-- Hidden loader -->
-                    <div id="content-loader" data-component="content-loader"></div>
+                  </div>
                 </div>
+              </div>
             </div>
-        </section>
 
-        <!-- Modal System -->
-        <div class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title" data-component="modal">
-            <div class="modal-overlay" data-modal-close></div>
-            <div class="modal-container" id="modal-container">
-                <!-- Modal content will be loaded here -->
-            </div>
+            <!-- Hidden loader -->
+            <div id="content-loader" data-component="content-loader"></div>
+          </div>
         </div>
+      </section>
 
-        <!-- Notification Container -->
-        <div id="notification-container" 
-             class="notification-container" 
-             role="status" 
-             aria-live="polite"
-             style="position: fixed; top: var(--notification-offset, 16px); right: var(--notification-offset, 16px); z-index: var(--z-index-toast, 9999); display: flex; flex-direction: column; gap: var(--notification-spacing, 8px); pointer-events: none;">
+      <!-- Modal System -->
+      <div
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        data-component="modal"
+      >
+        <div class="modal-container" id="modal-container">
+          <!-- Modal content will be loaded here -->
         </div>
+      </div>
+
+      <!-- Notification Container -->
+      <div
+        id="notification-container"
+        class="notification-container"
+        role="status"
+        aria-live="polite"
+        style="
+          position: fixed;
+          top: var(--notification-offset, 16px);
+          right: var(--notification-offset, 16px);
+          z-index: var(--z-index-toast, 9999);
+          display: flex;
+          flex-direction: column;
+          gap: var(--notification-spacing, 8px);
+          pointer-events: none;
+        "
+      ></div>
     </div>
-</body>
+  </body>
 </html>
