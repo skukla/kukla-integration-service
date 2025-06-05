@@ -23,9 +23,22 @@ const {
  * @returns {Object} Simplified image object
  */
 function transformImageEntry(img) {
+  // Determine the appropriate URL
+  let url;
+  if (img.url) {
+    // Use the provided URL if available
+    url = img.url;
+  } else if (img.file && img.file.startsWith('http')) {
+    // If file is already a full URL, use it directly
+    url = img.file;
+  } else {
+    // Construct catalog URL for relative paths
+    url = `catalog/product${img.file}`;
+  }
+
   const imageObj = {
     filename: img.file,
-    url: img.url || `catalog/product${img.file}`, // Add URL if present or construct from file path
+    url: url,
     position: img.position,
   };
   if (img.types && img.types.length > 0) {
