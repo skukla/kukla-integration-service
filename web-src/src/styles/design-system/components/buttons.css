@@ -2,290 +2,303 @@
 
 /* Button-specific tokens */
 :root {
-    /* Dimensions */
-    --button-spinner-size-sm: var(--spacing-lg);    /* 24px */
-    --button-spinner-size-md: var(--spacing-2xl);   /* 40px */
-    --button-spinner-size-lg: var(--spacing-3xl);   /* 48px */
-    --button-spinner-border-width-sm: var(--border-sm);
-    --button-spinner-border-width-lg: var(--spacing-xs);
-    
-    /* States */
-    --button-loading-opacity: var(--opacity-70);
-    --button-loading-background: var(--color-white-20);
-    
-    /* Touch target sizes */
-    --button-touch-target-size: 44px;
-    --button-touch-target-size-sm: 36px;
+  /* Dimensions */
+  --button-spinner-size-sm: var(--spacing-lg); /* 24px */
+  --button-spinner-size-md: var(--spacing-2xl); /* 40px */
+  --button-spinner-size-lg: var(--spacing-3xl); /* 48px */
+  --button-spinner-border-width-sm: var(--border-sm);
+  --button-spinner-border-width-lg: var(--spacing-xs);
+
+  /* States */
+  --button-loading-opacity: var(--opacity-70);
+  --button-loading-background: var(--color-white-20);
+
+  /* Touch target sizes */
+  --button-touch-target-size: 44px;
+  --button-touch-target-size-sm: 36px;
 }
 
 /* Base Button */
 .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-xs);
-    border: none;
-    border-radius: var(--radius-full);
-    padding-inline: var(--spacing-md);
-    min-width: var(--size-button-min-width);
-    min-height: var(--button-height-md);
-    font-family: var(--font-family-primary);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    text-decoration: none;
-    vertical-align: middle;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    height: auto;
-    max-width: 100%;
-    
-    /* Performance optimizations */
-    contain: content;
-    will-change: transform, background-color;
-    
-    /* Touch target optimization */
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  border: none;
+  border-radius: var(--radius-full);
+  padding-inline: var(--spacing-md);
+  min-width: var(--size-button-min-width);
+  min-height: var(--button-height-md);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  height: auto;
+  max-width: 100%;
+
+  /* Performance optimizations */
+  contain: content;
+  will-change: transform, background-color;
+
+  /* Touch target optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Button Label */
 .btn .btn-label {
-    display: inline-block;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: var(--line-height-tight);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-block: 0;
-    color: inherit;
+  display: inline-block;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-block: 0;
+  color: inherit;
 }
 
 /* Primary Button */
 .btn.btn-primary {
-    background-color: var(--color-blue-primary);
-    color: var(--color-white);
+  background-color: var(--color-blue-primary);
+  color: var(--color-white);
 }
 
 .btn.btn-primary:hover {
-    background-color: var(--color-blue-hover);
+  background-color: var(--color-blue-hover);
 }
 
 .btn.btn-primary:active {
-    background-color: var(--color-blue-active);
-    transform: translateY(1px);
+  background-color: var(--color-blue-active);
+  transform: translateY(1px);
 }
 
 /* Secondary Button */
 .btn.btn-secondary {
-    background-color: var(--color-gray-100);
-    color: var(--color-gray-800);
-    border: var(--border-base) var(--color-gray-300);
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-800);
+  border: var(--border-base) var(--color-gray-300);
 }
 
 .btn.btn-secondary:hover {
-    background-color: var(--color-gray-200);
+  background-color: var(--color-gray-200);
 }
 
 .btn.btn-secondary:active {
-    background-color: var(--color-gray-300);
-    transform: translateY(1px);
+  background-color: var(--color-gray-300);
+  transform: translateY(1px);
 }
 
 /* Danger Button */
 .btn.btn-danger {
-    background-color: transparent;
-    color: var(--color-danger);
-    border: var(--border-thick) var(--color-danger);
+  background-color: transparent;
+  color: var(--color-danger);
+  border: var(--border-thick) var(--color-danger);
 }
 
 .btn.btn-danger:hover {
-    background-color: var(--color-danger-hover);
-    border-color: var(--color-danger-hover);
-    color: var(--color-white);
+  background-color: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+  color: var(--color-white);
 }
 
 .btn.btn-danger:active {
-    background-color: var(--color-danger-active);
-    border-color: var(--color-danger-active);
-    color: var(--color-white);
-    transform: translateY(1px);
+  background-color: var(--color-danger-active);
+  border-color: var(--color-danger-active);
+  color: var(--color-white);
+  transform: translateY(1px);
 }
 
 /* Button Group */
 .btn-group {
-    display: inline-flex;
-    gap: var(--spacing-xs);
+  display: inline-flex;
+  gap: var(--spacing-xs);
 }
 
 /* Table-specific button adjustments */
 .table .btn {
-    min-height: var(--spacing-lg);
-    min-width: unset;
-    padding-block: var(--spacing-xs);
-    padding-inline: var(--spacing-md);
-    font-size: var(--font-size-sm);
+  min-height: var(--spacing-lg);
+  min-width: unset;
+  padding-block: var(--spacing-xs);
+  padding-inline: var(--spacing-md);
+  font-size: var(--font-size-sm);
 }
 
 /* Ensure button colors are not overridden using specificity */
 .table .btn.btn-primary,
 .table .btn.btn-primary .btn-label {
-    color: var(--color-white);
+  color: var(--color-white);
 }
 
 .table .btn.btn-danger,
 .table .btn.btn-danger .btn-label {
-    color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .table .btn.btn-danger:hover,
 .table .btn.btn-danger:hover .btn-label {
-    color: var(--color-white);
+  color: var(--color-white);
 }
 
 .table .btn.btn-secondary,
 .table .btn.btn-secondary .btn-label {
-    color: var(--color-gray-800);
+  color: var(--color-gray-800);
 }
 
 /* Focus States */
 .btn:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--focus-outline-offset);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 /* Outline Variant */
 .btn-outline {
-    background-color: transparent;
-    border: var(--border-thick) currentColor;
-    padding-inline: calc(var(--spacing-lg) - var(--border-sm));
+  background-color: transparent;
+  border: var(--border-thick) currentColor;
+  padding-inline: calc(var(--spacing-lg) - var(--border-sm));
 }
 
 /* Button Sizes */
 .btn-sm {
-    min-height: var(--button-height-sm);
-    padding-inline: var(--spacing-md);
-    font-size: var(--font-size-xs);
-    min-block-size: var(--button-touch-target-size-sm);
+  min-height: var(--button-height-sm);
+  padding-inline: var(--spacing-md);
+  font-size: var(--font-size-xs);
+  min-block-size: var(--button-touch-target-size-sm);
 }
 
 .btn-lg {
-    min-height: var(--button-height-lg);
-    padding-inline: var(--spacing-xl);
-    font-size: var(--font-size-md);
+  min-height: var(--button-height-lg);
+  padding-inline: var(--spacing-xl);
+  font-size: var(--font-size-md);
 }
 
 /* Icon Button */
 .btn-icon {
-    padding: var(--spacing-sm);
-    min-width: unset;
-    border-radius: var(--radius-full);
-    aspect-ratio: 1;
-    
-    /* Ensure proper touch target size */
-    min-block-size: var(--button-touch-target-size);
-    min-inline-size: var(--button-touch-target-size);
+  padding: var(--spacing-sm);
+  min-width: unset;
+  border-radius: var(--radius-full);
+  aspect-ratio: 1;
+
+  /* Ensure proper touch target size */
+  min-block-size: var(--button-touch-target-size);
+  min-inline-size: var(--button-touch-target-size);
 }
 
 /* Quiet Variant */
 .btn-quiet {
-    background-color: transparent;
-    border-color: transparent;
+  background-color: transparent;
+  border-color: transparent;
 }
 
 @media (hover: hover) {
-    .btn-quiet:hover {
-        background-color: var(--color-gray-100);
-    }
+  .btn-quiet:hover {
+    background-color: var(--color-gray-100);
+  }
 }
 
 .btn-quiet:active {
-    background-color: var(--color-gray-200);
+  background-color: var(--color-gray-200);
 }
 
 /* Disabled & Loading States */
 .btn:disabled,
 .btn.is-loading {
-    pointer-events: none;
-    cursor: not-allowed;
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .btn:disabled {
-    background-color: var(--color-disabled-background);
-    color: var(--color-disabled-text);
-    border-color: var(--color-disabled-border);
+  background-color: var(--color-disabled-background);
+  color: var(--color-disabled-text);
+  border-color: var(--color-disabled-border);
 }
 
 /* Loading State */
 .btn.is-loading {
-    opacity: var(--button-loading-opacity);
+  opacity: var(--button-loading-opacity);
 }
 
 .btn.is-loading .btn-label {
-    visibility: hidden;
+  visibility: hidden;
 }
 
 .btn.is-loading::after {
-    content: '';
-    position: absolute;
-    width: var(--button-spinner-size-sm);
-    height: var(--button-spinner-size-sm);
-    border: var(--button-spinner-border-width-sm) solid var(--button-loading-background);
-    border-radius: 50%;
-    border-top-color: currentColor;
-    animation: var(--animation-spin);
-    
-    @media (prefers-reduced-motion: reduce) {
-        animation: none;
-    }
+  content: '';
+  position: absolute;
+  width: var(--button-spinner-size-sm);
+  height: var(--button-spinner-size-sm);
+  border: var(--button-spinner-border-width-sm) solid var(--button-loading-background);
+  border-radius: 50%;
+  border-top-color: currentColor;
+  animation: var(--animation-spin);
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* Special loading state for danger buttons */
+.btn.btn-danger.is-loading {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-white);
+  opacity: 1; /* Override the loading opacity to keep full visibility */
+}
+
+.btn.btn-danger.is-loading::after {
+  border-color: var(--color-white-20); /* Light white for the base circle */
+  border-top-color: var(--color-white); /* White for the spinning part */
 }
 
 /* Loading state size variations */
 .btn-lg.is-loading::after {
-    width: var(--button-spinner-size-md);
-    height: var(--button-spinner-size-md);
-    border-width: var(--button-spinner-border-width-lg);
+  width: var(--button-spinner-size-md);
+  height: var(--button-spinner-size-md);
+  border-width: var(--button-spinner-border-width-lg);
 }
 
 .btn-sm.is-loading::after {
-    width: var(--button-spinner-size-sm);
-    height: var(--button-spinner-size-sm);
-    border-width: var(--button-spinner-border-width-sm);
+  width: var(--button-spinner-size-sm);
+  height: var(--button-spinner-size-sm);
+  border-width: var(--button-spinner-border-width-sm);
 }
 
 /* Container Query Based Responsive Design */
 @container button (max-width: 200px) {
-    .btn-label {
-        font-size: var(--font-size-xs);
-    }
+  .btn-label {
+    font-size: var(--font-size-xs);
+  }
 }
 
 /* High Contrast Mode */
 @media (forced-colors: active) {
-    .btn {
-        border: 2px solid ButtonText;
-    }
-    
-    .btn:disabled {
-        border-color: GrayText;
-    }
-    
-    .btn.btn-primary {
-        background-color: Highlight;
-        color: HighlightText;
-    }
+  .btn {
+    border: 2px solid ButtonText;
+  }
+
+  .btn:disabled {
+    border-color: GrayText;
+  }
+
+  .btn.btn-primary {
+    background-color: Highlight;
+    color: HighlightText;
+  }
 }
 
 /* Print Styles */
 @media print {
-    .btn {
-        background: none !important;
-        color: ButtonText !important;
-        border: 1px solid currentColor !important;
-    }
-    
-    .btn.is-loading::after {
-        display: none;
-    }
-} 
+  .btn {
+    background: none !important;
+    color: ButtonText !important;
+    border: 1px solid currentColor !important;
+  }
+
+  .btn.is-loading::after {
+    display: none;
+  }
+}
