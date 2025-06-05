@@ -3,7 +3,9 @@
  * @module storage
  */
 
-const { getStorageConfig } = require('./config');
+const { Files: FilesLib } = require('@adobe/aio-sdk');
+
+const { loadConfig } = require('../../../../../config');
 
 /**
  * Stores a file in the configured storage location
@@ -18,11 +20,23 @@ const { getStorageConfig } = require('./config');
  */
 async function storeFile(content, fileName = null) {
   try {
-    // Get storage configuration
-    const { location, files, config } = await getStorageConfig();
+    // Load main configuration
+    const config = loadConfig();
+    const storageConfig = config.storage;
+
+    // For now, we only support app-builder provider
+    // This could be extended to support S3 in the future
+    if (storageConfig.provider !== 'app-builder') {
+      throw new Error(
+        `Unsupported storage provider: ${storageConfig.provider}. Only 'app-builder' is currently supported.`
+      );
+    }
+
+    // Initialize Files SDK
+    const files = await FilesLib.init();
 
     // Use provided fileName or fall back to config default
-    const finalFileName = fileName || config.csv.filename;
+    const finalFileName = fileName || storageConfig.csv.filename;
 
     // Create a buffer from the content
     const buffer = Buffer.from(content);
@@ -38,7 +52,7 @@ async function storeFile(content, fileName = null) {
 
     return {
       fileName: publicFileName,
-      location,
+      location: storageConfig.provider,
       downloadUrl: properties.url || properties.internalUrl,
       properties: {
         ...properties,
