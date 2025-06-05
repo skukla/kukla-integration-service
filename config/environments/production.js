@@ -81,6 +81,7 @@ module.exports = {
       },
     },
     product: {
+      fields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
       pagination: {
         pageSize: 100, // Larger page size for production efficiency
         maxPages: 50, // Maximum pages for production

@@ -63,6 +63,11 @@ function filterProductFields(product, fields) {
     }
   });
 
+  // Always preserve media_gallery_entries if present, as it's needed for image transformation
+  if (product.media_gallery_entries && fields.includes('images')) {
+    filteredProduct.media_gallery_entries = product.media_gallery_entries;
+  }
+
   return filteredProduct;
 }
 
@@ -121,13 +126,11 @@ async function fetchAllProducts(token, params = {}) {
     try {
       fields = getRequestedFields(params);
     } catch (error) {
-      console.warn('Error getting requested fields, using default fields:', error.message);
       fields = PRODUCT_FIELDS;
     }
 
     // Ensure fields is always an array (defensive programming)
     if (!Array.isArray(fields)) {
-      console.warn('Fields configuration is not an array, using fallback:', fields);
       fields = PRODUCT_FIELDS;
     }
 
@@ -171,7 +174,6 @@ async function fetchAllProducts(token, params = {}) {
             };
             return filterProductFields(enrichedProduct, fieldsForProcessing);
           } catch (inventoryError) {
-            console.warn(`Failed to get inventory for ${product.sku}:`, inventoryError.message);
             return filterProductFields(product, fieldsForProcessing);
           }
         })
