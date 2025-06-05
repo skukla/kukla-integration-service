@@ -3,14 +3,29 @@
  * @module core/routing/url
  */
 
+const { loadConfig } = require('../../../config');
+
 /**
- * Builds a runtime URL for the given action
- * @param {string} baseUrl - The base URL for the runtime
+ * Builds a runtime URL for the given action using environment configuration
  * @param {string} action - The action name
+ * @param {string} [customBaseUrl] - Optional custom base URL (for testing)
  * @returns {string} The complete runtime URL
  */
-function buildRuntimeUrl(baseUrl, action) {
-  return `${baseUrl}/api/v1/web/kukla-integration-service/${action}`;
+function buildRuntimeUrl(action, customBaseUrl = null) {
+  // Always use configuration, even for testing mode
+  const config = loadConfig();
+  const { baseUrl, namespace, package: pkg, version, paths } = config.url.runtime;
+
+  // Use custom base URL if provided (for testing), otherwise use configured baseUrl
+  let runtimeBaseUrl = customBaseUrl || baseUrl;
+
+  // Convert static domain to runtime domain if needed
+  if (runtimeBaseUrl.includes('adobeio-static.net')) {
+    runtimeBaseUrl = runtimeBaseUrl.replace('adobeio-static.net', 'adobeioruntime.net');
+  }
+
+  // Build the complete URL using environment configuration
+  return `${runtimeBaseUrl}${paths.base}/${version}${paths.web}/${namespace}/${pkg}/${action}`;
 }
 
 /**

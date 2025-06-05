@@ -5,11 +5,10 @@
 
 const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
 
-const {
-  data: { checkMissingRequestInputs },
-  storage: { deleteFile, FileOperationError, FileErrorType },
-} = require('../../../src/core');
+const { checkMissingRequestInputs } = require('../../../src/core/data');
+const { FileErrorType } = require('../../../src/core/errors');
 const { response } = require('../../../src/core/http/responses');
+const { deleteFile } = require('../../../src/core/storage/files');
 
 /**
  * Main function that handles file deletion
@@ -32,29 +31,33 @@ async function main(params) {
       return response.badRequest(missingParams, {}, params);
     }
 
+    logger.info(`Deleting file: ${params.fileName}`);
+
     // Initialize Files SDK
-    logger.info('Initializing Files SDK');
     const files = await FilesLib.init();
 
     // Delete the file using shared operations
-    logger.info(`Deleting file: ${params.fileName}`);
     await deleteFile(files, params.fileName);
+    logger.info(`File deleted successfully: ${params.fileName}`);
 
-    // Return empty response for HTMX to remove the row
-    const successResponse = response.success({}, 'File deleted successfully', {}, params);
-    return {
-      ...successResponse,
-      headers: {
-        ...successResponse.headers,
-        'Content-Type': 'text/html',
-      },
-      body: '',
-    };
+    // Get updated file list by calling browse-files action
+    const { main: browseFilesMain } = require('../../frontend/browse-files/index');
+
+    // Call browse-files with GET method to get the updated file list
+    const fileListResponse = await browseFilesMain({
+      ...params,
+      __ow_method: 'get',
+      modal: null, // Ensure we don't return modal content
+    });
+
+    // Return the updated file list response
+    logger.info('Delete operation completed successfully');
+    return fileListResponse;
   } catch (error) {
     logger.error('Error in delete-file action:', error);
 
     // Handle specific file operation errors
-    if (error instanceof FileOperationError) {
+    if (error.isFileOperationError) {
       switch (error.type) {
         case FileErrorType.NOT_FOUND:
           return response.badRequest(`File not found: ${params.fileName}`, {}, params);
