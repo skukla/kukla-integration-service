@@ -40,32 +40,30 @@ async function makeCachedRequest(url, options) {
 }
 
 /**
- * Filter product data to include only requested fields
- * @private
- * @param {Object} product - Raw product data
- * @param {Array<string>} fields - Fields to include
- * @returns {Object} Filtered product data
+ * Filter product fields based on configuration
+ * @param {Object} product - The product object
+ * @param {Array} fields - Array of field names to include
+ * @returns {Object} Filtered product object
  */
 function filterProductFields(product, fields) {
-  const filtered = {};
-
-  // Defensive programming: ensure fields is an array and product exists
+  // Validate inputs
   if (!Array.isArray(fields)) {
-    console.warn('Fields is not an array in filterProductFields:', typeof fields, fields);
-    return product || {};
+    return product;
   }
 
   if (!product || typeof product !== 'object') {
-    console.warn('Product is not a valid object in filterProductFields:', typeof product);
     return {};
   }
 
+  // Create filtered product with only requested fields
+  const filteredProduct = {};
   fields.forEach((field) => {
-    if (product[field] !== undefined) {
-      filtered[field] = product[field];
+    if (Object.prototype.hasOwnProperty.call(product, field)) {
+      filteredProduct[field] = product[field];
     }
   });
-  return filtered;
+
+  return filteredProduct;
 }
 
 /**

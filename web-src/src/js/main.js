@@ -5,32 +5,17 @@
 import { initializeFileBrowser } from './browser/file-browser.js';
 import { checkBackendConnection } from './config.js';
 import { initializeModal } from './core/modal.js';
-import { showNotification } from './core/notifications.js';
 import { initializeHtmx } from './htmx/config.js';
 
-// Initialize application on load
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize the application when DOM is ready
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    checkBackendConnection();
+    await checkBackendConnection();
     initializeHtmx();
     initializeModal();
     initializeFileBrowser();
   } catch (error) {
-    // Enhanced error logging
+    // Log critical initialization errors that need attention
     console.error('Application initialization failed:', error);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      cause: error.cause,
-    });
-
-    // Show user-friendly notification
-    showNotification('Failed to initialize application', {
-      type: 'error',
-      duration: 0,
-      action: 'Refresh',
-      onAction: () => window.location.reload(),
-    });
   }
 });
