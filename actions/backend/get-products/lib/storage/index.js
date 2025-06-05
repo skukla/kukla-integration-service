@@ -4,14 +4,10 @@
  */
 
 const { getStorageConfig } = require('./config');
-const { loadConfig } = require('../../../../../config');
 const {
   storage: { writeFile, getFileProperties, FileOperationError, FileErrorType },
 } = require('../../../../src/core');
-
-// Get the runtime configuration
-const config = loadConfig();
-const { baseUrl } = config.url.runtime;
+const { buildRuntimeUrl } = require('../../../../src/core/routing');
 
 /**
  * Builds a download URL for a file
@@ -19,7 +15,7 @@ const { baseUrl } = config.url.runtime;
  * @returns {string} Download URL
  */
 function buildDownloadUrl(fileName) {
-  return `${baseUrl}/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(fileName)}`;
+  return `${buildRuntimeUrl('download-file')}?fileName=${encodeURIComponent(fileName)}`;
 }
 
 /**
