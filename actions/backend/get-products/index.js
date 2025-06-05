@@ -5,7 +5,7 @@
 const buildProducts = require('./steps/buildProducts');
 const createCsv = require('./steps/createCsv');
 const fetchAndEnrichProducts = require('./steps/fetchAndEnrichProducts');
-const storeCsv = require('./steps/storeCsv');
+const { storeFile } = require('./lib/storage');
 const validateInput = require('./steps/validateInput');
 const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
@@ -169,7 +169,8 @@ async function main(params) {
     let fileInfo;
     try {
       fileInfo = await traceStep(trace, 'store-csv', async () => {
-        const result = await storeCsv(csvContent);
+        const content = typeof csvContent === 'string' ? csvContent : csvContent.content;
+        const result = await storeFile(content, 'products.csv');
         steps.push(formatStepMessage('store-csv', 'success', { info: result }));
         return result;
       });

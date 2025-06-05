@@ -4,19 +4,6 @@
  */
 
 const { getStorageConfig } = require('./config');
-const {
-  storage: { writeFile, getFileProperties, FileOperationError, FileErrorType },
-} = require('../../../../src/core');
-const { buildRuntimeUrl } = require('../../../../src/core/routing');
-
-/**
- * Builds a download URL for a file
- * @param {string} fileName - Name of the file
- * @returns {string} Download URL
- */
-function buildDownloadUrl(fileName) {
-  return `${buildRuntimeUrl('download-file')}?fileName=${encodeURIComponent(fileName)}`;
-}
 
 /**
  * Stores a file in the configured storage location
@@ -27,7 +14,7 @@ function buildDownloadUrl(fileName) {
  * @property {string} fileName - Name of the stored file
  * @property {string} location - Storage location
  * @property {string} downloadUrl - URL to download the file via the download-file action
- * @throws {FileOperationError} If file operation fails
+ * @throws {Error} If file operation fails
  */
 async function storeFile(content, fileName) {
   try {
@@ -40,30 +27,20 @@ async function storeFile(content, fileName) {
     // Store the file in the public directory to make it accessible
     const publicFileName = `public/${fileName}`;
 
-    // Use shared file operations to write and verify the file
-    await writeFile(files, publicFileName, buffer);
-    await getFileProperties(files, publicFileName);
+    // Write the file
+    await files.write(publicFileName, buffer);
 
-    // Get the download URL for the file
-    const downloadUrl = buildDownloadUrl(publicFileName);
+    // Get file properties
+    const properties = await files.getProperties(publicFileName);
 
     return {
       fileName: publicFileName,
       location,
-      downloadUrl,
+      downloadUrl: properties.url || properties.internalUrl,
+      properties,
     };
   } catch (error) {
-    // If it's already a FileOperationError, rethrow it
-    if (error instanceof FileOperationError) {
-      throw error;
-    }
-
-    // Otherwise, wrap it in a FileOperationError
-    throw new FileOperationError(
-      FileErrorType.UNKNOWN,
-      `Failed to store file: ${error.message}`,
-      error
-    );
+    throw new Error(`Failed to store file: ${error.message}`);
   }
 }
 
