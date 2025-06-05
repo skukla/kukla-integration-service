@@ -37,7 +37,10 @@ async function storeFile(content, fileName) {
       fileName: publicFileName,
       location,
       downloadUrl: properties.url || properties.internalUrl,
-      properties,
+      properties: {
+        ...properties,
+        size: buffer.length, // Add the actual file size in bytes
+      },
     };
   } catch (error) {
     throw new Error(`Failed to store file: ${error.message}`);
