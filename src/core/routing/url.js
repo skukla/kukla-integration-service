@@ -19,13 +19,16 @@ function buildRuntimeUrl(action, customBaseUrl = null) {
   // Use custom base URL if provided (for testing), otherwise use configured baseUrl
   let runtimeBaseUrl = customBaseUrl || baseUrl;
 
-  // Convert static domain to runtime domain if needed
-  if (runtimeBaseUrl.includes('adobeio-static.net')) {
+  // For production, convert static domain to runtime domain
+  // For staging, keep the static domain as deployments use adobeio-static.net
+  const isProduction = config.app.environment === 'production';
+  if (isProduction && runtimeBaseUrl.includes('adobeio-static.net')) {
     runtimeBaseUrl = runtimeBaseUrl.replace('adobeio-static.net', 'adobeioruntime.net');
   }
 
   // Build the complete URL using environment configuration
-  return `${runtimeBaseUrl}${paths.base}/${version}${paths.web}/${namespace}/${pkg}/${action}`;
+  const namespacePath = namespace ? `/${namespace}` : '';
+  return `${runtimeBaseUrl}${paths.base}/${version}${paths.web}${namespacePath}/${pkg}/${action}`;
 }
 
 /**
