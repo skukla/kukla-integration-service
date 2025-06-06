@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# HTMX Integration Patterns
+
+## HTMX Best Practices
+- Use HTMX attributes for dynamic UI updates
+- Keep JavaScript minimal and progressive enhancement focused
+- Use the established HTMX utilities in `src/htmx/`
+- Ensure graceful fallbacks when JavaScript is disabled
+
+## Frontend Response Patterns
+- Actions in `actions/frontend/` should return HTMX-compatible responses
+- Use consistent HTMX response formatting
+- Leverage existing HTMX utilities for response generation
+
+## Progressive Enhancement
+- Start with working HTML
+- Layer on HTMX for dynamic behavior
+- Add minimal JavaScript only when necessary
+- Ensure functionality works without JavaScript

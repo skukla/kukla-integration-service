@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Code Standards & Best Practices
+
+## Code Quality Standards
+- Use ES6+ JavaScript features for frontend code
+- Use CommonJS features for backend code
+- Follow Adobe's coding standards
+- Use async/await for promises
+- Prefer functional programming patterns
+- Use JSDoc for function documentation
+- Write clear, self-documenting code
+- Add meaningful variable and function names
+- Handle edge cases and errors gracefully
+
+## Adobe App Builder Specific
+- All backend code goes in `actions/` as Adobe I/O Runtime functions
+- Use Adobe I/O SDK features (@adobe/aio-sdk)
+- Leverage Adobe I/O Files for file operations
+- Use environment-specific configurations from `config/environments/`
+
+## Error Handling Patterns
+- Use consistent error response formats
+- Log errors appropriately for debugging
+- Provide user-friendly error messages
+- Follow the error handling patterns in existing code
+
+## Security Requirements
+- Never commit credentials or secrets
+- Use environment variables for sensitive data
+- Validate all inputs
+- Follow Adobe's security best practices
