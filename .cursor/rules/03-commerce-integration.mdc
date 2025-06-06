@@ -1,0 +1,24 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Adobe Commerce Integration
+
+## Commerce API Patterns
+- Use the established Commerce utilities in `src/commerce/`
+- Handle Commerce API rate limits appropriately
+- Validate product data according to Commerce schemas
+- Use proper error handling for Commerce API calls
+
+## Performance Considerations
+- Use caching where appropriate
+- Optimize Commerce API calls
+- Consider file size limits for Adobe I/O Files
+- Use compression for large responses
+
+## Data Handling
+- Validate all Commerce data inputs
+- Use consistent data transformation patterns
+- Handle Commerce API errors gracefully
+- Log Commerce interactions for debugging

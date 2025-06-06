@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Development Context & Workflow
+
+## Always Start with Context
+Before implementing any feature:
+1. Check existing utilities in `src/core/` first
+2. Review similar patterns in `actions/backend/` or `actions/frontend/`
+3. Consult relevant documentation in `docs/`
+4. Verify the configuration system in `config/`
+
+## Context-Aware Development
+When helping with this project:
+1. **Reference actual files**: Always check what exists in the current directory structure
+2. **Follow established patterns**: Use the same coding style and architecture patterns found in existing files
+3. **Maintain consistency**: Keep the same error handling, logging, and response formats
+4. **Use existing utilities**: Don't recreate functionality that already exists in `src/core/`
+5. **Update documentation**: When adding features, update relevant docs in `docs/`
+
+## Common Patterns to Follow
+- Configuration: Use the schema-validated config system
+- File Operations: Use Adobe I/O Files SDK through existing utilities
+- Commerce API: Use established Commerce integration patterns
+- Frontend Updates: Use HTMX for dynamic content
+- Error Responses: Use consistent error formatting
+- Logging: Use appropriate log levels and formatting
+
+## Testing Strategy
+- Use the existing test scripts (`npm run test:action`)
+- Test actions individually before integration
+- Use performance testing scripts for optimization
+- Test in staging environment before production
