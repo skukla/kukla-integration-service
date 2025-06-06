@@ -12,6 +12,13 @@ const { getAuthToken } = require('../src/commerce/api/integration');
 
 require('dotenv').config();
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const options = {
+  verbose: args.includes('--verbose') || args.includes('-v'),
+  limit: parseInt(args.find((arg) => arg.startsWith('--limit='))?.split('=')[1]) || 3,
+};
+
 // Load configuration with proper destructuring
 const {
   url: {
@@ -28,13 +35,58 @@ const {
 console.log('Commerce URL:', COMMERCE_URL);
 
 /**
+ * Formats product data for display
+ * @param {Array} products - Product array
+ * @param {Object} options - Display options
+ * @returns {string} Formatted output
+ */
+function formatProductData(products, options) {
+  if (!products || products.length === 0) {
+    return 'No products found';
+  }
+
+  if (options.verbose) {
+    // Full detailed output (original behavior)
+    return JSON.stringify(products, null, 2);
+  }
+
+  // Default: Limited sample with key fields
+  const limitedProducts = products.slice(0, options.limit).map((product) => ({
+    sku: product.sku,
+    name: product.name,
+    price: product.price,
+    qty: product.qty,
+    media_count: product.media_gallery_entries?.length || 0,
+  }));
+
+  let output = `Showing ${limitedProducts.length} of ${products.length} products:\n`;
+  output += JSON.stringify(limitedProducts, null, 2);
+
+  if (products.length > options.limit) {
+    output += `\n\n... and ${products.length - options.limit} more products`;
+    output += '\n\nUse --verbose for full data, or --limit=N to show N products';
+  }
+
+  return output;
+}
+
+/**
  * Tests a specific API endpoint
  * @param {Object} config - Test configuration
+ * @param {Object} spinner - Spinner instance for progress updates
  * @returns {Promise<Object>} Test results
  */
-async function testEndpoint(config) {
+async function testEndpoint(config, spinner) {
   try {
+    // Update spinner instead of console.log during execution
+    spinner.text = 'Validating configuration...';
+
+    // Pause spinner for config display
+    spinner.stop();
     console.log('Using config:', config);
+
+    // Resume spinner for auth
+    spinner.start('Getting authentication token...');
 
     // Get auth token using URL from config but credentials from env
     const token = await getAuthToken({
@@ -43,7 +95,8 @@ async function testEndpoint(config) {
       COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
     });
 
-    console.log('Got auth token:', token ? 'yes' : 'no');
+    // Update spinner for API call
+    spinner.text = 'Fetching products from Commerce API...';
 
     // Test the endpoint using URL from config
     const response = await getProducts(token, {
@@ -55,37 +108,52 @@ async function testEndpoint(config) {
     return {
       success: true,
       data: response,
+      authSuccess: !!token,
     };
   } catch (error) {
-    console.error('Error details:', error);
     return {
       success: false,
       error: error.message,
+      authSuccess: false,
     };
   }
 }
 
 /**
  * Runs API tests
- * @param {Object} options - Test options
+ * @param {Object} testOptions - Test options
  */
-async function runTests(options = {}) {
-  const spinner = ora('Running API tests').start();
+async function runTests(testOptions = {}) {
+  // Set quiet mode to suppress verbose API logging unless explicitly verbose
+  if (!testOptions.verbose) {
+    process.env.QUIET_MODE = 'true';
+  }
+
+  const spinner = ora('Initializing API test').start();
 
   try {
     const testConfig = {
       baseUrl: COMMERCE_URL, // Always use URL from config
-      pageSize: options.pageSize || DEFAULT_PAGE_SIZE,
+      pageSize: DEFAULT_PAGE_SIZE,
     };
 
     // Run the tests
-    const results = await testEndpoint(testConfig);
+    const results = await testEndpoint(testConfig, spinner);
 
     if (results.success) {
       spinner.succeed('API tests passed');
-      console.log('Test results:', JSON.stringify(results.data, null, 2));
+
+      // Show auth status
+      console.log('✓ Authentication:', results.authSuccess ? 'success' : 'failed');
+      console.log('✓ Product data:', `${results.data.length} products retrieved`);
+
+      // Show formatted results
+      console.log('\n' + formatProductData(results.data, testOptions));
     } else {
       spinner.fail(`API tests failed: ${results.error}`);
+      if (!results.authSuccess) {
+        console.log('\n❌ Authentication failed - check your credentials');
+      }
       process.exit(1);
     }
   } catch (error) {
@@ -94,9 +162,33 @@ async function runTests(options = {}) {
   }
 }
 
+/**
+ * Shows usage information
+ */
+function showUsage() {
+  console.log(`
+Usage: npm run test:api [options]
+
+Options:
+  --verbose, -v         Show full product data (warning: very long output)
+  --limit=N             Show N products (default: 3)
+
+Examples:
+  npm run test:api                    # Show 3 products with key fields
+  npm run test:api -- --limit=10     # Show 10 products  
+  npm run test:api -- --verbose      # Show full data (very long)
+`);
+}
+
+// Show usage if help requested
+if (args.includes('--help') || args.includes('-h')) {
+  showUsage();
+  process.exit(0);
+}
+
 // Run tests if called directly
 if (require.main === module) {
-  runTests();
+  runTests(options);
 }
 
 module.exports = {

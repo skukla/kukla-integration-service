@@ -55,7 +55,10 @@ function createClient(options = {}) {
       // Use buildCommerceUrl to construct the full URL
       const url = buildCommerceUrl(clientConfig.baseUrl, endpoint);
 
-      console.log('Making request to URL:', url);
+      // Only log URL in development/verbose mode, not during tests
+      if (!process.env.QUIET_MODE && process.env.NODE_ENV !== 'test') {
+        console.log('Making request to URL:', url);
+      }
 
       // Make the request using the core HTTP client
       const response = await http.request(url, requestOptions);

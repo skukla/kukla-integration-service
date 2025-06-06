@@ -40,39 +40,54 @@ function initializeValidator() {
   return ajv;
 }
 
+// Configuration cache to prevent multiple loads
+let configCache = null;
+let environmentCache = null;
+
 /**
  * Detects the current environment based on runtime context
  * @returns {string} Environment name (staging, production)
  */
 function detectEnvironment() {
+  // Return cached environment if already detected
+  if (environmentCache) {
+    return environmentCache;
+  }
+
   // Method 1: Check OpenWhisk namespace
   const owNamespace = process.env.__OW_NAMESPACE;
   if (owNamespace) {
     // If namespace contains 'stage', it's staging environment
     if (owNamespace.includes('stage')) {
-      return 'staging';
+      environmentCache = 'staging';
+      return environmentCache;
     }
     // If namespace doesn't contain 'stage' and has the expected production pattern, it's production
     if (owNamespace.match(/^\d+-\w+$/)) {
-      return 'production';
+      environmentCache = 'production';
+      return environmentCache;
     }
   }
 
   // Method 2: Check explicit NODE_ENV
   const nodeEnv = process.env.NODE_ENV;
   if (nodeEnv && ['staging', 'production', 'development'].includes(nodeEnv)) {
-    return nodeEnv;
+    environmentCache = nodeEnv;
+    return environmentCache;
   }
 
   // Method 3: Check runtime URL context (if available)
   const runtimeUrl = process.env.__OW_API_HOST;
   if (runtimeUrl && runtimeUrl.includes('stage')) {
-    return 'staging';
+    environmentCache = 'staging';
+    return environmentCache;
   }
 
   // Default fallback to staging for safer development
+  // Only log the warning once
   console.warn('Environment detection fallback: using staging as default');
-  return 'staging';
+  environmentCache = 'staging';
+  return environmentCache;
 }
 
 /**
@@ -187,6 +202,11 @@ function validateConfig(ajv, config, schemaName, required = true) {
  * @returns {Object} Complete configuration object
  */
 function loadConfig(params = {}) {
+  // Return cached config if available and no new params
+  if (configCache && Object.keys(params).length === 0) {
+    return configCache;
+  }
+
   // Initialize validator
   const ajv = initializeValidator();
 
@@ -222,6 +242,11 @@ function loadConfig(params = {}) {
   // Validate testing configuration
   if (config.testing) {
     validateConfig(ajv, config.testing, 'testing');
+  }
+
+  // Cache the config only if no dynamic params were provided
+  if (Object.keys(params).length === 0) {
+    configCache = config;
   }
 
   return config;
