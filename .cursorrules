@@ -1,0 +1,138 @@
+# Adobe App Builder - Kukla Integration Service
+
+## Project Overview
+
+This is an Adobe App Builder application that integrates with Adobe Commerce for product data management and file operations. The project uses a staging-first development approach with HTMX for frontend interactions.
+
+## Architecture & Technology Stack
+
+- **Platform**: Adobe App Builder (Node.js serverless)
+- **Frontend**: HTMX with vanilla JavaScript
+- **Backend**: Adobe I/O Runtime actions
+- **Commerce**: Adobe Commerce integration
+- **File Storage**: Adobe I/O Files SDK
+- **Build Tool**: Adobe I/O CLI
+- **Deployment**: Staging and Production workspaces
+
+## Code Style & Standards
+
+- Use ES6+ JavaScript features
+- Follow Adobe's coding standards
+- Use async/await for promises
+- Prefer functional programming patterns
+- Use JSDoc for function documentation
+- Follow the existing project structure
+
+## Project Structure Rules
+
+- **actions/**: Backend serverless functions
+  - `backend/`: API endpoints and data processing
+  - `frontend/`: HTMX response handlers
+- **src/**: Shared utilities and core logic
+  - `core/`: Common utilities
+  - `htmx/`: HTMX-specific helpers
+  - `commerce/`: Adobe Commerce integration
+- **web-src/**: Frontend static assets
+- **config/**: Environment and schema configurations
+- **docs/**: Comprehensive documentation
+
+## Development Guidelines
+
+### File Organization
+
+- Keep actions focused and single-purpose
+- Use the existing core utilities instead of duplicating logic
+- Follow the configuration system in `config/` directory
+- Place new documentation in `docs/` with appropriate linking
+
+### Adobe App Builder Specific
+
+- All backend code goes in `actions/` as Adobe I/O Runtime functions
+- Use Adobe I/O SDK features (@adobe/aio-sdk)
+- Leverage Adobe I/O Files for file operations
+- Use environment-specific configurations from `config/environments/`
+- Follow staging-first development workflow
+
+### HTMX Integration
+
+- Use HTMX attributes for dynamic UI updates
+- Keep JavaScript minimal and progressive enhancement focused
+- Use the established HTMX utilities in `src/htmx/`
+- Ensure graceful fallbacks when JavaScript is disabled
+
+### Commerce Integration
+
+- Use the established Commerce utilities in `src/commerce/`
+- Handle Commerce API rate limits appropriately
+- Validate product data according to Commerce schemas
+- Use proper error handling for Commerce API calls
+
+### Error Handling
+
+- Use consistent error response formats
+- Log errors appropriately for debugging
+- Provide user-friendly error messages
+- Follow the error handling patterns in existing code
+
+### Performance
+
+- Use caching where appropriate
+- Optimize Commerce API calls
+- Consider file size limits for Adobe I/O Files
+- Use compression for large responses
+
+### Testing
+
+- Use the existing test scripts (`npm run test:action`)
+- Test actions individually before integration
+- Use performance testing scripts for optimization
+- Test in staging environment before production
+
+## Code Quality
+
+- Use ESLint and Prettier (already configured)
+- Write clear, self-documenting code
+- Add JSDoc comments for public functions
+- Use meaningful variable and function names
+- Handle edge cases and errors gracefully
+
+## Security
+
+- Never commit credentials or secrets
+- Use environment variables for sensitive data
+- Validate all inputs
+- Follow Adobe's security best practices
+- Use the security guidelines in `docs/security.md`
+
+## Deployment
+
+- Use `npm start` for quick development iteration
+- Use `npm run deploy` for reliable staging deployment
+- Use `npm run deploy:prod` for production
+- Always test in staging before production deployment
+
+## When Making Changes
+
+1. Check existing utilities in `src/core/` before creating new ones
+2. Follow the configuration system for new settings
+3. Update documentation when adding features
+4. Test with the provided test scripts
+5. Use staging environment for development
+6. Consider HTMX patterns for UI interactions
+7. Follow the established project patterns and conventions
+
+## Common Patterns
+
+- Configuration: Use the schema-validated config system
+- File Operations: Use Adobe I/O Files SDK through existing utilities
+- Commerce API: Use established Commerce integration patterns
+- Frontend Updates: Use HTMX for dynamic content
+- Error Responses: Use consistent error formatting
+- Logging: Use appropriate log levels and formatting
+
+## Dependencies
+
+- Prefer using existing dependencies over adding new ones
+- Use Adobe SDK features when available
+- Keep dependencies updated and secure
+- Document any new dependency requirements
