@@ -1,0 +1,36 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Adobe App Builder - Kukla Integration Service
+
+## Project Overview
+This is an Adobe App Builder application that integrates with Adobe Commerce for product data management and file operations. The project uses a staging-first development approach with HTMX for frontend interactions.
+
+## Architecture & Technology Stack
+- **Platform**: Adobe App Builder (Node.js serverless)
+- **Frontend**: HTMX with vanilla JavaScript  
+- **Backend**: Adobe I/O Runtime actions
+- **Commerce**: Adobe Commerce integration
+- **File Storage**: Adobe I/O Files SDK
+- **Build Tool**: Adobe I/O CLI
+- **Deployment**: Staging and Production workspaces
+
+## Project Structure
+- **actions/**: Backend serverless functions
+  - `backend/`: API endpoints and data processing
+  - `frontend/`: HTMX response handlers
+- **src/**: Shared utilities and core logic
+  - `core/`: Common utilities
+  - `htmx/`: HTMX-specific helpers  
+  - `commerce/`: Adobe Commerce integration
+- **web-src/**: Frontend static assets
+- **config/**: Environment and schema configurations
+- **docs/**: Comprehensive documentation
+
+## Development Workflow
+- Use staging-first development approach
+- Deploy with `npm start` (quick) or `npm run deploy` (reliable)
+- Test individual actions with `npm run test:action [action-name]`
+- Always test in staging before production deployment

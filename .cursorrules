@@ -38,12 +38,14 @@ This is an Adobe App Builder application that integrates with Adobe Commerce for
 
 ## Development Guidelines
 
-### File Organization
+### Always Start with Context
 
-- Keep actions focused and single-purpose
-- Use the existing core utilities instead of duplicating logic
-- Follow the configuration system in `config/` directory
-- Place new documentation in `docs/` with appropriate linking
+Before implementing any feature:
+
+1. Check existing utilities in `src/core/` first
+2. Review similar patterns in `actions/backend/` or `actions/frontend/`
+3. Consult relevant documentation in `docs/`
+4. Verify the configuration system in `config/`
 
 ### Adobe App Builder Specific
 
@@ -111,6 +113,25 @@ This is an Adobe App Builder application that integrates with Adobe Commerce for
 - Use `npm run deploy:prod` for production
 - Always test in staging before production deployment
 
+## Context-Aware Development
+
+When helping with this project:
+
+1. **Reference actual files**: Always check what exists in the current directory structure
+2. **Follow established patterns**: Use the same coding style and architecture patterns found in existing files
+3. **Maintain consistency**: Keep the same error handling, logging, and response formats
+4. **Use existing utilities**: Don't recreate functionality that already exists in `src/core/`
+5. **Update documentation**: When adding features, update relevant docs in `docs/`
+
+## Memory Substitutes (Manual Context)
+
+Since automatic memories aren't available, use these manual techniques:
+
+- **Reference previous solutions**: "Like the pattern in actions/backend/get-products.js..."
+- **Point to documentation**: "Following the security guidelines in docs/security.md..."
+- **Use project structure**: "Create a new utility in src/core/ that can be shared..."
+- **Include version context**: "This is an Adobe App Builder project using staging-first development..."
+
 ## When Making Changes
 
 1. Check existing utilities in `src/core/` before creating new ones
@@ -136,3 +157,13 @@ This is an Adobe App Builder application that integrates with Adobe Commerce for
 - Use Adobe SDK features when available
 - Keep dependencies updated and secure
 - Document any new dependency requirements
+
+## Conversation Context Helpers
+
+To help maintain context across conversations:
+
+- Always mention this is an "Adobe App Builder Commerce integration project"
+- Reference the staging-first development workflow when discussing deployment
+- Point to existing documentation when relevant
+- Use the project structure terminology consistently
+- Reference the existing test scripts when discussing testing
