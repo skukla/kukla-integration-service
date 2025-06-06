@@ -21,17 +21,17 @@ npm run test:api:help
 
 1. Create a `.env` file with your credentials:
 
-   ```bash
-   COMMERCE_URL=your-commerce-instance
-   COMMERCE_ADMIN_USERNAME=admin
-   COMMERCE_ADMIN_PASSWORD=your-password
-   ```
+```bash
+COMMERCE_URL=your-commerce-instance
+COMMERCE_ADMIN_USERNAME=admin
+COMMERCE_ADMIN_PASSWORD=your-password
+```
 
 2. Ensure the testing script is executable:
 
-   ```bash
-   chmod +x scripts/test-api.sh
-   ```
+```bash
+chmod +x scripts/test-api.sh
+```
 
 ### Testing Environments
 
@@ -73,23 +73,23 @@ Note: The API always fetches complete product data internally but returns only t
 
 1. **Basic Development Testing**
 
-   ```bash
-   # Test get-products endpoint with all fields
-   npm run test:api
+```bash
+# Test get-products endpoint with all fields
+npm run test:api
 
-   # Test specific endpoint
-   npm run test:api -- --endpoint get-categories
-   ```
+# Test specific endpoint
+npm run test:api -- --endpoint get-categories
+```
 
 2. **Production Testing**
 
-   ```bash
-   # Test with all fields in production
-   npm run test:api -- --env prod
+```bash
+# Test with all fields in production
+npm run test:api -- --env prod
 
-   # Test with minimal data in production
-   npm run test:api -- --env prod --fields sku,name
-   ```
+# Test with minimal data in production
+npm run test:api -- --env prod --fields sku,name
+```
 
 3. **Field Selection**
 
