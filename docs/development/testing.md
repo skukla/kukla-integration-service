@@ -1,235 +1,399 @@
 # Testing Guide
 
-## API Testing
+> **Testing strategies and scripts for Adobe App Builder Commerce integration**
 
-The project includes a unified testing script for validating API endpoints in both development and production environments.
+## Overview
 
-### Quick Start
+This guide covers testing approaches for the Adobe App Builder application, including action testing, performance testing, and integration testing using the provided npm scripts.
 
-```bash
-# Test in development environment (default)
-npm run test:api
+## Available Testing Scripts
 
-# Test in production environment
-npm run test:api -- --env prod
-
-# Show all testing options
-npm run test:api:help
-```
-
-### Environment Setup
-
-1. Create a `.env` file with your credentials:
+### **Action Testing**
 
 ```bash
-COMMERCE_URL=your-commerce-instance
-COMMERCE_ADMIN_USERNAME=admin
-COMMERCE_ADMIN_PASSWORD=your-password
+# Test individual actions
+npm run test:action -- actions/backend/get-products
+
+# Test with parameters
+npm run test:action -- actions/backend/get-products --param categoryId=123
+
+# Test frontend actions
+npm run test:action -- actions/frontend/browse-files
 ```
 
-2. Ensure the testing script is executable:
+### **Performance Testing**
 
 ```bash
-chmod +x scripts/test-api.sh
+# Test performance in staging
+npm run test:perf
+
+# Test performance in production
+npm run test:perf:prod
 ```
 
-### Testing Environments
+## Action Testing Deep Dive
 
-The testing script requires explicit environment specification to prevent accidental testing in the wrong environment:
+### **Basic Action Testing**
 
-- **Development** (`--env dev`)
-
-  - Endpoint: `https://localhost:9080/api/v1/web/kukla-integration-service`
-  - Uses self-signed certificates (automatically handled)
-  - Requires local development server to be running
-
-- **Production** (`--env prod`)
-  - Endpoint: `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service`
-  - Requires valid production credentials
-
-### Available Options
-
-| Option       | Description                    | Default      | Example                     |
-| ------------ | ------------------------------ | ------------ | --------------------------- |
-| `--env`      | Testing environment (required) | none         | `--env dev`                 |
-| `--endpoint` | API endpoint to test           | get-products | `--endpoint get-categories` |
-| `--fields`   | Fields to include in response  | all fields   | `--fields sku,name,price`   |
-| `--format`   | Response format                | json         | `--format csv`              |
-
-### Available Fields
-
-The following fields can be requested using the `--fields` option:
-
-- `sku` - Product SKU
-- `name` - Product name
-- `price` - Product price
-- `qty` - Current inventory quantity
-- `categories` - Associated categories
-- `images` - Product images
-
-Note: The API always fetches complete product data internally but returns only the requested fields in the response.
-
-### Common Testing Scenarios
-
-1. **Basic Development Testing**
+The `test:action` script allows you to test individual Adobe I/O Runtime actions:
 
 ```bash
-# Test get-products endpoint with all fields
-npm run test:api
+# Basic syntax
+npm run test:action -- <action-path>
 
-# Test specific endpoint
-npm run test:api -- --endpoint get-categories
+# Examples
+npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/frontend/browse-files
+npm run test:action -- actions/backend/download-file
+npm run test:action -- actions/backend/delete-file
 ```
 
-2. **Production Testing**
+### **Testing with Parameters**
 
 ```bash
-# Test with all fields in production
-npm run test:api -- --env prod
+# Single parameter
+npm run test:action -- actions/backend/get-products --param categoryId=123
 
-# Test with minimal data in production
-npm run test:api -- --env prod --fields sku,name
+# Multiple parameters
+npm run test:action -- actions/backend/get-products \
+  --param categoryId=123 \
+  --param limit=50 \
+  --param format=json
+
+# Complex parameters (JSON)
+npm run test:action -- actions/backend/get-products \
+  --param '{"categoryId": "123", "limit": 50, "format": "json"}'
 ```
 
-3. **Field Selection**
+### **Environment-Specific Testing**
 
 ```bash
-# Get only basic product information
-npm run test:api -- --fields sku,name,price
+# Test in staging (default)
+npm run test:action -- actions/backend/get-products
 
-# Get inventory-focused data
-npm run test:api -- --fields sku,name,qty
+# Test with specific environment variables
+LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
 
-# Get full product details
-npm run test:api -- --fields sku,name,price,qty,categories,images
+# Test with Commerce credentials
+COMMERCE_URL=https://your-instance.com \
+COMMERCE_ACCESS_TOKEN=your-token \
+npm run test:action -- actions/backend/get-products
 ```
 
-4. **Format Options**
+## Performance Testing
+
+### **Staging Performance Tests**
 
 ```bash
-# Get JSON response (default)
-npm run test:api
+# Run all performance tests in staging
+npm run test:perf
 
-# Get CSV format
-npm run test:api -- --format csv
+# This tests:
+# - Action execution time
+# - Memory usage
+# - Response size
+# - Commerce API response times
+# - File operation performance
 ```
 
-### Response Formats
+### **Production Performance Tests**
 
-1. **JSON Response** (default)
+```bash
+# Run performance tests in production (use carefully!)
+npm run test:perf:prod
 
-```json
+# Recommended: Run with limited scope
+npm run test:perf:prod -- --light-mode
+```
+
+### **Performance Metrics**
+
+The performance tests measure:
+
+- **Action Execution Time**: Time from invocation to response
+- **Memory Usage**: Peak memory consumption during execution
+- **Commerce API Latency**: Response times from Adobe Commerce
+- **File Operation Speed**: Upload/download/delete performance
+- **Concurrent Request Handling**: Multiple simultaneous requests
+
+### **Performance Thresholds**
+
+Expected performance benchmarks:
+
+| Operation     | Target Time | Warning Threshold | Error Threshold |
+| ------------- | ----------- | ----------------- | --------------- |
+| Get Products  | < 2s        | 3s                | 5s              |
+| File Upload   | < 1s        | 2s                | 3s              |
+| File Download | < 500ms     | 1s                | 2s              |
+| File Delete   | < 300ms     | 500ms             | 1s              |
+
+## Testing Patterns
+
+### **Backend Action Testing**
+
+Example test structure for backend actions:
+
+```javascript
+// Using the test:action script
+npm run test:action -- actions/backend/get-products --param '{
+  "categoryId": "electronics",
+  "limit": 10,
+  "format": "json",
+  "LOG_LEVEL": "debug"
+}'
+
+// Expected response structure
 {
-  "success": true,
-  "message": "Product export completed successfully.",
-  "data": [
-    {
-      "sku": "product-sku",
-      "name": "Product Name",
-      "price": 99.99
+  "statusCode": 200,
+  "body": {
+    "success": true,
+    "message": "Product export completed successfully",
+    "data": {
+      "products": [...],
+      "pagination": {...}
     }
-  ]
-}
-```
-
-2. **CSV Response** (when using `--format csv`)
-
-```json
-{
-  "success": true,
-  "message": "Product export completed successfully.",
-  "file": {
-    "downloadUrl": "https://storage.url/products.csv"
   }
 }
 ```
 
-### Error Handling
+### **Frontend Action Testing**
 
-The script handles several types of errors:
+Example test for HTMX frontend actions:
 
-1. **Environment Errors**
+```javascript
+// Test HTMX response action
+npm run test:action -- actions/frontend/browse-files --param '{
+  "path": "/uploads",
+  "limit": 20,
+  "LOG_LEVEL": "debug"
+}'
 
-```bash
-# Missing environment specification
-./scripts/test-api.sh  # Error: --env must be specified (dev or prod)
-
-# Invalid environment
-./scripts/test-api.sh --env staging  # Error: --env must be specified as 'dev' or 'prod'
+// Expected response structure
+{
+  "statusCode": 200,
+  "headers": {
+    "Content-Type": "text/html",
+    "HX-Trigger": "files:loaded"
+  },
+  "body": "<div class=\"file-list\">...</div>"
+}
 ```
 
-2. **Configuration Errors**
+### **Error Testing**
+
+Testing error scenarios:
 
 ```bash
-# Missing credentials
-Error: Missing required environment variables. Please set them in .env file:
-COMMERCE_URL=
-COMMERCE_ADMIN_USERNAME=
-COMMERCE_ADMIN_PASSWORD=
+# Test validation errors
+npm run test:action -- actions/backend/get-products --param '{
+  "categoryId": "invalid-category",
+  "limit": -1
+}'
+
+# Test authentication errors
+npm run test:action -- actions/backend/get-products --param '{
+  "categoryId": "123"
+}' --no-auth
+
+# Test Commerce API errors
+COMMERCE_URL=https://invalid-url.com \
+npm run test:action -- actions/backend/get-products
 ```
 
-3. **Validation Errors**
+## Integration Testing
+
+### **End-to-End Testing Workflow**
 
 ```bash
-# Invalid fields
-Error: Invalid field 'invalid'. Valid fields are: sku name price qty categories images
+# 1. Deploy to staging
+npm run deploy
 
-# Invalid format
-Error: format must be 'json' or 'csv'
+# 2. Test individual actions
+npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/frontend/browse-files
+
+# 3. Run performance tests
+npm run test:perf
+
+# 4. Test UI interactions (manual)
+open https://your-staging-url.adobeio-static.net
 ```
 
-### Integration with Development Workflow
-
-When testing with a local development server, follow these explicit steps:
-
-1. Start the server:
+### **Commerce API Integration Testing**
 
 ```bash
-# Interactive mode (blocks terminal)
-npm run start
+# Test Commerce connection
+npm run test:action -- actions/backend/get-products --param '{
+  "categoryId": "test-category",
+  "limit": 1,
+  "LOG_LEVEL": "debug"
+}'
 
-# Or background mode
-npm run start:bg
+# Verify response includes:
+# - Valid product data
+# - Proper error handling
+# - Expected response format
+# - Correct headers
 ```
 
-2. If using background mode, wait for server readiness:
+### **File Operations Testing**
 
 ```bash
-./scripts/wait-for-server.sh
+# Test file upload (via frontend action)
+npm run test:action -- actions/frontend/upload-file --param '{
+  "fileName": "test.txt",
+  "fileContent": "base64-content-here",
+  "LOG_LEVEL": "debug"
+}'
+
+# Test file deletion
+npm run test:action -- actions/backend/delete-file --param '{
+  "fileId": "test-file-id",
+  "LOG_LEVEL": "debug"
+}'
 ```
 
-3. Run the tests:
+## Testing Best Practices
+
+### **1. Test Isolation**
+
+- Each test should be independent
+- Clean up test data after tests
+- Use unique identifiers for test data
+- Don't rely on external state
+
+### **2. Environment Management**
 
 ```bash
-npm run test:api
+# Use environment-specific configurations
+cp config/environments/.env.example config/environments/.env.testing
+
+# Set appropriate log levels for testing
+LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
 ```
 
-4. Monitor and manage logs:
+### **3. Error Validation**
 
 ```bash
-# View logs
-npm run logs
+# Test expected error scenarios
+npm run test:action -- actions/backend/get-products --param '{
+  "categoryId": "",
+  "limit": 0
+}' --expect-error
 
-# Clear logs if needed
-npm run logs:clear
+# Verify error response format
+{
+  "statusCode": 400,
+  "body": {
+    "success": false,
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid parameters"
+    }
+  }
+}
 ```
 
-### Best Practices
+### **4. Performance Baseline**
 
-1. **Environment Safety**
+```bash
+# Establish performance baselines
+npm run test:perf -- --baseline
 
-   - Always explicitly specify the environment with `--env prod` when testing in production
-   - Use `npm run test:api` for development testing (defaults to dev environment)
-   - Double-check environment flag when testing in production
+# Compare against baselines
+npm run test:perf -- --compare-baseline
+```
 
-2. **Performance**
+## Debugging Test Failures
 
-   - Request only needed fields using `--fields`
-   - Use `--no-inventory` and `--no-categories` when that data isn't needed
-   - Consider using CSV format for large data sets
+### **Action Execution Logs**
 
-3. **Development Testing**
-   - Choose between interactive (`npm run start`) or background (`npm run start:bg`) server mode
-   - When using background mode, ensure server is ready with `./scripts/wait-for-server.sh`
-   - Monitor logs with `npm run logs`
-   - Keep logs clean with `npm run logs:clear` when needed
+```bash
+# Enable detailed logging
+LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
+
+# Check Adobe I/O Runtime logs
+aio runtime:log:get
+
+# View specific action logs
+aio runtime:log:get --action get-products
+```
+
+### **Common Test Issues**
+
+1. **Authentication Errors**
+
+   ```bash
+   # Verify credentials
+   echo $COMMERCE_ACCESS_TOKEN
+
+   # Test authentication separately
+   npm run test:action -- actions/backend/auth-test
+   ```
+
+2. **Timeout Issues**
+
+   ```bash
+   # Increase timeout for long-running operations
+   TIMEOUT=60000 npm run test:action -- actions/backend/get-products
+   ```
+
+3. **Environment Variables**
+
+   ```bash
+   # Verify environment setup
+   npm run test:action -- actions/backend/health-check
+
+   # Check configuration
+   npm run test:action -- actions/backend/config-check
+   ```
+
+## Continuous Testing
+
+### **Pre-deployment Testing**
+
+```bash
+# Run before deployment
+npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/frontend/browse-files
+npm run test:perf
+
+# All tests pass? Safe to deploy
+npm run deploy
+```
+
+### **Post-deployment Verification**
+
+```bash
+# After deployment, verify with production-like data
+npm run test:action -- actions/backend/get-products --param '{
+  "categoryId": "production-category",
+  "limit": 5
+}'
+```
+
+### **Automated Testing Integration**
+
+The testing scripts integrate with CI/CD pipelines:
+
+```yaml
+# GitHub Actions example
+- name: Test Actions
+  run: |
+    npm run test:action -- actions/backend/get-products
+    npm run test:action -- actions/frontend/browse-files
+
+- name: Performance Tests
+  run: npm run test:perf
+```
+
+## Related Documentation
+
+- **[Development Setup](../getting-started/setup.md)** - Environment configuration
+- **[Adobe App Builder Architecture](../architecture/adobe-app-builder.md)** - Platform patterns
+- **[Coding Standards](coding-standards.md)** - Test code quality
+- **[Deployment Guide](../deployment/environments.md)** - Testing in different environments
+
+---
+
+_This testing guide covers the npm scripts and patterns specific to Adobe App Builder action testing and performance validation._
