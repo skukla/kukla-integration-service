@@ -8,14 +8,15 @@ const { getAuthToken } = require('../lib/auth');
 
 /**
  * Fetch products from Commerce API and enrich with category data
- * @param {Object} params - Action parameters with Commerce URL and credentials
+ * @param {Object} params - Action parameters with credentials
+ * @param {Object} config - Configuration object with Commerce URL
  * @returns {Promise<Array>} Array of enriched product objects
  */
-async function fetchAndEnrichProducts(params) {
-  const { COMMERCE_URL } = params;
+async function fetchAndEnrichProducts(params, config) {
+  const commerceUrl = config.url?.commerce?.baseUrl;
 
-  if (!COMMERCE_URL) {
-    throw new Error('COMMERCE_URL is required for product export');
+  if (!commerceUrl) {
+    throw new Error('Commerce URL not configured in environment');
   }
 
   try {

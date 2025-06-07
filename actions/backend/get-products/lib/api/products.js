@@ -19,6 +19,9 @@ const getProductsApiConfig = createLazyConfigGetter('products-api-config', (conf
       duration: config.commerce?.api?.cache?.duration || 300000, // 5 minutes default
     },
   },
+  url: {
+    baseUrl: config.url?.commerce?.baseUrl || '',
+  },
   product: {
     fields: config.commerce?.product?.fields || [
       'sku',
@@ -128,9 +131,12 @@ async function getInventory(sku, token, baseUrl, params = {}) {
  * @returns {Promise<Array>} Array of products
  */
 async function fetchAllProducts(token, params = {}) {
-  const { COMMERCE_URL } = params;
-  if (!COMMERCE_URL) {
-    throw new Error('COMMERCE_URL is required');
+  // Get Commerce URL from configuration
+  const config = getProductsApiConfig(params);
+  const commerceUrl = config.url.baseUrl;
+
+  if (!commerceUrl) {
+    throw new Error('Commerce URL not configured in environment');
   }
 
   try {
@@ -166,7 +172,7 @@ async function fetchAllProducts(token, params = {}) {
       };
 
       const endpoint = commerceEndpoints.products(paginatedParams, params);
-      const url = buildCommerceUrl(COMMERCE_URL, endpoint);
+      const url = buildCommerceUrl(commerceUrl, endpoint);
 
       const response = await makeCachedRequest(
         url,
@@ -192,7 +198,7 @@ async function fetchAllProducts(token, params = {}) {
       const enrichedProducts = await Promise.all(
         response.body.items.map(async (product) => {
           try {
-            const inventory = await getInventory(product.sku, token, COMMERCE_URL, params);
+            const inventory = await getInventory(product.sku, token, commerceUrl, params);
             const enrichedProduct = {
               ...product,
               ...inventory,
