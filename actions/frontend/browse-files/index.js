@@ -3,12 +3,12 @@
  * @module browse-files
  */
 
-const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
+const { Core } = require('@adobe/aio-sdk');
 
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response, getCorsHeaders } = require('../../../src/core/http/responses');
-const { listFiles, deleteFile } = require('../../../src/core/storage/files');
+const { initializeStorage } = require('../../../src/core/storage');
 const { createHtmxResponse } = require('../../../src/htmx/formatting');
 
 /**
@@ -37,36 +37,33 @@ function createHtmlResponse(html, status = 200, params = {}) {
  * Handles GET requests for file browsing and modal operations
  * @param {Object} params - Request parameters
  * @param {Object} logger - Logger instance
- * @param {Object} files - Files SDK instance
+ * @param {Object} storage - Storage provider instance
  * @returns {Promise<Object>} Response object
  */
-async function handleGetRequest(params, logger, files) {
+async function handleGetRequest(params, logger, storage) {
   try {
     // Handle modal requests
     if (params.modal === 'delete' && params.fileName) {
       return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath), 200, params);
     }
 
-    // List and process files
-    logger.info('Checking public directory');
-    try {
-      // Ensure public directory exists (Files SDK creates directories automatically)
-      logger.info('Public directory ensured');
-    } catch (error) {
-      // Ignore error if directory already exists
-      logger.info('Public directory already exists');
-    }
-
-    // Get file list with metadata using shared operations
-    logger.info('Listing files from public directory');
-    const allFiles = await listFiles(files, 'public');
+    // Get file list with metadata using unified storage - only from public directory
+    logger.info('Listing files from storage public directory');
+    const allFiles = await storage.list('public/');
 
     // Filter for CSV files
     const csvFiles = allFiles.filter((file) => file.name.endsWith('.csv'));
     logger.info(`Found ${csvFiles.length} CSV files`);
 
-    // Return the file list HTML
-    return createHtmlResponse(getFileListHtml(csvFiles), 200, params);
+    // Prepare storage information for the template
+    const storageInfo = {
+      provider: storage.provider,
+      bucket: storage.bucket, // For S3
+      namespace: storage.namespace, // For App Builder (if applicable)
+    };
+
+    // Return the file list HTML with storage information
+    return createHtmlResponse(getFileListHtml(csvFiles, storageInfo), 200, params);
   } catch (error) {
     logger.error('Error in GET request:', error);
     return response.error(error, {}, params);
@@ -77,10 +74,10 @@ async function handleGetRequest(params, logger, files) {
  * Handles DELETE requests for file deletion
  * @param {Object} params - Request parameters
  * @param {Object} logger - Logger instance
- * @param {Object} files - Files SDK instance
+ * @param {Object} storage - Storage provider instance
  * @returns {Promise<Object>} Response object
  */
-async function handleDeleteRequest(params, logger, files) {
+async function handleDeleteRequest(params, logger, storage) {
   try {
     const fileName = params.fileName;
     if (!fileName) {
@@ -88,7 +85,7 @@ async function handleDeleteRequest(params, logger, files) {
     }
 
     logger.info(`Deleting file: ${fileName}`);
-    await deleteFile(files, fileName);
+    await storage.delete(fileName);
     return createHtmlResponse('', 200, params);
   } catch (error) {
     logger.error('Error in DELETE request:', error);
@@ -111,17 +108,17 @@ async function main(rawParams) {
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // Initialize Files SDK
-    logger.info('Initializing Files SDK');
-    const files = await FilesLib.init();
-    logger.info('Files SDK initialized successfully');
+    // Initialize storage provider
+    logger.info('Initializing storage provider');
+    const storage = await initializeStorage(params);
+    logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Route request based on HTTP method
     switch (rawParams.__ow_method) {
       case 'get':
-        return handleGetRequest(params, logger, files);
+        return handleGetRequest(params, logger, storage);
       case 'delete':
-        return handleDeleteRequest(params, logger, files);
+        return handleDeleteRequest(params, logger, storage);
       default:
         return response.badRequest('Method not allowed', {}, rawParams);
     }
