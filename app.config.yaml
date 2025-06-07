@@ -15,13 +15,9 @@ application:
               NODE_ENV: staging
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
-              COMMERCE_URL: $COMMERCE_URL
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
             parameters:
-              COMMERCE_URL:
-                type: string
-                description: Adobe Commerce instance URL
               COMMERCE_ADMIN_USERNAME:
                 type: string
                 description: Admin username for authentication

@@ -14,6 +14,9 @@ const { buildCommerceUrl } = require('../../../../../src/core/routing');
  * @type {Function}
  */
 const getCategoriesApiConfig = createLazyConfigGetter('categories-api-config', (config) => ({
+  url: {
+    baseUrl: config.url?.commerce?.baseUrl || '',
+  },
   category: {
     batchSize: config.category?.batchSize || 20,
     requestRetries: config.category?.requestRetries || 2,
@@ -98,7 +101,8 @@ async function getCategory(categoryId, token, params) {
   while (retryCount < config.category.requestRetries) {
     try {
       const endpoint = endpoints.category(categoryId);
-      const url = buildCommerceUrl(params.COMMERCE_URL, endpoint);
+      const config = getCategoriesApiConfig(params);
+      const url = buildCommerceUrl(config.url.baseUrl, endpoint);
       const response = await request(url, {
         method: 'GET',
         headers: buildHeaders(token),
@@ -248,13 +252,15 @@ async function buildCategoryMap(products, token, params) {
  * @returns {Promise<Object[]>} Array of category objects
  */
 async function getCategories(token, params) {
-  const { COMMERCE_URL } = params;
-  if (!COMMERCE_URL) {
-    throw new Error('COMMERCE_URL is required');
+  const config = getCategoriesApiConfig(params);
+  const commerceUrl = config.url.baseUrl;
+
+  if (!commerceUrl) {
+    throw new Error('Commerce URL not configured in environment');
   }
 
   const endpoint = endpoints.categoryList();
-  const url = buildCommerceUrl(COMMERCE_URL, endpoint);
+  const url = buildCommerceUrl(commerceUrl, endpoint);
   const response = await request(url, {
     method: 'GET',
     headers: buildHeaders(token),
