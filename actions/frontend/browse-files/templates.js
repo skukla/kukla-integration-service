@@ -84,15 +84,64 @@ function getFileRowHtml(file) {
 }
 
 /**
- * Generates HTML for a list of files
- * @param {Array<Object>} files - Array of file details
+ * Generates HTML for storage provider indicator
+ * @param {string} provider - Storage provider name ('s3' or 'app-builder')
+ * @param {string} [bucketOrNamespace] - Bucket name for S3 or namespace for App Builder
  * @returns {string} HTML content
  */
-function getFileListHtml(files) {
-  if (!files || files.length === 0) {
-    return getEmptyStateHtml();
+function getStorageIndicatorHtml(provider, bucketOrNamespace = '') {
+  const providerInfo = {
+    s3: {
+      name: 'Amazon S3',
+      icon: '☁️',
+      description: bucketOrNamespace ? `Bucket: ${bucketOrNamespace}` : 'Cloud Storage',
+    },
+    'app-builder': {
+      name: 'Adobe I/O Files',
+      icon: '📁',
+      description: bucketOrNamespace ? `Namespace: ${bucketOrNamespace}` : 'Adobe Storage',
+    },
+  };
+
+  const info = providerInfo[provider] || { name: 'Unknown', icon: '❓', description: '' };
+
+  return `
+    <div class="storage-indicator">
+      <span class="storage-icon">${info.icon}</span>
+      <div class="storage-details">
+        <span class="storage-name">${info.name}</span>
+        ${info.description ? `<span class="storage-description">${info.description}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Generates HTML for a list of files with storage provider information
+ * @param {Array<Object>} files - Array of file details
+ * @param {Object} [storageInfo] - Storage provider information
+ * @param {string} storageInfo.provider - Provider name
+ * @param {string} [storageInfo.bucket] - S3 bucket name
+ * @param {string} [storageInfo.namespace] - App Builder namespace
+ * @returns {string} HTML content
+ */
+function getFileListHtml(files, storageInfo = null) {
+  let content = '';
+
+  // Add storage provider information if available
+  if (storageInfo) {
+    const bucketOrNamespace = storageInfo.bucket || storageInfo.namespace || '';
+    content += getStorageIndicatorHtml(storageInfo.provider, bucketOrNamespace);
   }
-  return files.map((file) => getFileRowHtml(file)).join('');
+
+  // Add file list or empty state
+  if (!files || files.length === 0) {
+    content += getEmptyStateHtml();
+  } else {
+    content += files.map((file) => getFileRowHtml(file)).join('');
+  }
+
+  return content;
 }
 
 /**
@@ -143,5 +192,6 @@ module.exports = {
   getActionButtonsHtml,
   getFileRowHtml,
   getFileListHtml,
+  getStorageIndicatorHtml,
   getDeleteModalHtml,
 };

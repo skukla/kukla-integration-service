@@ -5,20 +5,22 @@
  * This version uses direct HTTP calls instead of makeCommerceRequest to avoid OpenWhisk conflicts
  */
 const endpoints = require('./commerce-endpoints');
-const { loadConfig } = require('../../../../../config');
+const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
 const { request, buildHeaders } = require('../../../../../src/core/http/client');
 const { buildCommerceUrl } = require('../../../../../src/core/routing');
 
-// Load configuration
-const config = loadConfig();
-const {
+/**
+ * Lazy configuration getter for categories API
+ * @type {Function}
+ */
+const getCategoriesApiConfig = createLazyConfigGetter('categories-api-config', (config) => ({
   category: {
-    batchSize: BATCH_SIZE = 20,
-    requestRetries: REQUEST_RETRIES = 2,
-    retryDelay: RETRY_DELAY = 1000,
-    cacheTtl: CACHE_TTL = 3600,
-  } = {},
-} = config;
+    batchSize: config.category?.batchSize || 20,
+    requestRetries: config.category?.requestRetries || 2,
+    retryDelay: config.category?.retryDelay || 1000,
+    cacheTtl: config.category?.cacheTtl || 3600,
+  },
+}));
 
 // In-memory cache for category data
 const categoryCache = new Map();
@@ -27,11 +29,13 @@ const categoryCache = new Map();
  * Get cached category data
  * @private
  * @param {string} categoryId - Category ID
+ * @param {Object} [params] - Action parameters for configuration
  * @returns {Object|null} Cached category data or null
  */
-function getCachedCategory(categoryId) {
+function getCachedCategory(categoryId, params = {}) {
+  const config = getCategoriesApiConfig(params);
   const cached = categoryCache.get(categoryId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL * 1000) {
+  if (cached && Date.now() - cached.timestamp < config.category.cacheTtl * 1000) {
     return cached.data;
   }
   if (cached) {
@@ -83,14 +87,15 @@ function getCategoryIds(product) {
  * @returns {Promise<Object|null>} Category details or null if failed
  */
 async function getCategory(categoryId, token, params) {
+  const config = getCategoriesApiConfig(params);
   // Check cache first
-  const cached = getCachedCategory(categoryId);
+  const cached = getCachedCategory(categoryId, params);
   if (cached) {
     return cached;
   }
 
   let retryCount = 0;
-  while (retryCount < REQUEST_RETRIES) {
+  while (retryCount < config.category.requestRetries) {
     try {
       const endpoint = endpoints.category(categoryId);
       const url = buildCommerceUrl(params.COMMERCE_URL, endpoint);
@@ -116,8 +121,8 @@ async function getCategory(categoryId, token, params) {
     } catch (error) {
       console.warn(`Attempt ${retryCount + 1} failed for category ${categoryId}:`, error.message);
       retryCount++;
-      if (retryCount < REQUEST_RETRIES) {
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+      if (retryCount < config.category.requestRetries) {
+        await new Promise((resolve) => setTimeout(resolve, config.category.retryDelay));
       }
     }
   }
@@ -133,6 +138,7 @@ async function getCategory(categoryId, token, params) {
  */
 async function enrichProductsWithCategories(products, token, params) {
   try {
+    const config = getCategoriesApiConfig(params);
     // Create a map to store category details
     const categoryMap = new Map();
 
@@ -146,8 +152,8 @@ async function enrichProductsWithCategories(products, token, params) {
 
     // Fetch category details for each unique ID (limit concurrent requests)
     const categoryArray = Array.from(categoryIds);
-    for (let i = 0; i < categoryArray.length; i += BATCH_SIZE) {
-      const batch = categoryArray.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < categoryArray.length; i += config.category.batchSize) {
+      const batch = categoryArray.slice(i, i + config.category.batchSize);
       const batchPromises = batch.map(async (categoryId) => {
         try {
           const category = await getCategory(categoryId, token, params);
@@ -162,7 +168,7 @@ async function enrichProductsWithCategories(products, token, params) {
       await Promise.all(batchPromises);
 
       // Small delay between batches to prevent rate limiting
-      if (i + BATCH_SIZE < categoryArray.length) {
+      if (i + config.category.batchSize < categoryArray.length) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
@@ -199,6 +205,7 @@ async function enrichProductsWithCategories(products, token, params) {
  * @returns {Promise<Object>} Map of category IDs to names
  */
 async function buildCategoryMap(products, token, params) {
+  const config = getCategoriesApiConfig(params);
   const categoryMap = {};
 
   // Get unique category IDs from all products
@@ -210,8 +217,8 @@ async function buildCategoryMap(products, token, params) {
 
   // Fetch categories in batches
   const categoryArray = Array.from(categoryIds);
-  for (let i = 0; i < categoryArray.length; i += BATCH_SIZE) {
-    const batch = categoryArray.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < categoryArray.length; i += config.category.batchSize) {
+    const batch = categoryArray.slice(i, i + config.category.batchSize);
     const batchPromises = batch.map(async (categoryId) => {
       try {
         const category = await getCategory(categoryId, token, params);
@@ -226,7 +233,7 @@ async function buildCategoryMap(products, token, params) {
     await Promise.all(batchPromises);
 
     // Small delay between batches
-    if (i + BATCH_SIZE < categoryArray.length) {
+    if (i + config.category.batchSize < categoryArray.length) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }

@@ -3,34 +3,50 @@
  * @module lib/api/products
  */
 const commerceEndpoints = require('./commerce-endpoints');
-const { loadConfig } = require('../../../../../config');
 const { getRequestedFields } = require('../../../../../src/commerce/data/product');
+const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
 const { request, buildHeaders } = require('../../../../../src/core/http/client');
 const { buildCommerceUrl } = require('../../../../../src/core/routing');
 const { MemoryCache } = require('../../../../../src/core/storage/cache');
 
-// Load configuration
-const config = loadConfig();
-const {
+/**
+ * Lazy configuration getter for products API
+ * @type {Function}
+ */
+const getProductsApiConfig = createLazyConfigGetter('products-api-config', (config) => ({
   api: {
-    cache: { duration: CACHE_TTL },
+    cache: {
+      duration: config.commerce?.api?.cache?.duration || 300000, // 5 minutes default
+    },
   },
-} = config.commerce;
-
-// Extract product fields at module load time to ensure availability
-const FALLBACK_PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
-const PRODUCT_FIELDS = config.commerce?.product?.fields || FALLBACK_PRODUCT_FIELDS;
+  product: {
+    fields: config.commerce?.product?.fields || [
+      'sku',
+      'name',
+      'price',
+      'qty',
+      'categories',
+      'images',
+    ],
+    pagination: {
+      pageSize: config.commerce?.product?.pagination?.pageSize || 100,
+      maxPages: config.commerce?.product?.pagination?.maxPages || 50,
+    },
+  },
+}));
 
 /**
  * Make a cached request
  * @private
  * @param {string} url - Request URL
  * @param {Object} options - Request options
+ * @param {Object} [params] - Action parameters for configuration
  * @returns {Promise<Object>} Response data
  */
-async function makeCachedRequest(url, options) {
+async function makeCachedRequest(url, options, params = {}) {
+  const config = getProductsApiConfig(params);
   const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
-  const cached = MemoryCache.get(cacheKey, { ttl: CACHE_TTL });
+  const cached = MemoryCache.get(cacheKey, { ttl: config.api.cache.duration });
   if (cached) {
     return cached;
   }
@@ -76,15 +92,20 @@ function filterProductFields(product, fields) {
  * @param {string} sku - Product SKU
  * @param {string} token - Authentication token
  * @param {string} baseUrl - Commerce base URL
+ * @param {Object} [params] - Action parameters for configuration
  * @returns {Promise<Object>} Inventory data
  */
-async function getInventory(sku, token, baseUrl) {
-  const endpoint = commerceEndpoints.stockItem(sku);
+async function getInventory(sku, token, baseUrl, params = {}) {
+  const endpoint = commerceEndpoints.stockItem(sku, params);
   const url = buildCommerceUrl(baseUrl, endpoint);
-  const response = await makeCachedRequest(url, {
-    method: 'GET',
-    headers: buildHeaders(token),
-  });
+  const response = await makeCachedRequest(
+    url,
+    {
+      method: 'GET',
+      headers: buildHeaders(token),
+    },
+    params
+  );
 
   if (response.body && Array.isArray(response.body.items) && response.body.items.length > 0) {
     const totalQty = response.body.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -113,9 +134,9 @@ async function fetchAllProducts(token, params = {}) {
   }
 
   try {
-    // Get pagination settings from config
-    const { product: { pagination: { pageSize = 100, maxPages = 50 } = {} } = {} } =
-      config.commerce || {};
+    // Get configuration for this request
+    const config = getProductsApiConfig(params);
+    const { pageSize, maxPages } = config.product.pagination;
 
     let allProducts = [];
     let currentPage = 1;
@@ -126,12 +147,12 @@ async function fetchAllProducts(token, params = {}) {
     try {
       fields = getRequestedFields(params);
     } catch (error) {
-      fields = PRODUCT_FIELDS;
+      fields = config.product.fields;
     }
 
     // Ensure fields is always an array (defensive programming)
     if (!Array.isArray(fields)) {
-      fields = PRODUCT_FIELDS;
+      fields = config.product.fields;
     }
 
     // Create immutable copy to ensure proper closure capture
@@ -144,13 +165,17 @@ async function fetchAllProducts(token, params = {}) {
         currentPage,
       };
 
-      const endpoint = commerceEndpoints.products(paginatedParams);
+      const endpoint = commerceEndpoints.products(paginatedParams, params);
       const url = buildCommerceUrl(COMMERCE_URL, endpoint);
 
-      const response = await makeCachedRequest(url, {
-        method: 'GET',
-        headers: buildHeaders(token),
-      });
+      const response = await makeCachedRequest(
+        url,
+        {
+          method: 'GET',
+          headers: buildHeaders(token),
+        },
+        params
+      );
 
       if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
         break;
@@ -167,7 +192,7 @@ async function fetchAllProducts(token, params = {}) {
       const enrichedProducts = await Promise.all(
         response.body.items.map(async (product) => {
           try {
-            const inventory = await getInventory(product.sku, token, COMMERCE_URL);
+            const inventory = await getInventory(product.sku, token, COMMERCE_URL, params);
             const enrichedProduct = {
               ...product,
               ...inventory,

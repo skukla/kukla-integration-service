@@ -4,12 +4,13 @@
  * @description Handles secure file downloads from Adobe I/O Files storage
  */
 
-const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
+const { Core } = require('@adobe/aio-sdk');
 
 const { checkMissingRequestInputs } = require('../../../src/core/data');
 const { FileErrorType } = require('../../../src/core/errors');
+const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
-const { readFile, getFileProperties } = require('../../../src/core/storage/files');
+const { initializeStorage } = require('../../../src/core/storage');
 
 /**
  * Main function that handles file download requests
@@ -46,13 +47,17 @@ async function main(params) {
       return response.badRequest(missingInputs, {}, params);
     }
 
-    // Initialize Files SDK
-    logger.info('Initializing Files SDK');
-    const files = await FilesLib.init();
+    // Extract action parameters for storage credentials
+    const actionParams = extractActionParams(params);
+
+    // Initialize storage provider
+    logger.info('Initializing storage provider');
+    const storage = await initializeStorage(actionParams);
+    logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Get file properties first to verify existence and get content type
     logger.info(`Getting properties for file: ${params.fileName}`);
-    const fileProps = await getFileProperties(files, params.fileName);
+    const fileProps = await storage.getProperties(params.fileName);
     logger.info('File properties retrieved:', {
       name: fileProps.name,
       size: fileProps.size,
@@ -61,7 +66,7 @@ async function main(params) {
 
     // Read file content
     logger.info(`Reading file content: ${params.fileName}`);
-    const buffer = await readFile(files, params.fileName);
+    const buffer = await storage.read(params.fileName);
     logger.info('File content read successfully', {
       contentLength: buffer.length,
       fileName: params.fileName,
