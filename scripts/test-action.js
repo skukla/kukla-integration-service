@@ -8,6 +8,7 @@ const ora = require('ora');
 
 // Import URL building utilities
 const { loadConfig } = require('../config');
+const { detectEnvironment } = require('../src/core/environment');
 const { buildRuntimeUrl } = require('../src/core/routing');
 
 // Parse command line arguments
@@ -52,7 +53,7 @@ function processActionParameters(actionName, params) {
     if (!processedParams.COMMERCE_URL) {
       try {
         const config = loadConfig();
-        const commerceUrl = config.url?.commerce?.baseUrl;
+        const commerceUrl = config.commerce.baseUrl;
         if (commerceUrl) {
           processedParams.COMMERCE_URL = commerceUrl;
         }
@@ -110,7 +111,7 @@ if (!actionName) {
   );
   console.log(
     chalk.yellow(
-      '  • Required for get-products: COMMERCE_URL, COMMERCE_ADMIN_USERNAME, COMMERCE_ADMIN_PASSWORD'
+      '  • For get-products: Commerce URL auto-loaded from config, credentials from .env'
     )
   );
   console.log(chalk.yellow('\nAvailable actions:'));
@@ -122,17 +123,19 @@ if (!actionName) {
   process.exit(1);
 }
 
-async function testAction(actionUrl, requestParams) {
-  const hasParams = Object.keys(requestParams).length > 0;
+async function testAction(actionUrl, requestParams, environment) {
+  // For staging, don't send parameters as they're configured in app.config.yaml
+  // For production, send parameters as needed
+  const shouldSendParams = environment === 'production' && Object.keys(requestParams).length > 0;
 
   const fetchOptions = {
-    method: hasParams ? 'POST' : 'GET',
+    method: shouldSendParams ? 'POST' : 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
   };
 
-  if (hasParams) {
+  if (shouldSendParams) {
     fetchOptions.body = JSON.stringify(requestParams);
   }
 
@@ -172,7 +175,14 @@ function formatStorageInfo(storage) {
     return 'Unknown Storage';
   }
 
-  let info = `${provider.toUpperCase()}`;
+  let info;
+  if (provider === 'app-builder') {
+    info = 'App Builder';
+  } else if (provider === 's3') {
+    info = 'Amazon S3';
+  } else {
+    info = provider.toUpperCase();
+  }
 
   if (provider === 's3' && properties?.bucket) {
     info += ` (${properties.bucket})`;
@@ -257,6 +267,24 @@ async function main() {
   // Process parameters for the specific action
   const processedParams = processActionParameters(actionName, params);
 
+  // Use shared environment detection if not explicitly set
+  if (!processedParams.NODE_ENV && !process.env.NODE_ENV) {
+    if (!rawOutput) {
+      const envSpinner = ora('Detecting workspace environment...').start();
+      try {
+        processedParams.NODE_ENV = detectEnvironment(processedParams, { allowCliDetection: true });
+        const capitalizedEnv =
+          processedParams.NODE_ENV.charAt(0).toUpperCase() + processedParams.NODE_ENV.slice(1);
+        envSpinner.succeed(`Environment detected: ${capitalizedEnv}`);
+      } catch (error) {
+        envSpinner.fail('Environment detection failed, defaulting to production');
+        processedParams.NODE_ENV = 'production';
+      }
+    } else {
+      processedParams.NODE_ENV = detectEnvironment(processedParams, { allowCliDetection: true });
+    }
+  }
+
   // Validate parameters for the specific action
   try {
     validateActionParameters(actionName, processedParams);
@@ -268,8 +296,8 @@ async function main() {
   if (rawOutput) {
     // Raw mode: just output JSON
     try {
-      const actionUrl = buildRuntimeUrl(actionName);
-      const response = await testAction(actionUrl, processedParams);
+      const actionUrl = buildRuntimeUrl(actionName, null, processedParams);
+      const response = await testAction(actionUrl, processedParams, processedParams.NODE_ENV);
       console.log(JSON.stringify(response, null, 2));
     } catch (error) {
       console.error(JSON.stringify({ error: error.message }, null, 2));
@@ -277,25 +305,33 @@ async function main() {
     }
   } else {
     // Enhanced mode: user-friendly output with ora spinners
-    const spinner = ora('Initializing test').start();
-    console.log();
+    const spinner = ora(`Testing action: ${actionName}`).start();
 
     try {
-      spinner.text = 'Building action URL...';
-      const actionUrl = buildRuntimeUrl(actionName);
-
-      // Parameters are processed but not displayed for cleaner output
-
-      spinner.text = `Testing action: ${actionName}`;
-      const response = await testAction(actionUrl, processedParams);
+      const actionUrl = buildRuntimeUrl(actionName, null, processedParams);
+      const response = await testAction(actionUrl, processedParams, processedParams.NODE_ENV);
 
       spinner.succeed(`Action tested: ${actionName}`);
       console.log(`🔗 URL: ${actionUrl}`);
 
-      // Display storage information if available
-      if (response.body.success && response.body.storage) {
-        const storageInfo = formatStorageInfo(response.body.storage);
-        console.log(`📦 Storage: ${storageInfo}`);
+      // Display storage information if available (check both locations)
+      if (response.body.success) {
+        // Check for storage info in either body.storage or body.file.storageType
+        let storageInfo = null;
+        if (response.body.storage) {
+          storageInfo = formatStorageInfo(response.body.storage);
+        } else if (response.body.file && response.body.file.storageType) {
+          // Create storage object from file info
+          const storageObj = {
+            provider: response.body.file.storageType,
+            properties: response.body.file.properties,
+          };
+          storageInfo = formatStorageInfo(storageObj);
+        }
+
+        if (storageInfo) {
+          console.log(`📦 Storage: ${storageInfo}`);
+        }
       }
 
       console.log(); // Add blank line before status
