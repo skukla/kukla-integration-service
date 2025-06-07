@@ -6,9 +6,32 @@
 
 const ora = require('ora');
 
-const { loadConfig } = require('../config');
 const { parseArgs } = require('../src/core/cli/args');
+const { createLazyConfigGetter } = require('../src/core/config/lazy-loader');
 const { createPerformanceTester, testScenario } = require('../src/core/testing/performance');
+
+/**
+ * Lazy configuration getter for performance testing
+ * @type {Function}
+ */
+const getPerformanceConfig = createLazyConfigGetter('performance-test-config', (config) => ({
+  scenarios: config.testing?.performance?.scenarios || {},
+  thresholds: {
+    executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
+    memory: config.testing?.performance?.thresholds?.memory || 100,
+    products: config.testing?.performance?.thresholds?.products || 1000,
+    categories: config.testing?.performance?.thresholds?.categories || 100,
+    compression: config.testing?.performance?.thresholds?.compression || 50,
+    responseTime: {
+      p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
+      p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
+    },
+    errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
+  },
+  baseline: {
+    maxAgeDays: config.testing?.performance?.baseline?.maxAgeDays || 30,
+  },
+}));
 
 // Parse command line arguments
 const args = parseArgs(process.argv.slice(2), {
@@ -36,24 +59,7 @@ if (!validEnvironments.includes(environment)) {
 // Get the actual workspace name for Adobe I/O
 const workspaceName = environmentMap[environment];
 
-// Load configuration with proper destructuring
-const {
-  testing: {
-    performance: {
-      scenarios: TEST_SCENARIOS,
-      thresholds: {
-        executionTime: EXECUTION_THRESHOLD,
-        memory: MEMORY_THRESHOLD,
-        products: PRODUCTS_THRESHOLD,
-        categories: CATEGORIES_THRESHOLD,
-        compression: COMPRESSION_THRESHOLD,
-        responseTime: { p95: P95_THRESHOLD, p99: P99_THRESHOLD },
-        errorRate: ERROR_RATE_THRESHOLD,
-      },
-      baseline: { maxAgeDays: MAX_AGE_DAYS },
-    },
-  },
-} = loadConfig();
+// Configuration will be loaded dynamically when needed
 
 /**
  * Runs performance tests
@@ -61,6 +67,10 @@ const {
  */
 async function runTests(options = {}) {
   const spinner = ora(`Running performance tests on ${environment}`).start();
+
+  // Load configuration dynamically
+  const config = getPerformanceConfig();
+
   const tester = createPerformanceTester({
     environment: options.env || environment,
     workspace: workspaceName,
@@ -69,23 +79,12 @@ async function runTests(options = {}) {
 
   try {
     // Run tests for each scenario
-    for (const [name, scenario] of Object.entries(TEST_SCENARIOS)) {
+    for (const [name, scenario] of Object.entries(config.scenarios)) {
       spinner.text = `Testing scenario: ${scenario.name} on ${environment}`;
 
       const results = await testScenario(scenario, {
-        thresholds: {
-          executionTime: EXECUTION_THRESHOLD,
-          memory: MEMORY_THRESHOLD,
-          products: PRODUCTS_THRESHOLD,
-          categories: CATEGORIES_THRESHOLD,
-          compression: COMPRESSION_THRESHOLD,
-          responseTime: {
-            p95: P95_THRESHOLD,
-            p99: P99_THRESHOLD,
-          },
-          errorRate: ERROR_RATE_THRESHOLD,
-        },
-        maxAgeDays: MAX_AGE_DAYS,
+        thresholds: config.thresholds,
+        maxAgeDays: config.baseline.maxAgeDays,
       });
 
       if (results.passed) {

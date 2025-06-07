@@ -7,6 +7,7 @@ const fetch = require('node-fetch');
 const ora = require('ora');
 
 // Import URL building utilities
+const { loadConfig } = require('../config');
 const { buildRuntimeUrl } = require('../src/core/routing');
 
 // Parse command line arguments
@@ -45,6 +46,44 @@ function processActionParameters(actionName, params) {
     }
   }
 
+  // For get-products action, load Commerce URL from config and credentials from .env if not provided
+  if (actionName === 'get-products') {
+    // Load Commerce URL from environment configuration if not provided
+    if (!processedParams.COMMERCE_URL) {
+      try {
+        const config = loadConfig();
+        const commerceUrl = config.url?.commerce?.baseUrl;
+        if (commerceUrl) {
+          processedParams.COMMERCE_URL = commerceUrl;
+        }
+      } catch (error) {
+        // Silently fail - user can provide URL manually
+      }
+    }
+
+    // Load credentials from .env if not provided
+    if (!processedParams.COMMERCE_ADMIN_USERNAME || !processedParams.COMMERCE_ADMIN_PASSWORD) {
+      try {
+        const envPath = path.join(__dirname, '../.env');
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf8');
+          const envLines = envContent.split('\n');
+
+          envLines.forEach((line) => {
+            const [key, ...valueParts] = line.split('=');
+            const value = valueParts.join('=').trim();
+
+            if (key && value && !processedParams[key]) {
+              processedParams[key] = value;
+            }
+          });
+        }
+      } catch (error) {
+        // Silently fail - user can provide params manually
+      }
+    }
+  }
+
   return processedParams;
 }
 
@@ -53,13 +92,25 @@ if (!actionName) {
   console.log(chalk.yellow('Usage: node test-action.js <action-name> [key=value ...] [--raw]'));
   console.log(chalk.yellow('Examples:'));
   console.log(chalk.cyan('  node test-action.js get-products'));
+  console.log(chalk.cyan('  node test-action.js get-products COMMERCE_URL=https://demo.com'));
   console.log(chalk.cyan('  node test-action.js delete-file fileName=products.csv'));
   console.log(chalk.cyan('  node test-action.js browse-files modal=true'));
   console.log(chalk.yellow('Options:'));
   console.log(chalk.cyan('  --raw    Output raw JSON response only'));
+  console.log(chalk.yellow('\nNotes:'));
   console.log(
     chalk.yellow(
-      '\nNote: For delete-file, fileName will automatically prepend "public/" if not present'
+      '  • For delete-file, fileName will automatically prepend "public/" if not present'
+    )
+  );
+  console.log(
+    chalk.yellow(
+      '  • For get-products, Commerce credentials will be loaded from .env if not provided'
+    )
+  );
+  console.log(
+    chalk.yellow(
+      '  • Required for get-products: COMMERCE_URL, COMMERCE_ADMIN_USERNAME, COMMERCE_ADMIN_PASSWORD'
     )
   );
   console.log(chalk.yellow('\nAvailable actions:'));
@@ -109,6 +160,56 @@ async function testAction(actionUrl, requestParams) {
   };
 }
 
+/**
+ * Format storage information for display
+ * @param {Object} storage - Storage object from response containing storage details
+ * @returns {string} Formatted storage information
+ */
+function formatStorageInfo(storage) {
+  const { provider, properties } = storage;
+
+  if (!provider) {
+    return 'Unknown Storage';
+  }
+
+  let info = `${provider.toUpperCase()}`;
+
+  if (provider === 's3' && properties?.bucket) {
+    info += ` (${properties.bucket})`;
+  } else if (provider === 'app-builder') {
+    info += ' (Adobe I/O Files)';
+  }
+
+  return info;
+}
+
+/**
+ * Validate parameters for specific actions
+ * @param {string} actionName - The action being called
+ * @param {Object} params - Parameters object
+ * @throws {Error} If validation fails
+ */
+function validateActionParameters(actionName, params) {
+  if (actionName === 'get-products') {
+    const requiredParams = ['COMMERCE_URL', 'COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'];
+    const missingParams = requiredParams.filter((param) => !params[param]);
+
+    if (missingParams.length > 0) {
+      throw new Error(
+        `Missing required parameters for get-products: ${missingParams.join(', ')}\n` +
+          'These can be provided as command line arguments or will be loaded from .env file'
+      );
+    }
+
+    // Validate URL format
+    try {
+      new URL(params.COMMERCE_URL);
+    } catch (error) {
+      throw new Error('Invalid COMMERCE_URL format - must be a valid URL');
+    }
+  }
+}
+
 function formatResponse(response) {
   const { statusCode, body } = response;
   const status = statusCode === 200 ? 'success' : 'error';
@@ -118,6 +219,13 @@ function formatResponse(response) {
 
   if (body.success) {
     console.log(chalk.white('Message:'), body.message);
+
+    // Export statistics are shown in the detailed steps, so no separate section needed
+
+    if (body.downloadUrl) {
+      console.log(chalk.white('\n🔗 Download URL:'));
+      console.log(chalk.blue(`   ${body.downloadUrl}`));
+    }
 
     if (body.steps?.length > 0) {
       console.log(chalk.white('\nSteps:'));
@@ -149,6 +257,14 @@ async function main() {
   // Process parameters for the specific action
   const processedParams = processActionParameters(actionName, params);
 
+  // Validate parameters for the specific action
+  try {
+    validateActionParameters(actionName, processedParams);
+  } catch (error) {
+    console.error(chalk.red(`Parameter validation error: ${error.message}`));
+    process.exit(1);
+  }
+
   if (rawOutput) {
     // Raw mode: just output JSON
     try {
@@ -162,22 +278,27 @@ async function main() {
   } else {
     // Enhanced mode: user-friendly output with ora spinners
     const spinner = ora('Initializing test').start();
+    console.log();
 
     try {
       spinner.text = 'Building action URL...';
       const actionUrl = buildRuntimeUrl(actionName);
 
-      // Show parameters if any (show processed params to be transparent)
-      if (Object.keys(processedParams).length > 0) {
-        spinner.info(`Parameters: ${JSON.stringify(processedParams)}`);
-        spinner.start();
-      }
+      // Parameters are processed but not displayed for cleaner output
 
       spinner.text = `Testing action: ${actionName}`;
       const response = await testAction(actionUrl, processedParams);
 
       spinner.succeed(`Action tested: ${actionName}`);
-      console.log(`🔗 URL: ${actionUrl}\n`);
+      console.log(`🔗 URL: ${actionUrl}`);
+
+      // Display storage information if available
+      if (response.body.success && response.body.storage) {
+        const storageInfo = formatStorageInfo(response.body.storage);
+        console.log(`📦 Storage: ${storageInfo}`);
+      }
+
+      console.log(); // Add blank line before status
       formatResponse(response);
     } catch (error) {
       spinner.fail(`Test execution failed: ${error.message}`);
