@@ -47,9 +47,10 @@ async function handleGetRequest(params, logger, storage) {
       return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath), 200, params);
     }
 
-    // Get file list with metadata using unified storage - only from public directory
-    logger.info('Listing files from storage public directory');
-    const allFiles = await storage.list('public/');
+    // Get file list with metadata using unified storage interface
+    // Both providers handle their internal organization automatically
+    logger.info(`Listing files from storage (${storage.provider})`);
+    const allFiles = await storage.list();
 
     // Filter for CSV files
     const csvFiles = allFiles.filter((file) => file.name.endsWith('.csv'));

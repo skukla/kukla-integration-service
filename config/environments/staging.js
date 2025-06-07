@@ -110,7 +110,7 @@ module.exports = {
     s3: {
       region: 'us-east-1',
       bucket: 'demo-commerce-integrations',
-      prefix: 'kukla-integration/',
+      prefix: 'public/',
     },
   },
   testing: {
