@@ -3,9 +3,9 @@
  * @module get-products
  */
 const buildProducts = require('./steps/buildProducts');
-const createCsv = require('./steps/createCsv');
+const createCsvStandalone = require('./steps/createCsvStandalone');
 const fetchAndEnrichProducts = require('./steps/fetchAndEnrichProducts');
-const { storeFile } = require('./lib/storage');
+const storeCsv = require('./steps/storeCsv');
 const validateInput = require('./steps/validateInput');
 const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
@@ -49,7 +49,8 @@ function formatStepMessage(name, status, details = {}) {
       error: 'Failed to validate input parameters',
     },
     'fetch-and-enrich': {
-      success: (count) => `Successfully fetched and enriched ${count} products with category data`,
+      success: (count) =>
+        `Successfully fetched and enriched ${count} products with category and inventory data`,
       error: 'Failed to fetch products from Commerce API',
     },
     'build-products': {
@@ -88,100 +89,65 @@ async function main(params) {
     return response.success({}, 'Preflight success', {}, params);
   }
 
-  const trace = createTraceContext('get-products', params);
-  const steps = [];
-
   try {
-    // Extract and normalize parameters
-    const actionParams = await traceStep(trace, 'extract-params', async () => {
-      const result = await extractActionParams(params);
-      steps.push(formatStepMessage('extract-params', 'success'));
-      return result;
-    });
+    // Extract and validate parameters
+    const actionParams = extractActionParams(params);
+    await validateInput(actionParams);
 
-    // Load configuration with Commerce URL and credentials
+    // Initialize configuration and tracing
     const config = loadConfig(actionParams);
-    const commerceUrl = actionParams.COMMERCE_URL || config.url.commerce.baseUrl;
+    const trace = createTraceContext('get-products', actionParams);
+    const steps = [];
 
-    // Use Commerce URL from config if not provided in params
-    const enrichedParams = {
-      ...actionParams,
-      COMMERCE_URL: commerceUrl,
-    };
-
-    // Step 1: Validate input parameters
-    try {
-      await traceStep(trace, 'validate-input', async () => {
-        if (!commerceUrl) {
-          throw new Error('COMMERCE_URL is required for product export');
-        }
-        await validateInput(enrichedParams);
-        steps.push(formatStepMessage('validate-input', 'success'));
-      });
-    } catch (error) {
-      steps.push(formatStepMessage('validate-input', 'error', { error: error.message }));
-      return response.badRequest(error.message, { steps }, params);
-    }
+    // Step 1: Validate input
+    steps.push(formatStepMessage('validate-input', 'success'));
 
     // Step 2: Fetch and enrich products
-    let products;
-    try {
-      products = await traceStep(trace, 'fetch-and-enrich', async () => {
-        const enrichedProducts = await fetchAndEnrichProducts(enrichedParams);
-        steps.push(
-          formatStepMessage('fetch-and-enrich', 'success', { count: enrichedProducts.length })
-        );
-        return enrichedProducts;
-      });
-    } catch (error) {
-      steps.push(formatStepMessage('fetch-and-enrich', 'error', { error: error.message }));
-      return response.error(error, { steps }, params);
-    }
+    const products = await traceStep(trace, 'fetch-products', async () => {
+      return await fetchAndEnrichProducts(actionParams, config);
+    });
+    steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
-    // Step 3: Build product data structure
-    let productData;
-    try {
-      productData = await traceStep(trace, 'build-products', async () => {
-        const result = await buildProducts(products);
-        steps.push(formatStepMessage('build-products', 'success', { count: result.length }));
-        return result;
-      });
-    } catch (error) {
-      steps.push(formatStepMessage('build-products', 'error', { error: error.message }));
-      return response.error(error, { steps }, params);
-    }
+    // Step 3: Build product data
+    const builtProducts = await traceStep(trace, 'build-products', async () => {
+      return await buildProducts(products, config);
+    });
+    steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
-    // Step 4: Create CSV file
-    let csvContent;
-    try {
-      csvContent = await traceStep(trace, 'create-csv', async () => {
-        const result = await createCsv(productData);
-        const size = typeof result === 'string' ? result.length : result.content.length;
-        steps.push(formatStepMessage('create-csv', 'success', { size }));
-        return result;
-      });
-    } catch (error) {
-      steps.push(formatStepMessage('create-csv', 'error', { error: error.message }));
-      return response.error(error, { steps }, params);
-    }
+    // Step 4: Create CSV (using standalone version)
+    const csvData = await traceStep(trace, 'create-csv', async () => {
+      return await createCsvStandalone(builtProducts);
+    });
+    steps.push(formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
 
-    // Step 5: Store CSV in cloud storage
-    let fileInfo;
-    try {
-      fileInfo = await traceStep(trace, 'store-csv', async () => {
-        const content = typeof csvContent === 'string' ? csvContent : csvContent.content;
-        const result = await storeFile(content, 'products.csv');
-        steps.push(formatStepMessage('store-csv', 'success', { info: result }));
-        return result;
-      });
-    } catch (error) {
-      steps.push(formatStepMessage('store-csv', 'error', { error: error.message }));
-      return response.error(error, { steps }, params);
-    }
+    // Step 5: Store CSV
+    const storageResult = await traceStep(trace, 'store-csv', async () => {
+      return await storeCsv(csvData, actionParams, config);
+    });
+    steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
 
-    return response.success({ file: fileInfo }, steps[steps.length - 1], { steps }, params);
+    return response.success(
+      {
+        message: 'Product export completed successfully',
+        steps,
+        stats: {
+          productsProcessed: builtProducts.length,
+          csvSize: csvData.stats.originalSize,
+          storageLocation: storageResult.location,
+        },
+        downloadUrl: storageResult.downloadUrl,
+        storage: {
+          provider: storageResult.storageType,
+          location: storageResult.location || storageResult.fileName,
+          properties: storageResult.properties,
+        },
+      },
+      'Product export completed',
+      {},
+      actionParams
+    );
   } catch (error) {
-    return response.error(error, { steps }, params);
+    return response.error(error, {}, params);
   }
 }
 

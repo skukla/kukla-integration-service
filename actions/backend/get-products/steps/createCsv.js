@@ -47,7 +47,9 @@ async function createCsv(products) {
     };
   } catch (error) {
     // Fallback to simple CSV generation if core module fails
-    console.log('Core CSV generation failed, using fallback:', error.message);
+    if (process.env.DEBUG_CSV) {
+      console.log('Core CSV generation failed, using fallback:', error.message);
+    }
 
     const headers = CSV_HEADERS.map((h) => h.title).join(',');
     const rows = products.map((product) => {

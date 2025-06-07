@@ -5,24 +5,35 @@
 
 const { Files: FilesLib } = require('@adobe/aio-sdk');
 
-const { loadConfig } = require('../../../../../config');
+const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
+
+/**
+ * Lazy configuration getter for storage operations
+ * @type {Function}
+ */
+const getStorageConfig = createLazyConfigGetter('storage-config', (config) => ({
+  provider: config.storage?.provider || 'app-builder',
+  csv: {
+    filename: config.storage?.csv?.filename || 'products.csv',
+  },
+}));
 
 /**
  * Stores a file in the configured storage location
  * @async
  * @param {string} content - File content to store
  * @param {string} [fileName] - Name of the file to store (optional, uses config default if not provided)
+ * @param {Object} [params] - Action parameters for configuration
  * @returns {Promise<Object>} Storage result
  * @property {string} fileName - Name of the stored file
  * @property {string} location - Storage location
  * @property {string} downloadUrl - URL to download the file via the download-file action
  * @throws {Error} If file operation fails
  */
-async function storeFile(content, fileName = null) {
+async function storeFile(content, fileName = null, params = {}) {
   try {
-    // Load main configuration
-    const config = loadConfig();
-    const storageConfig = config.storage;
+    // Load storage configuration
+    const storageConfig = getStorageConfig(params);
 
     // For now, we only support app-builder provider
     // This could be extended to support S3 in the future
