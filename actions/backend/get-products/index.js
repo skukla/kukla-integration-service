@@ -3,7 +3,7 @@
  * @module get-products
  */
 const buildProducts = require('./steps/buildProducts');
-const createCsvStandalone = require('./steps/createCsvStandalone');
+const createCsv = require('./steps/createCsv');
 const fetchAndEnrichProducts = require('./steps/fetchAndEnrichProducts');
 const storeCsv = require('./steps/storeCsv');
 const validateInput = require('./steps/validateInput');
@@ -114,9 +114,9 @@ async function main(params) {
     });
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
-    // Step 4: Create CSV (using standalone version)
+    // Step 4: Create CSV
     const csvData = await traceStep(trace, 'create-csv', async () => {
-      return await createCsvStandalone(builtProducts);
+      return await createCsv(builtProducts);
     });
     steps.push(formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
 
