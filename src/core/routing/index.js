@@ -1,11 +1,12 @@
 /**
- * Routing module
+ * Core routing utilities
  * @module core/routing
  */
 
-const { buildRuntimeUrl, buildCommerceUrl } = require('./url');
+// Re-export from the URL module
+const { buildRuntimeUrl, buildCommerceUrl } = require('../url');
 
 module.exports = {
-    buildRuntimeUrl,
-    buildCommerceUrl
-}; 
+  buildRuntimeUrl,
+  buildCommerceUrl,
+};

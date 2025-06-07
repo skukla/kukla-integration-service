@@ -4,7 +4,7 @@
  */
 
 import { showNotification } from './notifications.js';
-import { getActionUrl } from './urls.js';
+import { getActionUrl } from './url.js';
 
 /**
  * Process a base64 response and trigger file download

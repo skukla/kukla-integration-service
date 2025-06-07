@@ -2,7 +2,7 @@
 import { initializeHtmxEvents } from './events.js';
 import { initializeDownloadHandlers } from '../core/downloads.js';
 import { showNotification } from '../core/notifications.js';
-import { getActionUrl } from '../core/urls.js';
+import { getActionUrl } from '../core/url.js';
 // Component configuration
 const COMPONENT_CONFIG = {
   'file-list': {
