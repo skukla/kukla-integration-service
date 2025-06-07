@@ -3,20 +3,12 @@
  * @module lib/api/commerce-endpoints
  */
 
-const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
+const { loadConfig } = require('../../../../../config');
 
 /**
  * Lazy configuration getter for Commerce endpoint paths
  * @type {Function}
  */
-const getEndpointConfig = createLazyConfigGetter('commerce-endpoints-config', (config) => ({
-  paths: {
-    products: config.url?.commerce?.paths?.products || '/rest/V1/products',
-    stockItem: config.url?.commerce?.paths?.stockItem || '/rest/V1/stockItems',
-    category: config.url?.commerce?.paths?.category || '/rest/V1/categories/:id',
-    categoryList: config.url?.commerce?.paths?.categoryList || '/rest/V1/categories/list',
-  },
-}));
 
 /**
  * Builds product endpoint URL with query parameters
@@ -25,7 +17,7 @@ const getEndpointConfig = createLazyConfigGetter('commerce-endpoints-config', (c
  * @returns {string} Product endpoint URL
  */
 function products(params = {}, actionParams = {}) {
-  const config = getEndpointConfig(actionParams);
+  const config = loadConfig(actionParams);
   const queryParams = new URLSearchParams();
 
   // Add pagination criteria
@@ -44,7 +36,7 @@ function products(params = {}, actionParams = {}) {
   );
 
   const query = queryParams.toString();
-  return `${config.paths.products}${query ? `?${query}` : ''}`;
+  return `${config.commerce.paths.products}${query ? `?${query}` : ''}`;
 }
 
 /**
@@ -54,12 +46,12 @@ function products(params = {}, actionParams = {}) {
  * @returns {string} Stock item endpoint URL
  */
 function stockItem(sku, actionParams = {}) {
-  const config = getEndpointConfig(actionParams);
+  const config = loadConfig(actionParams);
   const queryParams = new URLSearchParams();
   queryParams.append('searchCriteria[filter_groups][0][filters][0][field]', 'sku');
   queryParams.append('searchCriteria[filter_groups][0][filters][0][value]', sku);
   queryParams.append('searchCriteria[filter_groups][0][filters][0][condition_type]', 'eq');
-  return `${config.paths.stockItem}?${queryParams.toString()}`;
+  return `${config.commerce.paths.stockItem}?${queryParams.toString()}`;
 }
 
 /**
@@ -69,8 +61,8 @@ function stockItem(sku, actionParams = {}) {
  * @returns {string} Category endpoint URL
  */
 function category(id, actionParams = {}) {
-  const config = getEndpointConfig(actionParams);
-  return config.paths.category.replace(':id', id);
+  const config = loadConfig(actionParams);
+  return config.commerce.paths.category.replace(':id', id);
 }
 
 /**
@@ -79,8 +71,8 @@ function category(id, actionParams = {}) {
  * @returns {string} Category list endpoint URL
  */
 function categoryList(actionParams = {}) {
-  const config = getEndpointConfig(actionParams);
-  return config.paths.categoryList;
+  const config = loadConfig(actionParams);
+  return config.commerce.paths.categoryList;
 }
 
 module.exports = {

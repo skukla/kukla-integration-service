@@ -13,7 +13,7 @@ const { loadConfig } = require('../../../config');
  */
 function getTracingConfig(params = {}) {
   const config = loadConfig(params);
-  const tracingConfig = config.app?.monitoring?.tracing || {};
+  const tracingConfig = config.performance.tracing;
   const performanceConfig = tracingConfig.performance || {};
 
   return {

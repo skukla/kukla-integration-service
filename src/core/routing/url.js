@@ -3,13 +3,7 @@
  * @module core/routing/url
  */
 
-const { createLazyConfigGetter } = require('../config/lazy-loader');
-
-/**
- * Lazy configuration getter for full configuration
- * @type {Function}
- */
-const getConfig = createLazyConfigGetter('routing-config', (config) => config);
+const { loadConfig } = require('../../../config');
 
 /**
  * Builds a runtime URL for the given action using environment configuration
@@ -20,15 +14,15 @@ const getConfig = createLazyConfigGetter('routing-config', (config) => config);
  */
 function buildRuntimeUrl(action, customBaseUrl = null, params = {}) {
   // Always use configuration, even for testing mode
-  const config = getConfig(params);
-  const { baseUrl, namespace, package: pkg, version, paths } = config.url.runtime;
+  const config = loadConfig(params);
+  const { baseUrl, namespace, package: pkg, version, paths } = config.runtime;
 
   // Use custom base URL if provided (for testing), otherwise use configured baseUrl
   let runtimeBaseUrl = customBaseUrl || baseUrl;
 
   // For production, convert static domain to runtime domain
   // For staging, keep the static domain as deployments use adobeio-static.net
-  const isProduction = config.app.environment === 'production';
+  const isProduction = config.environment === 'production';
   if (isProduction && runtimeBaseUrl.includes('adobeio-static.net')) {
     runtimeBaseUrl = runtimeBaseUrl.replace('adobeio-static.net', 'adobeioruntime.net');
   }

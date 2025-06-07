@@ -22,7 +22,7 @@ const actions = Object.keys(
 // Generate runtime configuration using environment-specific settings
 const runtimeConfig = {
   runtime: {
-    ...envConfig.url.runtime,
+    ...envConfig.runtime,
     actions: actions.reduce((acc, action) => {
       acc[action] = action;
       return acc;
