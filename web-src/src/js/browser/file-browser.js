@@ -5,7 +5,7 @@
 
 import { showModal, hideModal } from '../core/modal.js';
 import { showNotification } from '../core/notifications.js';
-import { getActionUrl } from '../core/urls.js';
+import { getActionUrl } from '../core/url.js';
 
 // File browser configuration
 const FILE_BROWSER_CONFIG = {

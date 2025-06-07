@@ -167,6 +167,62 @@ Since automatic memories aren't available, use these manual techniques:
 6. Consider HTMX patterns for UI interactions
 7. Follow the established project patterns and conventions
 
+## URL Management
+
+The application uses a consistent URL management system across backend and frontend contexts:
+
+### Backend URL Building
+
+Use `src/core/routing/index.js` which re-exports from `src/core/url/index.js`:
+
+```javascript
+const { buildRuntimeUrl, buildCommerceUrl } = require('../../src/core/routing');
+
+// Runtime action URLs
+const actionUrl = buildRuntimeUrl('get-products', null, params);
+
+// Commerce API URLs
+const commerceUrl = buildCommerceUrl(config.commerce.baseUrl, 'products');
+```
+
+### Frontend URL Building
+
+Use `web-src/src/js/core/url.js` directly:
+
+```javascript
+import { getActionUrl, getDownloadUrl, buildDownloadUrl } from '../core/url.js';
+
+// Action URLs
+const browseUrl = getActionUrl('browse-files');
+
+// File URLs
+const downloadUrl = getDownloadUrl('products.csv', '/exports/');
+```
+
+### URL Management Rules
+
+- **Backend**: Always use `buildRuntimeUrl()` for action URLs
+- **Frontend**: Always use `getActionUrl()` for action URLs
+- **Commerce**: Always use `buildCommerceUrl()` for Commerce API URLs
+- **Parameters**: Use the built-in parameter encoding, don't encode manually
+- **Environment**: URL building automatically detects staging vs production
+- **HTMX**: System handles relative vs absolute URLs automatically
+
+### Key Functions
+
+**Backend:**
+
+- `buildRuntimeUrl(action, customBaseUrl, params)` - Build action URLs
+- `buildCommerceUrl(baseUrl, path, pathParams)` - Build Commerce URLs
+- `buildActionUrl(config, action, options)` - Core URL building (internal)
+
+**Frontend:**
+
+- `getActionUrl(action, params)` - Get action URL with parameters
+- `getDownloadUrl(fileName, path)` - Get file download URL
+- `buildDownloadUrl(filePath)` - Build encoded download URL
+- `getConfig()` - Get URL configuration for debugging
+
 ## Common Patterns
 
 - Configuration: Use the schema-validated config system
@@ -175,6 +231,7 @@ Since automatic memories aren't available, use these manual techniques:
 - Frontend Updates: Use HTMX for dynamic content
 - Error Responses: Use consistent error formatting
 - Logging: Use appropriate log levels and formatting
+- URL Building: Use the established URL management functions
 
 ## Dependencies
 
@@ -250,7 +307,7 @@ async function main(params) {
 
 1. **Commerce URL**: Always from environment configuration (`config/environments/staging.js` or `production.js`)
 
-   - Path: `config.url.commerce.baseUrl`
+   - Path: `config.commerce.baseUrl`
    - Loaded via: `loadConfig(params)`
    - Example: `https://citisignal-com774.adobedemo.com`
 
@@ -265,7 +322,7 @@ async function main(params) {
 // ✅ CORRECT: Commerce configuration pattern
 async function main(params) {
   const config = loadConfig(params);
-  const commerceUrl = config.url.commerce.baseUrl; // From environment config
+  const commerceUrl = config.commerce.baseUrl; // From environment config
   const username = params.COMMERCE_ADMIN_USERNAME; // From .env via params
   const password = params.COMMERCE_ADMIN_PASSWORD; // From .env via params
 }
