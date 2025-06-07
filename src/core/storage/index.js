@@ -18,9 +18,11 @@ const csv = require('./csv');
 const files = require('./files');
 const { loadConfig } = require('../../../config');
 const { formatFileSize, formatDate } = require('../data/transformation');
+const { buildRuntimeUrl } = require('../routing');
 
 /**
  * Initialize Adobe I/O Files (App Builder) storage
+ * @param {Object} [config] - Configuration object
  * @returns {Promise<Object>} Storage client wrapper
  */
 async function initializeAppBuilderStorage() {
@@ -59,15 +61,21 @@ async function initializeAppBuilderStorage() {
       const publicFileName = `public/${fileName}`;
       await files.write(publicFileName, content);
       const properties = await files.getProperties(publicFileName);
+
+      // Generate action-based download URL for consistent interface across providers
+      const actionUrl =
+        buildRuntimeUrl('download-file') + `?fileName=${encodeURIComponent(fileName)}`;
+
       return {
         fileName: publicFileName, // Return the full path for consistency
-        url: properties.url,
-        downloadUrl: properties.url,
+        url: actionUrl, // Use action URL instead of direct file URL
+        downloadUrl: actionUrl, // Use action URL for downloads
         properties: {
           name: fileName, // But keep the original name in properties
           size: content.length,
           lastModified: properties.lastModified,
           contentType: properties.contentType || 'text/csv',
+          internalUrl: properties.url, // Keep the original URL for internal reference
         },
       };
     },
@@ -84,11 +92,10 @@ async function initializeAppBuilderStorage() {
       await files.delete(fullPath);
     },
 
-    async list(directory = '') {
+    async list(directory = 'public/') {
+      // Both app-builder and S3 now use public/ prefix for unified organization
       const fileList = await files.list();
-      const filteredFiles = directory
-        ? fileList.filter((file) => file.name.startsWith(directory))
-        : fileList;
+      const filteredFiles = fileList.filter((file) => file.name.startsWith(directory));
 
       // Get metadata for each file
       const filesWithMetadata = await Promise.all(
@@ -174,15 +181,21 @@ async function initializeS3Storage(config, params = {}) {
         Key: key,
         Body: content,
         ContentType: 'text/csv',
+        // Note: Public access should be configured via S3 bucket policy
+        // rather than object ACLs for better security and modern S3 practices
       });
 
       await s3Client.send(command);
-      const url = `https://${s3Config.bucket}.s3.${s3Config.region || 'us-east-1'}.amazonaws.com/${key}`;
+
+      // Generate action-based download URL instead of direct S3 URL
+      // This allows secure access without requiring public S3 bucket policy
+      const actionUrl =
+        buildRuntimeUrl('download-file') + `?fileName=${encodeURIComponent(fileName)}`;
 
       return {
         fileName: key,
-        url,
-        downloadUrl: url,
+        url: actionUrl, // Use action URL instead of direct S3 URL
+        downloadUrl: actionUrl, // Use action URL for downloads
         properties: {
           name: fileName,
           key,
@@ -224,6 +237,7 @@ async function initializeS3Storage(config, params = {}) {
     },
 
     async list(directory = '') {
+      // Both app-builder and S3 now use public/ prefix for unified organization
       const prefix = s3Config.prefix || '';
       const fullPrefix = directory ? `${prefix}${directory}` : prefix;
 
