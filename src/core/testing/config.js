@@ -2,99 +2,120 @@
  * Default configuration for API testing
  */
 
-const { loadConfig } = require('../../../config');
+const { createLazyConfigGetter } = require('../config/lazy-loader');
 
-// Load configuration with proper destructuring
-const {
-  testing: {
-    api: {
-      defaults: { fields: DEFAULT_FIELDS, endpoint: DEFAULT_ENDPOINT, method: DEFAULT_METHOD },
-      timeout: API_TIMEOUT,
-      retry: { attempts: RETRY_ATTEMPTS, delay: RETRY_DELAY },
-      logLevel: LOG_LEVEL,
-    },
-    performance: {
-      thresholds: {
-        executionTime: EXECUTION_THRESHOLD,
-        memory: MEMORY_THRESHOLD,
-        responseTime: { p95: P95_THRESHOLD, p99: P99_THRESHOLD },
-        errorRate: ERROR_RATE_THRESHOLD,
-      },
-    },
-  },
-} = loadConfig();
-
-const defaultConfig = {
-  // Default API test settings
+/**
+ * Lazy configuration getter for testing
+ * @type {Function}
+ */
+const getTestingConfig = createLazyConfigGetter('testing-config', (config) => ({
   api: {
-    endpoint: DEFAULT_ENDPOINT,
-    method: DEFAULT_METHOD,
-    fields: DEFAULT_FIELDS,
-    timeout: API_TIMEOUT,
-    retry: {
-      attempts: RETRY_ATTEMPTS,
-      delay: RETRY_DELAY,
+    defaults: {
+      fields: config.testing?.api?.defaults?.fields || ['sku', 'name', 'price'],
+      endpoint: config.testing?.api?.defaults?.endpoint || '/rest/V1/products',
+      method: config.testing?.api?.defaults?.method || 'GET',
     },
-    logLevel: LOG_LEVEL,
+    timeout: config.testing?.api?.timeout || 30000,
+    retry: {
+      attempts: config.testing?.api?.retry?.attempts || 3,
+      delay: config.testing?.api?.retry?.delay || 1000,
+    },
+    logLevel: config.testing?.api?.logLevel || 'info',
   },
-
-  // Default performance settings
   performance: {
     thresholds: {
-      executionTime: EXECUTION_THRESHOLD,
-      memory: MEMORY_THRESHOLD,
+      executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
+      memory: config.testing?.performance?.thresholds?.memory || 100,
       responseTime: {
-        p95: P95_THRESHOLD,
-        p99: P99_THRESHOLD,
+        p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
+        p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
       },
-      errorRate: ERROR_RATE_THRESHOLD,
+      errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
     },
   },
+}));
 
-  // Validation settings
-  validation: {
-    warnOnEmptyArrays: true,
-    requireSuccessField: true,
-  },
-};
+/**
+ * Get default configuration using lazy loading
+ * @param {Object} [params] - Action parameters for configuration
+ * @returns {Object} Default configuration
+ */
+function getDefaultConfig(params = {}) {
+  const config = getTestingConfig(params);
+  return {
+    // Default API test settings
+    api: {
+      endpoint: config.api.defaults.endpoint,
+      method: config.api.defaults.method,
+      fields: config.api.defaults.fields,
+      timeout: config.api.timeout,
+      retry: {
+        attempts: config.api.retry.attempts,
+        delay: config.api.retry.delay,
+      },
+      logLevel: config.api.logLevel,
+    },
+
+    // Default performance settings
+    performance: {
+      thresholds: {
+        executionTime: config.performance.thresholds.executionTime,
+        memory: config.performance.thresholds.memory,
+        responseTime: {
+          p95: config.performance.thresholds.responseTime.p95,
+          p99: config.performance.thresholds.responseTime.p99,
+        },
+        errorRate: config.performance.thresholds.errorRate,
+      },
+    },
+
+    // Validation settings
+    validation: {
+      warnOnEmptyArrays: true,
+      requireSuccessField: true,
+    },
+  };
+}
 
 /**
  * Get configuration with optional overrides
  * @param {Object} overrides - Override default config values
+ * @param {Object} [params] - Action parameters for configuration
  * @returns {Object} Final configuration
  */
-function getConfig(overrides = {}) {
+function getConfig(overrides = {}, params = {}) {
+  const dynamicDefaultConfig = getDefaultConfig(params);
   return {
-    ...defaultConfig,
+    ...dynamicDefaultConfig,
     ...overrides,
     api: {
-      ...defaultConfig.api,
+      ...dynamicDefaultConfig.api,
       ...overrides.api,
       retry: {
-        ...defaultConfig.api.retry,
+        ...dynamicDefaultConfig.api.retry,
         ...overrides.api?.retry,
       },
     },
     performance: {
-      ...defaultConfig.performance,
+      ...dynamicDefaultConfig.performance,
       ...overrides.performance,
       thresholds: {
-        ...defaultConfig.performance.thresholds,
+        ...dynamicDefaultConfig.performance.thresholds,
         ...overrides.performance?.thresholds,
         responseTime: {
-          ...defaultConfig.performance.thresholds.responseTime,
+          ...dynamicDefaultConfig.performance.thresholds.responseTime,
           ...overrides.performance?.thresholds?.responseTime,
         },
       },
     },
     validation: {
-      ...defaultConfig.validation,
+      ...dynamicDefaultConfig.validation,
       ...overrides.validation,
     },
   };
 }
 
 module.exports = {
-  defaultConfig,
+  getDefaultConfig,
   getConfig,
 };
