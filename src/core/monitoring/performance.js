@@ -24,7 +24,8 @@ class PerformanceMonitor {
     this.logger = logger;
     this.measurements = new Map();
 
-    // Load configuration with proper destructuring
+    // Load configuration with proper destructuring - use parameters if available
+    const params = options.params || {};
     const {
       app: {
         performance: {
@@ -45,7 +46,7 @@ class PerformanceMonitor {
           },
         },
       },
-    } = loadConfig();
+    } = loadConfig(params);
 
     this.thresholds = {
       api: {
