@@ -73,21 +73,22 @@ npm run deploy
 
 ### **Environment Variables**
 
-Create `config/environments/.env.staging`:
+Create `.env` file in project root:
 
 ```bash
-# Adobe I/O Configuration
+# Adobe I/O Configuration (auto-populated by Adobe I/O CLI)
 AIO_runtime_auth=your-auth-token
 AIO_runtime_namespace=your-namespace
 
-# Adobe Commerce Configuration
-COMMERCE_BASE_URL=https://your-commerce-instance.com
-COMMERCE_ACCESS_TOKEN=your-commerce-token
-COMMERCE_CONSUMER_KEY=your-consumer-key
-COMMERCE_CONSUMER_SECRET=your-consumer-secret
+# Adobe Commerce Credentials (ONLY username/password in .env)
+COMMERCE_ADMIN_USERNAME=admin
+COMMERCE_ADMIN_PASSWORD=your-admin-password
+
+# AWS Storage Credentials (if using S3 storage)
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 
 # Application Configuration
-APP_ENV=staging
 LOG_LEVEL=debug
 CACHE_TTL=300
 
@@ -96,18 +97,47 @@ FILES_STORAGE_PREFIX=kukla-integration
 FILES_MAX_SIZE=10485760
 ```
 
+> **⚠️ Important**: Commerce URL comes from environment configuration files (`config/environments/staging.js` or `production.js`), NOT from `.env`. Never set `COMMERCE_URL` in `.env`.
+
 ### **Adobe Commerce Setup**
 
-1. **Create Integration in Commerce Admin**:
+1. **Admin User Credentials**:
 
-   - Navigate to System > Extensions > Integrations
-   - Create new integration with appropriate permissions
-   - Copy the generated tokens
+   - Use existing admin user credentials (username/password)
+   - Add them to your `.env` file (see Environment Variables above)
+   - The system uses admin token authentication automatically
 
-2. **Required Permissions**:
+2. **Commerce URL Configuration**:
+
+   - Commerce URLs are configured per environment in `config/environments/`
+   - Staging: `config/environments/staging.js` → `url.commerce.baseUrl`
+   - Production: `config/environments/production.js` → `url.commerce.baseUrl`
+   - Never manually specify Commerce URLs in actions or .env
+
+3. **Required Commerce API Permissions**:
    - Catalog → Products (Read)
-   - System → Configuration (Read)
-   - Files → Media (Read/Write)
+   - Inventory → Stock (Read)
+   - System → Categories (Read)
+
+### **app.config.yaml Configuration**
+
+**CRITICAL**: You must add your credentials to `app.config.yaml` inputs for actions to access them:
+
+```yaml
+actions:
+  backend:
+    function: actions/backend/index.js
+    web: 'yes'
+    runtime: nodejs:18
+    inputs:
+      COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
+      COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+      NODE_ENV: $NODE_ENV
+```
+
+> **Why This Matters**: Adobe I/O Runtime passes credentials as action parameters, not environment variables. Without proper `inputs` configuration, actions cannot access your credentials.
 
 ### **Adobe Developer Console Configuration**
 
@@ -148,15 +178,17 @@ npm run deploy:prod
 ### **Testing Individual Actions**
 
 ```bash
-# Test specific backend action
+# Test specific backend action (auto-loads Commerce config and credentials)
 npm run test:action -- actions/backend/get-products
 
-# Test with parameters
-npm run test:action -- actions/backend/get-products --param category=electronics
+# Test other actions that require parameters
+npm run test:action -- actions/backend/download-file --param fileId=abc123
 
-# Test frontend action
+# Test frontend actions
 npm run test:action -- actions/frontend/browse-files
 ```
+
+> **No Manual Parameters Needed**: The test script automatically loads Commerce URL from environment configuration and credentials from `.env` file for get-products.
 
 ### **File Structure for Development**
 

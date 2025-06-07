@@ -2,9 +2,13 @@
 
 > **Environment configuration and schema validation for Adobe App Builder applications**
 
+> **⚠️ Important**: This guide covers deployment and infrastructure configuration. For **practical development patterns**, see **[Development Configuration Guide](../development/configuration.md)** which has the **current working patterns**.
+
 ## Overview
 
 This guide describes the configuration system used in the Adobe App Builder Commerce integration service. The configuration supports environment-specific settings, schema validation, and secure handling of sensitive data.
+
+**Note**: Some patterns in this deployment guide may be outdated. For current, working configuration patterns used in the codebase, refer to the **[Development Configuration Guide](../development/configuration.md)**.
 
 ## Configuration Structure
 
