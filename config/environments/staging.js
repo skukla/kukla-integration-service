@@ -100,7 +100,7 @@ module.exports = {
     },
   },
   storage: {
-    provider: 'app-builder',
+    provider: 's3',
     csv: {
       chunkSize: 200,
       compressionLevel: 6,
