@@ -167,3 +167,169 @@ To help maintain context across conversations:
 - Point to existing documentation when relevant
 - Use the project structure terminology consistently
 - Reference the existing test scripts when discussing testing
+
+## Adobe I/O Runtime Parameter Handling
+
+### CRITICAL: Environment Variables vs Action Parameters
+
+**NEVER** access credentials or configuration via `process.env` in Adobe I/O Runtime actions. Adobe I/O Runtime uses a specific pattern:
+
+#### The Correct Pattern
+
+1. **Local `.env` file**: `AWS_ACCESS_KEY_ID=your_key`
+2. **`app.config.yaml` inputs**: `AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID`
+3. **Action function**: Access via `params.AWS_ACCESS_KEY_ID`
+
+#### How It Works
+
+```javascript
+// ✅ CORRECT: Use action parameters
+async function main(params) {
+  const accessKey = params.AWS_ACCESS_KEY_ID; // From app.config.yaml inputs
+  const username = params.COMMERCE_ADMIN_USERNAME; // From app.config.yaml inputs
+}
+
+// ❌ WRONG: Don't use process.env in actions
+async function main(params) {
+  const accessKey = process.env.AWS_ACCESS_KEY_ID; // Will be undefined!
+}
+```
+
+#### Required Steps for New Credentials
+
+1. Add to `.env`: `NEW_CREDENTIAL=value`
+2. Add to `app.config.yaml` inputs: `NEW_CREDENTIAL: $NEW_CREDENTIAL`
+3. Access in action: `params.NEW_CREDENTIAL`
+4. Use `extractActionParams()` from `src/core/http/client` to process parameters
+
+#### Why This Matters
+
+- Adobe I/O Runtime passes inputs as action parameters, not environment variables
+- The `extractActionParams()` function normalizes and processes these parameters
+- Environment variables work locally but fail in deployed actions
+- This pattern ensures consistency with existing Commerce credential handling
+
+#### Examples in Codebase
+
+- Commerce credentials: `params.COMMERCE_ADMIN_USERNAME` (working)
+- AWS credentials: `params.AWS_ACCESS_KEY_ID` (working)
+- Any new credentials should follow this same pattern
+
+## Commerce Configuration Pattern
+
+### CRITICAL: Commerce URL vs Credentials Source
+
+**NEVER** manually specify Commerce URLs or mix configuration sources. Follow this established pattern:
+
+#### The Configuration Split
+
+1. **Commerce URL**: Always from environment configuration (`config/environments/staging.js` or `production.js`)
+
+   - Path: `config.url.commerce.baseUrl`
+   - Loaded via: `loadConfig(params)`
+   - Example: `https://citisignal-com774.adobedemo.com`
+
+2. **Commerce Credentials**: Always from `.env` file
+   - `COMMERCE_ADMIN_USERNAME=admin`
+   - `COMMERCE_ADMIN_PASSWORD=password`
+   - Passed via `app.config.yaml` inputs to actions
+
+#### How Actions Handle This
+
+```javascript
+// ✅ CORRECT: Commerce configuration pattern
+async function main(params) {
+  const config = loadConfig(params);
+  const commerceUrl = config.url.commerce.baseUrl; // From environment config
+  const username = params.COMMERCE_ADMIN_USERNAME; // From .env via params
+  const password = params.COMMERCE_ADMIN_PASSWORD; // From .env via params
+}
+```
+
+#### Test Script Auto-Loading
+
+The `test-action.js` script automatically handles both:
+
+- Loads Commerce URL from environment configuration
+- Loads credentials from `.env` file
+- No manual parameter specification needed for get-products
+
+#### Why This Pattern
+
+- **Environment separation**: URLs differ between staging/production
+- **Security**: Credentials stay in `.env`, never in code
+- **Consistency**: Same pattern across all Commerce integrations
+- **Auto-detection**: Environment determines the correct URL
+
+## Action Response Structure
+
+### CRITICAL: Test Script Integration
+
+Actions should return structured responses for proper `test-action.js` display:
+
+#### Required Response Fields
+
+```javascript
+// ✅ CORRECT: Action response structure
+return response.success({
+  message: 'Operation completed successfully',
+  steps: [
+    'Step 1: What was accomplished',
+    'Step 2: Include specific data types (e.g., "category and inventory data")',
+    'Step 3: Show counts and sizes',
+  ],
+  downloadUrl: 'https://...', // For file operations
+  storage: {
+    provider: 'app-builder' | 's3',
+    location: 'file/path',
+    properties: {
+      /* file details */
+    },
+  },
+});
+```
+
+#### What Test Script Shows
+
+- **Storage Provider**: `📦 Storage: S3 (bucket-name)` or `📦 Storage: APP-BUILDER (Adobe I/O Files)`
+- **Download URL**: Direct link for file operations
+- **Numbered Steps**: All execution steps with specific details
+- **No Parameters**: Clean output without parameter clutter
+- **No Redundant Stats**: Steps contain all necessary information
+
+#### Step Message Guidelines
+
+- Be specific about data types: "category and inventory data"
+- Include counts: "119 products"
+- Show file sizes: "15.45 KB"
+- Use `formatStepMessage()` function for consistency
+
+## Tracing Module Pattern
+
+### CRITICAL: Dynamic Configuration Loading
+
+**NEVER** use undefined global constants in tracing. Always use dynamic configuration:
+
+#### The Correct Pattern
+
+```javascript
+// ✅ CORRECT: Dynamic tracing configuration
+function createTraceContext(actionName, params) {
+  const tracingConfig = getTracingConfig(params);
+  const trace = {
+    config: tracingConfig, // Store for later use
+    // ... other trace properties
+  };
+}
+
+// ✅ CORRECT: Use stored config
+if (context.config.performance.enabled) {
+  // performance tracking
+}
+```
+
+#### Configuration Source
+
+- Path: `config.app.monitoring.tracing`
+- Loaded via: `getTracingConfig(params)`
+- Always pass params for proper environment detection
