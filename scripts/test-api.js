@@ -7,10 +7,27 @@
 const ora = require('ora');
 
 const { getProducts } = require('../actions/backend/get-products/lib/api/products');
-const { loadConfig } = require('../config');
 const { getAuthToken } = require('../src/commerce/api/integration');
+const { createLazyConfigGetter } = require('../src/core/config/lazy-loader');
 
 require('dotenv').config();
+
+/**
+ * Lazy configuration getter for test script
+ * @type {Function}
+ */
+const getTestConfig = createLazyConfigGetter('test-api-config', (config) => ({
+  baseUrl: config.url?.commerce?.baseUrl || process.env.COMMERCE_URL,
+  pageSize: config.commerce?.product?.pagination?.pageSize || 20,
+  fields: config.commerce?.product?.fields || [
+    'sku',
+    'name',
+    'price',
+    'qty',
+    'categories',
+    'images',
+  ],
+}));
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -19,20 +36,7 @@ const options = {
   limit: parseInt(args.find((arg) => arg.startsWith('--limit='))?.split('=')[1]) || 3,
 };
 
-// Load configuration with proper destructuring
-const {
-  url: {
-    commerce: { baseUrl: COMMERCE_URL },
-  },
-  commerce: {
-    product: {
-      pagination: { pageSize: DEFAULT_PAGE_SIZE },
-      fields: PRODUCT_FIELDS,
-    },
-  },
-} = loadConfig();
-
-console.log('Commerce URL:', COMMERCE_URL);
+// Configuration will be loaded dynamically when needed
 
 /**
  * Formats product data for display
@@ -132,9 +136,14 @@ async function runTests(testOptions = {}) {
   const spinner = ora('Initializing API test').start();
 
   try {
+    // Load configuration dynamically
+    const config = getTestConfig();
+
+    console.log('Commerce URL:', config.baseUrl);
+
     const testConfig = {
-      baseUrl: COMMERCE_URL, // Always use URL from config
-      pageSize: DEFAULT_PAGE_SIZE,
+      baseUrl: config.baseUrl,
+      pageSize: config.pageSize,
     };
 
     // Run the tests
