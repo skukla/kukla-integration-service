@@ -12,9 +12,12 @@ application:
             runtime: nodejs:18
             inputs:
               LOG_LEVEL: debug
+              NODE_ENV: staging
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
               COMMERCE_URL: $COMMERCE_URL
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
             parameters:
               COMMERCE_URL:
                 type: string
@@ -34,6 +37,11 @@ application:
             function: actions/backend/download-file/index.js
             web: 'yes'
             runtime: nodejs:18
+            inputs:
+              LOG_LEVEL: debug
+              NODE_ENV: staging
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
             annotations:
               require-adobe-auth: false
               final: true
@@ -43,6 +51,9 @@ application:
             runtime: nodejs:18
             inputs:
               LOG_LEVEL: debug
+              NODE_ENV: staging
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
             annotations:
               require-adobe-auth: false
               final: true
@@ -50,6 +61,11 @@ application:
             function: actions/backend/delete-file/index.js
             web: 'yes'
             runtime: nodejs:18
+            inputs:
+              LOG_LEVEL: debug
+              NODE_ENV: staging
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
             annotations:
               require-adobe-auth: false
               final: true
