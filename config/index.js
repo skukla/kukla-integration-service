@@ -56,36 +56,50 @@ function detectEnvironment() {
 
   // Method 1: Check OpenWhisk namespace
   const owNamespace = process.env.__OW_NAMESPACE;
+
   if (owNamespace) {
     // If namespace contains 'stage', it's staging environment
-    if (owNamespace.includes('stage')) {
+    const containsStage = owNamespace.includes('stage');
+
+    if (containsStage) {
       environmentCache = 'staging';
       return environmentCache;
     }
+
     // If namespace doesn't contain 'stage' and has the expected production pattern, it's production
-    if (owNamespace.match(/^\d+-\w+$/)) {
+    const productionPattern = owNamespace.match(/^\d+-\w+$/);
+
+    if (productionPattern) {
       environmentCache = 'production';
       return environmentCache;
     }
   }
 
-  // Method 2: Check explicit NODE_ENV
+  // Method 2: Check runtime URL context (Adobe I/O Runtime hostnames)
+  const runtimeUrl = process.env.__OW_API_HOST;
+  if (runtimeUrl) {
+    // Check for staging patterns in hostname
+    if (runtimeUrl.includes('stage') || runtimeUrl.includes('-stage.')) {
+      environmentCache = 'staging';
+      return environmentCache;
+    }
+  }
+
+  // Method 3: Check action name for workspace indicators
+  const actionName = process.env.__OW_ACTION_NAME;
+  if (actionName && actionName.includes('stage')) {
+    environmentCache = 'staging';
+    return environmentCache;
+  }
+
+  // Method 4: Check explicit NODE_ENV
   const nodeEnv = process.env.NODE_ENV;
   if (nodeEnv && ['staging', 'production', 'development'].includes(nodeEnv)) {
     environmentCache = nodeEnv;
     return environmentCache;
   }
 
-  // Method 3: Check runtime URL context (if available)
-  const runtimeUrl = process.env.__OW_API_HOST;
-  if (runtimeUrl && runtimeUrl.includes('stage')) {
-    environmentCache = 'staging';
-    return environmentCache;
-  }
-
   // Default fallback to staging for safer development
-  // Only log the warning once
-  console.warn('Environment detection fallback: using staging as default');
   environmentCache = 'staging';
   return environmentCache;
 }
@@ -93,12 +107,18 @@ function detectEnvironment() {
 /**
  * Loads environment-specific configuration
  * @param {string} [env] - Environment name (staging, production)
+ * @param {Object} [params] - Action parameters
  * @returns {Object} Environment configuration
  */
-function loadEnvironmentConfig(env = null) {
+function loadEnvironmentConfig(env = null, params = {}) {
   // Auto-detect environment if not explicitly provided
   if (!env) {
-    env = detectEnvironment();
+    // Priority 1: Use explicit parameter from app.config.yaml
+    if (params.NODE_ENV && ['staging', 'production', 'development'].includes(params.NODE_ENV)) {
+      env = params.NODE_ENV;
+    } else {
+      env = detectEnvironment();
+    }
   }
 
   try {
@@ -211,7 +231,7 @@ function loadConfig(params = {}) {
   const ajv = initializeValidator();
 
   // Load environment-specific configuration
-  const envConfig = loadEnvironmentConfig();
+  const envConfig = loadEnvironmentConfig(null, params);
 
   // Load sensitive configuration from environment and action parameters
   const sensitiveConfig = loadSensitiveConfig(params);

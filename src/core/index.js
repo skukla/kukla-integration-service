@@ -35,34 +35,41 @@
  * const productUrl = routing.buildCommerceUrl('products', { id: '123' });
  */
 
+const { createLazyConfigObject, configExtractors } = require('./config/lazy-loader');
 const data = require('./data');
 const http = require('./http');
 const monitoring = require('./monitoring');
 const routing = require('./routing');
 const storage = require('./storage');
-const { loadConfig } = require('../../config');
 
-// Load configuration with proper destructuring
-const {
-  app: APP_CONFIG,
-  url: URL_CONFIG,
-  commerce: COMMERCE_CONFIG,
-  security: SECURITY_CONFIG,
-  storage: STORAGE_CONFIG,
-} = loadConfig();
-
-// Export public APIs with configuration
+// Export public APIs with uniform lazy configuration loading
 module.exports = {
   http: http.public,
   data: data.public,
   storage: storage.public,
   monitoring: monitoring.public,
-  config: {
-    app: APP_CONFIG,
-    url: URL_CONFIG,
-    commerce: COMMERCE_CONFIG,
-    security: SECURITY_CONFIG,
-    storage: STORAGE_CONFIG,
-  },
   routing,
+
+  /**
+   * Creates a configuration object with lazy loading
+   * @param {Object} [params] - Action parameters for Adobe I/O Runtime
+   * @returns {Object} Configuration object with lazy-loaded properties
+   */
+  getConfig(params = {}) {
+    return createLazyConfigObject(
+      {
+        app: configExtractors.app,
+        url: configExtractors.url,
+        commerce: configExtractors.commerce,
+        security: (config) => config.security || {},
+        storage: configExtractors.storage,
+      },
+      params
+    );
+  },
+
+  // Backward compatibility - lazy config getter
+  get config() {
+    return this.getConfig();
+  },
 };
