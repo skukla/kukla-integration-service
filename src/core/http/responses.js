@@ -14,7 +14,7 @@ const { loadConfig } = require('../../../config');
 function getCorsHeaders(params = {}) {
   // Load configuration when needed
   const config = loadConfig(params);
-  const { namespace, baseUrl } = config.url.runtime;
+  const { namespace, baseUrl } = config.runtime;
 
   // Get request origin from headers
   const requestOrigin = params.__ow_headers?.origin;

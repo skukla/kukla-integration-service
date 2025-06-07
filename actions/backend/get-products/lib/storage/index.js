@@ -5,18 +5,7 @@
 
 const { Files: FilesLib } = require('@adobe/aio-sdk');
 
-const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
-
-/**
- * Lazy configuration getter for storage operations
- * @type {Function}
- */
-const getStorageConfig = createLazyConfigGetter('storage-config', (config) => ({
-  provider: config.storage?.provider || 'app-builder',
-  csv: {
-    filename: config.storage?.csv?.filename || 'products.csv',
-  },
-}));
+const { loadConfig } = require('../../../../../config');
 
 /**
  * Stores a file in the configured storage location
@@ -33,13 +22,13 @@ const getStorageConfig = createLazyConfigGetter('storage-config', (config) => ({
 async function storeFile(content, fileName = null, params = {}) {
   try {
     // Load storage configuration
-    const storageConfig = getStorageConfig(params);
+    const config = loadConfig(params);
 
     // For now, we only support app-builder provider
     // This could be extended to support S3 in the future
-    if (storageConfig.provider !== 'app-builder') {
+    if (config.storage.provider !== 'app-builder') {
       throw new Error(
-        `Unsupported storage provider: ${storageConfig.provider}. Only 'app-builder' is currently supported.`
+        `Unsupported storage provider: ${config.storage.provider}. Only 'app-builder' is currently supported.`
       );
     }
 
@@ -47,7 +36,7 @@ async function storeFile(content, fileName = null, params = {}) {
     const files = await FilesLib.init();
 
     // Use provided fileName or fall back to config default
-    const finalFileName = fileName || storageConfig.csv.filename;
+    const finalFileName = fileName || config.storage.csv.filename;
 
     // Create a buffer from the content
     const buffer = Buffer.from(content);
@@ -63,7 +52,7 @@ async function storeFile(content, fileName = null, params = {}) {
 
     return {
       fileName: publicFileName,
-      location: storageConfig.provider,
+      location: config.storage.provider,
       downloadUrl: properties.url || properties.internalUrl,
       properties: {
         ...properties,

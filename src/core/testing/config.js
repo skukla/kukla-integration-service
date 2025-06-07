@@ -2,38 +2,7 @@
  * Default configuration for API testing
  */
 
-const { createLazyConfigGetter } = require('../config/lazy-loader');
-
-/**
- * Lazy configuration getter for testing
- * @type {Function}
- */
-const getTestingConfig = createLazyConfigGetter('testing-config', (config) => ({
-  api: {
-    defaults: {
-      fields: config.testing?.api?.defaults?.fields || ['sku', 'name', 'price'],
-      endpoint: config.testing?.api?.defaults?.endpoint || '/rest/V1/products',
-      method: config.testing?.api?.defaults?.method || 'GET',
-    },
-    timeout: config.testing?.api?.timeout || 30000,
-    retry: {
-      attempts: config.testing?.api?.retry?.attempts || 3,
-      delay: config.testing?.api?.retry?.delay || 1000,
-    },
-    logLevel: config.testing?.api?.logLevel || 'info',
-  },
-  performance: {
-    thresholds: {
-      executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
-      memory: config.testing?.performance?.thresholds?.memory || 100,
-      responseTime: {
-        p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
-        p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
-      },
-      errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
-    },
-  },
-}));
+const { loadConfig } = require('../../../config');
 
 /**
  * Get default configuration using lazy loading
@@ -41,31 +10,31 @@ const getTestingConfig = createLazyConfigGetter('testing-config', (config) => ({
  * @returns {Object} Default configuration
  */
 function getDefaultConfig(params = {}) {
-  const config = getTestingConfig(params);
+  const config = loadConfig(params);
   return {
     // Default API test settings
     api: {
-      endpoint: config.api.defaults.endpoint,
-      method: config.api.defaults.method,
-      fields: config.api.defaults.fields,
-      timeout: config.api.timeout,
+      endpoint: config.testing.api.defaults.endpoint,
+      method: config.testing.api.defaults.method,
+      fields: config.testing.api.defaults.fields,
+      timeout: config.testing.api.timeout,
       retry: {
-        attempts: config.api.retry.attempts,
-        delay: config.api.retry.delay,
+        attempts: config.testing.api.retry.attempts,
+        delay: config.testing.api.retry.delay,
       },
-      logLevel: config.api.logLevel,
+      logLevel: config.testing.api.logLevel,
     },
 
     // Default performance settings
     performance: {
       thresholds: {
-        executionTime: config.performance.thresholds.executionTime,
-        memory: config.performance.thresholds.memory,
+        executionTime: config.testing.performance.thresholds.executionTime,
+        memory: config.testing.performance.thresholds.memory,
         responseTime: {
-          p95: config.performance.thresholds.responseTime.p95,
-          p99: config.performance.thresholds.responseTime.p99,
+          p95: config.testing.performance.thresholds.responseTime.p95,
+          p99: config.testing.performance.thresholds.responseTime.p99,
         },
-        errorRate: config.performance.thresholds.errorRate,
+        errorRate: config.testing.performance.thresholds.errorRate,
       },
     },
 

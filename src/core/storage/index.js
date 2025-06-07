@@ -23,9 +23,10 @@ const { buildRuntimeUrl } = require('../routing');
 /**
  * Initialize Adobe I/O Files (App Builder) storage
  * @param {Object} [config] - Configuration object
+ * @param {Object} [params] - Action parameters for URL building
  * @returns {Promise<Object>} Storage client wrapper
  */
-async function initializeAppBuilderStorage() {
+async function initializeAppBuilderStorage(params = {}) {
   const owApiKey = process.env.__OW_API_KEY;
   const owNamespace = process.env.__OW_NAMESPACE;
 
@@ -64,7 +65,8 @@ async function initializeAppBuilderStorage() {
 
       // Generate action-based download URL for consistent interface across providers
       const actionUrl =
-        buildRuntimeUrl('download-file') + `?fileName=${encodeURIComponent(fileName)}`;
+        buildRuntimeUrl('download-file', null, params) +
+        `?fileName=${encodeURIComponent(fileName)}`;
 
       return {
         fileName: publicFileName, // Return the full path for consistency
@@ -147,8 +149,8 @@ async function initializeAppBuilderStorage() {
  * @returns {Promise<Object>} Storage client wrapper
  */
 async function initializeS3Storage(config, params = {}) {
-  const s3Config = config.storage?.s3;
-  if (!s3Config?.bucket) {
+  const s3Config = config.storage.s3;
+  if (!s3Config.bucket) {
     throw new Error('S3 bucket not configured');
   }
 
@@ -190,7 +192,8 @@ async function initializeS3Storage(config, params = {}) {
       // Generate action-based download URL instead of direct S3 URL
       // This allows secure access without requiring public S3 bucket policy
       const actionUrl =
-        buildRuntimeUrl('download-file') + `?fileName=${encodeURIComponent(fileName)}`;
+        buildRuntimeUrl('download-file', null, params) +
+        `?fileName=${encodeURIComponent(fileName)}`;
 
       return {
         fileName: key,
@@ -296,12 +299,12 @@ async function initializeS3Storage(config, params = {}) {
  */
 async function initializeStorage(params = {}) {
   const config = loadConfig(params); // ← Pass params to use our environment fix!
-  const provider = config.storage?.provider || 'app-builder';
+  const provider = config.storage.provider;
 
   switch (provider) {
     case 'app-builder':
       try {
-        const storage = await initializeAppBuilderStorage();
+        const storage = await initializeAppBuilderStorage(params);
         return storage;
       } catch (error) {
         throw new Error(`Adobe I/O Files storage initialization failed: ${error.message}`);

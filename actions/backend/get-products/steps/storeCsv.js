@@ -18,7 +18,7 @@ async function storeCsv(csvResult, params = {}) {
 
   // Load configuration with params for proper environment detection
   const config = loadConfig(params);
-  const fileName = config.storage?.csv?.filename || 'products.csv';
+  const fileName = config.storage.csv.filename;
   const timestamp = new Date().toISOString();
 
   try {

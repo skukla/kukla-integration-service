@@ -6,32 +6,22 @@
 
 const ora = require('ora');
 
+const { loadConfig } = require('../config');
 const { parseArgs } = require('../src/core/cli/args');
-const { createLazyConfigGetter } = require('../src/core/config/lazy-loader');
 const { createPerformanceTester, testScenario } = require('../src/core/testing/performance');
 
 /**
- * Lazy configuration getter for performance testing
- * @type {Function}
+ * Gets performance testing configuration
+ * @returns {Object} Performance test configuration
  */
-const getPerformanceConfig = createLazyConfigGetter('performance-test-config', (config) => ({
-  scenarios: config.testing?.performance?.scenarios || {},
-  thresholds: {
-    executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
-    memory: config.testing?.performance?.thresholds?.memory || 100,
-    products: config.testing?.performance?.thresholds?.products || 1000,
-    categories: config.testing?.performance?.thresholds?.categories || 100,
-    compression: config.testing?.performance?.thresholds?.compression || 50,
-    responseTime: {
-      p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
-      p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
-    },
-    errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
-  },
-  baseline: {
-    maxAgeDays: config.testing?.performance?.baseline?.maxAgeDays || 30,
-  },
-}));
+function getPerformanceConfig() {
+  const config = loadConfig();
+  return {
+    scenarios: config.testing.performance.scenarios,
+    thresholds: config.testing.performance.thresholds,
+    baseline: config.testing.performance.baseline,
+  };
+}
 
 // Parse command line arguments
 const args = parseArgs(process.argv.slice(2), {

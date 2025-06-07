@@ -148,11 +148,12 @@ function getFileListHtml(files, storageInfo = null) {
  * Generates HTML for the delete confirmation modal
  * @param {string} fileName - Name of the file to delete
  * @param {string} fullPath - Full path of the file
+ * @param {Object} [params] - Parameters for URL building
  * @returns {string} HTML content
  */
-function getDeleteModalHtml(fileName, fullPath) {
+function getDeleteModalHtml(fileName, fullPath, params = {}) {
   // Build runtime URL from environment configuration
-  const runtimeUrl = buildRuntimeUrl('delete-file');
+  const runtimeUrl = buildRuntimeUrl('delete-file', null, params);
   const deleteUrl = `${runtimeUrl}?fileName=${encodeURIComponent(fullPath)}`;
 
   return `

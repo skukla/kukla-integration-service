@@ -7,18 +7,16 @@ const { Core } = require('@adobe/aio-sdk');
 
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { extractActionParams } = require('../../../src/core/http/client');
-const { response, getCorsHeaders } = require('../../../src/core/http/responses');
 const { initializeStorage } = require('../../../src/core/storage');
 const { createHtmxResponse } = require('../../../src/htmx/formatting');
 
 /**
- * Creates a simple HTML response with CORS headers
+ * Creates a simple HTML response with basic CORS headers (avoiding getCorsHeaders)
  * @param {string} html - HTML content
  * @param {number} [status=200] - HTTP status code
- * @param {Object} params - Request parameters for CORS
  * @returns {Object} Response object
  */
-function createHtmlResponse(html, status = 200, params = {}) {
+function createHtmlResponse(html, status = 200) {
   const baseResponse = createHtmxResponse({
     html,
     status,
@@ -28,7 +26,10 @@ function createHtmlResponse(html, status = 200, params = {}) {
     ...baseResponse,
     headers: {
       ...baseResponse.headers,
-      ...getCorsHeaders(params),
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers':
+        'Content-Type, Authorization, hx-current-url, hx-request, hx-target, hx-trigger',
     },
   };
 }
@@ -44,11 +45,10 @@ async function handleGetRequest(params, logger, storage) {
   try {
     // Handle modal requests
     if (params.modal === 'delete' && params.fileName) {
-      return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath), 200, params);
+      return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath, params));
     }
 
     // Get file list with metadata using unified storage interface
-    // Both providers handle their internal organization automatically
     logger.info(`Listing files from storage (${storage.provider})`);
     const allFiles = await storage.list();
 
@@ -64,10 +64,21 @@ async function handleGetRequest(params, logger, storage) {
     };
 
     // Return the file list HTML with storage information
-    return createHtmlResponse(getFileListHtml(csvFiles, storageInfo), 200, params);
+    return createHtmlResponse(getFileListHtml(csvFiles, storageInfo));
   } catch (error) {
     logger.error('Error in GET request:', error);
-    return response.error(error, {}, params);
+    // Return simple error without using response module to avoid getCorsHeaders
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+    };
   }
 }
 
@@ -82,50 +93,105 @@ async function handleDeleteRequest(params, logger, storage) {
   try {
     const fileName = params.fileName;
     if (!fileName) {
-      return response.badRequest('File name is required', {}, params);
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          success: false,
+          error: 'File name is required',
+        }),
+      };
     }
 
     logger.info(`Deleting file: ${fileName}`);
     await storage.delete(fileName);
-    return createHtmlResponse('', 200, params);
+    return createHtmlResponse('');
   } catch (error) {
     logger.error('Error in DELETE request:', error);
-    return response.error(error, {}, params);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+    };
   }
 }
 
 /**
- * Main function that handles file browsing and management
- * @param {Object} rawParams - Action parameters
+ * Main action handler for browse-files
+ * @param {Object} params - Action parameters from OpenWhisk
  * @returns {Promise<Object>} Action response
  */
-async function main(rawParams) {
-  // Handle OPTIONS requests for CORS preflight
-  if (rawParams.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {}, rawParams);
+async function main(params) {
+  // Handle preflight requests first
+  if (params.__ow_method === 'options') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers':
+          'Content-Type, Authorization, hx-current-url, hx-request, hx-target, hx-trigger',
+      },
+      body: JSON.stringify({
+        success: true,
+        message: 'Preflight success',
+      }),
+    };
   }
 
-  const params = extractActionParams(rawParams);
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
   try {
+    // Extract action parameters for storage initialization
+    const actionParams = extractActionParams(params);
+
     // Initialize storage provider
     logger.info('Initializing storage provider');
-    const storage = await initializeStorage(params);
+    const storage = await initializeStorage(actionParams);
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Route request based on HTTP method
-    switch (rawParams.__ow_method) {
+    switch (params.__ow_method) {
       case 'get':
         return handleGetRequest(params, logger, storage);
       case 'delete':
         return handleDeleteRequest(params, logger, storage);
       default:
-        return response.badRequest('Method not allowed', {}, rawParams);
+        return {
+          statusCode: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+          body: JSON.stringify({
+            success: false,
+            error: 'Method not allowed',
+          }),
+        };
     }
   } catch (error) {
     logger.error('Error in main:', error);
-    return response.error(error, {}, rawParams);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+    };
   }
 }
 

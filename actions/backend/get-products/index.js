@@ -84,14 +84,15 @@ function formatStepMessage(name, status, details = {}) {
  * @returns {Promise<Object>} Action response
  */
 async function main(params) {
+  // Extract and validate parameters first for consistent usage
+  const actionParams = extractActionParams(params);
+
   // Handle preflight requests first
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {}, params);
+    return response.success({}, 'Preflight success', {}, actionParams);
   }
 
   try {
-    // Extract and validate parameters
-    const actionParams = extractActionParams(params);
     await validateInput(actionParams);
 
     // Initialize configuration and tracing
@@ -147,7 +148,7 @@ async function main(params) {
       actionParams
     );
   } catch (error) {
-    return response.error(error, {}, params);
+    return response.error(error, {}, actionParams);
   }
 }
 

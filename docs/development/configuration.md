@@ -113,20 +113,44 @@ module.exports = {
 
 ## Configuration Loading Patterns
 
-### **Unified Configuration Loading**
+### **Clean Configuration Access Pattern**
 
-Use the lazy loader pattern for consistent configuration:
+**CRITICAL: Trust Your Configuration System**
+
+Use clean, direct object access - no defensive programming in business logic:
 
 ```javascript
-// src/core/config/lazy-loader.js pattern
-const { createLazyConfigGetter } = require('../config/lazy-loader');
-const getConfig = createLazyConfigGetter();
+// ✅ CORRECT: Clean and readable
+const { loadConfig } = require('../../../config');
 
 async function someFunction(params) {
-  const config = getConfig(params); // Lazy loads with parameter support
-  return config.url.commerce.baseUrl;
+  const config = loadConfig(params);
+
+  // Clean direct access - trust your config system
+  const timeout = config.commerce.api.timeout;
+  const { pageSize, maxPages } = config.commerce.product.pagination;
+  const commerceUrl = config.url.commerce.baseUrl;
+
+  return commerceUrl;
+}
+
+// ❌ WRONG: Defensive programming with fallbacks
+async function someFunction(params) {
+  const config = loadConfig(params);
+
+  // Don't do this - puts defaults in wrong place
+  const timeout = config.commerce?.api?.timeout || 30000;
+  const pageSize = config.commerce?.product?.pagination?.pageSize || 100;
+  const commerceUrl = config.url?.commerce?.baseUrl || 'fallback-url';
 }
 ```
+
+**Configuration Rules:**
+
+- NO optional chaining (`?.`) in business logic
+- NO fallback values (`|| defaultValue`) in business logic
+- Defaults belong in config files (`config/environments/`), not scattered through code
+- Trust your configuration system to provide complete, valid data
 
 ### **Action Configuration Pattern**
 

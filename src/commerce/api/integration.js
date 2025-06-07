@@ -4,21 +4,10 @@
  */
 
 const { createClient } = require('./client');
+const { loadConfig } = require('../../../config');
 const {
   http: { buildHeaders },
 } = require('../../core');
-const { createLazyConfigGetter } = require('../../core/config/lazy-loader');
-
-/**
- * Lazy configuration getter for Commerce API integration
- * @type {Function}
- */
-const getCommerceIntegrationConfig = createLazyConfigGetter(
-  'commerce-integration-config',
-  (config) => ({
-    adminTokenPath: config.url?.commerce?.paths?.adminToken || '/rest/V1/integration/admin/token',
-  })
-);
 
 /**
  * Gets an authentication token from Adobe Commerce
@@ -29,9 +18,9 @@ const getCommerceIntegrationConfig = createLazyConfigGetter(
  * @returns {Promise<string>} Authentication token
  */
 async function getAuthToken(params) {
-  const config = getCommerceIntegrationConfig(params);
+  const config = loadConfig(params);
   const client = createClient({}, params);
-  const response = await client.request(config.adminTokenPath, {
+  const response = await client.request(config.commerce.paths.adminToken, {
     method: 'POST',
     body: JSON.stringify({
       username: params.COMMERCE_ADMIN_USERNAME,

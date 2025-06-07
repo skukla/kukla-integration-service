@@ -23,6 +23,31 @@ This is an Adobe App Builder application that integrates with Adobe Commerce for
 - Use JSDoc for function documentation
 - Follow the existing project structure
 
+### Configuration Approach
+
+**CRITICAL: Trust the Configuration System**
+
+Use clean, direct object access for configuration:
+
+```javascript
+// ✅ CORRECT: Clean and readable
+const config = loadConfig(params);
+const timeout = config.commerce.api.timeout;
+const { pageSize, maxPages } = config.commerce.product.pagination;
+const fields = config.commerce.product.fields;
+
+// ❌ WRONG: Verbose with defensive fallbacks
+const timeout = config.commerce?.api?.timeout || 30000;
+const pageSize = config.commerce?.product?.pagination?.pageSize || 100;
+```
+
+**Rules:**
+
+- NO optional chaining (`?.`) in business logic
+- NO fallback values (`|| defaultValue`) in business logic
+- Defaults belong in config files, not scattered through code
+- Trust your configuration system to provide complete data
+
 ## Project Structure Rules
 
 - **actions/**: Backend serverless functions

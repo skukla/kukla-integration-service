@@ -3,18 +3,9 @@
  * @module lib/api/inventory
  */
 
-const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
+const { loadConfig } = require('../../../../../config');
+const { buildCommerceUrl } = require('../../../../../src/core/routing');
 const { getAuthToken } = require('../auth');
-
-/**
- * Lazy configuration getter for inventory API
- * @type {Function}
- */
-const getInventoryApiConfig = createLazyConfigGetter('inventory-api-config', (config) => ({
-  url: {
-    baseUrl: config.url?.commerce?.baseUrl || '',
-  },
-}));
 
 /**
  * Get inventory data for a list of SKUs
@@ -23,9 +14,9 @@ const getInventoryApiConfig = createLazyConfigGetter('inventory-api-config', (co
  * @returns {Promise<Object>} Inventory data keyed by SKU
  */
 async function getInventory(skus, params) {
-  const config = getInventoryApiConfig(params);
+  const config = loadConfig(params);
   const token = await getAuthToken(params);
-  const url = `${config.url.baseUrl}/rest/V1/inventory/source-items`;
+  const url = buildCommerceUrl(config.commerce.baseUrl, config.commerce.paths.stockItem);
 
   // Batch SKUs into groups of 20 to avoid URL length limits
   const batchSize = 20;

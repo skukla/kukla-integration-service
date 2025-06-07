@@ -3,27 +3,9 @@
  * @module commerce/api/client
  */
 
+const { loadConfig } = require('../../../config');
 const { http } = require('../../core');
-const { createLazyConfigGetter } = require('../../core/config/lazy-loader');
 const { buildCommerceUrl } = require('../../core/routing');
-
-/**
- * Lazy configuration getter for Commerce API client
- * @type {Function}
- */
-const getCommerceApiConfig = createLazyConfigGetter('commerce-api-config', (config) => ({
-  api: {
-    timeout: config.commerce?.api?.timeout || 30000,
-    retry: {
-      attempts: config.commerce?.api?.retry?.attempts || 3,
-      delay: config.commerce?.api?.retry?.delay || 1000,
-    },
-  },
-  url: {
-    baseUrl: config.url?.commerce?.baseUrl || '',
-    version: config.url?.commerce?.version || 'V1',
-  },
-}));
 
 /**
  * Creates a Commerce API client
@@ -32,14 +14,14 @@ const getCommerceApiConfig = createLazyConfigGetter('commerce-api-config', (conf
  * @returns {Object} API client methods
  */
 function createClient(options = {}, params = {}) {
-  const config = getCommerceApiConfig(params);
+  const config = loadConfig(params);
   const clientConfig = {
-    baseUrl: options.baseUrl || config.url.baseUrl,
-    version: options.version || config.url.version,
-    timeout: options.timeout || config.api.timeout,
+    baseUrl: options.baseUrl || config.commerce.baseUrl,
+    version: options.version || config.commerce.version,
+    timeout: options.timeout || config.commerce.timeout,
     retry: {
-      attempts: options.retry?.attempts || config.api.retry.attempts,
-      delay: options.retry?.delay || config.api.retry.delay,
+      attempts: options.retry ? options.retry.attempts : config.commerce.retries,
+      delay: options.retry ? options.retry.delay : config.commerce.retryDelay,
     },
   };
 
@@ -82,7 +64,7 @@ function createClient(options = {}, params = {}) {
      */
     processBatch: async (items, processor) => {
       const results = [];
-      const batchSize = clientConfig.commerce?.api?.batch?.size || 50; // Default to 50 if not configured
+      const batchSize = config.commerce.batching.products;
       for (let i = 0; i < items.length; i += batchSize) {
         const batch = items.slice(i, i + batchSize);
         const batchResults = await processor(batch);
