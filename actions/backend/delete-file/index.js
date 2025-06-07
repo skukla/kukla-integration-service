@@ -3,12 +3,14 @@
  * @module delete-file
  */
 
-const { Core, Files: FilesLib } = require('@adobe/aio-sdk');
+const { Core } = require('@adobe/aio-sdk');
 
 const { checkMissingRequestInputs } = require('../../../src/core/data');
 const { FileErrorType } = require('../../../src/core/errors');
+const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
-const { deleteFile } = require('../../../src/core/storage/files');
+const { initializeStorage } = require('../../../src/core/storage');
+const { extractCleanFilename } = require('../../../src/core/storage/path');
 
 /**
  * Main function that handles file deletion
@@ -31,14 +33,19 @@ async function main(params) {
       return response.badRequest(missingParams, {}, params);
     }
 
-    logger.info(`Deleting file: ${params.fileName}`);
+    // Extract clean filename (remove public/ prefix if present)
+    const cleanFileName = extractCleanFilename(params.fileName);
+    logger.info('Delete operation starting:', { original: params.fileName, clean: cleanFileName });
 
-    // Initialize Files SDK
-    const files = await FilesLib.init();
+    // Extract action parameters for storage credentials
+    const actionParams = extractActionParams(params);
 
-    // Delete the file using shared operations
-    await deleteFile(files, params.fileName);
-    logger.info(`File deleted successfully: ${params.fileName}`);
+    // Initialize storage provider
+    const storage = await initializeStorage(actionParams);
+
+    // Delete the file using unified storage interface with clean filename
+    await storage.delete(cleanFileName);
+    logger.info(`File deleted successfully: ${cleanFileName}`);
 
     // Get updated file list by calling browse-files action
     const { main: browseFilesMain } = require('../../frontend/browse-files/index');
