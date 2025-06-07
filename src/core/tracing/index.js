@@ -5,22 +5,27 @@
 const crypto = require('crypto');
 
 const { loadConfig } = require('../../../config');
-// Load tracing configuration
-const {
-  app: {
-    monitoring: {
-      tracing: {
-        enabled: TRACING_ENABLED = true,
-        errorVerbosity: ERROR_VERBOSITY = 'summary',
-        performance: {
-          enabled: PERFORMANCE_ENABLED = true,
-          includeMemory: INCLUDE_MEMORY = false,
-          includeTimings: INCLUDE_TIMINGS = true,
-        } = {},
-      } = {},
-    } = {},
-  } = {},
-} = loadConfig();
+
+/**
+ * Gets tracing configuration dynamically
+ * @param {Object} [params] - Action parameters for configuration loading
+ * @returns {Object} Tracing configuration
+ */
+function getTracingConfig(params = {}) {
+  const config = loadConfig(params);
+  const tracingConfig = config.app?.monitoring?.tracing || {};
+  const performanceConfig = tracingConfig.performance || {};
+
+  return {
+    enabled: tracingConfig.enabled !== false,
+    errorVerbosity: tracingConfig.errorVerbosity || 'summary',
+    performance: {
+      enabled: performanceConfig.enabled !== false,
+      includeMemory: performanceConfig.includeMemory || false,
+      includeTimings: performanceConfig.includeTimings !== false,
+    },
+  };
+}
 
 /**
  * Creates a new trace context for tracking API execution
@@ -29,9 +34,12 @@ const {
  * @returns {Object} Trace context
  */
 function createTraceContext(actionName, params) {
-  if (!TRACING_ENABLED) {
+  const tracingConfig = getTracingConfig(params);
+
+  if (!tracingConfig.enabled) {
     return { disabled: true };
   }
+
   const trace = {
     id: crypto.randomUUID(),
     action: actionName,
@@ -40,10 +48,13 @@ function createTraceContext(actionName, params) {
     errors: [],
     currentStep: null,
     metrics: [],
+    config: tracingConfig, // Store config for later use
   };
-  if (PERFORMANCE_ENABLED && INCLUDE_MEMORY) {
+
+  if (tracingConfig.performance.enabled && tracingConfig.performance.includeMemory) {
     trace.startMemory = process.memoryUsage();
   }
+
   return trace;
 }
 
@@ -58,12 +69,15 @@ async function traceStep(context, stepName, stepFn) {
   if (context.disabled) {
     return stepFn();
   }
+
   const stepStart = Date.now();
   context.currentStep = stepName;
   let startMemory;
-  if (PERFORMANCE_ENABLED && INCLUDE_MEMORY) {
+
+  if (context.config.performance.enabled && context.config.performance.includeMemory) {
     startMemory = process.memoryUsage();
   }
+
   try {
     const result = await stepFn();
     const stepEnd = Date.now();
@@ -72,8 +86,9 @@ async function traceStep(context, stepName, stepFn) {
       name: stepName,
       duration,
     };
-    if (PERFORMANCE_ENABLED) {
-      if (INCLUDE_MEMORY) {
+
+    if (context.config.performance.enabled) {
+      if (context.config.performance.includeMemory) {
         const endMemory = process.memoryUsage();
         metric.memory = {
           heapUsed: endMemory.heapUsed - startMemory.heapUsed,
@@ -81,13 +96,14 @@ async function traceStep(context, stepName, stepFn) {
           external: endMemory.external - startMemory.external,
         };
       }
-      if (INCLUDE_TIMINGS) {
+      if (context.config.performance.includeTimings) {
         metric.timing = {
           start: stepStart,
           end: stepEnd,
         };
       }
     }
+
     context.metrics.push(metric);
     return result;
   } catch (error) {
@@ -96,11 +112,12 @@ async function traceStep(context, stepName, stepFn) {
     const traceError = {
       step: stepName,
       message: error.message,
-      ...(ERROR_VERBOSITY === 'full' && { stack: error.stack }),
+      ...(context.config.errorVerbosity === 'full' && { stack: error.stack }),
       time: stepEnd,
       duration,
     };
-    if (PERFORMANCE_ENABLED && INCLUDE_MEMORY) {
+
+    if (context.config.performance.enabled && context.config.performance.includeMemory) {
       const endMemory = process.memoryUsage();
       traceError.memory = {
         heapUsed: endMemory.heapUsed - startMemory.heapUsed,
@@ -108,6 +125,7 @@ async function traceStep(context, stepName, stepFn) {
         external: endMemory.external - startMemory.external,
       };
     }
+
     context.errors.push(traceError);
     throw error;
   }
@@ -122,6 +140,7 @@ function formatTrace(context) {
   if (context.disabled) {
     return null;
   }
+
   const endTime = Date.now();
   const duration = endTime - context.startTime;
   const summary = {
@@ -132,7 +151,12 @@ function formatTrace(context) {
     errors: context.errors,
     params: context.params,
   };
-  if (PERFORMANCE_ENABLED && INCLUDE_MEMORY && context.startMemory) {
+
+  if (
+    context.config.performance.enabled &&
+    context.config.performance.includeMemory &&
+    context.startMemory
+  ) {
     const endMemory = process.memoryUsage();
     summary.memory = {
       heapUsed: endMemory.heapUsed - context.startMemory.heapUsed,
@@ -140,6 +164,7 @@ function formatTrace(context) {
       external: endMemory.external - context.startMemory.external,
     };
   }
+
   return summary;
 }
 

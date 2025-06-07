@@ -4,46 +4,54 @@ const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
 
-const { loadConfig } = require('../../../config');
+const { createLazyConfigGetter } = require('../../config/lazy-loader');
+
+/**
+ * Lazy configuration getter for baseline manager
+ * @type {Function}
+ */
+const getBaselineConfig = createLazyConfigGetter('baseline-manager-config', (config) => ({
+  baseline: {
+    maxAgeDays: config.testing?.performance?.baseline?.maxAgeDays || 30,
+  },
+  thresholds: {
+    executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
+    memory: config.testing?.performance?.thresholds?.memory || 100,
+    products: config.testing?.performance?.thresholds?.products || 1000,
+    categories: config.testing?.performance?.thresholds?.categories || 100,
+    compression: config.testing?.performance?.thresholds?.compression || 50,
+    responseTime: {
+      p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
+      p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
+    },
+    errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
+  },
+}));
 
 /**
  * Creates a baseline manager for performance metrics
  * @param {Object} options Configuration options
+ * @param {Object} [params] Action parameters for configuration
  * @returns {Object} Baseline manager methods
  */
-function createBaselineManager(options = {}) {
-  // Load configuration with proper destructuring
-  const {
-    testing: {
-      performance: {
-        baseline: { maxAgeDays: DEFAULT_MAX_AGE },
-        thresholds: {
-          executionTime: EXECUTION_THRESHOLD,
-          memory: MEMORY_THRESHOLD,
-          products: PRODUCTS_THRESHOLD,
-          categories: CATEGORIES_THRESHOLD,
-          compression: COMPRESSION_THRESHOLD,
-          responseTime: { p95: P95_THRESHOLD, p99: P99_THRESHOLD },
-          errorRate: ERROR_RATE_THRESHOLD,
-        },
-      },
-    },
-  } = loadConfig();
+function createBaselineManager(options = {}, params = {}) {
+  // Load configuration using lazy getter
+  const config = getBaselineConfig(params);
 
   const baselineConfig = {
     baselineFile: options.baselineFile || path.join(process.cwd(), 'config/baseline-metrics.json'),
-    maxAgeDays: options.maxAgeDays || DEFAULT_MAX_AGE,
+    maxAgeDays: options.maxAgeDays || config.baseline.maxAgeDays,
     thresholds: {
-      executionTime: EXECUTION_THRESHOLD,
-      memory: MEMORY_THRESHOLD,
-      products: PRODUCTS_THRESHOLD,
-      categories: CATEGORIES_THRESHOLD,
-      compression: COMPRESSION_THRESHOLD,
+      executionTime: config.thresholds.executionTime,
+      memory: config.thresholds.memory,
+      products: config.thresholds.products,
+      categories: config.thresholds.categories,
+      compression: config.thresholds.compression,
       responseTime: {
-        p95: P95_THRESHOLD,
-        p99: P99_THRESHOLD,
+        p95: config.thresholds.responseTime.p95,
+        p99: config.thresholds.responseTime.p99,
       },
-      errorRate: ERROR_RATE_THRESHOLD,
+      errorRate: config.thresholds.errorRate,
       ...options.thresholds,
     },
   };
