@@ -110,7 +110,7 @@ module.exports = {
     s3: {
       region: 'us-east-1',
       bucket: 'demo-commerce-integrations',
-      prefix: 'kukla-integration/', // Same prefix for consistency
+      prefix: 'public/', // Unified prefix with app-builder storage
       // Note: accessKeyId and secretAccessKey should be set via environment variables
       // AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
     },
