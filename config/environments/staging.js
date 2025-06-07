@@ -100,10 +100,17 @@ module.exports = {
     },
   },
   storage: {
+    provider: 'app-builder',
     csv: {
       chunkSize: 200,
       compressionLevel: 6,
       streamBufferSize: 32768,
+      filename: 'products.csv',
+    },
+    s3: {
+      region: 'us-east-1',
+      bucket: 'demo-commerce-integrations',
+      prefix: 'kukla-integration/',
     },
   },
   testing: {

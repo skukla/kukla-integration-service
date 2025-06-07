@@ -100,10 +100,19 @@ module.exports = {
     },
   },
   storage: {
+    provider: 's3', // Use S3 storage in production
     csv: {
       chunkSize: 500,
       compressionLevel: 9,
       streamBufferSize: 65536,
+      filename: 'products.csv',
+    },
+    s3: {
+      region: 'us-east-1',
+      bucket: 'demo-commerce-integrations',
+      prefix: 'kukla-integration/', // Same prefix for consistency
+      // Note: accessKeyId and secretAccessKey should be set via environment variables
+      // AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
     },
   },
   testing: {
