@@ -11,6 +11,7 @@ const { FileErrorType } = require('../../../src/core/errors');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { initializeStorage } = require('../../../src/core/storage');
+const { extractCleanFilename } = require('../../../src/core/storage/path');
 
 /**
  * Main function that handles file download requests
@@ -47,6 +48,10 @@ async function main(params) {
       return response.badRequest(missingInputs, {}, params);
     }
 
+    // Extract clean filename (remove public/ prefix if present)
+    const cleanFileName = extractCleanFilename(params.fileName);
+    logger.info('Clean filename extracted:', { original: params.fileName, clean: cleanFileName });
+
     // Extract action parameters for storage credentials
     const actionParams = extractActionParams(params);
 
@@ -56,8 +61,8 @@ async function main(params) {
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Get file properties first to verify existence and get content type
-    logger.info(`Getting properties for file: ${params.fileName}`);
-    const fileProps = await storage.getProperties(params.fileName);
+    logger.info(`Getting properties for file: ${cleanFileName}`);
+    const fileProps = await storage.getProperties(cleanFileName);
     logger.info('File properties retrieved:', {
       name: fileProps.name,
       size: fileProps.size,
@@ -65,31 +70,26 @@ async function main(params) {
     });
 
     // Read file content
-    logger.info(`Reading file content: ${params.fileName}`);
-    const buffer = await storage.read(params.fileName);
+    logger.info(`Reading file content: ${cleanFileName}`);
+    const buffer = await storage.read(cleanFileName);
     logger.info('File content read successfully', {
       contentLength: buffer.length,
-      fileName: params.fileName,
+      fileName: cleanFileName,
     });
 
-    // Return file content with proper headers (let platform handle CORS)
+    // Return raw file content with proper headers (matching master pattern)
     logger.info('Sending file response');
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/octet-stream', // Set generic binary type for HTMX handling
+        'Content-Type': fileProps.contentType || 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${fileProps.name}"`,
         'Cache-Control': 'no-cache',
         'X-Download-Success': 'true',
-        'X-File-Type': fileProps.contentType, // Keep original content type in custom header
         'X-File-Name': fileProps.name,
-        // Explicitly expose custom headers for CORS
-        'Access-Control-Expose-Headers':
-          'X-Download-Success, X-File-Type, X-File-Name, Content-Disposition',
-        // Let Adobe I/O Runtime handle CORS automatically with wildcard
+        // Let Adobe I/O Runtime handle CORS automatically
       },
-      body: buffer.toString('base64'),
-      // Don't set isBase64Encoded to avoid double-encoding
+      body: buffer.toString('utf8'), // Return as string for CSV files
     };
   } catch (error) {
     logger.error('Error in download-file action:', error);
