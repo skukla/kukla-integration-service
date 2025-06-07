@@ -3,22 +3,37 @@
  * @module commerce/data/product
  */
 
-const { loadConfig } = require('../../../config');
+const { createLazyConfigGetter } = require('../../core/config/lazy-loader');
 
-// Load configuration with proper destructuring
-const {
-  commerce: {
-    product: { fields: PRODUCT_FIELDS, validation: VALIDATION_RULES },
-  },
-} = loadConfig();
+/**
+ * Lazy configuration getter for product configuration
+ * @type {Function}
+ */
+const getProductConfig = createLazyConfigGetter('product-config', (config) => ({
+  fields: config.commerce?.product?.fields || [],
+  validation: config.commerce?.product?.validation || {},
+}));
+
+/**
+ * Gets product fields with parameter support
+ * @param {Object} [params] - Action parameters
+ * @returns {Array} Product fields array
+ */
+function getProductFields(params = {}) {
+  return getProductConfig(params).fields;
+}
+
+// Get default fields for backward compatibility (will use cached config)
+const PRODUCT_FIELDS = getProductFields();
 
 /**
  * Validates product data against configuration rules
  * @param {Object} product - Product data to validate
  * @returns {Object} Validation result with any errors
  */
-function validateProduct(product) {
+function validateProduct(product, params = {}) {
   const errors = [];
+  const { validation: VALIDATION_RULES } = getProductConfig(params);
 
   // Check required fields (sku and name are always required)
   if (!product.sku) {

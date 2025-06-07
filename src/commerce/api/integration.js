@@ -4,19 +4,21 @@
  */
 
 const { createClient } = require('./client');
-const { loadConfig } = require('../../../config');
 const {
   http: { buildHeaders },
 } = require('../../core');
+const { createLazyConfigGetter } = require('../../core/config/lazy-loader');
 
-// Load configuration with proper destructuring
-const {
-  url: {
-    commerce: {
-      paths: { adminToken: ADMIN_TOKEN_PATH },
-    },
-  },
-} = loadConfig();
+/**
+ * Lazy configuration getter for Commerce API integration
+ * @type {Function}
+ */
+const getCommerceIntegrationConfig = createLazyConfigGetter(
+  'commerce-integration-config',
+  (config) => ({
+    adminTokenPath: config.url?.commerce?.paths?.adminToken || '/rest/V1/integration/admin/token',
+  })
+);
 
 /**
  * Gets an authentication token from Adobe Commerce
@@ -27,8 +29,9 @@ const {
  * @returns {Promise<string>} Authentication token
  */
 async function getAuthToken(params) {
-  const client = createClient();
-  const response = await client.request(ADMIN_TOKEN_PATH, {
+  const config = getCommerceIntegrationConfig(params);
+  const client = createClient({}, params);
+  const response = await client.request(config.adminTokenPath, {
     method: 'POST',
     body: JSON.stringify({
       username: params.COMMERCE_ADMIN_USERNAME,
@@ -62,7 +65,7 @@ async function makeCommerceRequest(url, options = {}, params = {}) {
     throw new Error('No authentication token available');
   }
 
-  const client = createClient();
+  const client = createClient({}, params);
   return client.request(url, {
     ...options,
     headers: {
@@ -83,7 +86,7 @@ async function batchCommerceRequests(requests, params = {}) {
   // Get auth token once for all requests
   const token = await getAuthToken(params);
 
-  const client = createClient();
+  const client = createClient({}, params);
   return client.processBatch(requests, async (batch) => {
     return Promise.all(
       batch.map((req) =>

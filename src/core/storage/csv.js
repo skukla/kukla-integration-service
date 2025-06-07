@@ -7,33 +7,25 @@ const { Transform } = require('stream');
 
 const csvWriter = require('csv-writer');
 
-const { loadConfig } = require('../../../config');
+const { createLazyConfigGetter } = require('../config/lazy-loader');
 const { compression } = require('../http');
 
-// Load configuration with proper destructuring
-const {
-  storage: {
-    csv: {
-      chunkSize: CHUNK_SIZE,
-      compressionLevel: COMPRESSION_LEVEL,
-      streamBufferSize: BUFFER_SIZE,
-    },
-  },
-} = loadConfig();
-
 /**
- * CSV processing configuration
- * @type {Object}
+ * Lazy configuration getter for CSV processing
+ * @type {Function}
  */
-const CSV_CONFIG = {
-  chunkSize: CHUNK_SIZE,
-  compression: {
-    level: COMPRESSION_LEVEL,
-  },
-  stream: {
-    bufferSize: BUFFER_SIZE,
-  },
-};
+const getCsvConfig = createLazyConfigGetter('csv-config', (config) => {
+  const csvConfig = config.storage?.csv || {};
+  return {
+    chunkSize: csvConfig.chunkSize || 100,
+    compression: {
+      level: csvConfig.compressionLevel || 6,
+    },
+    stream: {
+      bufferSize: csvConfig.streamBufferSize || 16384,
+    },
+  };
+});
 
 /**
  * Creates a transform stream for converting objects to CSV rows
@@ -86,8 +78,11 @@ async function generateCsv({
   headers,
   rowMapper,
   compression: compressionOptions,
-  chunkSize = CSV_CONFIG.chunkSize,
+  chunkSize,
+  params = {},
 }) {
+  const csvConfig = getCsvConfig(params);
+  chunkSize = chunkSize || csvConfig.chunkSize;
   if (!Array.isArray(records) || records.length === 0) {
     throw new Error('No records provided for CSV generation');
   }
@@ -176,9 +171,11 @@ function createCsvStream({ headers, rowMapper }) {
  * @returns {Transform} Transform stream
  */
 function createCsvTransform(options = {}) {
+  const { params = {}, ...transformOptions } = options;
+  const csvConfig = getCsvConfig(params);
   const config = {
-    ...CSV_CONFIG,
-    ...options,
+    ...csvConfig,
+    ...transformOptions,
   };
 
   return new Transform({
@@ -192,7 +189,7 @@ function createCsvTransform(options = {}) {
 }
 
 module.exports = {
-  CSV_CONFIG,
+  getCsvConfig,
   generateCsv,
   createCsvStream,
   createRowTransformer,

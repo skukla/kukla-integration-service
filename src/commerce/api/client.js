@@ -3,36 +3,43 @@
  * @module commerce/api/client
  */
 
-const { loadConfig } = require('../../../config');
 const { http } = require('../../core');
+const { createLazyConfigGetter } = require('../../core/config/lazy-loader');
 const { buildCommerceUrl } = require('../../core/routing');
 
-// Load configuration with proper destructuring
-const {
-  commerce: {
-    api: {
-      timeout: API_TIMEOUT,
-      retry: { attempts: RETRY_ATTEMPTS, delay: RETRY_DELAY },
+/**
+ * Lazy configuration getter for Commerce API client
+ * @type {Function}
+ */
+const getCommerceApiConfig = createLazyConfigGetter('commerce-api-config', (config) => ({
+  api: {
+    timeout: config.commerce?.api?.timeout || 30000,
+    retry: {
+      attempts: config.commerce?.api?.retry?.attempts || 3,
+      delay: config.commerce?.api?.retry?.delay || 1000,
     },
   },
   url: {
-    commerce: { baseUrl: API_BASE_URL, version: API_VERSION },
+    baseUrl: config.url?.commerce?.baseUrl || '',
+    version: config.url?.commerce?.version || 'V1',
   },
-} = loadConfig();
+}));
 
 /**
  * Creates a Commerce API client
  * @param {Object} options - Client options
+ * @param {Object} [params] - Action parameters for configuration
  * @returns {Object} API client methods
  */
-function createClient(options = {}) {
+function createClient(options = {}, params = {}) {
+  const config = getCommerceApiConfig(params);
   const clientConfig = {
-    baseUrl: options.baseUrl || API_BASE_URL,
-    version: options.version || API_VERSION,
-    timeout: options.timeout || API_TIMEOUT,
+    baseUrl: options.baseUrl || config.url.baseUrl,
+    version: options.version || config.url.version,
+    timeout: options.timeout || config.api.timeout,
     retry: {
-      attempts: options.retry?.attempts || RETRY_ATTEMPTS,
-      delay: options.retry?.delay || RETRY_DELAY,
+      attempts: options.retry?.attempts || config.api.retry.attempts,
+      delay: options.retry?.delay || config.api.retry.delay,
     },
   };
 
@@ -53,7 +60,7 @@ function createClient(options = {}) {
       };
 
       // Use buildCommerceUrl to construct the full URL
-      const url = buildCommerceUrl(clientConfig.baseUrl, endpoint);
+      const url = buildCommerceUrl(clientConfig.baseUrl, endpoint, {}, params);
 
       // Only log URL in development/verbose mode, not during tests
       if (!process.env.QUIET_MODE && process.env.NODE_ENV !== 'test') {

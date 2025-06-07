@@ -3,17 +3,24 @@
  * @module core/routing/url
  */
 
-const { loadConfig } = require('../../../config');
+const { createLazyConfigGetter } = require('../config/lazy-loader');
+
+/**
+ * Lazy configuration getter for full configuration
+ * @type {Function}
+ */
+const getConfig = createLazyConfigGetter('routing-config', (config) => config);
 
 /**
  * Builds a runtime URL for the given action using environment configuration
  * @param {string} action - The action name
  * @param {string} [customBaseUrl] - Optional custom base URL (for testing)
+ * @param {Object} [params] - Action parameters for configuration loading
  * @returns {string} The complete runtime URL
  */
-function buildRuntimeUrl(action, customBaseUrl = null) {
+function buildRuntimeUrl(action, customBaseUrl = null, params = {}) {
   // Always use configuration, even for testing mode
-  const config = loadConfig();
+  const config = getConfig(params);
   const { baseUrl, namespace, package: pkg, version, paths } = config.url.runtime;
 
   // Use custom base URL if provided (for testing), otherwise use configured baseUrl
