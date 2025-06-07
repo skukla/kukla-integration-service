@@ -3,40 +3,11 @@
  * @module lib/api/products
  */
 const commerceEndpoints = require('./commerce-endpoints');
+const { loadConfig } = require('../../../../../config');
 const { getRequestedFields } = require('../../../../../src/commerce/data/product');
-const { createLazyConfigGetter } = require('../../../../../src/core/config/lazy-loader');
 const { request, buildHeaders } = require('../../../../../src/core/http/client');
 const { buildCommerceUrl } = require('../../../../../src/core/routing');
 const { MemoryCache } = require('../../../../../src/core/storage/cache');
-
-/**
- * Lazy configuration getter for products API
- * @type {Function}
- */
-const getProductsApiConfig = createLazyConfigGetter('products-api-config', (config) => ({
-  api: {
-    cache: {
-      duration: config.commerce?.api?.cache?.duration || 300000, // 5 minutes default
-    },
-  },
-  url: {
-    baseUrl: config.url?.commerce?.baseUrl || '',
-  },
-  product: {
-    fields: config.commerce?.product?.fields || [
-      'sku',
-      'name',
-      'price',
-      'qty',
-      'categories',
-      'images',
-    ],
-    pagination: {
-      pageSize: config.commerce?.product?.pagination?.pageSize || 100,
-      maxPages: config.commerce?.product?.pagination?.maxPages || 50,
-    },
-  },
-}));
 
 /**
  * Make a cached request
@@ -47,9 +18,9 @@ const getProductsApiConfig = createLazyConfigGetter('products-api-config', (conf
  * @returns {Promise<Object>} Response data
  */
 async function makeCachedRequest(url, options, params = {}) {
-  const config = getProductsApiConfig(params);
+  const config = loadConfig(params);
   const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
-  const cached = MemoryCache.get(cacheKey, { ttl: config.api.cache.duration });
+  const cached = MemoryCache.get(cacheKey, { ttl: config.commerce.caching.duration });
   if (cached) {
     return cached;
   }
@@ -132,17 +103,19 @@ async function getInventory(sku, token, baseUrl, params = {}) {
  */
 async function fetchAllProducts(token, params = {}) {
   // Get Commerce URL from configuration
-  const config = getProductsApiConfig(params);
-  const commerceUrl = config.url.baseUrl;
+  const config = loadConfig(params);
+  const commerceUrl = config.commerce.baseUrl;
 
   if (!commerceUrl) {
     throw new Error('Commerce URL not configured in environment');
   }
 
   try {
-    // Get configuration for this request
-    const config = getProductsApiConfig(params);
-    const { pageSize, maxPages } = config.product.pagination;
+    // Get pagination configuration
+    const { pageSize, maxPages } = {
+      pageSize: config.products.perPage,
+      maxPages: config.products.maxTotal / config.products.perPage,
+    };
 
     let allProducts = [];
     let currentPage = 1;
@@ -153,12 +126,12 @@ async function fetchAllProducts(token, params = {}) {
     try {
       fields = getRequestedFields(params);
     } catch (error) {
-      fields = config.product.fields;
+      fields = config.products.fields;
     }
 
     // Ensure fields is always an array (defensive programming)
     if (!Array.isArray(fields)) {
-      fields = config.product.fields;
+      fields = config.products.fields;
     }
 
     // Create immutable copy to ensure proper closure capture

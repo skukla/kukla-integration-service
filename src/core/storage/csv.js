@@ -7,25 +7,26 @@ const { Transform } = require('stream');
 
 const csvWriter = require('csv-writer');
 
-const { createLazyConfigGetter } = require('../config/lazy-loader');
+const { loadConfig } = require('../../../config');
 const { compression } = require('../http');
 
 /**
- * Lazy configuration getter for CSV processing
- * @type {Function}
+ * Gets CSV configuration from the main config
+ * @param {Object} [params] - Action parameters
+ * @returns {Object} CSV configuration
  */
-const getCsvConfig = createLazyConfigGetter('csv-config', (config) => {
-  const csvConfig = config.storage?.csv || {};
+function getCsvConfig(params = {}) {
+  const config = loadConfig(params);
   return {
-    chunkSize: csvConfig.chunkSize || 100,
+    chunkSize: config.storage.csv.chunkSize,
     compression: {
-      level: csvConfig.compressionLevel || 6,
+      level: config.storage.csv.compressionLevel,
     },
     stream: {
-      bufferSize: csvConfig.streamBufferSize || 16384,
+      bufferSize: config.storage.csv.streamBufferSize,
     },
   };
-});
+}
 
 /**
  * Creates a transform stream for converting objects to CSV rows

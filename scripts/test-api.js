@@ -7,27 +7,23 @@
 const ora = require('ora');
 
 const { getProducts } = require('../actions/backend/get-products/lib/api/products');
+const { loadConfig } = require('../config');
 const { getAuthToken } = require('../src/commerce/api/integration');
-const { createLazyConfigGetter } = require('../src/core/config/lazy-loader');
 
 require('dotenv').config();
 
 /**
- * Lazy configuration getter for test script
- * @type {Function}
+ * Gets test configuration
+ * @returns {Object} Test configuration
  */
-const getTestConfig = createLazyConfigGetter('test-api-config', (config) => ({
-  baseUrl: config.url?.commerce?.baseUrl || process.env.COMMERCE_URL,
-  pageSize: config.commerce?.product?.pagination?.pageSize || 20,
-  fields: config.commerce?.product?.fields || [
-    'sku',
-    'name',
-    'price',
-    'qty',
-    'categories',
-    'images',
-  ],
-}));
+function getTestConfig() {
+  const config = loadConfig();
+  return {
+    baseUrl: config.commerce.baseUrl,
+    pageSize: config.products.perPage,
+    fields: config.products.fields,
+  };
+}
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -94,7 +90,7 @@ async function testEndpoint(config, spinner) {
 
     // Get auth token using URL from config but credentials from env
     const token = await getAuthToken({
-      COMMERCE_URL: COMMERCE_URL, // Use URL from config
+      COMMERCE_URL: config.baseUrl,
       COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
       COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
     });
@@ -104,9 +100,9 @@ async function testEndpoint(config, spinner) {
 
     // Test the endpoint using URL from config
     const response = await getProducts(token, {
-      COMMERCE_URL: COMMERCE_URL, // Use URL from config
+      COMMERCE_URL: config.baseUrl,
       pageSize: config.pageSize,
-      fields: PRODUCT_FIELDS, // Use fields from config
+      fields: config.fields,
     });
 
     return {

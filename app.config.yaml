@@ -27,8 +27,6 @@ application:
             annotations:
               require-adobe-auth: false
               final: true
-              web-export: true
-              raw-http: true
           download-file:
             function: actions/backend/download-file/index.js
             web: 'yes'

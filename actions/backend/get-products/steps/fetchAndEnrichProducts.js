@@ -13,7 +13,8 @@ const { getAuthToken } = require('../lib/auth');
  * @returns {Promise<Array>} Array of enriched product objects
  */
 async function fetchAndEnrichProducts(params, config) {
-  const commerceUrl = config.url?.commerce?.baseUrl;
+  // Direct object access with full autocompletion ✨
+  const commerceUrl = config.commerce.baseUrl;
 
   if (!commerceUrl) {
     throw new Error('Commerce URL not configured in environment');

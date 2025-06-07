@@ -35,14 +35,14 @@
  * const productUrl = routing.buildCommerceUrl('products', { id: '123' });
  */
 
-const { createLazyConfigObject, configExtractors } = require('./config/lazy-loader');
 const data = require('./data');
 const http = require('./http');
 const monitoring = require('./monitoring');
 const routing = require('./routing');
 const storage = require('./storage');
+const { loadConfig } = require('../../config');
 
-// Export public APIs with uniform lazy configuration loading
+// Export public APIs with clean configuration loading
 module.exports = {
   http: http.public,
   data: data.public,
@@ -51,24 +51,15 @@ module.exports = {
   routing,
 
   /**
-   * Creates a configuration object with lazy loading
+   * Loads configuration using the new organized system
    * @param {Object} [params] - Action parameters for Adobe I/O Runtime
-   * @returns {Object} Configuration object with lazy-loaded properties
+   * @returns {Object} Complete configuration object
    */
   getConfig(params = {}) {
-    return createLazyConfigObject(
-      {
-        app: configExtractors.app,
-        url: configExtractors.url,
-        commerce: configExtractors.commerce,
-        security: (config) => config.security || {},
-        storage: configExtractors.storage,
-      },
-      params
-    );
+    return loadConfig(params);
   },
 
-  // Backward compatibility - lazy config getter
+  // Backward compatibility - config getter
   get config() {
     return this.getConfig();
   },

@@ -23,7 +23,7 @@ async function validateInput(params) {
   // Validate Commerce URL from configuration
   try {
     const config = loadConfig(params);
-    const commerceUrl = config.url?.commerce?.baseUrl;
+    const commerceUrl = config.commerce.baseUrl;
 
     if (!commerceUrl) {
       throw new Error('Commerce URL not configured in environment');
