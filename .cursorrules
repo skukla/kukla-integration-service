@@ -290,57 +290,49 @@ const downloadUrl = getDownloadUrl('products.csv', '/exports/');
 
 ## Schema Validation System
 
-### Simplified Schema Approach
+### Build-Time Quality Assurance
 
-The project uses a simplified schema validation system that matches the actual architecture:
+The project uses schema validation as **build tooling** that provides development-time validation without runtime overhead:
+
+- **Build Integration**: Automatically validates configuration before deployment
+- **Fail Fast**: Catches configuration errors before they reach production  
+- **Zero Runtime Impact**: Production actions use fast `loadConfig()` without validation
+- **Smart Output**: Concise for builds, detailed for development
+
+### Schema Components
 
 - **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
 - **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
 - **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
-
-### Schema Usage Patterns
-
-```javascript
-// Configuration validation (optional)
-const { loadValidatedConfig } = require('../config');
-const config = loadValidatedConfig(params); // Validates and warns on issues
-
-// Action validation (development/testing)
-const { validateActionParams, validateActionResponse } = require('../src/core/validation');
-validateActionParams('get-products', params, { strict: true });
-
-// Schema testing
-npm run test:schemas // Comprehensive schema validation test suite
-```
-
-### Schema Design Principles
-
-- **Optional by Default**: Validation warns instead of failing for compatibility
-- **Action-Specific**: Each action has its own request/response schemas
-- **Security Filtering**: Frontend schemas exclude all credentials
-- **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
 
 ### Build Integration (Automatic)
 
 Schema validation is **automatically integrated** into all build and deployment commands:
 
 - **npm run build** - Validates before building
-- **npm run start** - Validates before quick deployment
+- **npm run start** - Validates before quick deployment  
 - **npm run deploy** - Validates before staging deployment
 - **npm run deploy:prod** - Validates before production deployment
 
 ### Output Modes
 
 - **Build Integration**: `npm run validate` - Concise output ("✅ Schema validation passed")
-- **Development**: `npm run test:schemas` - Detailed diagnostics
+- **Development**: `npm run test:schemas` - Detailed diagnostics  
 - **Failure**: Always shows detailed error messages regardless of mode
 
-### When to Use Validation
+### Usage Patterns
 
-- **Automatic**: Build process validates configuration before deployment
-- **Development**: Use `npm run test:schemas` for detailed validation during development
-- **Runtime**: Production actions use fast `loadConfig()` without validation overhead
-- **Frontend Generation**: Automatic validation during `npm run build:config`
+```javascript
+// Runtime: Fast loading without validation (recommended)
+const config = loadConfig(params);
+
+// Development: Validated loading (warns only)
+const config = loadValidatedConfig(params);
+
+// Testing: Strict validation
+const { validateActionParams } = require('../src/core/validation');
+validateActionParams('get-products', params, { strict: true });
+```
 
 ### Validation Flow
 
@@ -369,78 +361,6 @@ When validation fails, build stops with detailed errors:
 - Error Responses: Use consistent error formatting
 - Logging: Use appropriate log levels and formatting
 - URL Building: Use the established URL management functions
-
-## Schema Validation System
-
-### Simplified Schema Approach
-
-The project uses a simplified schema validation system that matches the actual architecture:
-
-- **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
-- **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
-- **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
-
-### Schema Usage Patterns
-
-```javascript
-// Configuration validation (optional)
-const { loadValidatedConfig } = require('../config');
-const config = loadValidatedConfig(params); // Validates and warns on issues
-
-// Action validation (development/testing)
-const { validateActionParams, validateActionResponse } = require('../src/core/validation');
-validateActionParams('get-products', params, { strict: true });
-
-// Schema testing
-npm run test:schemas // Comprehensive schema validation test suite
-```
-
-### Schema Design Principles
-
-- **Optional by Default**: Validation warns instead of failing for compatibility
-- **Action-Specific**: Each action has its own request/response schemas
-- **Security Filtering**: Frontend schemas exclude all credentials
-- **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
-
-### Build Integration (Automatic)
-
-Schema validation is **automatically integrated** into all build and deployment commands:
-
-- **npm run build** - Validates before building
-- **npm run start** - Validates before quick deployment
-- **npm run deploy** - Validates before staging deployment
-- **npm run deploy:prod** - Validates before production deployment
-
-### Output Modes
-
-- **Build Integration**: `npm run validate` - Concise output ("✅ Schema validation passed")
-- **Development**: `npm run test:schemas` - Detailed diagnostics
-- **Failure**: Always shows detailed error messages regardless of mode
-
-### When to Use Validation
-
-- **Automatic**: Build process validates configuration before deployment
-- **Development**: Use `npm run test:schemas` for detailed validation during development
-- **Runtime**: Production actions use fast `loadConfig()` without validation overhead
-- **Frontend Generation**: Automatic validation during `npm run build:config`
-
-### Validation Flow
-
-```
-npm run deploy
-├── npm run validate (schema validation - concise)
-├── npm run build:config (frontend generation)
-└── aio app deploy (deployment)
-```
-
-### Build Failure Handling
-
-When validation fails, build stops with detailed errors:
-
-```
-❌ Schema validation failed (1/4 tests failed)
-❌ Configuration validation failed: errorVerbosity must be equal to one of the allowed values
-```
 
 ## Dependencies
 
@@ -625,40 +545,30 @@ if (context.config.performance.enabled) {
 - Loaded via: `getTracingConfig(params)`
 - Always pass params for proper environment detection
 
-## Schema Validation System
-
-### Simplified Schema Approach
-
-The project uses a simplified schema validation system that matches the actual architecture:
-
-- **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
-- **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
-- **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
-
-### Schema Usage Patterns
-
-```javascript
-// Configuration validation (optional)
-const { loadValidatedConfig } = require('../config');
-const config = loadValidatedConfig(params); // Validates and warns on issues
-
-// Action validation (development/testing)
-const { validateActionParams, validateActionResponse } = require('../src/core/validation');
-validateActionParams('get-products', params, { strict: true });
-
-// Schema testing
-npm run test:schemas // Comprehensive schema validation test suite
-```
-
-### Schema Design Principles
-
-- **Optional by Default**: Validation warns instead of failing for compatibility
-- **Action-Specific**: Each action has its own request/response schemas
-- **Security Filtering**: Frontend schemas exclude all credentials
-- **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
-
 ### When to Use Validation
 
 - **Always**: In test scripts and development tools (`npm run test:schemas`)
 - **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
 - **Required**: For frontend configuration generation (automatic validation)
+
+## Common Patterns
+
+- Configuration: Use the schema-validated config system
+
+## Git Hooks and Code Quality
+
+### Husky Pre-Commit Hooks
+
+The project uses **Husky v9.1.7** for automated code quality enforcement via git hooks:
+
+- **Pre-commit hook**: Runs `npx lint-staged` on every commit
+- **Automatic formatting**: ESLint + Prettier for JavaScript, Prettier for JSON/YAML, markdownlint + Prettier for Markdown
+- **Git stash backup**: Automatically backs up original state before applying fixes
+- **Auto-application**: Fixes are automatically applied and included in the commit
+
+### Husky v9 Migration Notes
+
+- **Deprecated command**: `npx husky install` shows deprecation warning but still works
+- **Modern command**: Use `npx husky init` for new setups
+- **Current setup**: Fully functional despite deprecation warning
+- **No action needed**: Existing configuration continues to work perfectly
