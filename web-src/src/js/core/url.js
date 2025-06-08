@@ -3,7 +3,7 @@
  * @module core/url
  */
 
-import { urlConfig } from '../../config/url.js';
+import { getRuntimeConfig } from './config.js';
 
 /**
  * Core URL builder for frontend use - matches backend implementation
@@ -62,15 +62,17 @@ function buildActionUrl(config, action, options = {}) {
  * @throws {Error} If the action is unknown
  */
 export function getActionUrl(action, params = {}) {
+  const runtimeConfig = getRuntimeConfig();
+
   // Check if action exists in configuration
-  if (!urlConfig.actions || !urlConfig.actions[action]) {
+  if (!runtimeConfig.actions || !runtimeConfig.actions[action]) {
     throw new Error(`Unknown action: ${action}`);
   }
 
   // Determine if we should use relative URLs
-  const useRelative = !urlConfig.baseUrl || urlConfig.baseUrl === '';
+  const useRelative = !runtimeConfig.baseUrl || runtimeConfig.baseUrl === '';
 
-  return buildActionUrl(urlConfig, action, {
+  return buildActionUrl(runtimeConfig, action, {
     absolute: !useRelative,
     params,
   });
@@ -118,5 +120,5 @@ export function buildDownloadUrl(filePath) {
  * @returns {Object} Current configuration
  */
 export function getConfig() {
-  return urlConfig;
+  return getRuntimeConfig();
 }
