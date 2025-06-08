@@ -1,81 +1,77 @@
 /**
- * Base schema for all API endpoints
- * @module schema/api
+ * Simplified API schemas for actual actions
+ * @module config/schema/api
  */
 
+// Base request schema for all actions
 const baseRequestSchema = {
   type: 'object',
-  required: ['COMMERCE_URL', 'COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'],
   properties: {
-    COMMERCE_URL: {
-      type: 'string',
-      format: 'uri',
-      description: 'Adobe Commerce instance URL',
-    },
-    COMMERCE_ADMIN_USERNAME: {
-      type: 'string',
-      description: 'Adobe Commerce admin username',
-    },
-    COMMERCE_ADMIN_PASSWORD: {
-      type: 'string',
-      description: 'Adobe Commerce admin password',
-    },
-    LOG_LEVEL: {
-      type: 'string',
-      enum: ['error', 'warn', 'info', 'debug'],
-      description: 'Logging level',
-    },
-    env: {
-      type: 'string',
-      enum: ['dev', 'stage', 'prod'],
-      description: 'Environment name',
-    },
+    // Adobe I/O Runtime provides these automatically
+    __ow_method: { type: 'string' },
+    __ow_headers: { type: 'object' },
+    __ow_path: { type: 'string' },
+    __ow_user: { type: 'string' },
+    __ow_body: { type: 'string' },
+
+    // Environment detection
+    NODE_ENV: { type: 'string', enum: ['staging', 'production'] },
+
+    // Common credentials (added via app.config.yaml)
+    COMMERCE_ADMIN_USERNAME: { type: 'string' },
+    COMMERCE_ADMIN_PASSWORD: { type: 'string' },
+    AWS_ACCESS_KEY_ID: { type: 'string' },
+    AWS_SECRET_ACCESS_KEY: { type: 'string' },
   },
 };
 
+// Base response schema for all actions
 const baseResponseSchema = {
   type: 'object',
   required: ['statusCode', 'headers', 'body'],
   properties: {
-    statusCode: {
-      type: 'number',
-      enum: [200, 400, 401, 403, 500],
-      description: 'HTTP status code',
-    },
+    statusCode: { type: 'number' },
     headers: {
       type: 'object',
-      required: ['Content-Type'],
       properties: {
-        'Content-Type': {
-          type: 'string',
-          enum: ['application/json'],
-          description: 'Response content type',
-        },
+        'Content-Type': { type: 'string' },
+        'Access-Control-Allow-Origin': { type: 'string' },
+        'Access-Control-Allow-Methods': { type: 'string' },
+        'Access-Control-Allow-Headers': { type: 'string' },
       },
     },
     body: {
-      type: 'object',
       oneOf: [
+        // Success response
         {
-          // Success response - to be extended by specific endpoints
           type: 'object',
-          required: ['message'],
+          required: ['success'],
           properties: {
-            message: {
-              type: 'string',
-              description: 'Success message',
+            success: { type: 'boolean', const: true },
+            message: { type: 'string' },
+            steps: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            downloadUrl: { type: 'string', format: 'uri' },
+            storage: {
+              type: 'object',
+              properties: {
+                provider: { type: 'string', enum: ['s3', 'app-builder'] },
+                location: { type: 'string' },
+                properties: { type: 'object' },
+              },
             },
           },
         },
+        // Error response
         {
-          // Error response - common across all endpoints
           type: 'object',
-          required: ['error'],
+          required: ['success', 'error'],
           properties: {
-            error: {
-              type: 'string',
-              description: 'Error message',
-            },
+            success: { type: 'boolean', const: false },
+            error: { type: 'string' },
+            details: { type: 'string' },
           },
         },
       ],
@@ -83,54 +79,153 @@ const baseResponseSchema = {
   },
 };
 
-/**
- * Extends the base request schema with endpoint-specific properties
- * @param {Object} extension - Additional properties for the schema
- * @returns {Object} Extended schema
- */
-function extendRequestSchema(extension) {
-  return {
+// get-products action schemas
+const getProductsSchema = {
+  request: {
     ...baseRequestSchema,
+    required: ['COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'],
     properties: {
       ...baseRequestSchema.properties,
-      ...extension.properties,
+      // Optional query parameters
+      category: { type: 'string' },
+      limit: { type: 'number', minimum: 1, maximum: 1000 },
+      fields: {
+        type: 'array',
+        items: { type: 'string' },
+        uniqueItems: true,
+      },
     },
-    required: [...baseRequestSchema.required, ...(extension.required || [])],
-  };
-}
+  },
+  response: baseResponseSchema,
+};
 
-/**
- * Extends the base response schema with endpoint-specific success response
- * @param {Object} successSchema - Schema for the success response body
- * @returns {Object} Extended schema
- */
-function extendResponseSchema(successSchema) {
-  const extendedSchema = {
+// browse-files action schemas
+const browseFilesSchema = {
+  request: {
+    ...baseRequestSchema,
+    required: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+  },
+  response: {
     ...baseResponseSchema,
     properties: {
       ...baseResponseSchema.properties,
-      body: {
-        ...baseResponseSchema.properties.body,
-        oneOf: [
-          {
-            type: 'object',
-            required: ['message', ...successSchema.required],
-            properties: {
-              message: baseResponseSchema.properties.body.oneOf[0].properties.message,
-              ...successSchema.properties,
-            },
-          },
-          baseResponseSchema.properties.body.oneOf[1], // Keep the error schema
-        ],
+      headers: {
+        ...baseResponseSchema.properties.headers,
+        properties: {
+          ...baseResponseSchema.properties.headers.properties,
+          'Content-Type': { type: 'string', const: 'text/html' },
+        },
       },
     },
-  };
-  return extendedSchema;
-}
+  },
+};
+
+// download-file action schemas
+const downloadFileSchema = {
+  request: {
+    ...baseRequestSchema,
+    required: ['fileName', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+    properties: {
+      ...baseRequestSchema.properties,
+      fileName: { type: 'string', minLength: 1 },
+      fullPath: { type: 'string' },
+    },
+  },
+  response: {
+    type: 'object',
+    required: ['statusCode', 'headers'],
+    properties: {
+      statusCode: { type: 'number' },
+      headers: {
+        type: 'object',
+        properties: {
+          'Content-Type': { type: 'string' },
+          'Content-Disposition': { type: 'string' },
+          'Content-Length': { type: 'string' },
+        },
+      },
+      body: { type: 'string', description: 'File content as string or buffer' },
+    },
+  },
+};
+
+// delete-file action schemas
+const deleteFileSchema = {
+  request: {
+    ...baseRequestSchema,
+    required: ['fileName', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+    properties: {
+      ...baseRequestSchema.properties,
+      fileName: { type: 'string', minLength: 1 },
+      fullPath: { type: 'string' },
+    },
+  },
+  response: baseResponseSchema,
+};
+
+// Frontend configuration schema (for generated config)
+const frontendConfigSchema = {
+  type: 'object',
+  required: ['environment', 'runtime', 'performance'],
+  properties: {
+    environment: { type: 'string', enum: ['staging', 'production'] },
+    runtime: {
+      type: 'object',
+      required: ['package', 'version', 'baseUrl', 'namespace', 'paths', 'actions'],
+      properties: {
+        package: { type: 'string' },
+        version: { type: 'string' },
+        baseUrl: { type: 'string', format: 'uri' },
+        namespace: { type: 'string' },
+        paths: {
+          type: 'object',
+          required: ['base', 'web'],
+          properties: {
+            base: { type: 'string' },
+            web: { type: 'string' },
+          },
+        },
+        actions: {
+          type: 'object',
+          properties: {
+            'get-products': { type: 'string' },
+            'browse-files': { type: 'string' },
+            'download-file': { type: 'string' },
+            'delete-file': { type: 'string' },
+          },
+        },
+      },
+    },
+    performance: {
+      type: 'object',
+      required: ['timeout'],
+      properties: {
+        timeout: { type: 'number', minimum: 1000 },
+        maxExecutionTime: { type: 'number', minimum: 1000 },
+      },
+    },
+  },
+};
 
 module.exports = {
+  // Base schemas
   baseRequestSchema,
   baseResponseSchema,
-  extendRequestSchema,
-  extendResponseSchema,
+
+  // Action-specific schemas
+  getProductsSchema,
+  browseFilesSchema,
+  downloadFileSchema,
+  deleteFileSchema,
+
+  // Frontend schema
+  frontendConfigSchema,
+
+  // Action schemas by name (for easy lookup)
+  actions: {
+    'get-products': getProductsSchema,
+    'browse-files': browseFilesSchema,
+    'download-file': downloadFileSchema,
+    'delete-file': deleteFileSchema,
+  },
 };

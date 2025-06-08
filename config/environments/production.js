@@ -38,7 +38,7 @@ const productionOverrides = {
     tracing: {
       logLevel: 'warn',
       stepLogging: false,
-      errorVerbosity: 'minimal',
+      errorVerbosity: 'summary',
       trackMemory: false,
     },
   },
@@ -46,8 +46,6 @@ const productionOverrides = {
     baseUrl: 'https://adobeioruntime.net',
     namespace: '285361-188maroonwallaby',
   },
-
-  // === TESTING ===
   testing: {
     logLevel: 'warn',
     scenarios: {
