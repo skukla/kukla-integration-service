@@ -192,7 +192,7 @@ npm run test:action -- actions/frontend/browse-files
 
 ### **File Structure for Development**
 
-```
+```text
 kukla-integration-service/
 ├── actions/
 │   ├── backend/           # API endpoints - your main backend logic

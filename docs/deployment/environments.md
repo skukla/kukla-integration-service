@@ -317,6 +317,7 @@ If deployment issues occur:
    ```
 
 2. **Emergency Rollback**
+
    ```bash
    # Use Adobe I/O CLI for immediate rollback
    aio app:undeploy
@@ -444,6 +445,7 @@ jobs:
    ```
 
 2. **Action Timeout Issues**
+
    ```bash
    # Check action timeout configuration in app.config.yaml
    # Increase timeout if necessary for long-running operations

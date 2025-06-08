@@ -8,28 +8,27 @@
 
 Write code that your future self (and teammates) can understand immediately.
 
-```javascript
+````javascript
 // ❌ Avoid - too clever, hard to understand
 const p = products
-  .filter((p) => p.status === 'active' && p.inventory > 0)
-  .map((p) => ({ ...p, price: p.price * 1.1 }));
+.filter((p) => p.status === 'active' && p.inventory > 0)
+.map((p) => ({ ...p, price: p.price \* 1.1 }));
 
 // ✅ Prefer - clear and readable
 const activeProducts = products.filter(
-  (product) => product.status === 'active' && product.inventory > 0
+(product) => product.status === 'active' && product.inventory > 0
 );
 
 const productsWithTax = activeProducts.map((product) => ({
-  ...product,
-  price: product.price * TAX_MULTIPLIER,
+...product,
+price: product.price \* TAX_MULTIPLIER,
 }));
-```
 
 ### **2. Consistent Error Handling**
 
 All errors should be handled consistently across the application.
 
-```javascript
+````javascript
 // ✅ Standard error handling pattern
 async function exportProducts(params) {
   const logger = Core.Logger('export-products', { level: params.LOG_LEVEL });
@@ -43,13 +42,12 @@ async function exportProducts(params) {
     return createErrorResponse(error, 'PRODUCT_EXPORT_FAILED');
   }
 }
-```
 
 ### **3. Meaningful Names**
 
 Use descriptive names that explain intent and purpose.
 
-```javascript
+````javascript
 // ❌ Avoid - unclear abbreviations
 function getPrds(cat, lmt) {
   // ...
@@ -59,7 +57,6 @@ function getPrds(cat, lmt) {
 function getProductsByCategory(categoryId, maxResults) {
   // ...
 }
-```
 
 ## JavaScript Standards
 
@@ -90,13 +87,12 @@ async function fetchProduct(id) {
     throw new ProductNotFoundError(id);
   }
 }
-```
 
 ### **Function Documentation**
 
 Use JSDoc for all public functions.
 
-````javascript
+```javascript
 /**
  * Exports products from Adobe Commerce with filtering and pagination
  *
@@ -123,13 +119,13 @@ Use JSDoc for all public functions.
 async function exportProducts(params) {
   // Implementation...
 }
-````
+`````
 
 ### **Error Classes**
 
 Use custom error classes for different error types.
 
-```javascript
+````javascript
 // ✅ Custom error classes
 class CommerceApiError extends Error {
   constructor(message, status, response) {
@@ -159,7 +155,6 @@ try {
   }
   throw error;
 }
-```
 
 ## Adobe App Builder Patterns
 
@@ -199,7 +194,6 @@ async function main(params) {
 }
 
 exports.main = main;
-```
 
 ### **Shared Utilities Usage**
 
@@ -215,7 +209,6 @@ const { cacheGet, cacheSet } = require('../../src/core/cache');
 // src/core/ - Generic utilities used across actions
 // src/commerce/ - Commerce-specific integration code
 // src/htmx/ - HTMX-specific response and helper functions
-```
 
 ### **Configuration Management**
 
@@ -228,7 +221,6 @@ const { commerceConfig } = config.getEnvironmentConfig();
 
 // ✅ Access configuration values
 const { baseUrl, accessToken, rateLimitConfig } = commerceConfig;
-```
 
 ## HTMX Integration Standards
 
@@ -255,7 +247,6 @@ async function main(params) {
     },
   });
 }
-```
 
 ### **Progressive Enhancement**
 
@@ -270,7 +261,6 @@ function createResponse(data, isHTMXRequest) {
     return createHTMXResponse({ template: 'full-page', data });
   }
 }
-```
 
 ## Security Standards
 
@@ -296,7 +286,6 @@ try {
 } catch (error) {
   return createErrorResponse(error, 'INVALID_INPUT');
 }
-```
 
 ### **Safe Data Handling**
 
@@ -316,7 +305,6 @@ catch (error) {
   // Return generic error to client
   return createErrorResponse(new Error('Operation failed'), 'INTERNAL_ERROR');
 }
-```
 
 ## Performance Standards
 
@@ -343,7 +331,6 @@ async function getProductsWithCache(categoryId, options = {}) {
 
   return products;
 }
-```
 
 ### **Resource Management**
 
@@ -365,7 +352,6 @@ async function processLargeFile(fileStream) {
     }
   }
 }
-```
 
 ## Testing Standards
 
@@ -406,7 +392,6 @@ describe('get-products action', () => {
     });
   });
 });
-```
 
 ### **Test Action Scripts**
 
@@ -421,7 +406,6 @@ npm run test:action -- actions/backend/get-products --param categoryId=123
 
 # ✅ Performance testing
 npm run perf:test -- actions/backend/get-products
-```
 
 ## Code Organization
 
@@ -429,14 +413,13 @@ npm run perf:test -- actions/backend/get-products
 
 Follow the established project structure.
 
-```
+```text
 actions/backend/action-name/
 ├── index.js              # Main action function
 ├── schema.js             # Input validation schema
 ├── __tests__/            # Action-specific tests
 │   └── index.test.js
 └── README.md             # Action documentation
-```
 
 ### **Import Organization**
 
@@ -448,7 +431,6 @@ const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
 const { getCommerceProducts } = require('../../src/commerce/api');
 const { validateInput } = require('../../src/core/validation');
-```
 
 ## Documentation Standards
 
@@ -456,7 +438,7 @@ const { validateInput } = require('../../src/core/validation');
 
 Keep documentation in sync with code changes.
 
-````markdown
+```markdown
 # Action Name
 
 ## Purpose
@@ -476,7 +458,6 @@ Description of response format with examples.
 
 ```bash
 npm run test:action -- actions/backend/action-name --param param1=value
-```
 ````
 
 ## Dependencies
@@ -484,12 +465,11 @@ npm run test:action -- actions/backend/action-name --param param1=value
 - src/commerce/api.js
 - src/core/validation.js
 
-````
-
 ### **Code Comments**
+
 Use comments sparingly for complex logic only.
 
-```javascript
+````javascript
 // ✅ Good comment - explains why, not what
 // Use exponential backoff for Commerce API rate limits
 // as documented in their API guidelines
@@ -498,60 +478,6 @@ const delay = Math.min(1000 * Math.pow(2, retryCount), MAX_DELAY);
 // ❌ Avoid obvious comments
 // Increment the counter by 1
 counter++;
+
+```javascript
 ````
-
-## Linting and Formatting
-
-### **ESLint Configuration**
-
-The project uses ESLint with Adobe's recommended rules.
-
-```bash
-# ✅ Run linting
-npm run lint
-
-# ✅ Fix auto-fixable issues
-npm run lint:fix
-```
-
-### **Prettier Configuration**
-
-Code is automatically formatted with Prettier.
-
-```bash
-# ✅ Format code
-npm run format
-
-# ✅ Check formatting
-npm run format:check
-```
-
-## Git Commit Standards
-
-### **Commit Messages**
-
-Use conventional commit format.
-
-```bash
-# ✅ Good commit messages
-feat: add product export caching for improved performance
-fix: handle Commerce API rate limit errors gracefully
-docs: update deployment guide with new environment setup
-refactor: consolidate HTTP utilities in src/core/http.js
-
-# ❌ Avoid unclear messages
-fix: bug
-update: stuff
-wip: working on it
-```
-
-### **Pull Request Guidelines**
-
-1. **Update documentation** for any new features
-2. **Add tests** for new functionality
-3. **Follow the coding standards** outlined here
-4. **Test in staging** before requesting review
-
----
-
-_These standards ensure consistent, maintainable code across the Adobe App Builder Commerce integration project._

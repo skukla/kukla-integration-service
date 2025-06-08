@@ -33,7 +33,7 @@ Adobe App Builder is a complete framework for building cloud-native applications
 
 ### **Project Structure**
 
-```
+```text
 kukla-integration-service/
 ├── actions/                    # Adobe I/O Runtime actions
 │   ├── backend/               # API endpoints (data processing)
@@ -203,6 +203,27 @@ Environment-specific settings in `config/environments/`.
   }
 }
 ```
+
+## Frontend Generation Architecture
+
+### **Consolidated Generation Process**
+
+The application uses a build-time generation system for frontend configuration and URL management:
+
+```bash
+# Generate frontend assets
+npm run build:config
+# ↳ Generates web-src/src/config/generated/config.js
+# ↳ Generates web-src/src/js/core/url.js
+# ↳ Uses backend configuration as source of truth
+```
+
+### **Generation Benefits**
+
+- **No Code Duplication**: Frontend URL functions generated from backend patterns
+- **Consistent Configuration**: Frontend config derived from backend settings
+- **Security**: Credentials excluded from frontend generation
+- **Environment Sync**: Frontend automatically matches backend environment
 
 ## Development Workflow
 

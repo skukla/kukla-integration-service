@@ -1,0 +1,13 @@
+# Ignore markdown files (use markdownlint instead)
+*.md
+docs/**/*.md
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Generated files
+web-src/src/config/generated/ 

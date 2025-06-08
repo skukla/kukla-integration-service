@@ -4,7 +4,7 @@
 
 ## 📚 Documentation Structure
 
-```
+```text
 docs/
 ├── README.md                    # This file - navigation hub
 ├── getting-started/
