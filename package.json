@@ -28,10 +28,11 @@
     "prettier": "^3.5.3"
   },
   "scripts": {
-    "start": "aio app deploy",
-    "build": "aio app build",
-    "deploy": "npm run clean && aio app deploy",
-    "deploy:prod": "npm run clean && aio app deploy --workspace=Production",
+    "start": "npm run build:config && aio app deploy",
+    "build": "npm run build:config && aio app build",
+    "build:config": "node scripts/generate-frontend-config.js",
+    "deploy": "npm run clean && npm run build:config && aio app deploy",
+    "deploy:prod": "npm run clean && npm run build:config && aio app deploy --workspace=Production",
     "clean": "rm -rf dist",
     "test:api": "node scripts/test-api.js",
     "test:action": "node scripts/test-action.js",

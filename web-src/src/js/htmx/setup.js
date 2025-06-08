@@ -1,5 +1,6 @@
-/* HTMX Configuration and Initialization */
+/* HTMX Setup and Initialization */
 import { initializeHtmxEvents } from './events.js';
+import { getTimeout } from '../core/config.js';
 import { initializeDownloadHandlers } from '../core/downloads.js';
 import { showNotification } from '../core/notifications.js';
 import { getActionUrl } from '../core/url.js';
@@ -43,7 +44,7 @@ const COMPONENT_CONFIG = {
 };
 // HTMX configuration
 const HTMX_CONFIG = {
-  timeout: 30000, // 30 second timeout
+  timeout: getTimeout(), // From performance configuration
   historyCacheSize: 10, // Keep last 10 pages in cache
   defaultSwapStyle: 'innerHTML', // Default swap style
   defaultSettleDelay: 20, // Small delay for smooth transitions
@@ -95,7 +96,7 @@ export function initializeHtmx() {
     ...HTMX_CONFIG,
     defaultSwapStyle: 'innerHTML',
     withCredentials: false, // Disable credentials globally to avoid CORS issues
-    timeout: 30000,
+    timeout: getTimeout(),
     wsReconnectDelay: 'full-jitter',
     defaultSwapDelay: HTMX_CONFIG.defaultSwapDelay, // Ensure swap delay is applied
     // Allow requests to different origins since Adobe I/O Runtime uses wildcard CORS

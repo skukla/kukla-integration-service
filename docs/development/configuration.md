@@ -1,537 +1,400 @@
-# Development Configuration Guide
+# Configuration System Guide
 
-> **Practical configuration patterns for Adobe App Builder development with working examples**
+> **Complete guide to the configuration system for Adobe App Builder development**
 
 ## Overview
 
-This guide provides **practical, working configuration patterns** for development. Unlike deployment configuration, this focuses on **what developers need to know** to write and test code effectively.
+The project uses a sophisticated configuration system with consistent patterns between backend and frontend while maintaining security boundaries. The system automatically generates environment-specific configuration and excludes sensitive data from frontend code.
 
-## Critical Configuration Concepts
+## Architecture
 
-### **The Configuration Split Pattern**
+### Backend Configuration
 
-**NEVER** mix configuration sources. Follow this established pattern:
+**Location**: `config/`
 
-| Configuration Type              | Source                           | Access Method             | Example                            |
-| ------------------------------- | -------------------------------- | ------------------------- | ---------------------------------- |
-| **URLs & Environment Settings** | `config/environments/staging.js` | `loadConfig(params)`      | Commerce URL, API endpoints        |
-| **Credentials & Secrets**       | `.env` file                      | `params.VARIABLE_NAME`    | Username, password, API keys       |
-| **Feature Flags**               | Environment config               | `config.features.enabled` | Debug mode, performance monitoring |
+- `config/index.js` - Main configuration loader
+- `config/environments/` - Environment-specific settings (staging.js, production.js)
+- `config/base.js` - Base configuration patterns
+- `config/schema/` - Configuration validation schemas
+
+### Frontend Configuration
+
+**Location**: `web-src/src/js/core/config.js` + `web-src/src/config/generated/config.js`
+
+- Auto-generated from backend configuration during build
+- Excludes sensitive credentials for security
+- Only includes settings actively used by frontend code
+
+## Backend Configuration Usage
+
+### Loading Configuration
 
 ```javascript
-// ✅ CORRECT: Configuration pattern in actions
+const { loadConfig } = require('../../config');
+
 async function main(params) {
-  const config = loadConfig(params); // URLs from environment config
-  const username = params.COMMERCE_ADMIN_USERNAME; // Credentials from .env
-  const commerceUrl = config.url.commerce.baseUrl; // URL from config
-}
-```
-
-### **Adobe I/O Runtime Parameter Handling**
-
-**NEVER** use `process.env` in actions. Use the parameter pattern:
-
-```javascript
-// ❌ WRONG: Environment variables (fails in Runtime)
-async function main(params) {
-  const key = process.env.AWS_ACCESS_KEY_ID; // Will be undefined!
-}
-
-// ✅ CORRECT: Action parameters
-async function main(params) {
-  const key = params.AWS_ACCESS_KEY_ID; // From app.config.yaml inputs
-}
-```
-
-## Configuration Setup Checklist
-
-### **1. Environment File (.env)**
-
-Create `.env` in project root with **credentials only**:
-
-```bash
-# Adobe I/O Configuration (auto-populated by CLI)
-AIO_runtime_auth=your-auth-token
-AIO_runtime_namespace=your-namespace
-
-# Commerce Credentials
-COMMERCE_ADMIN_USERNAME=admin
-COMMERCE_ADMIN_PASSWORD=your-password
-
-# AWS Storage Credentials
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-
-# Optional: Override environment detection
-NODE_ENV=staging
-```
-
-### **2. App Config Inputs (app.config.yaml)**
-
-**CRITICAL**: Add credentials to inputs for Runtime access:
-
-```yaml
-actions:
-  backend:
-    function: actions/backend/index.js
-    web: 'yes'
-    runtime: nodejs:18
-    inputs:
-      COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
-      COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
-      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-      NODE_ENV: $NODE_ENV
-```
-
-### **3. Environment Configuration Files**
-
-URLs and environment settings go in `config/environments/`:
-
-**config/environments/staging.js**:
-
-```javascript
-module.exports = {
-  url: {
-    commerce: {
-      baseUrl: 'https://citisignal-com774.adobedemo.com',
-    },
-  },
-  storage: {
-    provider: 'app-builder', // Uses Adobe I/O Files
-  },
-  app: {
-    monitoring: {
-      tracing: {
-        performance: { enabled: true },
-        errorVerbosity: 'detailed',
-      },
-    },
-  },
-};
-```
-
-## Configuration Loading Patterns
-
-### **Clean Configuration Access Pattern**
-
-**CRITICAL: Trust Your Configuration System**
-
-Use clean, direct object access - no defensive programming in business logic:
-
-```javascript
-// ✅ CORRECT: Clean and readable
-const { loadConfig } = require('../../../config');
-
-async function someFunction(params) {
+  // Load complete configuration with environment detection
   const config = loadConfig(params);
 
-  // Clean direct access - trust your config system
-  const timeout = config.commerce.api.timeout;
-  const { pageSize, maxPages } = config.commerce.product.pagination;
-  const commerceUrl = config.url.commerce.baseUrl;
-
-  return commerceUrl;
-}
-
-// ❌ WRONG: Defensive programming with fallbacks
-async function someFunction(params) {
-  const config = loadConfig(params);
-
-  // Don't do this - puts defaults in wrong place
-  const timeout = config.commerce?.api?.timeout || 30000;
-  const pageSize = config.commerce?.product?.pagination?.pageSize || 100;
-  const commerceUrl = config.url?.commerce?.baseUrl || 'fallback-url';
+  // Access configuration sections
+  const commerceUrl = config.commerce.baseUrl;
+  const timeout = config.performance.timeout;
+  const storageProvider = config.storage.provider;
 }
 ```
 
-**Configuration Rules:**
+### Key Principles
 
-- NO optional chaining (`?.`) in business logic
-- NO fallback values (`|| defaultValue`) in business logic
-- Defaults belong in config files (`config/environments/`), not scattered through code
-- Trust your configuration system to provide complete, valid data
+1. **Environment Detection**: Uses `params.NODE_ENV` from Adobe I/O Runtime
+2. **Credential Handling**: Credentials come from `.env` → `app.config.yaml` → `params`
+3. **No Optional Chaining**: Trust the configuration system - no `?.` or fallbacks needed
+4. **Environment Split**: URLs in environment config, credentials in `.env`
 
-### **Action Configuration Pattern**
-
-Standard pattern for all actions:
+### Configuration Sections
 
 ```javascript
-const { response } = require('../../../src/core/http/client');
-const { loadConfig } = require('../../../src/core/config');
-const { extractActionParams } = require('../../../src/core/http/client');
-
-async function main(params) {
-  try {
-    // 1. Load configuration and extract parameters
-    const config = loadConfig(params);
-    const actionParams = extractActionParams(params);
-
-    // 2. Access configuration
-    const commerceUrl = config.url.commerce.baseUrl;
-    const username = actionParams.COMMERCE_ADMIN_USERNAME;
-
-    // 3. Use configuration
-    const apiClient = new CommerceClient({
-      baseUrl: commerceUrl,
-      username: username,
-      password: actionParams.COMMERCE_ADMIN_PASSWORD,
-    });
-
-    return response.success({ data: result });
-  } catch (error) {
-    return response.error(error.message, 500);
-  }
-}
-```
-
-## Storage Configuration
-
-### **Environment-Based Storage Selection**
-
-```javascript
-// Storage automatically switches based on environment
 const config = loadConfig(params);
 
-// Staging: Uses Adobe I/O Files (config.storage.provider = 'app-builder')
-// Production: Uses S3 (config.storage.provider = 's3')
+// Commerce integration
+config.commerce.baseUrl; // Environment-specific Commerce URL
+config.commerce.timeout; // API timeout settings
+config.commerce.paths; // API endpoint paths
 
-const storage = await initializeStorage(params); // Auto-detects from config
+// Storage configuration
+config.storage.provider; // 's3' or 'app-builder'
+config.storage.s3.bucket; // S3 bucket name
+config.storage.csv.chunkSize; // CSV processing settings
+
+// Runtime settings
+config.runtime.namespace; // Adobe I/O Runtime namespace
+config.runtime.package; // Application package name
+config.runtime.paths; // URL path structure
+
+// Performance settings
+config.performance.timeout; // Request timeouts
+config.performance.tracing; // Logging and tracing config
 ```
 
-### **Storage Provider Configuration**
+## Frontend Configuration Usage
 
-**Staging (Adobe I/O Files)**:
-
-```javascript
-// config/environments/staging.js
-module.exports = {
-  storage: {
-    provider: 'app-builder',
-    // No additional config needed - uses Adobe I/O Files SDK
-  },
-};
-```
-
-**Production (S3)**:
+### Loading Configuration
 
 ```javascript
-// config/environments/production.js
-module.exports = {
-  storage: {
-    provider: 's3',
-    s3: {
-      bucket: 'your-production-bucket',
-      region: 'us-east-1',
-    },
-  },
-};
-```
+import {
+  loadConfig,
+  getRuntimeConfig,
+  getPerformanceConfig,
+  getTimeout,
+  isStaging,
+  isProduction,
+} from './core/config.js';
 
-## Tracing and Monitoring Configuration
+// Load complete frontend configuration
+const config = loadConfig();
 
-### **Dynamic Tracing Configuration**
+// Access specific sections
+const runtime = getRuntimeConfig();
+const performance = getPerformanceConfig();
 
-**NEVER** use global constants. Always load dynamically:
-
-```javascript
-// ✅ CORRECT: Dynamic tracing configuration
-function createTraceContext(actionName, params) {
-  const tracingConfig = getTracingConfig(params); // Load from environment
-  const trace = {
-    config: tracingConfig, // Store for later use
-    actionName,
-    startTime: Date.now(),
-  };
+// Environment detection
+if (isStaging()) {
+  console.log('Running in staging environment');
 }
 
-// ✅ CORRECT: Use stored config
-if (context.config.performance.enabled) {
-  // performance tracking
-}
+// Get specific values
+const timeout = getTimeout(); // Used by HTMX
 ```
 
-### **Tracing Configuration Structure**
+### Available Functions
 
 ```javascript
-// Environment configuration for tracing
-module.exports = {
-  app: {
-    monitoring: {
-      tracing: {
-        performance: { enabled: true },
-        errorVerbosity: 'detailed', // 'minimal', 'detailed'
-      },
-    },
+// Core functions
+loadConfig(); // Complete frontend configuration
+getConfig(); // Alias for loadConfig()
+
+// Section-specific functions
+getRuntimeConfig(); // Runtime settings and action mappings
+getPerformanceConfig(); // Performance and timeout settings
+
+// Environment functions
+getEnvironment(); // Current environment name
+isStaging(); // Check if staging environment
+isProduction(); // Check if production environment
+
+// Convenience functions
+getActions(); // Available action mappings
+getTimeout(); // HTMX timeout configuration
+```
+
+### Frontend Configuration Structure
+
+```javascript
+// Generated frontend configuration (security-filtered)
+{
+  environment: "staging",
+
+  runtime: {
+    package: "kukla-integration-service",
+    version: "v1",
+    baseUrl: "https://adobeioruntime.net",
+    namespace: "285361-188maroonwallaby-stage",
+    paths: { base: "/api", web: "/web" },
+    actions: {
+      "get-products": "get-products",
+      "download-file": "download-file",
+      "browse-files": "browse-files",
+      "delete-file": "delete-file"
+    }
   },
-};
-```
 
-## Commerce Configuration
-
-### **Commerce URL Pattern**
-
-**URLs**: Always from environment configuration
-**Credentials**: Always from .env file
-
-```javascript
-// ✅ CORRECT: Commerce configuration pattern
-async function main(params) {
-  const config = loadConfig(params);
-
-  // URL from environment config
-  const commerceUrl = config.url.commerce.baseUrl;
-
-  // Credentials from .env (via params)
-  const username = params.COMMERCE_ADMIN_USERNAME;
-  const password = params.COMMERCE_ADMIN_PASSWORD;
-
-  const client = new CommerceClient({
-    baseUrl: commerceUrl,
-    username,
-    password,
-  });
+  performance: {
+    timeout: 30000,
+    maxExecutionTime: 30000
+  }
 }
 ```
 
-### **Environment-Specific Commerce URLs**
+## Configuration Generation
 
-**Staging**: `https://citisignal-com774.adobedemo.com`
-**Production**: `https://your-production-commerce.com`
+### Build Integration
 
-Configure in respective environment files, **never** hardcode.
-
-## Testing Configuration
-
-### **Test Script Auto-Loading**
-
-The `test-action.js` script automatically handles configuration:
+Frontend configuration is automatically generated during build:
 
 ```bash
-# Auto-loads Commerce URL from config and credentials from .env
-node scripts/test-action.js get-products
-
-# No manual parameters needed for get-products!
+npm run build:config    # Generate config only
+npm run start          # Generate config + deploy
+npm run build          # Generate config + build
+npm run deploy         # Generate config + deploy
 ```
 
-### **Configuration Testing Patterns**
+### Generation Process
 
-```javascript
-// Test configuration loading
-describe('Configuration', () => {
-  test('loads Commerce URL from environment config', () => {
-    const config = loadConfig({ NODE_ENV: 'staging' });
-    expect(config.url.commerce.baseUrl).toBe('https://citisignal-com774.adobedemo.com');
-  });
+1. **Script**: `scripts/generate-frontend-config.js`
+2. **Source**: Loads backend configuration using `loadConfig()`
+3. **Filtering**: Excludes sensitive credentials (Commerce, AWS, etc.)
+4. **Output**: `web-src/src/config/generated/config.js` (ES6 module)
+5. **Security**: File excluded from version control
 
-  test('accesses credentials via parameters', () => {
-    const params = { COMMERCE_ADMIN_USERNAME: 'admin' };
-    const actionParams = extractActionParams(params);
-    expect(actionParams.COMMERCE_ADMIN_USERNAME).toBe('admin');
-  });
-});
+### Environment-Specific Generation
+
+```bash
+NODE_ENV=staging npm run build:config    # Generate staging config
+NODE_ENV=production npm run build:config # Generate production config
 ```
 
-## Configuration Validation
+## Security Model
 
-### **Parameter Validation**
+### Backend vs Frontend Data
 
-```javascript
-const { validateRequired } = require('../../../src/core/validation');
-
-async function main(params) {
-  // Validate required parameters
-  const requiredParams = ['COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'];
-  const validation = validateRequired(params, requiredParams);
-
-  if (!validation.isValid) {
-    return response.error(`Missing required parameters: ${validation.missing.join(', ')}`, 400);
-  }
-
-  // Continue with action...
-}
-```
-
-### **Environment Validation**
+**Backend (Complete)**:
 
 ```javascript
-// Validate environment-specific requirements
-function validateEnvironment(config) {
-  if (config.environment === 'production') {
-    if (!config.app.monitoring.tracing.performance.enabled) {
-      throw new Error('Performance monitoring required in production');
+{
+  commerce: {
+    baseUrl: "https://demo.com",
+    credentials: {
+      username: "admin",      // ✅ Backend only
+      password: "secret"      // ✅ Backend only
     }
   }
 }
 ```
 
-## Common Configuration Issues
-
-### **1. "Response is not valid 'message/http'" Error**
-
-**Cause**: Inconsistent configuration loading
-**Solution**: Use `createLazyConfigGetter` pattern everywhere
-
-### **2. Credentials Not Found in Actions**
-
-**Cause**: Missing `app.config.yaml` inputs
-**Solution**: Add credentials to inputs section
-
-### **3. Wrong Storage Provider**
-
-**Cause**: Environment detection issue
-**Solution**: Pass `params` to `loadConfig()` and `initializeStorage()`
-
-### **4. Commerce URL Undefined**
-
-**Cause**: Accessing wrong configuration source
-**Solution**: Use `config.url.commerce.baseUrl`, not `.env`
-
-### **5. Tracing Errors**
-
-**Cause**: Using undefined global constants
-**Solution**: Use `getTracingConfig(params)` for dynamic loading
-
-## Configuration Best Practices
-
-### **1. Consistent Parameter Handling**
+**Frontend (Filtered)**:
 
 ```javascript
-// Standard action setup
+{
+  // Commerce credentials completely excluded
+  runtime: {
+    baseUrl: "https://demo.com", // ✅ Safe for frontend
+    timeout: 30000              // ✅ Safe for frontend
+  }
+}
+```
+
+### Credential Handling
+
+**NEVER** include credentials in frontend configuration:
+
+- Commerce username/password excluded
+- AWS access keys excluded
+- Database credentials excluded
+- API keys excluded
+
+**DO** include safe operational data:
+
+- API endpoints and URLs
+- Timeout settings
+- Environment names
+- Feature flags
+
+## Adobe I/O Runtime Parameter Handling
+
+### Environment Variables vs Action Parameters
+
+**NEVER** access credentials via `process.env` in Adobe I/O Runtime actions. Use this pattern:
+
+1. **Local `.env` file**: `AWS_ACCESS_KEY_ID=your_key`
+2. **`app.config.yaml` inputs**: `AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID`
+3. **Action function**: Access via `params.AWS_ACCESS_KEY_ID`
+
+```javascript
+// ✅ CORRECT: Use action parameters
 async function main(params) {
-  const config = loadConfig(params); // Load config first
-  const actionParams = extractActionParams(params); // Extract parameters
+  const accessKey = params.AWS_ACCESS_KEY_ID; // From app.config.yaml inputs
+  const username = params.COMMERCE_ADMIN_USERNAME; // From app.config.yaml inputs
+}
 
-  // Use configuration consistently
-  const setting = config.app.features.enabled;
-  const credential = actionParams.API_KEY;
+// ❌ WRONG: Don't use process.env in actions
+async function main(params) {
+  const accessKey = process.env.AWS_ACCESS_KEY_ID; // Will be undefined!
 }
 ```
 
-### **2. Environment Detection**
+### Required Steps for New Credentials
+
+1. Add to `.env`: `NEW_CREDENTIAL=value`
+2. Add to `app.config.yaml` inputs: `NEW_CREDENTIAL: $NEW_CREDENTIAL`
+3. Access in action: `params.NEW_CREDENTIAL`
+4. Use `extractActionParams()` from `src/core/http/client` to process parameters
+
+## Commerce Configuration Pattern
+
+### Configuration Split
+
+1. **Commerce URL**: Always from environment configuration (`config/environments/staging.js` or `production.js`)
+
+   - Path: `config.commerce.baseUrl`
+   - Loaded via: `loadConfig(params)`
+
+2. **Commerce Credentials**: Always from `.env` file
+   - `COMMERCE_ADMIN_USERNAME=admin`
+   - `COMMERCE_ADMIN_PASSWORD=password`
+   - Passed via `app.config.yaml` inputs to actions
 
 ```javascript
-// Let the config system handle environment detection
-const config = loadConfig(params); // params.NODE_ENV overrides process.env.NODE_ENV
-
-// Don't manually detect environment
-const env = config.environment; // Use config.environment, not process.env.NODE_ENV
-```
-
-### **3. Error Handling**
-
-```javascript
-try {
-  const config = loadConfig(params);
-} catch (error) {
-  return response.error(`Configuration error: ${error.message}`, 500);
-}
-```
-
-### **4. Security**
-
-```javascript
-// Never log credentials
-const sanitizedParams = { ...params };
-delete sanitizedParams.COMMERCE_ADMIN_PASSWORD;
-delete sanitizedParams.AWS_SECRET_ACCESS_KEY;
-logger.debug('Action parameters', sanitizedParams);
-```
-
-## Action Response Configuration
-
-### **Response Structure for Test Scripts**
-
-Actions should return structured responses:
-
-```javascript
-return response.success({
-  message: 'Operation completed successfully',
-  steps: [
-    'Step 1: Loaded Commerce configuration',
-    'Step 2: Authenticated with Commerce API',
-    'Step 3: Fetched product and inventory data',
-    'Step 4: Generated CSV file',
-    'Step 5: Uploaded to Adobe I/O Files storage',
-  ],
-  downloadUrl: 'https://storage.url/file.csv',
-  storage: {
-    provider: 'app-builder', // or 's3'
-    location: 'exports/products-export.csv',
-    properties: {
-      size: 15360,
-      contentType: 'text/csv',
-    },
-  },
-});
-```
-
-## Integration Patterns
-
-### **Commerce Integration**
-
-```javascript
-const { CommerceApiClient } = require('../../../src/commerce/api/client');
-
+// ✅ CORRECT: Commerce configuration pattern
 async function main(params) {
   const config = loadConfig(params);
-
-  const commerceClient = new CommerceApiClient({
-    baseUrl: config.url.commerce.baseUrl,
-    username: params.COMMERCE_ADMIN_USERNAME,
-    password: params.COMMERCE_ADMIN_PASSWORD,
-    config: config.commerce || {},
-  });
+  const commerceUrl = config.commerce.baseUrl; // From environment config
+  const username = params.COMMERCE_ADMIN_USERNAME; // From .env via params
+  const password = params.COMMERCE_ADMIN_PASSWORD; // From .env via params
 }
 ```
 
-### **Storage Integration**
+## Integration Examples
+
+### URL Management Integration
 
 ```javascript
-const { initializeStorage } = require('../../../src/core/storage');
-
-async function main(params) {
-  const storage = await initializeStorage(params); // Auto-configures based on environment
-
-  const result = await storage.upload('file.csv', csvData, {
-    contentType: 'text/csv',
-  });
-}
-```
-
-## Development Workflow
-
-### **1. Configuration-First Development**
-
-1. Check existing configuration patterns in `src/core/config/`
-2. Load configuration using established patterns
-3. Extract parameters using `extractActionParams()`
-4. Use configuration consistently throughout action
-
-### **2. Testing Configuration**
-
-1. Test with `npm run test:action` - auto-loads configuration
-2. Verify environment-specific behavior
-3. Test parameter validation
-4. Check response structure
-
-### **3. Debugging Configuration**
-
-```javascript
-// Add debug logging (remove before commit)
+// Backend
+const { buildRuntimeUrl } = require('../../src/core/url');
 const config = loadConfig(params);
-console.log('Loaded config:', { environment: config.environment });
-console.log('Commerce URL:', config.url.commerce.baseUrl);
-console.log('Storage provider:', config.storage.provider);
+const actionUrl = buildRuntimeUrl('get-products', null, params);
+
+// Frontend
+import { getActionUrl } from './core/url.js';
+const actionUrl = getActionUrl('get-products');
+```
+
+### HTMX Integration
+
+```javascript
+// HTMX setup uses configuration
+import { getTimeout } from '../core/config.js';
+
+const HTMX_CONFIG = {
+  timeout: getTimeout(), // From performance configuration
+  // ... other settings
+};
+```
+
+### Action Integration
+
+```javascript
+// Actions use configuration consistently
+const { loadConfig, extractActionParams } = require('../../config');
+
+async function main(params) {
+  const actionParams = extractActionParams(params);
+  const config = loadConfig(actionParams);
+
+  // Use configuration throughout action
+  const commerceUrl = config.commerce.baseUrl;
+  const timeout = config.performance.timeout;
+}
+```
+
+## Best Practices
+
+### Configuration Access
+
+- **Use specific functions**: `getRuntimeConfig()` instead of `loadConfig().runtime`
+- **Trust the system**: No optional chaining or fallbacks in business logic
+- **Cache automatically**: Configuration functions handle caching internally
+
+### Frontend Development
+
+- **Environment checks**: Use `isStaging()`, `isProduction()` for environment-specific behavior
+- **Dynamic config**: Configuration regenerated on each build for each environment
+- **Security awareness**: Never include credentials in frontend code
+
+### Backend Development
+
+- **Parameter pattern**: Use `params.VARIABLE_NAME` for credentials, not `process.env`
+- **Environment split**: URLs in environment config, credentials in `.env`
+- **Validation trust**: Configuration is pre-validated, no need for defensive checks
+
+## Scripts Integration
+
+### Current Scripts
+
+- **`generate-frontend-config.js`** - Generates frontend configuration from backend config
+- **`test-action.js`** - Test individual actions with configuration
+- **`test-api.js`** - API testing utilities
+- **`test-performance.js`** - Performance testing with configuration
+
+All scripts integrate with the configuration system and support staging/production environment detection.
+
+## Troubleshooting
+
+### Configuration Not Found
+
+```bash
+npm run build:config  # Regenerate frontend configuration
+```
+
+### Environment Issues
+
+```bash
+NODE_ENV=staging npm run build:config     # Force staging config
+NODE_ENV=production npm run build:config  # Force production config
+```
+
+### Missing Credentials
+
+1. Check `.env` file has required variables
+2. Verify `app.config.yaml` inputs reference environment variables
+3. Ensure action parameters receive credentials via inputs
+
+### Frontend Import Errors
+
+```javascript
+// ❌ Wrong: Importing from non-existent config
+import { urlConfig } from '../config/url';
+
+// ✅ Correct: Using configuration system
+import { getRuntimeConfig } from './core/config.js';
 ```
 
 ## Related Documentation
 
-- **[Getting Started Setup](../getting-started/setup.md)** - Initial configuration setup
+- **[URL Management](url-management.md)** - URL building patterns
+- **[HTMX Integration](../architecture/htmx-integration.md)** - Frontend integration
+- **[Commerce Integration](../architecture/commerce-integration.md)** - Commerce configuration
 - **[Testing Guide](testing.md)** - Testing with configuration
-- **[Deployment Configuration](../deployment/configuration.md)** - Deployment-specific config
-- **[Commerce Integration](../architecture/commerce-integration.md)** - Commerce configuration details
+- **[Deployment Configuration](../deployment/configuration.md)** - Deployment and infrastructure config
 
 ---
 
-_This development configuration guide provides practical patterns that work with Adobe I/O Runtime and the established project architecture._
+_This configuration system provides a secure, maintainable foundation for the Adobe App Builder Commerce integration project._

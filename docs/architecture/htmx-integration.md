@@ -26,7 +26,7 @@ This guide explains how HTMX is integrated into the Adobe App Builder applicatio
 
 ### **1. Frontend Configuration**
 
-Location: `web-src/src/js/htmx/config.js`
+Location: `web-src/src/js/htmx/setup.js`
 
 ```javascript
 // HTMX configuration for Adobe App Builder
