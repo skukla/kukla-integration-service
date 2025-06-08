@@ -1,11 +1,11 @@
 /**
  * File Browser Component
- * @module browser/file-browser
+ * @module ui/file-browser
  */
 
-import { getActionUrl } from '../core/url/index.js';
-import { showModal, hideModal } from '../ui/components/modal/index.js';
-import { showNotification } from '../ui/components/notifications/index.js';
+import { showModal, hideModal } from '../components/modal/index.js';
+import { showNotification } from '../components/notifications/index.js';
+import { getActionUrl } from '../../core/url/index.js';
 
 // File browser configuration
 const FILE_BROWSER_CONFIG = {
@@ -24,13 +24,8 @@ export function initializeFileBrowser() {
     return;
   }
 
-  // Initialize drag and drop
   initializeDragAndDrop(container);
-
-  // Initialize upload form
   initializeUploadForm();
-
-  // Initialize event delegation for delete buttons
   initializeDeleteHandlers();
 }
 
@@ -95,8 +90,6 @@ async function handleFileUpload(files) {
       }
 
       showNotification(`${file.name} uploaded successfully`, 'success');
-
-      // Trigger file list refresh
       document.body.dispatchEvent(new Event('fileUploaded'));
     } catch (error) {
       showNotification(`Failed to upload ${file.name}: ${error.message}`, 'error');
@@ -108,7 +101,6 @@ async function handleFileUpload(files) {
  * Initialize event handlers for delete buttons and modal actions
  */
 function initializeDeleteHandlers() {
-  // Handle delete button clicks via event delegation
   document.body.addEventListener('click', (event) => {
     const target = event.target.closest('[data-action="delete"]');
     if (target) {
@@ -116,14 +108,12 @@ function initializeDeleteHandlers() {
       handleDeleteButtonClick(target);
     }
 
-    // Handle modal delete confirmation buttons
     const deleteConfirmButton = event.target.closest('[data-delete-url]');
     if (deleteConfirmButton) {
       event.preventDefault();
       handleDeleteConfirmation(deleteConfirmButton);
     }
 
-    // Handle modal close buttons
     const modalCloseButton = event.target.closest('.modal-close');
     if (modalCloseButton) {
       event.preventDefault();
@@ -144,7 +134,6 @@ function handleDeleteButtonClick(button) {
     return;
   }
 
-  // Create delete modal instantly using JavaScript
   createDeleteModal(fileName, filePath);
 }
 
@@ -159,10 +148,8 @@ function createDeleteModal(fileName, filePath) {
     return;
   }
 
-  // Build delete URL dynamically
   const deleteUrl = getActionUrl('delete-file', { fileName: filePath });
 
-  // Create modal HTML
   modalContainer.innerHTML = `
     <div class="modal-content">
         <h2>Delete File</h2>
@@ -194,7 +181,6 @@ function createDeleteModal(fileName, filePath) {
     </div>
   `;
 
-  // Set up modal close handler for this specific modal
   const closeButton = modalContainer.querySelector('.modal-close');
   if (closeButton) {
     closeButton.addEventListener('click', (e) => {
@@ -203,18 +189,12 @@ function createDeleteModal(fileName, filePath) {
     });
   }
 
-  // Process the newly created content with HTMX so it recognizes the hx-* attributes
-  if (window.htmx) {
-    window.htmx.process(modalContainer);
-  }
-
-  // Show the modal
   showModal();
 }
 
 /**
- * Handle delete confirmation from modal
- * @param {HTMLElement} button - The confirm delete button
+ * Handle delete confirmation button click
+ * @param {HTMLElement} button - The delete confirmation button
  */
 async function handleDeleteConfirmation(button) {
   const deleteUrl = button.getAttribute('data-delete-url');
@@ -224,11 +204,10 @@ async function handleDeleteConfirmation(button) {
     return;
   }
 
-  try {
-    // Add loading state
-    button.classList.add('is-loading');
+  button.classList.add('is-loading');
+  button.disabled = true;
 
-    // Perform delete request
+  try {
     const response = await fetch(deleteUrl, {
       method: 'DELETE',
     });
@@ -237,18 +216,38 @@ async function handleDeleteConfirmation(button) {
       throw new Error(`Delete failed: ${response.statusText}`);
     }
 
-    // Success
-    showNotification(`${fileName} deleted successfully`, 'success');
-
-    // Hide modal using the existing modal system
+    showNotification(`File ${fileName} deleted successfully`, 'success');
     hideModal();
-
-    // Trigger file list refresh
     document.body.dispatchEvent(new Event('fileDeleted'));
   } catch (error) {
     showNotification(`Failed to delete ${fileName}: ${error.message}`, 'error');
   } finally {
-    // Remove loading state
     button.classList.remove('is-loading');
+    button.disabled = false;
+  }
+}
+
+/**
+ * Refresh the file list
+ */
+export function refreshFileList() {
+  const fileList = document.querySelector(`.${FILE_BROWSER_CONFIG.FILE_LIST_CLASS}`);
+  if (fileList) {
+    document.body.dispatchEvent(new Event('refreshFileList'));
+  }
+}
+
+/**
+ * Handle file operations results
+ * @param {Object} result - Operation result
+ * @param {string} operation - Operation type (upload, delete, etc.)
+ */
+export function handleFileOperationResult(result, operation = 'operation') {
+  if (result.success) {
+    showNotification(`File ${operation} completed successfully`, 'success');
+    refreshFileList();
+  } else {
+    const message = result.error?.message || `File ${operation} failed`;
+    showNotification(message, 'error');
   }
 }
