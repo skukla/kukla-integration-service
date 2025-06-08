@@ -1,7 +1,7 @@
 # Configuration Management
 
 > **Environment configuration and schema validation for Adobe App Builder applications**
-
+>
 > **⚠️ Important**: This guide covers deployment and infrastructure configuration. For **practical development patterns**, see **[Development Configuration Guide](../development/configuration.md)** which has the **current working patterns**.
 
 ## Overview
@@ -12,7 +12,7 @@ This guide describes the configuration system used in the Adobe App Builder Comm
 
 ## Configuration Structure
 
-```
+```text
 config/
 ├── environments/              # Environment-specific configuration
 │   ├── .env.example          # Template for environment variables

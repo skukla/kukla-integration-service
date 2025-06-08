@@ -8,7 +8,7 @@ The Kukla Integration Service is an Adobe App Builder application that provides 
 
 ## Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                     Adobe I/O Runtime                      │
 ├─────────────────────────────────────────────────────────────┤
@@ -115,7 +115,7 @@ npm run test:integration
 
 ## File Structure
 
-```
+```text
 kukla-integration-service/
 ├── actions/                 # Adobe I/O Runtime actions
 │   ├── backend/            # API endpoints and data processing

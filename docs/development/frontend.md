@@ -24,7 +24,7 @@ This guide covers frontend development for the Adobe App Builder Commerce integr
 
 ## Project Structure
 
-```
+```text
 web-src/
 ├── index.html              # Main application entry point
 ├── src/
@@ -271,23 +271,20 @@ function handleError(detail) {
           <td>1.2 MB</td>
           <td>2024-01-15 10:30</td>
           <td class="actions">
-            <!-- Download action -->
-            <button
-              hx-get="/api/v1/web/kukla-integration-service/backend/download-file"
-              hx-vals='{"fileId": "file-123"}'
-              hx-trigger="click"
+            <!-- Download action (direct download) -->
+            <a
+              href="javascript:void(0)"
+              onclick="window.open(getDownloadUrl('products-export.csv', '/exports/'))"
               class="btn btn-sm btn-primary"
             >
               Download
-            </button>
+            </a>
 
-            <!-- Delete action with confirmation -->
+            <!-- Delete action using component configuration -->
             <button
-              hx-delete="/api/v1/web/kukla-integration-service/backend/delete-file"
-              hx-vals='{"fileId": "file-123"}'
-              hx-confirm="Are you sure you want to delete this file?"
-              hx-target="closest tr"
-              hx-swap="outerHTML"
+              data-component="delete-button"
+              data-file-name="products-export.csv"
+              data-download-url="/exports/products-export.csv"
               class="btn btn-sm btn-danger"
             >
               Delete
@@ -300,12 +297,12 @@ function handleError(detail) {
 </div>
 ```
 
-### **Forms with Validation**
+### **Forms with Auto-Generated URLs**
 
 ```html
-<!-- Product export form -->
+<!-- Product export form using JavaScript for URL generation -->
 <form
-  hx-post="/api/v1/web/kukla-integration-service/backend/get-products"
+  id="export-form"
   hx-target="#export-results"
   hx-indicator="#export-loading"
   hx-swap="innerHTML"
@@ -684,6 +681,7 @@ window.showNotification = (notification) => {
    ```
 
 3. **Proper Error Handling**
+
    ```html
    <!-- Include error handling -->
    <div
@@ -721,6 +719,7 @@ window.showNotification = (notification) => {
    ```
 
 3. **Keyboard Navigation**
+
    ```javascript
    // Ensure modals are keyboard accessible
    document.addEventListener('keydown', (event) => {
