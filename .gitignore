@@ -14,6 +14,9 @@ config.json
 config/generated/
 web-src/src/config/generated/
 
+# Generated frontend code
+web-src/src/js/core/url/index.js
+
 # Adobe I/O console config
 console.json
 

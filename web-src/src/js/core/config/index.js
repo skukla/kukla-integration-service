@@ -93,7 +93,19 @@ export function getTimeout() {
 export function getRuntimeUrl() {
   console.warn('getRuntimeUrl() is deprecated, use URL module functions instead');
   const runtime = getRuntimeConfig();
-  return runtime.namespace
-    ? `https://${runtime.namespace}.adobeioruntime.net/api/v1/web/${runtime.package}/`
-    : '/api/v1/web/kukla-integration-service/';
+
+  if (!runtime.baseUrl) {
+    return '/api/v1/web/kukla-integration-service/';
+  }
+
+  // Use the same modern pattern as the URL builder
+  if (runtime.baseUrl.includes('adobeioruntime.net')) {
+    const modernBaseUrl = runtime.baseUrl.replace(
+      'adobeioruntime.net',
+      `${runtime.namespace}.adobeioruntime.net`
+    );
+    return `${modernBaseUrl}/api/v1/web/${runtime.package}/`;
+  } else {
+    return `${runtime.baseUrl}/api/v1/web/${runtime.package}/`;
+  }
 }
