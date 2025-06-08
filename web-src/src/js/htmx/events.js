@@ -3,14 +3,14 @@
  * @module htmx/events
  */
 
-import { ErrorHandler } from '../core/error-handler.js';
+import { ErrorHandler } from '../core/errors/index.js';
 import {
   showModal,
   hideModal,
   handleModalContentSwap,
   handleModalBeforeSwap,
-} from '../core/modal.js';
-import { showNotification } from '../core/notifications.js';
+} from '../ui/components/modal/index.js';
+import { showNotification } from '../ui/components/notifications/index.js';
 
 // Event handler configuration
 const EVENT_CONFIG = {
@@ -185,9 +185,10 @@ function handleResponseError(event) {
 
 /**
  * Handle request timeouts
- * @param {Event} event - HTMX event
+ * @param {Event} _event - HTMX event
  */
-function handleTimeout(event) {
+// eslint-disable-next-line no-unused-vars
+function handleTimeout(_event) {
   showNotification('Request timed out. Please try again.', 'error');
 }
 
