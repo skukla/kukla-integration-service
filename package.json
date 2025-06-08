@@ -30,7 +30,7 @@
   "scripts": {
     "start": "npm run build:config && aio app deploy",
     "build": "npm run build:config && aio app build",
-    "build:config": "node scripts/generate-frontend-config.js",
+    "build:config": "node scripts/generate-frontend.js",
     "deploy": "npm run clean && npm run build:config && aio app deploy",
     "deploy:prod": "npm run clean && npm run build:config && aio app deploy --workspace=Production",
     "clean": "rm -rf dist",
