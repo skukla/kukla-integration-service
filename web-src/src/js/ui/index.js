@@ -29,3 +29,9 @@ export {
   refreshFileList,
   handleFileOperationResult,
 } from './file-browser/index.js';
+
+// Downloads
+export { processDownload, initializeDownloadHandlers } from './downloads/index.js';
+
+// Loading components
+export { showLoading, hideLoading, isLoading } from './components/loading/index.js';
