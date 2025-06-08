@@ -3,8 +3,8 @@
  * @module ui/downloads
  */
 
-import { showNotification } from '../components/notifications/index.js';
 import { getActionUrl } from '../../core/url/index.js';
+import { showNotification } from '../components/notifications/index.js';
 
 /**
  * Process a base64 response and trigger file download
@@ -90,9 +90,16 @@ export function initializeDownloadHandlers(htmx) {
 
     if (event.detail.successful) {
       try {
-        // Get content type from response headers
-        const contentType =
-          event.detail.xhr.getResponseHeader('X-File-Type') || 'application/octet-stream';
+        // Get content type from response headers (use standard Content-Type header)
+        let contentType = 'application/octet-stream'; // Default fallback
+
+        try {
+          // Try to get Content-Type header (browsers allow access to standard headers)
+          contentType = event.detail.xhr.getResponseHeader('Content-Type') || contentType;
+        } catch (headerError) {
+          // If we can't access headers, use default content type
+          console.warn('Could not access Content-Type header, using default:', headerError.message);
+        }
 
         // Check if response is already base64 or plain text
         let responseContent = event.detail.xhr.response;
