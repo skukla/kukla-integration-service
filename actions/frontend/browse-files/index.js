@@ -45,15 +45,16 @@ function createErrorResponse(error, status) {
 /**
  * Handles GET requests for file browsing and modal operations
  * @param {Object} params - Request parameters
+ * @param {Object} actionParams - Processed action parameters
  * @param {Object} logger - Logger instance
  * @param {Object} storage - Storage provider instance
  * @returns {Promise<Object>} Response object
  */
-async function handleGetRequest(params, logger, storage) {
+async function handleGetRequest(params, actionParams, logger, storage) {
   try {
     // Handle modal requests
     if (params.modal === 'delete' && params.fileName) {
-      return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath, params));
+      return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath, actionParams));
     }
 
     // Get file list with metadata using unified storage interface
@@ -122,7 +123,7 @@ async function main(params) {
     // Route request based on HTTP method
     switch (params.__ow_method) {
       case 'get':
-        return handleGetRequest(params, logger, storage);
+        return handleGetRequest(params, actionParams, logger, storage);
       case 'delete':
         return handleDeleteRequest(params, logger, storage);
       default:
