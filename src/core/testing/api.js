@@ -10,8 +10,8 @@ const { createTraceContext, traceStep, formatTrace } = require('../tracing');
 const { request } = http;
 // Get default configuration
 const config = getConfig();
-// Default base URL for local development
-const DEFAULT_BASE_URL = 'https://285361-188maroonwallaby-stage.adobeio-static.net';
+// Note: Using null to let buildRuntimeUrl determine the correct URL from environment config
+const DEFAULT_BASE_URL = null;
 // Initialize JSON Schema validator
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
