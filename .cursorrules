@@ -320,11 +320,45 @@ npm run test:schemas // Comprehensive schema validation test suite
 - **Security Filtering**: Frontend schemas exclude all credentials
 - **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
 
+### Build Integration (Automatic)
+
+Schema validation is **automatically integrated** into all build and deployment commands:
+
+- **npm run build** - Validates before building
+- **npm run start** - Validates before quick deployment
+- **npm run deploy** - Validates before staging deployment
+- **npm run deploy:prod** - Validates before production deployment
+
+### Output Modes
+
+- **Build Integration**: `npm run validate` - Concise output ("✅ Schema validation passed")
+- **Development**: `npm run test:schemas` - Detailed diagnostics
+- **Failure**: Always shows detailed error messages regardless of mode
+
 ### When to Use Validation
 
-- **Always**: In test scripts and development tools (`npm run test:schemas`)
-- **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
-- **Required**: For frontend configuration generation (automatic validation)
+- **Automatic**: Build process validates configuration before deployment
+- **Development**: Use `npm run test:schemas` for detailed validation during development
+- **Runtime**: Production actions use fast `loadConfig()` without validation overhead
+- **Frontend Generation**: Automatic validation during `npm run build:config`
+
+### Validation Flow
+
+```
+npm run deploy
+├── npm run validate (schema validation - concise)
+├── npm run build:config (frontend generation)
+└── aio app deploy (deployment)
+```
+
+### Build Failure Handling
+
+When validation fails, build stops with detailed errors:
+
+```
+❌ Schema validation failed (1/4 tests failed)
+❌ Configuration validation failed: errorVerbosity must be equal to one of the allowed values
+```
 
 ## Common Patterns
 
@@ -368,11 +402,45 @@ npm run test:schemas // Comprehensive schema validation test suite
 - **Security Filtering**: Frontend schemas exclude all credentials
 - **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
 
+### Build Integration (Automatic)
+
+Schema validation is **automatically integrated** into all build and deployment commands:
+
+- **npm run build** - Validates before building
+- **npm run start** - Validates before quick deployment
+- **npm run deploy** - Validates before staging deployment
+- **npm run deploy:prod** - Validates before production deployment
+
+### Output Modes
+
+- **Build Integration**: `npm run validate` - Concise output ("✅ Schema validation passed")
+- **Development**: `npm run test:schemas` - Detailed diagnostics
+- **Failure**: Always shows detailed error messages regardless of mode
+
 ### When to Use Validation
 
-- **Always**: In test scripts and development tools (`npm run test:schemas`)
-- **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
-- **Required**: For frontend configuration generation (automatic validation)
+- **Automatic**: Build process validates configuration before deployment
+- **Development**: Use `npm run test:schemas` for detailed validation during development
+- **Runtime**: Production actions use fast `loadConfig()` without validation overhead
+- **Frontend Generation**: Automatic validation during `npm run build:config`
+
+### Validation Flow
+
+```
+npm run deploy
+├── npm run validate (schema validation - concise)
+├── npm run build:config (frontend generation)
+└── aio app deploy (deployment)
+```
+
+### Build Failure Handling
+
+When validation fails, build stops with detailed errors:
+
+```
+❌ Schema validation failed (1/4 tests failed)
+❌ Configuration validation failed: errorVerbosity must be equal to one of the allowed values
+```
 
 ## Dependencies
 
