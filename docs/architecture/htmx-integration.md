@@ -24,21 +24,25 @@ This guide explains how HTMX is integrated into the Adobe App Builder applicatio
 
 ## Core Components
 
-### **1. Frontend Configuration**
+### **1. Auto-Generated Frontend Configuration**
 
 Location: `web-src/src/js/htmx/setup.js`
 
 ```javascript
-// HTMX configuration for Adobe App Builder
-htmx.config = {
-  historyEnabled: true,
+// HTMX configuration using auto-generated settings
+import { getTimeout } from '../core/config/index.js';
+import { getActionUrl } from '../core/url/index.js';
+
+const HTMX_CONFIG = {
+  timeout: getTimeout(), // From backend performance configuration
+  historyCacheSize: 10,
   defaultSwapStyle: 'innerHTML',
-  requestClass: 'htmx-request',
-  indicatorClass: 'htmx-indicator',
-  timeout: 30000,
-  // Security headers for Adobe I/O
-  withCredentials: false,
-  includeIndicatorStyles: true,
+  defaultSettleDelay: 20,
+  includeIndicatorStyles: false, // We use our own indicators
+  globalViewTransitions: true,
+  allowScriptTags: false, // Security: don't allow script tags
+  allowEval: false, // Security: don't allow eval
+  selfRequestsOnly: false, // Allow Adobe I/O Runtime cross-origin
 };
 
 // Configure for Adobe I/O Runtime endpoints

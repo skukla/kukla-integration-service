@@ -11,18 +11,56 @@ The URL management system provides a consistent way to build URLs across both ba
 ### Core Components
 
 1. **`src/core/url/index.js`** - Backend URL management with configuration loading
-2. **`web-src/src/js/core/url.js`** - Frontend URL management with static configuration
+2. **`web-src/src/js/core/url.js`** - **Auto-generated** frontend URL management
 3. **`src/core/routing/index.js`** - Re-exports for backward compatibility
-4. **Single file per context** - No redundant files or complex manager objects
+4. **`scripts/generate-frontend.js`** - Generates frontend URL module from backend patterns
 
 ### Key Features
 
 - **Consistent Algorithm**: Same URL building logic across all contexts
-- **Clear Organization**: Predictable module structure and function names
+- **Auto-Generated Frontend**: Frontend URL module generated from backend patterns
 - **Environment Awareness**: Automatic detection of staging vs production patterns
 - **HTMX Compatibility**: Handles relative URLs for static hosting scenarios
 - **Parameter Handling**: Consistent URL parameter encoding across contexts
-- **Simple Architecture**: Clean, straightforward implementation
+- **No Code Duplication**: Frontend functions generated from backend logic
+
+## Frontend Generation
+
+The frontend URL module is automatically generated during build to ensure consistency:
+
+```bash
+npm run build:config    # Generates both config and URL modules
+npm run start          # Auto-generates during deployment
+npm run deploy         # Auto-generates during deployment
+```
+
+### Generation Process
+
+1. **Source**: Extracts URL building logic from `src/core/url/index.js`
+2. **Transform**: Converts backend patterns to frontend-compatible ES6 modules
+3. **Output**: Creates `web-src/src/js/core/url.js` with equivalent functions
+4. **Consistency**: Ensures frontend URL building matches backend exactly
+
+### Generated Functions
+
+The frontend module includes auto-generated equivalents of backend functions:
+
+```javascript
+// Auto-generated from backend buildRuntimeUrl
+export function getActionUrl(action, params) {
+  /* ... */
+}
+
+// Auto-generated from backend file URL patterns
+export function getDownloadUrl(fileName, path) {
+  /* ... */
+}
+
+// Auto-generated configuration access
+export function getConfig() {
+  /* ... */
+}
+```
 
 ## Usage Patterns
 
