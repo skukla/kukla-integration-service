@@ -13,9 +13,11 @@ dotenv.config();
 /**
  * Load configuration with clean mental model organization
  * @param {Object} [params] - Action parameters from Adobe I/O Runtime
+ * @param {Object} [options] - Loading options
+ * @param {boolean} [options.validate=false] - Whether to validate configuration against schema
  * @returns {Object} Complete organized configuration
  */
-function loadConfig(params = {}) {
+function loadConfig(params = {}, options = {}) {
   // Detect environment using shared utility
   const env = detectEnvironment(params);
 
@@ -47,7 +49,30 @@ function loadConfig(params = {}) {
   config.storage.s3.credentials.secretAccessKey =
     params.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
 
+  // Optional schema validation
+  if (options.validate) {
+    try {
+      const { validateConfig } = require('./schema');
+      validateConfig(config);
+    } catch (error) {
+      console.warn(`Configuration validation failed: ${error.message}`);
+      // Don't throw - just warn for now to maintain compatibility
+    }
+  }
+
   return config;
 }
 
-module.exports = { loadConfig };
+/**
+ * Load and validate configuration
+ * @param {Object} [params] - Action parameters from Adobe I/O Runtime
+ * @returns {Object} Validated configuration
+ */
+function loadValidatedConfig(params = {}) {
+  return loadConfig(params, { validate: true });
+}
+
+module.exports = {
+  loadConfig,
+  loadValidatedConfig,
+};
