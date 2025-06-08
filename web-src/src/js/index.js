@@ -14,7 +14,7 @@ export * as ui from './ui/index.js';
 export * as htmx from './htmx/index.js';
 
 // Individual module exports for convenience
-export { initializeHTMX } from './htmx/index.js';
+export { initializeHtmx } from './htmx/index.js';
 export {
   initializeModal,
   initializeFileBrowser,

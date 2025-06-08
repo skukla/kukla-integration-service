@@ -2,9 +2,8 @@
  * Main application entry point
  * @module main
  */
-import { initializeFileBrowser } from './browser/file-browser.js';
-import { initializeModal } from './core/modal.js';
-import { initializeHtmx } from './htmx/setup.js';
+import { initializeHtmx } from './htmx/index.js';
+import { initializeFileBrowser, initializeModal } from './ui/index.js';
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {

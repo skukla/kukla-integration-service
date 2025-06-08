@@ -4,4 +4,4 @@
  */
 
 // Re-export HTMX setup functionality
-export { initializeHTMX } from './setup.js';
+export { initializeHtmx } from './setup.js';

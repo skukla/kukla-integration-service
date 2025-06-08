@@ -1,9 +1,9 @@
 /* HTMX Setup and Initialization */
 import { initializeHtmxEvents } from './events.js';
 import { getTimeout } from '../core/config/index.js';
-import { initializeDownloadHandlers } from '../core/downloads.js';
 import { getActionUrl } from '../core/url/index.js';
 import { showNotification } from '../ui/components/notifications/index.js';
+import { initializeDownloadHandlers } from '../ui/downloads/index.js';
 // Component configuration
 const COMPONENT_CONFIG = {
   'file-list': {

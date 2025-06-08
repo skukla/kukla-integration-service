@@ -1,10 +1,10 @@
 /**
  * Download functionality handler
- * @module core/downloads
+ * @module ui/downloads
  */
 
-import { showNotification } from './notifications.js';
-import { getActionUrl } from './url.js';
+import { showNotification } from '../components/notifications/index.js';
+import { getActionUrl } from '../../core/url/index.js';
 
 /**
  * Process a base64 response and trigger file download
