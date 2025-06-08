@@ -3,14 +3,12 @@
  * @module main
  */
 import { initializeFileBrowser } from './browser/file-browser.js';
-import { checkBackendConnection } from './config.js';
 import { initializeModal } from './core/modal.js';
-import { initializeHtmx } from './htmx/config.js';
+import { initializeHtmx } from './htmx/setup.js';
 
 // Initialize the application when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    await checkBackendConnection();
     initializeHtmx();
     initializeModal();
     initializeFileBrowser();
