@@ -167,6 +167,71 @@ Since automatic memories aren't available, use these manual techniques:
 6. Consider HTMX patterns for UI interactions
 7. Follow the established project patterns and conventions
 
+## Configuration Management
+
+The application uses a sophisticated configuration system across backend and frontend with consistent patterns and security considerations.
+
+### Backend Configuration
+
+Use `loadConfig(params)` and specialized functions for different configuration sections:
+
+```javascript
+const { loadConfig, getCommerceConfig, getStorageConfig } = require('../../config');
+
+// Load complete configuration
+const config = loadConfig(params);
+
+// Access specific sections
+const commerceConfig = getCommerceConfig();
+const storageConfig = getStorageConfig();
+```
+
+### Frontend Configuration
+
+Frontend mirrors backend patterns but with frontend-safe data (credentials excluded):
+
+```javascript
+import {
+  loadConfig,
+  getCommerceConfig,
+  getStorageConfig,
+  getRuntimeConfig,
+  getPerformanceConfig,
+  isStaging,
+  getTracingConfig,
+} from './core/config.js';
+
+// Load complete configuration
+const config = loadConfig();
+
+// Access specific sections
+const commerce = getCommerceConfig();
+const commerceUrl = commerce.baseUrl;
+
+// Environment checks
+if (isStaging()) {
+  console.log('Running in staging');
+}
+```
+
+### Configuration Generation
+
+Frontend configuration is automatically generated during build from backend config:
+
+- **Build integration**: `npm run build:config` generates frontend config
+- **Security**: Sensitive credentials excluded from frontend
+- **Environment-specific**: Generated config matches build environment
+- **Auto-generated**: File at `web-src/src/config/generated/config.js`
+
+### Configuration Rules
+
+- **Backend**: Use `loadConfig(params)` for complete configuration
+- **Frontend**: Use specialized functions like `getCommerceConfig()`
+- **Security**: Never include credentials in frontend configuration
+- **Environment**: Configuration automatically detects staging vs production
+- **Build process**: Frontend config regenerated on each build/deploy
+- **Legacy**: Old `urlConfig` imports should use new `core/config.js`
+
 ## URL Management
 
 The application uses a consistent URL management system across backend and frontend contexts:
