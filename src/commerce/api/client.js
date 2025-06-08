@@ -44,9 +44,11 @@ function createClient(options = {}, params = {}) {
       // Use buildCommerceUrl to construct the full URL
       const url = buildCommerceUrl(clientConfig.baseUrl, endpoint, {}, params);
 
-      // Only log URL in development/verbose mode, not during tests
-      if (!process.env.QUIET_MODE && process.env.NODE_ENV !== 'test') {
-        console.log('Making request to URL:', url);
+      // Log URL using proper logger if available in params
+      if (params.LOG_LEVEL === 'debug' || params.LOG_LEVEL === 'trace') {
+        const { Core } = require('@adobe/aio-sdk');
+        const logger = Core.Logger('commerce-client', { level: params.LOG_LEVEL });
+        logger.debug('Making Commerce API request', { url });
       }
 
       // Make the request using the core HTTP client

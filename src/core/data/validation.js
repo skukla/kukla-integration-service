@@ -11,38 +11,38 @@
  * @returns {string|null} Error message if validation fails, null if successful
  */
 function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders = []) {
-    const missingParams = [];
-    const missingHeaders = [];
+  const missingParams = [];
+  const missingHeaders = [];
 
-    // Check for missing parameters
-    requiredParams.forEach(param => {
-        const value = param.split('.').reduce((obj, key) => obj && obj[key], params);
-        if (value === undefined || value === '') {
-            missingParams.push(param);
-        }
+  // Check for missing parameters
+  requiredParams.forEach((param) => {
+    const value = param.split('.').reduce((obj, key) => obj && obj[key], params);
+    if (value === undefined || value === '') {
+      missingParams.push(param);
+    }
+  });
+
+  // Check for missing headers
+  if (requiredHeaders.length > 0 && !params.__ow_headers) {
+    missingHeaders.push(...requiredHeaders);
+  } else {
+    requiredHeaders.forEach((header) => {
+      if (!params.__ow_headers[header]) {
+        missingHeaders.push(header);
+      }
     });
+  }
 
-    // Check for missing headers
-    if (requiredHeaders.length > 0 && !params.__ow_headers) {
-        missingHeaders.push(...requiredHeaders);
-    } else {
-        requiredHeaders.forEach(header => {
-            if (!params.__ow_headers[header]) {
-                missingHeaders.push(header);
-            }
-        });
-    }
-
-    if (missingParams.length > 0 && missingHeaders.length > 0) {
-        return `missing header(s) '${missingHeaders.join(',')}' and missing parameter(s) '${missingParams.join(',')}'`;
-    }
-    if (missingParams.length > 0) {
-        return `missing parameter(s) '${missingParams.join(',')}'`;
-    }
-    if (missingHeaders.length > 0) {
-        return `missing header(s) '${missingHeaders.join(',')}'`;
-    }
-    return null;
+  if (missingParams.length > 0 && missingHeaders.length > 0) {
+    return `missing header(s) '${missingHeaders.join(',')}' and missing parameter(s) '${missingParams.join(',')}'`;
+  }
+  if (missingParams.length > 0) {
+    return `missing parameter(s) '${missingParams.join(',')}'`;
+  }
+  if (missingHeaders.length > 0) {
+    return `missing header(s) '${missingHeaders.join(',')}'`;
+  }
+  return null;
 }
 
 /**
@@ -52,7 +52,7 @@ function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders 
  * @throws {Error} If any required field is missing
  */
 function validateRequired(input, requiredFields) {
-  const missing = requiredFields.filter(field => !input[field]);
+  const missing = requiredFields.filter((field) => !input[field]);
   if (missing.length > 0) {
     throw new Error(`Missing required fields: ${missing.join(', ')}`);
   }
@@ -85,8 +85,8 @@ function validateUrl(value, fieldName) {
 }
 
 module.exports = {
-    checkMissingRequestInputs,
-    validateRequired,
-    validateString,
-    validateUrl
-}; 
+  checkMissingRequestInputs,
+  validateRequired,
+  validateString,
+  validateUrl,
+};
