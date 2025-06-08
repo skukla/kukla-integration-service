@@ -16,26 +16,27 @@ const { loadConfig } = require('../../../config');
  */
 function buildActionUrl(config, action, options = {}) {
   const { baseUrl, namespace, package: pkg, version, paths } = config.runtime || config;
-  const { params = {}, absolute = true, includeNamespace = null } = options;
-
-  // Auto-detect namespace inclusion based on baseUrl pattern
-  let shouldIncludeNamespace = includeNamespace;
-  if (shouldIncludeNamespace === null) {
-    // Include namespace in path only for direct runtime domains
-    shouldIncludeNamespace = baseUrl && baseUrl.includes('adobeioruntime.net');
-  }
+  const { params = {}, absolute = true } = options;
 
   // Handle different URL patterns based on environment
   let actionPath;
 
   if (!absolute || !baseUrl) {
-    // Relative URL for HTMX/static hosting
-    const namespacePath = shouldIncludeNamespace ? `/${namespace}` : '';
-    actionPath = `${paths.base}/${version}${paths.web}${namespacePath}/${pkg}/${action}`;
+    // Relative URL for HTMX/static hosting - no namespace in path for modern pattern
+    actionPath = `${paths.base}/${version}${paths.web}/${pkg}/${action}`;
   } else {
     // Absolute URL for backend/API calls
-    const namespacePath = shouldIncludeNamespace ? `/${namespace}` : '';
-    actionPath = `${baseUrl}${paths.base}/${version}${paths.web}${namespacePath}/${pkg}/${action}`;
+    if (baseUrl.includes('adobeioruntime.net')) {
+      // Modern Adobe App Builder pattern: put namespace in hostname
+      const modernBaseUrl = baseUrl.replace(
+        'adobeioruntime.net',
+        `${namespace}.adobeioruntime.net`
+      );
+      actionPath = `${modernBaseUrl}${paths.base}/${version}${paths.web}/${pkg}/${action}`;
+    } else {
+      // Other environments or custom URLs - keep as-is
+      actionPath = `${baseUrl}${paths.base}/${version}${paths.web}/${pkg}/${action}`;
+    }
   }
 
   // Add URL parameters if provided
