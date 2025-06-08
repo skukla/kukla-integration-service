@@ -3,7 +3,7 @@
  * @module htmx/events
  */
 
-import { ErrorHandler } from '../core/errors/index.js';
+import { handleError } from '../core/errors/index.js';
 import {
   showModal,
   hideModal,
@@ -180,7 +180,7 @@ function parseErrorResponse(detail) {
  */
 function handleResponseError(event) {
   const error = parseErrorResponse(event.detail);
-  ErrorHandler.handleError(error);
+  handleError(error);
 }
 
 /**
