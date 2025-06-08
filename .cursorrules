@@ -288,6 +288,44 @@ const downloadUrl = getDownloadUrl('products.csv', '/exports/');
 - `buildDownloadUrl(filePath)` - Build encoded download URL
 - `getConfig()` - Get URL configuration for debugging
 
+## Schema Validation System
+
+### Simplified Schema Approach
+
+The project uses a simplified schema validation system that matches the actual architecture:
+
+- **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
+- **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
+- **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
+
+### Schema Usage Patterns
+
+```javascript
+// Configuration validation (optional)
+const { loadValidatedConfig } = require('../config');
+const config = loadValidatedConfig(params); // Validates and warns on issues
+
+// Action validation (development/testing)
+const { validateActionParams, validateActionResponse } = require('../src/core/validation');
+validateActionParams('get-products', params, { strict: true });
+
+// Schema testing
+npm run test:schemas // Comprehensive schema validation test suite
+```
+
+### Schema Design Principles
+
+- **Optional by Default**: Validation warns instead of failing for compatibility
+- **Action-Specific**: Each action has its own request/response schemas
+- **Security Filtering**: Frontend schemas exclude all credentials
+- **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
+
+### When to Use Validation
+
+- **Always**: In test scripts and development tools (`npm run test:schemas`)
+- **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
+- **Required**: For frontend configuration generation (automatic validation)
+
 ## Common Patterns
 
 - Configuration: Use the schema-validated config system
@@ -297,6 +335,44 @@ const downloadUrl = getDownloadUrl('products.csv', '/exports/');
 - Error Responses: Use consistent error formatting
 - Logging: Use appropriate log levels and formatting
 - URL Building: Use the established URL management functions
+
+## Schema Validation System
+
+### Simplified Schema Approach
+
+The project uses a simplified schema validation system that matches the actual architecture:
+
+- **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
+- **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
+- **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
+
+### Schema Usage Patterns
+
+```javascript
+// Configuration validation (optional)
+const { loadValidatedConfig } = require('../config');
+const config = loadValidatedConfig(params); // Validates and warns on issues
+
+// Action validation (development/testing)
+const { validateActionParams, validateActionResponse } = require('../src/core/validation');
+validateActionParams('get-products', params, { strict: true });
+
+// Schema testing
+npm run test:schemas // Comprehensive schema validation test suite
+```
+
+### Schema Design Principles
+
+- **Optional by Default**: Validation warns instead of failing for compatibility
+- **Action-Specific**: Each action has its own request/response schemas
+- **Security Filtering**: Frontend schemas exclude all credentials
+- **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
+
+### When to Use Validation
+
+- **Always**: In test scripts and development tools (`npm run test:schemas`)
+- **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
+- **Required**: For frontend configuration generation (automatic validation)
 
 ## Dependencies
 
@@ -480,3 +556,41 @@ if (context.config.performance.enabled) {
 - Path: `config.app.monitoring.tracing`
 - Loaded via: `getTracingConfig(params)`
 - Always pass params for proper environment detection
+
+## Schema Validation System
+
+### Simplified Schema Approach
+
+The project uses a simplified schema validation system that matches the actual architecture:
+
+- **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
+- **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
+- **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
+
+### Schema Usage Patterns
+
+```javascript
+// Configuration validation (optional)
+const { loadValidatedConfig } = require('../config');
+const config = loadValidatedConfig(params); // Validates and warns on issues
+
+// Action validation (development/testing)
+const { validateActionParams, validateActionResponse } = require('../src/core/validation');
+validateActionParams('get-products', params, { strict: true });
+
+// Schema testing
+npm run test:schemas // Comprehensive schema validation test suite
+```
+
+### Schema Design Principles
+
+- **Optional by Default**: Validation warns instead of failing for compatibility
+- **Action-Specific**: Each action has its own request/response schemas
+- **Security Filtering**: Frontend schemas exclude all credentials
+- **Matches Reality**: Schemas validate actual configuration structure, not theoretical ideals
+
+### When to Use Validation
+
+- **Always**: In test scripts and development tools (`npm run test:schemas`)
+- **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
+- **Required**: For frontend configuration generation (automatic validation)

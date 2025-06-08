@@ -28,14 +28,16 @@
     "prettier": "^3.5.3"
   },
   "scripts": {
-    "start": "npm run build:config && aio app deploy",
-    "build": "npm run build:config && aio app build",
+    "start": "npm run validate && npm run build:config && aio app deploy",
+    "build": "npm run validate && npm run build:config && aio app build",
     "build:config": "node scripts/generate-frontend.js",
-    "deploy": "npm run clean && npm run build:config && aio app deploy",
-    "deploy:prod": "npm run clean && npm run build:config && aio app deploy --workspace=Production",
+    "validate": "node scripts/test-schemas.js --quiet",
+    "deploy": "npm run clean && npm run validate && npm run build:config && aio app deploy",
+    "deploy:prod": "npm run clean && npm run validate && npm run build:config && aio app deploy --workspace=Production",
     "clean": "rm -rf dist",
     "test:api": "node scripts/test-api.js",
     "test:action": "node scripts/test-action.js",
+    "test:schemas": "node scripts/test-schemas.js",
     "test:perf": "node scripts/test-performance.js --env staging",
     "test:perf:prod": "node scripts/test-performance.js --env prod"
   },

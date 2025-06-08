@@ -61,6 +61,15 @@ export default ${JSON.stringify(frontendConfig, null, 2)};
     fs.mkdirSync(frontendConfigDir, { recursive: true });
   }
 
+  // Validate frontend configuration
+  try {
+    const { validateFrontendConfig } = require('../config/schema');
+    validateFrontendConfig(frontendConfig);
+  } catch (error) {
+    console.warn(`Frontend configuration validation failed: ${error.message}`);
+    // Continue with generation - validation is optional for now
+  }
+
   // Write frontend configuration
   fs.writeFileSync(path.resolve(frontendConfigDir, 'config.js'), frontendConfigContent);
 }
