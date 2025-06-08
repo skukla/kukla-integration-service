@@ -11,26 +11,34 @@ const { initializeStorage } = require('../../../src/core/storage');
 const { createHtmxResponse } = require('../../../src/htmx/formatting');
 
 /**
- * Creates a simple HTML response with basic CORS headers (avoiding getCorsHeaders)
+ * Creates an HTML response using HTMX formatting
  * @param {string} html - HTML content
  * @param {number} [status=200] - HTTP status code
  * @returns {Object} Response object
  */
 function createHtmlResponse(html, status = 200) {
-  const baseResponse = createHtmxResponse({
+  return createHtmxResponse({
     html,
     status,
   });
+}
 
+/**
+ * Create JSON error response
+ * @param {string} error - Error message
+ * @param {number} status - HTTP status code
+ * @returns {Object} Response object
+ */
+function createErrorResponse(error, status) {
   return {
-    ...baseResponse,
+    statusCode: status,
     headers: {
-      ...baseResponse.headers,
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers':
-        'Content-Type, Authorization, hx-current-url, hx-request, hx-target, hx-trigger',
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify({
+      success: false,
+      error,
+    }),
   };
 }
 
@@ -67,18 +75,7 @@ async function handleGetRequest(params, logger, storage) {
     return createHtmlResponse(getFileListHtml(csvFiles, storageInfo));
   } catch (error) {
     logger.error('Error in GET request:', error);
-    // Return simple error without using response module to avoid getCorsHeaders
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-    };
+    return createErrorResponse(error.message, 500);
   }
 }
 
@@ -93,17 +90,7 @@ async function handleDeleteRequest(params, logger, storage) {
   try {
     const fileName = params.fileName;
     if (!fileName) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        body: JSON.stringify({
-          success: false,
-          error: 'File name is required',
-        }),
-      };
+      return createErrorResponse('File name is required', 400);
     }
 
     logger.info(`Deleting file: ${fileName}`);
@@ -111,17 +98,7 @@ async function handleDeleteRequest(params, logger, storage) {
     return createHtmlResponse('');
   } catch (error) {
     logger.error('Error in DELETE request:', error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-    };
+    return createErrorResponse(error.message, 500);
   }
 }
 
@@ -131,24 +108,6 @@ async function handleDeleteRequest(params, logger, storage) {
  * @returns {Promise<Object>} Action response
  */
 async function main(params) {
-  // Handle preflight requests first
-  if (params.__ow_method === 'options') {
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers':
-          'Content-Type, Authorization, hx-current-url, hx-request, hx-target, hx-trigger',
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Preflight success',
-      }),
-    };
-  }
-
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
   try {
@@ -167,31 +126,11 @@ async function main(params) {
       case 'delete':
         return handleDeleteRequest(params, logger, storage);
       default:
-        return {
-          statusCode: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-          body: JSON.stringify({
-            success: false,
-            error: 'Method not allowed',
-          }),
-        };
+        return createErrorResponse('Method not allowed', 400);
     }
   } catch (error) {
     logger.error('Error in main:', error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-    };
+    return createErrorResponse(error.message, 500);
   }
 }
 

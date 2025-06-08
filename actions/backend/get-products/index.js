@@ -89,7 +89,7 @@ async function main(params) {
 
   // Handle preflight requests first
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {}, actionParams);
+    return response.success({}, 'Preflight success', {});
   }
 
   try {
@@ -144,11 +144,10 @@ async function main(params) {
         },
       },
       'Product export completed',
-      {},
-      actionParams
+      {}
     );
   } catch (error) {
-    return response.error(error, {}, actionParams);
+    return response.error(error, {});
   }
 }
 

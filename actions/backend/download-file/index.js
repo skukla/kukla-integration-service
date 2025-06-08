@@ -33,7 +33,7 @@ const { extractCleanFilename } = require('../../../src/core/storage/path');
 async function main(params) {
   // Handle preflight requests first
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {}, params);
+    return response.success({}, 'Preflight success', {});
   }
 
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
@@ -45,7 +45,7 @@ async function main(params) {
     const missingInputs = checkMissingRequestInputs(params, ['fileName']);
     if (missingInputs) {
       logger.error('Missing required inputs:', { missingInputs });
-      return response.badRequest(missingInputs, {}, params);
+      return response.badRequest(missingInputs, {});
     }
 
     // Extract clean filename (remove public/ prefix if present)
@@ -99,21 +99,21 @@ async function main(params) {
       switch (error.type) {
         case FileErrorType.NOT_FOUND:
           logger.warn('File not found:', { fileName: params.fileName });
-          return response.badRequest(`File not found: ${params.fileName}`, {}, params);
+          return response.badRequest(`File not found: ${params.fileName}`, {});
         case FileErrorType.INVALID_PATH:
           logger.warn('Invalid file path:', { fileName: params.fileName });
-          return response.badRequest(error.message, {}, params);
+          return response.badRequest(error.message, {});
         default:
           logger.error('File operation error:', {
             type: error.type,
             message: error.message,
           });
-          return response.error(error, {}, params);
+          return response.error(error, {});
       }
     }
 
     logger.error('Unexpected error:', error);
-    return response.error(error, {}, params);
+    return response.error(error, {});
   }
 }
 
