@@ -169,11 +169,41 @@ npm run deploy         # Generate config + deploy
 
 ### Generation Process
 
-1. **Script**: `scripts/generate-frontend-config.js`
+1. **Script**: `scripts/generate-frontend.js` (consolidated config and URL generation)
 2. **Source**: Loads backend configuration using `loadConfig()`
 3. **Filtering**: Excludes sensitive credentials (Commerce, AWS, etc.)
-4. **Output**: `web-src/src/config/generated/config.js` (ES6 module)
-5. **Security**: File excluded from version control
+4. **Output**:
+   - `web-src/src/config/generated/config.js` (ES6 module)
+   - `web-src/src/js/core/url.js` (auto-generated URL functions)
+5. **Security**: Generated files excluded from version control
+
+### Consolidated Frontend Generation
+
+The system now generates both configuration and URL modules in a single script:
+
+```javascript
+// Generated configuration module
+export const CONFIG = {
+  environment: 'staging',
+  runtime: {
+    /* runtime settings */
+  },
+  performance: {
+    /* performance settings */
+  },
+};
+
+// Generated URL module with backend-equivalent functions
+export function getActionUrl(action, params) {
+  // Auto-generated from backend buildRuntimeUrl logic
+}
+
+export function getDownloadUrl(fileName, path) {
+  // Consistent with backend URL patterns
+}
+```
+
+This eliminates code duplication and ensures frontend URL building matches backend patterns exactly.
 
 ### Environment-Specific Generation
 
@@ -349,7 +379,7 @@ async function main(params) {
 
 ### Current Scripts
 
-- **`generate-frontend-config.js`** - Generates frontend configuration from backend config
+- **`generate-frontend.js`** - Generates frontend configuration and URL modules from backend config
 - **`test-action.js`** - Test individual actions with configuration
 - **`test-api.js`** - API testing utilities
 - **`test-performance.js`** - Performance testing with configuration

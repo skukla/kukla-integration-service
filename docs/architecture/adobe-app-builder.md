@@ -43,10 +43,17 @@ kukla-integration-service/
 │   └── frontend/              # UI response handlers
 │       └── browse-files/      # File browser HTMX responses
 ├── src/                       # Shared utilities
-│   ├── core/                  # Platform utilities
+│   ├── core/                  # Platform utilities (config, URL, storage)
 │   ├── commerce/              # Commerce API integration
 │   └── htmx/                  # Frontend response utilities
 ├── web-src/                   # Static frontend assets
+│   └── src/
+│       ├── js/
+│       │   ├── core/          # Auto-generated config and URL modules
+│       │   ├── htmx/          # HTMX setup and configuration
+│       │   └── ui/            # UI components and interactions
+│       └── config/
+│           └── generated/     # Build-generated configuration files
 ├── config/                    # Environment configurations
 └── app.config.yaml           # Adobe App Builder configuration
 ```
@@ -206,12 +213,14 @@ Adobe App Builder uses a staging-first development approach:
 ```bash
 # Quick development iteration
 npm start
+# ↳ Generates frontend config and URLs
 # ↳ Builds and deploys to staging
 # ↳ Opens browser to staging URL
 # ↳ Watches for file changes
 
 # Reliable deployment
 npm run deploy
+# ↳ Generates frontend assets
 # ↳ Full build and validation
 # ↳ Deploy to staging workspace
 

@@ -67,11 +67,11 @@ The application uses a comprehensive configuration system:
 
    ```bash
    # Quick development cycle
-   npm start                   # Fast deploy to staging for development
+   npm start                   # Generates frontend assets + fast deploy to staging
 
    # Reliable deployment
-   npm run deploy              # Clean deploy to staging
-   npm run deploy:prod         # Clean deploy to production
+   npm run deploy              # Generates frontend assets + clean deploy to staging
+   npm run deploy:prod         # Generates frontend assets + clean deploy to production
    ```
 
    ### Why Staging-Only Development?
@@ -113,10 +113,12 @@ kukla-integration-service/
 │   └── defaults/      # Default configurations
 └── web-src/            # Frontend source
     └── src/
-        └── js/
-            ├── core/   # Core utilities
-            ├── htmx/   # HTMX setup
-            └── browser/ # UI components
+        ├── js/
+        │   ├── core/       # Auto-generated config and URL modules
+        │   ├── htmx/       # HTMX setup and configuration
+        │   └── ui/         # UI components and interactions
+        └── config/
+            └── generated/  # Build-generated configuration files
 ```
 
 ## Documentation
@@ -159,6 +161,7 @@ npm run deploy:prod         # Clean build and deploy to production
 
 # Building and Utilities
 npm run build               # Build application only
+npm run build:config        # Generate frontend configuration and URL modules
 npm run clean               # Clean build artifacts
 
 # Testing

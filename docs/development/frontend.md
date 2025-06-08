@@ -32,14 +32,19 @@ web-src/
 │   │   ├── main.css        # Global styles
 │   │   ├── components/     # Component-specific styles
 │   │   └── utilities/      # Utility classes
-│   └── js/
-│       ├── main.js         # Application entry point
-│       ├── config/
-│       │   └── htmx.js     # HTMX configuration
-│       └── utils/
-│           ├── htmx-events.js   # Event handling
-│           ├── modal.js         # Modal management
-│           └── notifications.js # User notifications
+│   ├── js/
+│   │   ├── main.js         # Application entry point
+│   │   ├── core/
+│   │   │   ├── config.js   # Auto-generated configuration
+│   │   │   └── url.js      # Auto-generated URL functions
+│   │   ├── htmx/
+│   │   │   └── setup.js    # HTMX configuration and setup
+│   │   └── ui/
+│   │       ├── downloads/  # Download functionality
+│   │       ├── file-browser/ # File browser components
+│   │       └── modals/     # Modal management
+│   └── config/
+│       └── generated/      # Auto-generated configuration files
 ├── assets/
 │   ├── icons/              # SVG icons
 │   └── images/             # Static images
@@ -51,14 +56,18 @@ web-src/
 
 ## HTMX Configuration
 
-### **Global Configuration**
+### **Auto-Generated Configuration**
+
+The HTMX configuration uses auto-generated settings from the backend configuration:
 
 ```javascript
-// web-src/src/js/config/htmx.js
+// web-src/src/js/htmx/setup.js
+import { getTimeout } from '../core/config.js';
+
 export function setupHtmx() {
-  // Configure HTMX defaults
+  // Configure HTMX with auto-generated settings
   htmx.config = {
-    timeout: 10000, // 10 second timeout
+    timeout: getTimeout(), // From backend performance config
     historyCacheSize: 10, // Cache last 10 pages
     defaultSwapStyle: 'innerHTML', // Default swap method
     defaultSettleDelay: 20, // Settle animations
@@ -88,11 +97,47 @@ function generateRequestId() {
 }
 ```
 
+### **Component Configuration**
+
+The system includes a component configuration system for consistent HTMX attributes:
+
+```javascript
+// Component configuration with auto-generated URLs
+const COMPONENT_CONFIG = {
+  'file-list': {
+    'hx-get': () => getActionUrl('browse-files'),
+    'hx-trigger': 'load once',
+    'hx-swap': 'innerHTML',
+    'hx-indicator': '#content-loader',
+  },
+  'delete-button': {
+    'hx-get': (el) =>
+      getActionUrl('delete-file', {
+        fileName: el.dataset.fileName,
+        fullPath: el.dataset.downloadUrl,
+      }),
+    'hx-target': '#modal-container',
+    'hx-swap': 'innerHTML',
+  },
+};
+```
+
+### **Dynamic Content Processing**
+
+For dynamically created content, HTMX requires explicit processing:
+
+```javascript
+// After creating modal content dynamically
+const modalContainer = document.getElementById('modal-container');
+modalContainer.innerHTML = modalHTML;
+window.htmx.process(modalContainer); // Required for hx-* attributes to work
+```
+
 ### **Event System**
 
 ```javascript
-// web-src/src/js/utils/htmx-events.js
-export function setupEventHandlers() {
+// web-src/src/js/htmx/events.js
+export function initializeHtmxEvents() {
   // Loading states
   htmx.on('htmx:beforeRequest', (event) => {
     handleLoadingStart(event.target);
@@ -187,15 +232,15 @@ function handleError(detail) {
 
 ## Component Patterns
 
-### **Data Tables with Actions**
+### **Data Tables with Auto-Generated URLs**
 
 ```html
 <!-- File listing with HTMX -->
 <div id="file-list-container">
-  <!-- Refresh trigger -->
+  <!-- Using component configuration system -->
   <div
-    hx-get="/api/v1/web/kukla-integration-service/frontend/browse-files"
-    hx-trigger="load, file-updated from:body"
+    data-component="file-list"
+    hx-trigger="load once"
     hx-target="#file-list"
     hx-indicator="#loading-files"
   ></div>
