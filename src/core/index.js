@@ -45,7 +45,7 @@ const { loadConfig } = require('../../config');
 // Export public APIs with clean configuration loading
 module.exports = {
   http: http.public,
-  data: data.public,
+  data,
   storage: storage.public,
   monitoring: monitoring.public,
   routing,

@@ -46,9 +46,13 @@ function createClient(options = {}, params = {}) {
 
       // Log URL using proper logger if available in params
       if (params.LOG_LEVEL === 'debug' || params.LOG_LEVEL === 'trace') {
-        const { Core } = require('@adobe/aio-sdk');
-        const logger = Core.Logger('commerce-client', { level: params.LOG_LEVEL });
-        logger.debug('Making Commerce API request', { url });
+        try {
+          const { Core } = require('@adobe/aio-sdk');
+          const logger = Core.Logger('commerce-client', { level: params.LOG_LEVEL });
+          logger.debug('Making Commerce API request', { url });
+        } catch (logError) {
+          // Ignore logging errors to prevent request from failing
+        }
       }
 
       // Make the request using the core HTTP client
