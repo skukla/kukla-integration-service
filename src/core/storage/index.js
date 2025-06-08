@@ -47,9 +47,13 @@ async function initializeAppBuilderStorage(params = {}) {
     const testList = await files.list();
     // Log storage test results if debug logging is enabled
     if (params.LOG_LEVEL === 'debug' || params.LOG_LEVEL === 'trace') {
-      const { Core } = require('@adobe/aio-sdk');
-      const logger = Core.Logger('storage-init', { level: params.LOG_LEVEL });
-      logger.debug('AppBuilder file list test successful', { fileCount: testList.length });
+      try {
+        const { Core } = require('@adobe/aio-sdk');
+        const logger = Core.Logger('storage-init', { level: params.LOG_LEVEL });
+        logger.debug('AppBuilder file list test successful', { fileCount: testList.length });
+      } catch (logError) {
+        // Ignore logging errors to prevent storage initialization from failing
+      }
     }
   } catch (listError) {
     throw new Error(`Adobe I/O Files list operation failed: ${listError.message}`);
