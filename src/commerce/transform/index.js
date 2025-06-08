@@ -6,6 +6,6 @@
 const product = require('./product');
 
 module.exports = {
-    // Product transformations
-    product
-}; 
+  // Product transformations
+  product,
+};

@@ -12,32 +12,32 @@ const ErrorTypes = {
     code: 'VALIDATION',
     status: 400,
     defaultMessage: 'Invalid input provided',
-    action: 'Please check your input and try again'
+    action: 'Please check your input and try again',
   },
   NOT_FOUND: {
     code: 'NOT_FOUND',
     status: 404,
     defaultMessage: 'Resource not found',
-    action: 'Please verify the resource exists'
+    action: 'Please verify the resource exists',
   },
   PERMISSION_DENIED: {
     code: 'PERMISSION_DENIED',
     status: 403,
     defaultMessage: 'Permission denied',
-    action: 'Please check your permissions'
+    action: 'Please check your permissions',
   },
   RATE_LIMIT: {
     code: 'RATE_LIMIT',
     status: 429,
     defaultMessage: 'Too many requests',
-    action: 'Please try again later'
+    action: 'Please try again later',
   },
   SYSTEM: {
     code: 'SYSTEM_ERROR',
     status: 500,
     defaultMessage: 'Internal system error',
-    action: 'Please try again or contact support'
-  }
+    action: 'Please try again or contact support',
+  },
 };
 
 /**
@@ -49,7 +49,7 @@ const ErrorTypes = {
  */
 function createErrorResponse(type, message, context = {}) {
   const errorType = ErrorTypes[type] || ErrorTypes.SYSTEM;
-  
+
   return {
     statusCode: errorType.status,
     body: {
@@ -58,9 +58,9 @@ function createErrorResponse(type, message, context = {}) {
         code: errorType.code,
         message: message || errorType.defaultMessage,
         action: errorType.action,
-        context: context.public ? context.public : undefined
-      }
-    }
+        context: context.public ? context.public : undefined,
+      },
+    },
   };
 }
 
@@ -75,25 +75,25 @@ function processError(error, context = {}) {
   if (error.name === 'ValidationError') {
     return createErrorResponse('VALIDATION', error.message, context);
   }
-  
+
   // Handle file operation errors
   if (error.name === 'FileOperationError') {
     const type = error.type === 'FILE_NOT_FOUND' ? 'NOT_FOUND' : 'SYSTEM';
     return createErrorResponse(type, error.message, context);
   }
-  
+
   // Handle rate limit errors
   if (error.name === 'RateLimitError') {
     return createErrorResponse('RATE_LIMIT', error.message, {
       ...context,
-      public: { retryAfter: error.retryAfter }
+      public: { retryAfter: error.retryAfter },
     });
   }
-  
+
   // Default to system error for unknown errors
   return createErrorResponse('SYSTEM', error.message, {
     ...context,
-    originalError: error.toString()
+    originalError: error.toString(),
   });
 }
 
@@ -105,14 +105,14 @@ function processError(error, context = {}) {
 function createErrorLoggerMiddleware(logger) {
   return async (error, context = {}) => {
     const { name, message, stack } = error;
-    
+
     logger.error('Error occurred:', {
       name,
       message,
       context,
-      stack: process.env.NODE_ENV === 'development' ? stack : undefined
+      stack: process.env.NODE_ENV === 'development' ? stack : undefined,
     });
-    
+
     return processError(error, context);
   };
 }
@@ -121,5 +121,5 @@ module.exports = {
   ErrorTypes,
   createErrorResponse,
   processError,
-  createErrorLoggerMiddleware
-}; 
+  createErrorLoggerMiddleware,
+};

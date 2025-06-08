@@ -2,7 +2,8 @@
   "env": {
     "node": true,
     "es2021": true,
-    "browser": true
+    "browser": true,
+    "jest": true
   },
   "extends": ["eslint:recommended", "plugin:import/recommended", "plugin:promise/recommended"],
   "parserOptions": {
@@ -68,5 +69,20 @@
         "extensions": [".js", ".jsx"]
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*.js", "**/test*.js", "**/*.test.js", "src/core/testing/**/*.js"],
+      "rules": {
+        "no-console": "off",
+        "import/no-unused-modules": "off"
+      }
+    },
+    {
+      "files": ["web-src/src/js/index.js", "web-src/src/js/htmx/setup.js"],
+      "rules": {
+        "import/no-unused-modules": "off"
+      }
+    }
+  ]
 }

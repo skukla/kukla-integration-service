@@ -15,21 +15,17 @@
  * @returns {Promise<R[]>} Array of API response results
  */
 async function processConcurrently(items, processor, options = {}) {
-  const {
-    concurrency = 3,
-    retries = 2,
-    retryDelay = 1000
-  } = options;
+  const { concurrency = 3, retries = 2, retryDelay = 1000 } = options;
 
   const results = [];
   const errors = [];
-  
+
   // Process items in batches
   for (let i = 0; i < items.length; i += concurrency) {
     const batch = items.slice(i, i + concurrency);
     const batchPromises = batch.map(async (item, index) => {
       let lastError;
-      
+
       // Retry logic for failed API requests
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
@@ -39,11 +35,11 @@ async function processConcurrently(items, processor, options = {}) {
         } catch (error) {
           lastError = error;
           if (attempt < retries) {
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
           }
         }
       }
-      
+
       // If all retries failed, store the API error
       errors.push({ item, error: lastError });
     });
@@ -55,7 +51,9 @@ async function processConcurrently(items, processor, options = {}) {
   // If there were any API errors, throw with details
   if (errors.length > 0) {
     const errorMessage = errors
-      .map(({ item, error }) => `Failed API request for item ${JSON.stringify(item)}: ${error.message}`)
+      .map(
+        ({ item, error }) => `Failed API request for item ${JSON.stringify(item)}: ${error.message}`
+      )
       .join('\n');
     throw new Error(`Some API requests failed:\n${errorMessage}`);
   }
@@ -64,5 +62,5 @@ async function processConcurrently(items, processor, options = {}) {
 }
 
 module.exports = {
-  processConcurrently
-}; 
+  processConcurrently,
+};
