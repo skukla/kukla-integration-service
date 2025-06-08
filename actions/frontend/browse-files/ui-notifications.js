@@ -9,7 +9,7 @@
  * @returns {string} HTML for the error notification
  */
 function createErrorNotification(message) {
-    return `
+  return `
         <div class="error-notification" role="alert">
             <p>${message}</p>
         </div>
@@ -17,5 +17,5 @@ function createErrorNotification(message) {
 }
 
 module.exports = {
-    createErrorNotification
-}; 
+  createErrorNotification,
+};

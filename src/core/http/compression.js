@@ -3,8 +3,8 @@
  * @module core/http/compression
  */
 
-const zlib = require('zlib');
 const { promisify } = require('util');
+const zlib = require('zlib');
 
 const gzip = promisify(zlib.gzip);
 const deflate = promisify(zlib.deflate);
@@ -26,14 +26,14 @@ const CompressionConfig = {
     'application/json',
     'text/plain',
     'text/xml',
-    'application/xml'
+    'application/xml',
   ],
 
   // Compression methods in order of preference
   METHODS: {
     GZIP: 'gzip',
-    DEFLATE: 'deflate'
-  }
+    DEFLATE: 'deflate',
+  },
 };
 
 /**
@@ -56,8 +56,7 @@ function shouldCompress(content, contentType) {
   const size = Buffer.byteLength(contentToCheck);
   const type = contentType.split(';')[0].toLowerCase();
 
-  return size >= CompressionConfig.MIN_SIZE &&
-         CompressionConfig.COMPRESSIBLE_TYPES.includes(type);
+  return size >= CompressionConfig.MIN_SIZE && CompressionConfig.COMPRESSIBLE_TYPES.includes(type);
 }
 
 /**
@@ -66,7 +65,10 @@ function shouldCompress(content, contentType) {
  * @returns {string|null} Compression method to use, or null if none
  */
 function getCompressionMethod(acceptEncoding = '') {
-  const accepted = acceptEncoding.toLowerCase().split(',').map(e => e.trim());
+  const accepted = acceptEncoding
+    .toLowerCase()
+    .split(',')
+    .map((e) => e.trim());
 
   if (accepted.includes(CompressionConfig.METHODS.GZIP)) {
     return CompressionConfig.METHODS.GZIP;
@@ -95,7 +97,9 @@ async function compressContent(content, method) {
     contentToCompress = content;
   }
 
-  const buffer = Buffer.isBuffer(contentToCompress) ? contentToCompress : Buffer.from(contentToCompress);
+  const buffer = Buffer.isBuffer(contentToCompress)
+    ? contentToCompress
+    : Buffer.from(contentToCompress);
 
   switch (method) {
     case CompressionConfig.METHODS.GZIP:
@@ -141,8 +145,8 @@ async function addCompression(response, options = {}) {
         ...response.headers,
         'Content-Encoding': method,
         'Content-Length': compressed.length,
-        'Vary': 'Accept-Encoding'
-      }
+        Vary: 'Accept-Encoding',
+      },
     };
   } catch (error) {
     // If compression fails, return original response
@@ -154,5 +158,5 @@ module.exports = {
   CompressionConfig,
   shouldCompress,
   getCompressionMethod,
-  addCompression
-}; 
+  addCompression,
+};

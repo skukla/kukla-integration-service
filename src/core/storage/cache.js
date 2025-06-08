@@ -10,24 +10,24 @@
 const CacheConfig = {
   // Cache durations in seconds
   DURATION: {
-    SHORT: 60,          // 1 minute
-    MEDIUM: 300,        // 5 minutes
-    LONG: 3600,        // 1 hour
-    VERY_LONG: 86400   // 24 hours
+    SHORT: 60, // 1 minute
+    MEDIUM: 300, // 5 minutes
+    LONG: 3600, // 1 hour
+    VERY_LONG: 86400, // 24 hours
   },
 
   // Cache storage types
   STORAGE: {
     MEMORY: 'memory',
-    HTTP: 'http'
+    HTTP: 'http',
   },
 
   // HTTP cache control directives
   HTTP: {
     NO_CACHE: 'no-cache, no-store, must-revalidate',
     PUBLIC: 'public',
-    PRIVATE: 'private'
-  }
+    PRIVATE: 'private',
+  },
 };
 
 /**
@@ -54,12 +54,12 @@ const MemoryCache = {
 
     const ttl = options.ttl || CacheConfig.DURATION.MEDIUM;
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (now - cached.timestamp > ttl) {
       memoryCache.delete(key);
       return null;
     }
-    
+
     return cached.data;
   },
 
@@ -71,7 +71,7 @@ const MemoryCache = {
   set(key, data) {
     memoryCache.set(key, {
       data,
-      timestamp: Math.floor(Date.now() / 1000)
+      timestamp: Math.floor(Date.now() / 1000),
     });
   },
 
@@ -85,7 +85,7 @@ const MemoryCache = {
     } else {
       memoryCache.clear();
     }
-  }
+  },
 };
 
 /**
@@ -106,21 +106,19 @@ const HttpCache = {
     if (noCache) {
       return {
         'Cache-Control': CacheConfig.HTTP.NO_CACHE,
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        Pragma: 'no-cache',
+        Expires: '0',
       };
     }
 
-    const directives = [
-      isPublic ? CacheConfig.HTTP.PUBLIC : CacheConfig.HTTP.PRIVATE
-    ];
+    const directives = [isPublic ? CacheConfig.HTTP.PUBLIC : CacheConfig.HTTP.PRIVATE];
 
     if (maxAge) {
       directives.push(`max-age=${maxAge}`);
     }
 
     return {
-      'Cache-Control': directives.join(', ')
+      'Cache-Control': directives.join(', '),
     };
   },
 
@@ -130,10 +128,12 @@ const HttpCache = {
    * @returns {number} Cache duration in seconds
    */
   getDuration(contentType) {
-    if (contentType.includes('image/') || 
-        contentType.includes('font/') ||
-        contentType.includes('text/css') ||
-        contentType.includes('application/javascript')) {
+    if (
+      contentType.includes('image/') ||
+      contentType.includes('font/') ||
+      contentType.includes('text/css') ||
+      contentType.includes('application/javascript')
+    ) {
       return CacheConfig.DURATION.VERY_LONG;
     }
 
@@ -153,25 +153,25 @@ const HttpCache = {
   addHeaders(response, options = {}) {
     const contentType = response.headers?.['Content-Type'] || 'text/html';
     const duration = options.maxAge || this.getDuration(contentType);
-    
+
     const cacheHeaders = this.getHeaders({
       maxAge: duration,
       public: options.public,
-      noCache: options.noCache
+      noCache: options.noCache,
     });
 
     return {
       ...response,
       headers: {
         ...response.headers,
-        ...cacheHeaders
-      }
+        ...cacheHeaders,
+      },
     };
-  }
+  },
 };
 
 module.exports = {
   CacheConfig,
   MemoryCache,
-  HttpCache
-}; 
+  HttpCache,
+};
