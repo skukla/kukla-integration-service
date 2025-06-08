@@ -343,6 +343,33 @@ The project includes `.cursor/rules/` and `.cursorrules` for enhanced AI assista
 - ESLint and Prettier (already configured)
 - GitLens for version control
 
+### **Git Hooks Setup**
+
+The project uses Husky v9.1.7 for automated code quality via git hooks:
+
+```bash
+# Verify git hooks are active (should show .husky/_)
+git config --get core.hooksPath
+
+# If not configured, activate hooks
+npx husky install
+
+# Test the pre-commit hook
+echo "const test='hello'" > test.js
+git add test.js
+git commit -m "Test commit"  # Should auto-format the file
+```
+
+**What the pre-commit hook does:**
+
+- **JavaScript files**: ESLint + Prettier formatting
+- **JSON/YAML files**: Prettier formatting  
+- **Markdown files**: markdownlint + Prettier formatting
+- **Automatic fixes**: Applied and included in the commit
+- **Git stash backup**: Protects your original changes
+
+> **Note**: The `npx husky install` command shows a deprecation warning but works correctly. This is expected behavior in Husky v9.
+
 ## Next Steps
 
 Once your environment is set up:

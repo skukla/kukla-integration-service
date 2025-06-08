@@ -407,6 +407,58 @@ npm run test:action -- actions/backend/get-products --param categoryId=123
 # ✅ Performance testing
 npm run perf:test -- actions/backend/get-products
 
+## Code Quality Tools
+
+### **Automated Code Quality**
+
+The project uses automated tools to enforce code quality standards:
+
+```bash
+# ESLint for JavaScript linting
+npx eslint src/ actions/
+
+# Prettier for code formatting
+npx prettier --write "**/*.{js,json,md}"
+
+# markdownlint for documentation
+npx markdownlint docs/
+```
+
+### **Git Hooks (Husky)**
+
+Pre-commit hooks automatically enforce code quality:
+
+```bash
+# Verify git hooks are active
+git config --get core.hooksPath  # Should show .husky/_
+
+# What happens on commit:
+# 1. ESLint fixes JavaScript issues
+# 2. Prettier formats all code
+# 3. markdownlint fixes documentation
+# 4. Changes are automatically staged and committed
+```
+
+**Pre-commit Hook Configuration:**
+
+```javascript
+// .husky/pre-commit runs lint-staged
+"lint-staged": {
+  "*.{js,jsx}": ["eslint --fix", "prettier --write"],
+  "*.{json,yml,yaml}": ["prettier --write"],
+  "*.md": ["markdownlint --fix", "prettier --write"]
+}
+```
+
+### **Quality Enforcement**
+
+- **Automatic**: All staged files processed on commit
+- **Non-blocking**: Fixes applied automatically, commits proceed
+- **Consistent**: Same standards across entire codebase
+- **Backup**: Git stash protects original changes
+
+> **Note**: Husky v9 shows deprecation warning for `npx husky install` but works correctly.
+
 ## Code Organization
 
 ### **File Structure Rules**
