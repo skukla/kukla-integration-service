@@ -28,4 +28,11 @@ export {
 } from './config/index.js';
 
 // Error handling
-export { ErrorHandler, handleError, handleSpecificError, formatError } from './errors/index.js';
+export {
+  handleError,
+  handleSpecificError,
+  formatError,
+  createError,
+  handleNetworkError,
+  handleValidationError,
+} from './errors/index.js';
