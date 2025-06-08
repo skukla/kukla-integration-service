@@ -3,9 +3,9 @@
  * @module ui/file-browser
  */
 
+import { getActionUrl } from '../../core/url/index.js';
 import { showModal, hideModal } from '../components/modal/index.js';
 import { showNotification } from '../components/notifications/index.js';
-import { getActionUrl } from '../../core/url/index.js';
 
 // File browser configuration
 const FILE_BROWSER_CONFIG = {
@@ -190,6 +190,11 @@ function createDeleteModal(fileName, filePath) {
   }
 
   showModal();
+
+  // Tell HTMX to process the new modal content
+  if (window.htmx) {
+    window.htmx.process(modalContainer);
+  }
 }
 
 /**
