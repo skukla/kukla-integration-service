@@ -19,8 +19,10 @@ function buildActionUrl(config, action, options = {}) {
   // Auto-detect namespace inclusion based on baseUrl pattern
   let shouldIncludeNamespace = includeNamespace;
   if (shouldIncludeNamespace === null) {
-    // Include namespace in path only for direct runtime domains
-    shouldIncludeNamespace = baseUrl && baseUrl.includes('adobeioruntime.net');
+    // Only include namespace in path for legacy direct runtime domains
+    // Modern Adobe App Builder URLs have namespace in hostname already
+    shouldIncludeNamespace =
+      baseUrl && baseUrl.includes('adobeioruntime.net') && !baseUrl.includes(namespace);
   }
 
   // Handle different URL patterns based on environment

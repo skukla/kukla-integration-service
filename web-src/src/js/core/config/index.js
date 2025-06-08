@@ -3,7 +3,7 @@
  * Mirrors backend configuration patterns with frontend-safe data
  */
 
-import generatedConfig from '../../config/generated/config.js';
+import generatedConfig from '../../../config/generated/config.js';
 
 // Cache the loaded configuration
 let cachedConfig = null;

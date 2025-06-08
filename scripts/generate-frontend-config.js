@@ -13,8 +13,8 @@ const yaml = require('js-yaml');
 const env = process.env.NODE_ENV || 'staging';
 const { loadConfig } = require('../config');
 
-// Get full backend configuration (without sensitive params)
-const fullConfig = loadConfig();
+// Get full backend configuration (passing NODE_ENV as parameter for proper detection)
+const fullConfig = loadConfig({ NODE_ENV: env });
 
 // Create frontend-safe configuration with only actively used settings
 function createFrontendConfig(config) {
@@ -30,6 +30,10 @@ function createFrontendConfig(config) {
         base: '/api',
         web: '/web',
       },
+      baseUrl: config.runtime.namespace
+        ? `https://${config.runtime.namespace}.adobeioruntime.net`
+        : config.runtime.baseUrl,
+      namespace: config.runtime.namespace,
       actions: generateActionMappings(),
     },
 

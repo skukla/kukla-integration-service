@@ -20,7 +20,7 @@ const { extractCleanFilename } = require('../../../src/core/storage/path');
 async function main(params) {
   // Handle preflight requests first
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {}, params);
+    return response.success({}, 'Preflight success', {});
   }
 
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
@@ -30,7 +30,7 @@ async function main(params) {
     const requiredParams = ['fileName'];
     const missingParams = checkMissingRequestInputs(params, requiredParams);
     if (missingParams) {
-      return response.badRequest(missingParams, {}, params);
+      return response.badRequest(missingParams, {});
     }
 
     // Extract clean filename (remove public/ prefix if present)
@@ -67,15 +67,15 @@ async function main(params) {
     if (error.isFileOperationError) {
       switch (error.type) {
         case FileErrorType.NOT_FOUND:
-          return response.badRequest(`File not found: ${params.fileName}`, {}, params);
+          return response.badRequest(`File not found: ${params.fileName}`, {});
         case FileErrorType.INVALID_PATH:
-          return response.badRequest(error.message, {}, params);
+          return response.badRequest(error.message, {});
         default:
-          return response.error(error, {}, params);
+          return response.error(error, {});
       }
     }
 
-    return response.error(error, {}, params);
+    return response.error(error, {});
   }
 }
 
