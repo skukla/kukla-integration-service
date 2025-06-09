@@ -1,0 +1,243 @@
+/* Export Actions Component Styles
+ * Uses design system tokens and follows established component patterns
+ */
+
+.export-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .export-actions {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+}
+
+/* Export Button Styling - extends .btn base styles */
+.export-actions .btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--spacing-md) var(--spacing-lg);
+  min-width: 200px;
+  text-align: left;
+  border-radius: var(--radius-md);
+  border: var(--border-xs) solid transparent;
+  font-family: var(--font-family-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-hover);
+  position: relative;
+  will-change: transform, box-shadow;
+}
+
+.export-actions .btn:hover {
+  /* Subtle hover effect only */
+}
+
+.export-actions .btn:active {
+  transform: var(--transform-initial);
+}
+
+.export-actions .btn:disabled {
+  opacity: var(--button-loading-opacity);
+  cursor: not-allowed;
+  transform: var(--transform-initial);
+}
+
+/* Primary Button (REST API) - uses design system primary colors */
+.export-actions .btn-primary {
+  background: linear-gradient(135deg, var(--color-blue-primary) 0%, var(--color-blue-hover) 100%);
+  color: var(--color-white);
+  border-color: var(--color-blue-hover);
+}
+
+.export-actions .btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-blue-hover) 0%, var(--color-blue-active) 100%);
+  border-color: var(--color-blue-active);
+}
+
+/* Secondary Button (API Mesh) - uses design system success colors */
+.export-actions .btn-secondary {
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
+  color: var(--color-white);
+  border-color: var(--color-success-hover);
+}
+
+.export-actions .btn-secondary:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-success-hover) 0%,
+    var(--color-success-active) 100%
+  );
+  border-color: var(--color-success-active);
+}
+
+/* Button Text Styling - uses design system typography */
+.btn-text {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.2;
+}
+
+.btn-subtitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  opacity: 0.85;
+  line-height: 1.3;
+}
+
+/* Export Status Container */
+.export-status-container {
+  margin-top: var(--spacing-md);
+  min-height: var(--spacing-2xl);
+}
+
+/* Loading Indicator - main loader for export operations */
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-blue-50);
+  border: var(--border-xs) solid var(--color-blue-200);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-blue-primary);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-sm);
+  min-height: 60px;
+}
+
+/* Loading Spinner - uses design system spinner */
+.loader-spinner {
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+  border: var(--loading-spinner-border-width-sm) solid var(--color-blue-100);
+  border-top: var(--loading-spinner-border-width-sm) solid var(--color-blue-primary);
+  border-radius: 50%;
+  animation: spin var(--duration-spinner) var(--ease-linear) infinite;
+}
+
+/* HTMX Indicator States - follows design system loading patterns */
+.htmx-indicator {
+  display: none;
+}
+
+/* Show loader when HTMX request is active */
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  display: flex !important;
+}
+
+/* Also show when body has htmx-request class (global indicator) */
+body.htmx-request #export-loader.htmx-indicator {
+  display: flex !important;
+}
+
+/* Export Status Styling */
+.export-status {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-sm);
+}
+
+.export-status:empty {
+  display: none;
+}
+
+/* Success Status - uses design system success colors */
+.export-status.success {
+  background: var(--color-success-background);
+  border: var(--border-xs) solid var(--color-success);
+  color: var(--color-success-active);
+}
+
+/* Error Status - uses design system danger colors */
+.export-status.error {
+  background: var(--color-danger-background);
+  border: var(--border-xs) solid var(--color-danger);
+  color: var(--color-danger-active);
+}
+
+/* Export Method Indicators - Removed (not helpful) */
+
+/* HTMX Loading States for Buttons - Simple disabled state only */
+.export-actions .btn.htmx-request,
+.export-actions .btn.is-loading {
+  opacity: var(--button-loading-opacity);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Override design system button loading spinner for export buttons */
+.export-actions .btn.htmx-request::after,
+.export-actions .btn.is-loading::after {
+  display: none !important;
+}
+
+/* Keep button text visible during loading for export buttons */
+.export-actions .btn.is-loading .btn-label {
+  visibility: visible !important;
+}
+
+/* Performance Comparison Styling - enhanced with design system tokens */
+.export-actions .btn-primary .btn-subtitle::after {
+  content: ' (Multiple calls)';
+  font-weight: var(--font-weight-regular);
+  opacity: 0.7;
+}
+
+.export-actions .btn-secondary .btn-subtitle::after {
+  content: ' (Single query)';
+  font-weight: var(--font-weight-regular);
+  opacity: 0.7;
+}
+
+/* Focus States - uses design system focus handling */
+.export-actions .btn:focus-visible {
+  outline: var(--border-sm) solid var(--color-focus-ring);
+  outline-offset: var(--spacing-xs);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .export-actions .btn {
+    transition: none;
+  }
+
+  .loader-spinner {
+    animation: none;
+    border-color: var(--color-blue-primary);
+  }
+}
+
+/* High Contrast Mode Support */
+@media (forced-colors: active) {
+  .export-actions .btn {
+    border: var(--border-xs) solid ButtonBorder;
+  }
+
+  .export-actions .btn:hover {
+    border-color: Highlight;
+  }
+
+  .loader {
+    border: var(--border-xs) solid ButtonBorder;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .loader-spinner {
+    display: none;
+  }
+
+  .export-actions {
+    gap: var(--spacing-sm);
+  }
+}
