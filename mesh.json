@@ -30,7 +30,8 @@
     ],
     "additionalResolvers": ["./mesh-resolvers.js"],
     "additionalTypeDefs": [
-      "type MeshStatus { resolver_working: Boolean token_received: Boolean token_length: Int timestamp: String message: String } type ProductComparison { rest_count: Int catalog_count: Int difference: Int status: String message: String } type EnhancedProducts { rest_total: Int catalog_total: Int combined_total: Int message: String status: String } type MeshProductsFull { products: [JSON] total_count: Int message: String status: String } extend type Query { mesh_status: MeshStatus mesh_product_comparison: ProductComparison enhanced_products(pageSize: Int, currentPage: Int): EnhancedProducts mesh_products_full(pageSize: Int): MeshProductsFull }"
+      "type MeshProductsFull { products: [JSON] total_count: Int message: String status: String }",
+      "extend type Query { mesh_products_full(pageSize: Int): MeshProductsFull }"
     ]
   }
 }
