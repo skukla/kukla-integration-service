@@ -7,7 +7,6 @@ const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
-const buildProducts = require('../get-products/steps/buildProducts');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
 const validateInput = require('../get-products/steps/validateInput');
@@ -163,13 +162,8 @@ async function fetchProductsFromMesh(actionParams, config) {
     throw new Error('No products returned from mesh resolver');
   }
 
-  // Transform API Mesh products to match REST API structure
-  return products.map((product) => ({
-    ...product,
-    categories: product.category_names
-      ? product.category_names.split(', ').map((name, index) => ({ id: index + 1, name }))
-      : [],
-  }));
+  // HTTP bridge already returns products in the correct format
+  return products;
 }
 
 /**
@@ -203,10 +197,8 @@ async function main(params) {
     });
     steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
-    // Step 3: Build product data (reused)
-    const builtProducts = await traceStep(trace, 'build-products', async () => {
-      return await buildProducts(products, config);
-    });
+    // Step 3: Products are already built by REST API, just pass through
+    const builtProducts = products;
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
     // Step 4: Create CSV (reused)
