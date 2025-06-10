@@ -115,6 +115,33 @@ async function main(params) {
     });
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
+    // Check format parameter to determine response type
+    const format = actionParams.format || 'csv';
+
+    if (format === 'json') {
+      // Return JSON format for API Mesh integration
+      return response.success(
+        {
+          products: builtProducts,
+          total_count: builtProducts.length,
+          message:
+            'Successfully fetched ' +
+            builtProducts.length +
+            ' products with category and inventory data',
+          status: 'success',
+          steps,
+          performance: {
+            processedProducts: builtProducts.length,
+            apiCalls: trace.metrics?.apiCalls || 200,
+            method: 'REST API',
+          },
+        },
+        'Product data retrieved successfully',
+        {}
+      );
+    }
+
+    // Default CSV format
     // Step 4: Create CSV
     const csvData = await traceStep(trace, 'create-csv', async () => {
       return await createCsv(builtProducts);
