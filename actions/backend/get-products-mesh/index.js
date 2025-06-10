@@ -1,213 +1,246 @@
 /**
- * Adobe App Builder action for fetching products via API Mesh
- * Enhanced version using consolidated mesh resolvers
+ * Main action for exporting Adobe Commerce product data via API Mesh
+ * @module get-products-mesh
  */
-
 const { loadConfig } = require('../../../config');
 const { getAuthToken } = require('../../../src/commerce/api/integration');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
-const { buildRuntimeUrl } = require('../../../src/core/routing');
-const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
-const { formatStepMessage } = require('../../../src/core/utils');
+const { createTraceContext, traceStep } = require('../../../src/core/tracing');
+const buildProducts = require('../get-products/steps/buildProducts');
+const createCsv = require('../get-products/steps/createCsv');
+const storeCsv = require('../get-products/steps/storeCsv');
+const validateInput = require('../get-products/steps/validateInput');
 
 /**
- * Main action function
- * @param {Object} params - Action parameters from Adobe I/O Runtime
- * @returns {Object} Action response with product data via API Mesh
+ * Format file size in bytes to a human-readable string
+ * @param {number} bytes - File size in bytes
+ * @returns {string} Formatted file size
+ */
+function formatFileSize(bytes) {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let size = bytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+
+  // Round to 2 decimal places
+  return `${Math.round(size * 100) / 100} ${units[unitIndex]}`;
+}
+
+/**
+ * Format step message for API response (same as REST API)
+ * @param {string} name - Step name
+ * @param {string} status - Step status (success/error)
+ * @param {Object} details - Step details
+ * @returns {string} Formatted step message
+ */
+function formatStepMessage(name, status, details = {}) {
+  const stepMessages = {
+    'extract-params': {
+      success: 'Successfully extracted and validated action parameters',
+      error: 'Failed to extract action parameters',
+    },
+    'validate-input': {
+      success: 'Successfully validated Commerce API credentials and URL',
+      error: 'Failed to validate input parameters',
+    },
+    'fetch-and-enrich': {
+      success: (count) =>
+        `Successfully fetched and enriched ${count} products with category and inventory data`,
+      error: 'Failed to fetch products from API Mesh',
+    },
+    'build-products': {
+      success: (count) => `Successfully transformed ${count} products for export`,
+      error: 'Failed to transform product data',
+    },
+    'create-csv': {
+      success: (size) => `Successfully generated CSV file (${formatFileSize(size)})`,
+      error: 'Failed to generate CSV file',
+    },
+    'store-csv': {
+      success: (info) => {
+        const size = parseInt(info.properties.size) || info.properties.size;
+        const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
+        return `Successfully stored CSV file as ${info.fileName} (${formattedSize})`;
+      },
+      error: 'Failed to store CSV file',
+    },
+  };
+
+  return status === 'success'
+    ? typeof stepMessages[name][status] === 'function'
+      ? stepMessages[name][status](details.count || details.size || details.info)
+      : stepMessages[name][status]
+    : `${stepMessages[name][status]}: ${details.error || ''}`;
+}
+
+/**
+ * Fetch products from API Mesh (replaces fetchAndEnrichProducts step)
+ * @param {Object} actionParams - Action parameters
+ * @param {Object} config - Configuration object
+ * @returns {Promise<Array>} Products array with enriched data
+ */
+async function fetchProductsFromMesh(actionParams, config) {
+  const meshConfig = config.mesh;
+
+  if (!meshConfig || !meshConfig.endpoint) {
+    throw new Error('API Mesh not configured');
+  }
+
+  // Get Commerce authentication token
+  const commerceToken = await getAuthToken(actionParams);
+
+  // Prepare GraphQL query for full products
+  const query = `
+    query GetProductsFull($pageSize: Int) {
+      mesh_products_full(pageSize: $pageSize) {
+        products
+        total_count
+        message
+        status
+      }
+    }
+  `;
+
+  const variables = {
+    pageSize: 100, // Get full product data
+  };
+
+  // Execute GraphQL query via API Mesh
+  const meshResponse = await fetch(meshConfig.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${actionParams.MESH_API_KEY || meshConfig.apiKey}`,
+      'x-commerce-token': commerceToken,
+      'x-catalog-api-key': actionParams.CATALOG_SERVICE_API_KEY,
+      'x-catalog-environment-id': actionParams.CATALOG_SERVICE_ENVIRONMENT_ID,
+      'x-catalog-customer-group': 'b6589fc6ab0dc82cf12099d1c2d40ab994e8410c',
+      'x-catalog-store-code': actionParams.CATALOG_SERVICE_STORE_CODE,
+      'x-catalog-store-view-code': actionParams.CATALOG_SERVICE_STORE_VIEW_CODE,
+      'x-catalog-website-code': actionParams.CATALOG_SERVICE_WEBSITE_CODE,
+    },
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  });
+
+  if (!meshResponse.ok) {
+    const errorText = await meshResponse.text();
+    throw new Error(
+      `API Mesh request failed: ${meshResponse.status} ${meshResponse.statusText} - ${errorText}`
+    );
+  }
+
+  const meshData = await meshResponse.json();
+
+  if (meshData.errors) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(meshData.errors)}`);
+  }
+
+  if (!meshData.data || !meshData.data.mesh_products_full) {
+    throw new Error(`Invalid API Mesh response: ${JSON.stringify(meshData)}`);
+  }
+
+  const productsData = meshData.data.mesh_products_full;
+
+  if (productsData.status !== 'success') {
+    throw new Error(`Products query failed: ${productsData.message}`);
+  }
+
+  const products = productsData.products || [];
+
+  if (!Array.isArray(products) || products.length === 0) {
+    throw new Error('No products returned from mesh resolver');
+  }
+
+  // Transform API Mesh products to match REST API structure
+  return products.map((product) => ({
+    ...product,
+    categories: product.category_names
+      ? product.category_names.split(', ').map((name, index) => ({ id: index + 1, name }))
+      : [],
+  }));
+}
+
+/**
+ * Main action handler for get-products-mesh (same pattern as REST API)
+ * @param {Object} params - Action parameters from OpenWhisk
+ * @returns {Promise<Object>} Action response
  */
 async function main(params) {
+  // Extract and validate parameters first for consistent usage
+  const actionParams = extractActionParams(params);
+
+  // Handle preflight requests first
+  if (params.__ow_method === 'options') {
+    return response.success({}, 'Preflight success', {});
+  }
+
   try {
-    // Extract and process action parameters
-    const actionParams = extractActionParams(params);
+    await validateInput(actionParams);
 
-    // Load configuration
+    // Initialize configuration and tracing
     const config = loadConfig(actionParams);
-
-    // Check mesh configuration
-    const meshConfig = config.mesh;
-
-    if (!meshConfig || !meshConfig.endpoint) {
-      return response.error('API Mesh not configured', 500, { actionParams });
-    }
-
+    const trace = createTraceContext('get-products-mesh', actionParams);
     const steps = [];
 
-    // Step 1: Initialize storage directly to avoid circular dependency
-    let storage;
-    const provider = config.storage.provider;
+    // Step 1: Validate input (reused)
+    steps.push(formatStepMessage('validate-input', 'success'));
 
-    if (provider === 'app-builder') {
-      storage = await initializeAppBuilderStorage(actionParams);
-    } else if (provider === 's3') {
-      storage = await initializeS3Storage(config, actionParams);
-    } else {
-      throw new Error(`Unknown storage provider: ${provider}`);
-    }
-
-    steps.push(
-      formatStepMessage('Storage initialization', `Initialized ${storage.provider} storage`)
-    );
-
-    // Step 2: Get Commerce authentication token
-    const commerceToken = await getAuthToken(actionParams);
-    steps.push(formatStepMessage('Commerce authentication', 'Obtained admin token'));
-
-    // Prepare GraphQL query for enhanced products using our working resolver
-    const query = `
-      query GetEnhancedProducts($pageSize: Int, $currentPage: Int) {
-        enhanced_products(pageSize: $pageSize, currentPage: $currentPage) {
-          rest_total
-          catalog_total
-          combined_total
-          message
-          status
-        }
-      }
-    `;
-
-    const variables = {
-      pageSize: 50, // Will be used by the resolver
-      currentPage: 1,
-    };
-
-    // Step 3: Execute GraphQL query via API Mesh with Commerce token
-    const meshResponse = await fetch(meshConfig.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${actionParams.MESH_API_KEY || meshConfig.apiKey}`,
-        // Pass Commerce token for mesh resolvers to use
-        'x-commerce-token': commerceToken,
-        // Pass Catalog Service headers for mesh resolvers to use
-        'x-catalog-api-key': actionParams.CATALOG_SERVICE_API_KEY,
-        'x-catalog-environment-id': actionParams.CATALOG_SERVICE_ENVIRONMENT_ID,
-        'x-catalog-customer-group': 'b6589fc6ab0dc82cf12099d1c2d40ab994e8410c',
-        'x-catalog-store-code': actionParams.CATALOG_SERVICE_STORE_CODE,
-        'x-catalog-store-view-code': actionParams.CATALOG_SERVICE_STORE_VIEW_CODE,
-        'x-catalog-website-code': actionParams.CATALOG_SERVICE_WEBSITE_CODE,
-      },
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
+    // Step 2: Fetch and enrich products (API Mesh version)
+    const products = await traceStep(trace, 'fetch-products-mesh', async () => {
+      return await fetchProductsFromMesh(actionParams, config);
     });
+    steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
-    if (!meshResponse.ok) {
-      const errorText = await meshResponse.text();
-      throw new Error(
-        `API Mesh request failed: ${meshResponse.status} ${meshResponse.statusText} - ${errorText}`
-      );
-    }
+    // Step 3: Build product data (reused)
+    const builtProducts = await traceStep(trace, 'build-products', async () => {
+      return await buildProducts(products, config);
+    });
+    steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
-    const meshData = await meshResponse.json();
+    // Step 4: Create CSV (reused)
+    const csvData = await traceStep(trace, 'create-csv', async () => {
+      return await createCsv(builtProducts);
+    });
+    steps.push(formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
 
-    if (meshData.errors) {
-      throw new Error(`GraphQL errors: ${JSON.stringify(meshData.errors)}`);
-    }
+    // Step 5: Store CSV (reused)
+    const storageResult = await traceStep(trace, 'store-csv', async () => {
+      return await storeCsv(csvData, actionParams, config);
+    });
+    steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
 
-    if (!meshData.data || !meshData.data.enhanced_products) {
-      throw new Error(`Invalid API Mesh response: ${JSON.stringify(meshData)}`);
-    }
-
-    const enhancedData = meshData.data.enhanced_products;
-
-    if (enhancedData.status !== 'success') {
-      throw new Error(`Enhanced products query failed: ${enhancedData.message}`);
-    }
-
-    steps.push(formatStepMessage('API Mesh query', `Enhanced query: ${enhancedData.message}`));
-
-    // Step 4: Generate summary data for CSV export
-    const csvData = [
+    return response.success(
       {
-        metric: 'Total Products (REST API)',
-        count: enhancedData.rest_total,
-        description: 'All products including hidden/disabled',
-      },
-      {
-        metric: 'Storefront Products (Catalog Service)',
-        count: enhancedData.catalog_total,
-        description: 'Publicly visible storefront products',
-      },
-      {
-        metric: 'Hidden/Disabled Products',
-        count: enhancedData.rest_total - enhancedData.catalog_total,
-        description: 'Products not visible on storefront',
-      },
-      {
-        metric: 'Combined Dataset',
-        count: enhancedData.combined_total,
-        description: 'Complete product dataset via mesh consolidation',
-      },
-    ];
-
-    steps.push(
-      formatStepMessage('Data consolidation', `Generated ${csvData.length} metric summaries`)
-    );
-
-    // Step 5: Generate CSV
-    const csvHeaders = ['metric', 'count', 'description'];
-    const csvContent = [
-      csvHeaders.join(','),
-      ...csvData.map((row) =>
-        csvHeaders
-          .map((header) => {
-            const value = row[header] || '';
-            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-          })
-          .join(',')
-      ),
-    ].join('\n');
-    steps.push(
-      formatStepMessage(
-        'CSV generation',
-        `Generated consolidation report (${(csvContent.length / 1024).toFixed(2)} KB)`
-      )
-    );
-
-    // Step 6: Store file
-    const fileName = `products-mesh-${Date.now()}.csv`;
-    const filePath = `exports/${fileName}`;
-    await storage.write(filePath, csvContent);
-    steps.push(formatStepMessage('File storage', `Stored as ${fileName}`));
-
-    // Build download URL
-    const downloadUrl =
-      buildRuntimeUrl('download-file', null, actionParams) +
-      `?fileName=${encodeURIComponent(fileName)}&path=${encodeURIComponent('exports/')}`;
-
-    // Prepare response
-    const responseData = {
-      message: 'Products exported successfully via API Mesh',
-      steps,
-      downloadUrl,
-      storage: {
-        provider: storage.provider.toLowerCase().replace('_', '-'),
-        location: filePath,
-        properties: {
-          fileName,
-          fileSize: csvContent.length,
-          productCount: csvData.length,
-          method: 'api-mesh',
+        message: 'Product export completed successfully',
+        steps,
+        downloadUrl: storageResult.downloadUrl,
+        storage: {
+          provider: storageResult.storageType,
+          location: storageResult.location || storageResult.fileName,
+          properties: storageResult.properties,
+        },
+        performance: {
+          processedProducts: builtProducts.length,
+          apiCalls: 1, // API Mesh consolidates many calls into 1
+          method: 'REST API', // Keep same as REST API for parity
         },
       },
-      performance: {
-        totalProducts: enhancedData.combined_total,
-        processedProducts: csvData.length,
-        apiCalls: 1,
-        method: 'API Mesh Enhanced (GraphQL)',
-      },
-    };
-
-    return response.success(responseData, { actionParams });
+      'Product export completed',
+      {}
+    );
   } catch (error) {
-    console.error('API Mesh action failed:', error);
-    return response.error(`API Mesh failed: ${error.message}`, 500, {
-      actionParams: params,
-      error: error.stack,
-    });
+    return response.error(error, {});
   }
 }
 
-module.exports = { main };
+module.exports = {
+  main,
+};
