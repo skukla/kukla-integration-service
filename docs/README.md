@@ -14,15 +14,20 @@ docs/
 ├── development/
 │   ├── coding-standards.md     # Code quality and standards
 │   ├── testing.md              # Testing strategies and npm scripts
-│   ├── frontend.md             # HTMX frontend development patterns
-│   └── design-system.md        # Visual design language and components
+│   ├── frontend.md             # Practical HTMX development patterns
+│   ├── design-system.md        # Visual design language and components
+│   ├── api-mesh-integration.md # API Mesh with HTTP Bridge pattern
+│   ├── configuration.md        # Configuration system and patterns
+│   └── schemas.md              # Schema validation system
 ├── architecture/
 │   ├── adobe-app-builder.md    # App Builder platform guide
 │   ├── htmx-integration.md     # HTMX frontend patterns
+│   ├── http-bridge-pattern.md  # HTTP Bridge architecture pattern
+│   ├── project-structure.md    # Comprehensive project file structure
 │   └── commerce-integration.md # Adobe Commerce API integration
 └── deployment/
     ├── environments.md         # Staging and production deployment
-    └── configuration.md        # Environment configuration
+    └── configuration.md        # Environment configuration (legacy reference)
 ```
 
 ## 🚀 Quick Start
@@ -37,25 +42,36 @@ docs/
 
 - **[Coding Standards](development/coding-standards.md)** - ES6+, async/await, JSDoc patterns
 - **[Testing Guide](development/testing.md)** - Using `npm run test:action` and performance testing
-- **[Frontend Development](development/frontend.md)** - HTMX patterns and JavaScript enhancement
+- **[Frontend Development](development/frontend.md)** - Practical HTMX development patterns
 - **[Design System](development/design-system.md)** - Visual design language and component library
+- **[Configuration Guide](development/configuration.md)** - Configuration system and patterns
 
 ### Architecture Deep Dives
 
 - **[Adobe App Builder](architecture/adobe-app-builder.md)** - Platform overview and serverless patterns
 - **[HTMX Integration](architecture/htmx-integration.md)** - Progressive enhancement and UI patterns
+- **[HTTP Bridge Pattern](architecture/http-bridge-pattern.md)** - API Mesh integration architecture
 - **[Commerce Integration](architecture/commerce-integration.md)** - API integration and data flow
+
+### Integration Patterns
+
+- **[API Mesh Integration](development/api-mesh-integration.md)** - HTTP Bridge pattern for GraphQL consolidation
+- **[Schema Validation](development/schemas.md)** - Build-time validation and quality assurance
 
 ## 🎯 Common Tasks
 
-| Task              | Documentation                                                | Key Files                               |
-| ----------------- | ------------------------------------------------------------ | --------------------------------------- |
-| Add new action    | [Adobe App Builder Guide](architecture/adobe-app-builder.md) | `actions/backend/`, `actions/frontend/` |
-| Update UI         | [Frontend Development](development/frontend.md)              | `web-src/`, `src/htmx/`                 |
-| Style components  | [Design System](development/design-system.md)                | `web-src/src/css/`                      |
-| Commerce API work | [Commerce Integration](architecture/commerce-integration.md) | `src/commerce/`                         |
-| Deploy changes    | [Deployment Guide](deployment/environments.md)               | `npm start`, `npm run deploy`           |
-| Test actions      | [Testing Guide](development/testing.md)                      | `npm run test:action`                   |
+| Task                  | Documentation                                                        | Key Files                               |
+| --------------------- | -------------------------------------------------------------------- | --------------------------------------- |
+| Understand structure  | [Project Structure](architecture/project-structure.md)              | All directories and files               |
+| Add new action        | [Adobe App Builder Guide](architecture/adobe-app-builder.md)        | `actions/backend/`, `actions/frontend/` |
+| Update UI             | [Frontend Development](development/frontend.md)                      | `web-src/`, `src/htmx/`                 |
+| Style components      | [Design System](development/design-system.md)                        | `web-src/src/css/`                      |
+| Commerce API work     | [Commerce Integration](architecture/commerce-integration.md)         | `src/commerce/`                         |
+| API Mesh integration  | [API Mesh Integration](development/api-mesh-integration.md)          | `mesh-resolvers.js`, `mesh.json`       |
+| HTTP Bridge pattern   | [HTTP Bridge Pattern](architecture/http-bridge-pattern.md)          | `mesh-resolvers.js`                     |
+| Configuration setup   | [Configuration Guide](development/configuration.md)                 | `config/`, `.env`, `app.config.yaml`   |
+| Deploy changes        | [Deployment Guide](deployment/environments.md)                       | `npm start`, `npm run deploy`           |
+| Test actions          | [Testing Guide](development/testing.md)                              | `npm run test:action`                   |
 
 ## 📖 Documentation Conventions
 
