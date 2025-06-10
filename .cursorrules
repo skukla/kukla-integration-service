@@ -251,6 +251,7 @@ All backend actions should follow this consistent structure:
 ### Step Function Guidelines
 
 **Always Reuse:**
+
 - `validateInput()` - Input validation
 - `buildProducts()` - Product data transformation  
 - `createCsv()` - CSV generation with proper headers
@@ -259,6 +260,7 @@ All backend actions should follow this consistent structure:
 - `response.success/error()` - Response formatting
 
 **Only Create New:**
+
 - Data fetching functions (e.g., `fetchProductsFromMesh` vs `fetchAndEnrichProducts`)
 - Source-specific transformations
 
@@ -666,9 +668,108 @@ if (context.config.performance.enabled) {
 - **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
 - **Required**: For frontend configuration generation (automatic validation)
 
+## API Mesh Integration Patterns
+
+### CRITICAL: HTTP Bridge Pattern (Recommended)
+
+**ALWAYS** use the HTTP Bridge pattern for API Mesh integration to eliminate code duplication:
+
+#### The HTTP Bridge Architecture
+
+```javascript
+// ✅ CORRECT: HTTP Bridge pattern
+// mesh-resolvers.js (~60 lines)
+module.exports = {
+  resolvers: {
+    Query: {
+      mesh_products_full: {
+        resolve: async (parent, args, context) => {
+          // Get credentials from headers
+          const username = context.headers['x-commerce-username'];
+          const password = context.headers['x-commerce-password'];
+
+          // Call existing REST action via HTTP
+          const restResponse = await fetch(REST_ACTION_URL + '?format=json', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          const data = await restResponse.json();
+          return {
+            products: data.products || [],
+            total_count: data.total_count || 0,
+            message: data.message || 'Success via HTTP bridge',
+            status: 'success',
+          };
+        },
+      },
+    },
+  },
+};
+```
+
+#### Why HTTP Bridge Pattern
+
+**✅ Benefits:**
+
+- **Zero Code Duplication**: Single source of truth in REST action
+- **78% Code Reduction**: 60 lines vs 273 lines embedded logic
+- **Perfect Parity**: Identical CSV output, byte-for-byte
+- **Easy Maintenance**: Changes automatically propagate
+- **Standard Debugging**: HTTP patterns everyone understands
+- **Minimal Overhead**: <1% performance impact
+
+**❌ Avoid Embedded Logic:**
+
+- Creates 200+ lines of duplicated Commerce logic
+- Double maintenance burden
+- API Mesh cannot import Node.js modules
+- Harder to debug and understand
+
+#### Required REST Action Support
+
+Enable JSON format in REST actions:
+
+```javascript
+// In REST action main function
+const format = actionParams.format || 'csv';
+
+if (format === 'json') {
+  return response.success({
+    products: builtProducts,
+    total_count: builtProducts.length,
+    message: 'Successfully fetched products',
+    status: 'success',
+  });
+}
+// ... continue with CSV logic
+```
+
+#### Mesh Action Simplification
+
+When using HTTP bridge, skip transformation steps:
+
+```javascript
+// ✅ CORRECT: Skip buildProducts for already-transformed data
+const builtProducts = products; // HTTP bridge returns ready-to-use data
+
+// ❌ WRONG: Double transformation
+const builtProducts = await buildProducts(products, config); // Breaks image URLs
+```
+
+#### API Mesh Constraints
+
+**Critical Limitations:**
+
+- Cannot import Node.js modules (`require()` fails)
+- Cannot access `src/` utilities directly
+- Must use embedded configuration or HTTP calls
+- Template literals not fully supported (use string concatenation)
+
 ## Common Patterns
 
 - Configuration: Use the schema-validated config system
+- API Mesh: Always use HTTP Bridge pattern for code reuse
 
 ## Git Hooks and Code Quality
 

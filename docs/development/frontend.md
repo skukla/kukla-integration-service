@@ -1,126 +1,12 @@
 # Frontend Development Guide
 
-> **HTMX-driven frontend development patterns for Adobe App Builder**
+> **Practical development patterns for HTMX frontend development**
 
 ## Overview
 
-This guide covers frontend development for the Adobe App Builder Commerce integration service. Our frontend follows a hypermedia-driven approach using HTMX with minimal JavaScript for enhanced interactions.
+This guide covers practical frontend development patterns for the Adobe App Builder Commerce integration service. For architectural details, see [HTMX Integration Architecture](../architecture/htmx-integration.md).
 
-## Architecture Principles
-
-### **Hypermedia-Driven Design**
-
-1. **Server Returns HTML**: Actions return HTML fragments instead of JSON
-2. **Progressive Enhancement**: Base functionality works without JavaScript
-3. **Minimal State Management**: Server manages state, UI reflects it
-4. **Event-Driven Updates**: HTMX handles UI updates through HTML swaps
-
-### **Technology Stack**
-
-- **HTMX**: Core hypermedia interactions
-- **Vanilla JavaScript**: Enhanced functionality only
-- **CSS**: Styling and animations
-- **Adobe I/O Files**: File storage integration
-
-## Project Structure
-
-```text
-web-src/
-├── index.html              # Main application entry point
-├── src/
-│   ├── css/
-│   │   ├── main.css        # Global styles
-│   │   ├── components/     # Component-specific styles
-│   │   └── utilities/      # Utility classes
-│   ├── js/
-│   │   ├── main.js         # Application entry point
-│   │   ├── core/
-│   │   │   ├── config.js   # Auto-generated configuration
-│   │   │   └── url.js      # Auto-generated URL functions
-│   │   ├── htmx/
-│   │   │   └── setup.js    # HTMX configuration and setup
-│   │   └── ui/
-│   │       ├── downloads/  # Download functionality
-│   │       ├── file-browser/ # File browser components
-│   │       └── modals/     # Modal management
-│   └── config/
-│       └── generated/      # Auto-generated configuration files
-├── assets/
-│   ├── icons/              # SVG icons
-│   └── images/             # Static images
-└── components/             # Reusable HTML components
-    ├── modals/
-    ├── forms/
-    └── tables/
-```
-
-## HTMX Configuration
-
-### **Auto-Generated Configuration**
-
-The HTMX configuration uses auto-generated settings from the backend configuration:
-
-```javascript
-// web-src/src/js/htmx/setup.js
-import { getTimeout } from '../core/config.js';
-
-export function setupHtmx() {
-  // Configure HTMX with auto-generated settings
-  htmx.config = {
-    timeout: getTimeout(), // From backend performance config
-    historyCacheSize: 10, // Cache last 10 pages
-    defaultSwapStyle: 'innerHTML', // Default swap method
-    defaultSettleDelay: 20, // Settle animations
-    includeIndicatorStyles: false, // Custom loading styles
-    globalViewTransitions: true, // Smooth transitions
-    allowScriptTags: false, // Security: no script execution
-    allowEval: false, // Security: no eval()
-  };
-
-  // Set global headers
-  htmx.on('htmx:configRequest', (event) => {
-    // Add CSRF token to all requests
-    event.detail.headers['X-CSRF-Token'] = getCsrfToken();
-
-    // Add custom headers for Adobe I/O Runtime
-    event.detail.headers['X-App-Source'] = 'htmx-frontend';
-    event.detail.headers['X-Request-ID'] = generateRequestId();
-  });
-}
-
-function getCsrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.content || '';
-}
-
-function generateRequestId() {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-```
-
-### **Component Configuration**
-
-The system includes a component configuration system for consistent HTMX attributes:
-
-```javascript
-// Component configuration with auto-generated URLs
-const COMPONENT_CONFIG = {
-  'file-list': {
-    'hx-get': () => getActionUrl('browse-files'),
-    'hx-trigger': 'load once',
-    'hx-swap': 'innerHTML',
-    'hx-indicator': '#content-loader',
-  },
-  'delete-button': {
-    'hx-get': (el) =>
-      getActionUrl('delete-file', {
-        fileName: el.dataset.fileName,
-        fullPath: el.dataset.downloadUrl,
-      }),
-    'hx-target': '#modal-container',
-    'hx-swap': 'innerHTML',
-  },
-};
-```
+## Key Development Patterns
 
 ### **Dynamic Content Processing**
 
@@ -133,45 +19,67 @@ modalContainer.innerHTML = modalHTML;
 window.htmx.process(modalContainer); // Required for hx-* attributes to work
 ```
 
-### **Event System**
+### **Configuration Access**
+
+Use the auto-generated configuration for consistent settings:
+
+```javascript
+import { getTimeout, isStaging } from '../core/config.js';
+import { getActionUrl } from '../core/url.js';
+
+// Configure HTMX with backend-generated settings
+htmx.config.timeout = getTimeout();
+
+// Build URLs with environment awareness
+const downloadUrl = getActionUrl('download-file', { fileName: 'products.csv' });
+```
+
+### **Error Handling**
+
+Standard error handling patterns for HTMX requests:
 
 ```javascript
 // web-src/src/js/htmx/events.js
 export function initializeHtmxEvents() {
-  // Loading states
-  htmx.on('htmx:beforeRequest', (event) => {
-    handleLoadingStart(event.target);
-  });
-
-  htmx.on('htmx:afterRequest', (event) => {
-    handleLoadingEnd(event.target);
-    handleResponse(event.detail);
-  });
-
-  // Error handling
-  htmx.on('htmx:responseError', (event) => {
-    handleError(event.detail);
-  });
-
+  // Network error handling
   htmx.on('htmx:sendError', (event) => {
-    handleNetworkError(event.detail);
+    showNotification({
+      type: 'error',
+      title: 'Network Error',
+      message: 'Please check your connection and try again.',
+    });
   });
 
-  // Modal management
-  htmx.on('htmx:afterSwap', (event) => {
-    handleModalShow(event.target);
-    initializeComponents(event.target);
-  });
+  // HTTP error handling
+  htmx.on('htmx:responseError', (event) => {
+    const { xhr } = event.detail;
+    let message = 'An error occurred';
+    
+    try {
+      const errorResponse = JSON.parse(xhr.responseText);
+      message = errorResponse.message || message;
+    } catch (e) {
+      message = `Server error (${xhr.status})`;
+    }
 
-  htmx.on('htmx:beforeSwap', (event) => {
-    handleModalHide(event.target);
+    showNotification({
+      type: 'error',
+      title: 'Request Failed',
+      message,
+    });
   });
 }
+```
 
+### **Loading States**
+
+Consistent loading state management:
+
+```javascript
 function handleLoadingStart(element) {
   element.classList.add('loading');
   element.setAttribute('aria-busy', 'true');
-
+  
   // Show loading indicator
   const indicator = element.querySelector('.loading-indicator');
   if (indicator) {
@@ -182,219 +90,21 @@ function handleLoadingStart(element) {
 function handleLoadingEnd(element) {
   element.classList.remove('loading');
   element.setAttribute('aria-busy', 'false');
-
+  
   // Hide loading indicator
   const indicator = element.querySelector('.loading-indicator');
   if (indicator) {
     indicator.style.display = 'none';
   }
 }
-
-function handleResponse(detail) {
-  const { xhr } = detail;
-
-  // Handle success notifications
-  const notification = xhr.getResponseHeader('X-Notification');
-  if (notification) {
-    showNotification(JSON.parse(notification));
-  }
-
-  // Handle redirects
-  const redirect = xhr.getResponseHeader('X-Redirect');
-  if (redirect) {
-    window.location.href = redirect;
-  }
-
-  // Handle custom events
-  const customEvent = xhr.getResponseHeader('X-Trigger-Event');
-  if (customEvent) {
-    htmx.trigger(document.body, customEvent);
-  }
-}
-
-function handleError(detail) {
-  const { xhr } = detail;
-
-  console.error('HTMX Request Error:', {
-    status: xhr.status,
-    statusText: xhr.statusText,
-    responseText: xhr.responseText,
-  });
-
-  // Show user-friendly error
-  showNotification({
-    type: 'error',
-    title: 'Request Failed',
-    message: 'An error occurred while processing your request. Please try again.',
-  });
-}
 ```
 
-## Component Patterns
-
-### **Data Tables with Auto-Generated URLs**
-
-```html
-<!-- File listing with HTMX -->
-<div id="file-list-container">
-  <!-- Using component configuration system -->
-  <div
-    data-component="file-list"
-    hx-trigger="load once"
-    hx-target="#file-list"
-    hx-indicator="#loading-files"
-  ></div>
-
-  <!-- Loading indicator -->
-  <div id="loading-files" class="loading-indicator" style="display: none;">
-    <span class="spinner"></span> Loading files...
-  </div>
-
-  <!-- File list table -->
-  <div id="file-list">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Size</th>
-          <th>Modified</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Server-rendered file rows -->
-        <tr data-file-id="file-123">
-          <td>
-            <span class="file-icon">📄</span>
-            products-export.csv
-          </td>
-          <td>1.2 MB</td>
-          <td>2024-01-15 10:30</td>
-          <td class="actions">
-            <!-- Download action (direct download) -->
-            <a
-              href="javascript:void(0)"
-              onclick="window.open(getDownloadUrl('products-export.csv', '/exports/'))"
-              class="btn btn-sm btn-primary"
-            >
-              Download
-            </a>
-
-            <!-- Delete action using component configuration -->
-            <button
-              data-component="delete-button"
-              data-file-name="products-export.csv"
-              data-download-url="/exports/products-export.csv"
-              class="btn btn-sm btn-danger"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-```
-
-### **Forms with Auto-Generated URLs**
-
-```html
-<!-- Product export form using JavaScript for URL generation -->
-<form
-  id="export-form"
-  hx-target="#export-results"
-  hx-indicator="#export-loading"
-  hx-swap="innerHTML"
-  class="export-form"
->
-  <div class="form-group">
-    <label for="categoryId">Category ID</label>
-    <input
-      type="text"
-      id="categoryId"
-      name="categoryId"
-      placeholder="e.g., electronics"
-      required
-      class="form-control"
-    />
-    <small class="form-text">Enter the category ID to filter products</small>
-  </div>
-
-  <div class="form-group">
-    <label for="format">Export Format</label>
-    <select id="format" name="format" class="form-control">
-      <option value="json">JSON</option>
-      <option value="csv">CSV</option>
-    </select>
-  </div>
-
-  <div class="form-group">
-    <label for="fields">Fields to Include</label>
-    <div class="checkbox-group">
-      <label class="checkbox">
-        <input type="checkbox" name="fields" value="sku" checked />
-        SKU
-      </label>
-      <label class="checkbox">
-        <input type="checkbox" name="fields" value="name" checked />
-        Name
-      </label>
-      <label class="checkbox">
-        <input type="checkbox" name="fields" value="price" checked />
-        Price
-      </label>
-      <label class="checkbox">
-        <input type="checkbox" name="fields" value="qty" />
-        Quantity
-      </label>
-    </div>
-  </div>
-
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary">
-      <span class="button-text">Export Products</span>
-      <span id="export-loading" class="loading-indicator" style="display: none;">
-        <span class="spinner"></span>
-      </span>
-    </button>
-  </div>
-
-  <!-- Results area -->
-  <div id="export-results" class="export-results"></div>
-</form>
-```
-
-### **Modal Dialogs**
-
-```html
-<!-- Modal container (always present) -->
-<div id="modal-container" class="modal-overlay" style="display: none;">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <!-- Content loaded dynamically -->
-    </div>
-  </div>
-</div>
-
-<!-- Trigger button -->
-<button
-  hx-get="/api/v1/web/kukla-integration-service/frontend/modal-content"
-  hx-vals='{"type": "confirmation", "fileId": "file-123"}'
-  hx-target="#modal-container .modal-content"
-  hx-swap="innerHTML"
-  class="btn btn-danger"
->
-  Delete File
-</button>
-```
-
-## JavaScript Enhancement
+## Component Development
 
 ### **Modal Management**
 
 ```javascript
-// web-src/src/js/utils/modal.js
+// web-src/src/js/ui/modals/modal-manager.js
 export class ModalManager {
   constructor() {
     this.modalContainer = document.getElementById('modal-container');
@@ -428,8 +138,6 @@ export class ModalManager {
     this.modalContainer.style.display = 'flex';
     this.modalContainer.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
-
-    // Focus management
     this.trapFocus();
   }
 
@@ -437,8 +145,6 @@ export class ModalManager {
     this.modalContainer.style.display = 'none';
     this.modalContainer.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
-
-    // Restore focus
     this.restoreFocus();
   }
 
@@ -457,7 +163,6 @@ export class ModalManager {
   }
 
   restoreFocus() {
-    // Return focus to trigger element if available
     const lastActiveElement = document.querySelector('[data-modal-trigger]');
     if (lastActiveElement) {
       lastActiveElement.focus();
@@ -534,9 +239,9 @@ window.showNotification = (notification) => {
 };
 ```
 
-## CSS Styling Patterns
+## CSS Development Patterns
 
-### **Component-Based CSS**
+### **Component-Based Styling**
 
 ```css
 /* web-src/src/css/components/data-table.css */
@@ -566,18 +271,6 @@ window.showNotification = (notification) => {
   background: #f9f9f9;
 }
 
-.data-table .actions {
-  white-space: nowrap;
-}
-
-.data-table .actions .btn {
-  margin-right: 8px;
-}
-
-.data-table .actions .btn:last-child {
-  margin-right: 0;
-}
-
 /* Loading states */
 .data-table.loading {
   opacity: 0.6;
@@ -602,218 +295,70 @@ window.showNotification = (notification) => {
 }
 ```
 
-### **HTMX Transition Styles**
+### **Loading Indicators**
 
 ```css
-/* web-src/src/css/utilities/transitions.css */
-.htmx-indicator {
-  opacity: 0;
-  transition: opacity 200ms ease-in;
+/* web-src/src/css/utilities/loading.css */
+.loading-indicator {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.htmx-request .htmx-indicator {
-  opacity: 1;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.htmx-request.htmx-indicator {
-  opacity: 1;
+/* Button loading states */
+.btn.is-loading {
+  position: relative;
+  color: transparent;
 }
 
-/* Swap animations */
-.htmx-swapping {
-  opacity: 0;
-  transform: translateY(-10px);
-  transition:
-    opacity 300ms ease-out,
-    transform 300ms ease-out;
-}
-
-.htmx-settling {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Custom swap animations for different content types */
-.notification-swap {
-  transform: translateX(100%);
-  transition: transform 300ms ease-out;
-}
-
-.notification-swap.htmx-settling {
-  transform: translateX(0);
+.btn.is-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 ```
 
 ## Best Practices
 
-### **HTMX Patterns**
+### **Progressive Enhancement**
 
-1. **Use Semantic HTML**
+1. **Start with HTML**: Ensure functionality works without JavaScript
+2. **Add HTMX**: Enhance with hypermedia interactions
+3. **Layer JavaScript**: Add custom behavior only when needed
 
-   ```html
-   <!-- Good: Semantic structure -->
-   <button hx-delete="/api/files/123" class="btn btn-danger">Delete File</button>
+### **Performance**
 
-   <!-- Avoid: Generic div -->
-   <div hx-delete="/api/files/123" class="clickable">Delete File</div>
-   ```
-
-2. **Progressive Enhancement**
-
-   ```html
-   <!-- Works without JavaScript -->
-   <form action="/api/files/upload" method="post" enctype="multipart/form-data">
-     <input type="file" name="file" required />
-     <button type="submit">Upload</button>
-   </form>
-
-   <!-- Enhanced with HTMX -->
-   <form
-     action="/api/files/upload"
-     method="post"
-     enctype="multipart/form-data"
-     hx-post="/api/files/upload"
-     hx-target="#upload-results"
-   >
-     <input type="file" name="file" required />
-     <button type="submit">Upload</button>
-   </form>
-   ```
-
-3. **Proper Error Handling**
-
-   ```html
-   <!-- Include error handling -->
-   <div
-     hx-get="/api/files"
-     hx-trigger="load"
-     hx-target="this"
-     hx-indicator="#loading"
-     hx-on="htmx:responseError: showNotification({type: 'error', message: 'Failed to load files'})"
-   >
-     <!-- Content -->
-   </div>
-   ```
+1. **Lazy Loading**: Use `hx-trigger="intersect"` for content below the fold
+2. **Caching**: Use `hx-headers` to control caching behavior
+3. **Minimal JavaScript**: Keep JavaScript footprint small
 
 ### **Accessibility**
 
-1. **ARIA Attributes**
+1. **ARIA Attributes**: Use `aria-busy`, `aria-live`, `aria-hidden`
+2. **Focus Management**: Handle focus in modals and dynamic content
+3. **Keyboard Navigation**: Support escape key and tab navigation
 
-   ```html
-   <button
-     hx-delete="/api/files/123"
-     aria-describedby="delete-confirmation"
-     hx-confirm="Are you sure?"
-   >
-     Delete
-   </button>
-   <div id="delete-confirmation" class="sr-only">This action cannot be undone</div>
-   ```
+### **Error Handling**
 
-2. **Loading States**
+1. **Network Errors**: Always handle connection failures
+2. **HTTP Errors**: Parse and display meaningful error messages
+3. **Validation**: Show validation errors inline with forms
 
-   ```html
-   <div hx-get="/api/files" aria-live="polite" aria-busy="false">
-     <!-- Content -->
-   </div>
-   ```
-
-3. **Keyboard Navigation**
-
-   ```javascript
-   // Ensure modals are keyboard accessible
-   document.addEventListener('keydown', (event) => {
-     if (event.key === 'Escape' && isModalOpen()) {
-       closeModal();
-     }
-   });
-   ```
-
-## Performance Optimization
-
-### **Lazy Loading**
-
-```html
-<!-- Load content when scrolled into view -->
-<div hx-get="/api/files/page/2" hx-trigger="intersect once" hx-swap="afterend">
-  <div class="loading-placeholder">Loading more files...</div>
-</div>
-```
-
-### **Request Deduplication**
-
-```html
-<!-- Prevent duplicate requests -->
-<input
-  type="search"
-  hx-get="/api/search"
-  hx-trigger="input changed delay:300ms"
-  hx-target="#search-results"
-  hx-sync="this:drop"
-/>
-```
-
-### **Caching**
-
-```javascript
-// Configure caching in HTMX
-htmx.on('htmx:configRequest', (event) => {
-  // Add cache headers for static content
-  if (event.detail.path.includes('/api/files/')) {
-    event.detail.headers['Cache-Control'] = 'max-age=300';
-  }
-});
-```
-
-## Debugging Frontend Issues
-
-### **HTMX Debugging**
-
-```javascript
-// Enable HTMX logging
-htmx.logger = function (elt, event, data) {
-  if (console) {
-    console.log('HTMX:', event, elt, data);
-  }
-};
-
-// Debug specific events
-htmx.on('htmx:beforeRequest', (event) => {
-  console.log('Request:', event.detail);
-});
-
-htmx.on('htmx:responseError', (event) => {
-  console.error('Response Error:', event.detail);
-});
-```
-
-### **Common Issues**
-
-1. **Actions Not Triggering**
-
-   - Check HTMX attributes are correct
-   - Verify endpoints are accessible
-   - Check browser network tab
-
-2. **Content Not Updating**
-
-   - Verify target selectors
-   - Check swap modes
-   - Ensure content structure matches
-
-3. **JavaScript Errors**
-   - Check browser console
-   - Verify event handlers are attached
-   - Ensure HTMX is loaded
-
-## Related Documentation
-
-- **[Design System](design-system.md)** - Visual design language and component library
-- **[Adobe App Builder Architecture](../architecture/adobe-app-builder.md)** - Backend action patterns
-- **[HTMX Integration](../architecture/htmx-integration.md)** - Architectural decisions
-- **[Testing Guide](testing.md)** - Frontend testing patterns
-- **[Deployment Guide](../deployment/environments.md)** - Deploying frontend changes
-
----
-
-_This frontend guide covers HTMX patterns, JavaScript enhancement, and development workflows for Adobe App Builder applications._
+See [HTMX Integration Architecture](../architecture/htmx-integration.md) for architectural details and [Design System](./design-system.md) for styling guidelines.

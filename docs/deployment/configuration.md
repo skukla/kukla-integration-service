@@ -1,8 +1,12 @@
-# Configuration Management
+# Configuration Management (Legacy Reference)
 
-> **Environment configuration and schema validation for Adobe App Builder applications**
+> **📚 LEGACY DOCUMENTATION**
 >
-> **⚠️ Important**: This guide covers deployment and infrastructure configuration. For **practical development patterns**, see **[Development Configuration Guide](../development/configuration.md)** which has the **current working patterns**.
+> **⚠️ Important**: This is legacy documentation for deployment and infrastructure configuration. Some patterns may be outdated.
+>
+> **👉 For current, working configuration patterns**, see **[Development Configuration Guide](../development/configuration.md)** which has the **up-to-date working patterns** used in the codebase.
+>
+> This document is kept for reference and deployment infrastructure details.
 
 ## Overview
 
@@ -638,7 +642,7 @@ describe('Configuration', () => {
 
 - **[Deployment Guide](environments.md)** - Environment setup and deployment
 - **[Development Setup](../getting-started/setup.md)** - Initial configuration
-- **[Security Practices](security.md)** - Security configuration guidelines
+- **[Adobe App Builder Security](../architecture/adobe-app-builder.md)** - Platform security guidelines
 - **[Adobe App Builder Architecture](../architecture/adobe-app-builder.md)** - Platform configuration
 
 ---
