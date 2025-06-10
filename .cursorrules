@@ -94,6 +94,48 @@ Before implementing any feature:
 - Validate product data according to Commerce schemas
 - Use proper error handling for Commerce API calls
 
+### API Mesh Integration
+
+**CRITICAL: Storage Dependency Pattern**
+
+Always initialize storage directly to avoid circular dependency issues:
+
+```javascript
+// ✅ CORRECT: Direct storage initialization
+const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
+
+const config = loadConfig(actionParams);
+let storage;
+const provider = config.storage.provider;
+
+if (provider === 'app-builder') {
+  storage = await initializeAppBuilderStorage(actionParams);
+} else if (provider === 's3') {
+  storage = await initializeS3Storage(config, actionParams);
+}
+
+// ❌ WRONG: Causes "Cannot initialize action more than once" error
+const { initializeStorage } = require('../../../src/core/storage');
+const storage = await initializeStorage(config, actionParams); // Circular dependency!
+```
+
+**API Mesh Patterns:**
+
+- Use `mesh.json` for API Mesh configuration with CommonJS format resolvers
+- Custom resolvers in `mesh-resolvers.js` to consolidate multiple data sources
+- Enhanced resolvers bridge gaps between Commerce REST API and Catalog Service
+- Pass authentication headers via custom headers (`x-commerce-token`, `x-catalog-*`)
+- Catalog Service authentication requires Commerce instance endpoint, not sandbox
+- API Mesh consolidates 200+ API calls into single GraphQL queries
+- Enhanced resolvers expose hidden/disabled products not visible in Catalog Service
+
+**Required Configuration:**
+
+- Mesh endpoint and API key in environment configuration
+- Catalog Service credentials in `.env` and `app.config.yaml`
+- Commerce authentication token passed to mesh resolvers
+- Environment-specific mesh configuration (staging/production)
+
 ### Error Handling
 
 - Use consistent error response formats
