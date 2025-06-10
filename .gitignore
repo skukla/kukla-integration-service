@@ -9,6 +9,7 @@ dist
 .env*
 .aio
 web-src/src/config/generated/
+web-src/src/config.json
 
 # Generated Files
 mesh-config.js

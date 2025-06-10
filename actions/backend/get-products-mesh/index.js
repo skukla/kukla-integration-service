@@ -3,7 +3,7 @@
  * @module get-products-mesh
  */
 const { loadConfig } = require('../../../config');
-const { getAuthToken } = require('../../../src/commerce/api/integration');
+// Note: getAuthToken not needed as we pass credentials directly to mesh resolver
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
@@ -91,8 +91,7 @@ async function fetchProductsFromMesh(actionParams, config) {
     throw new Error('API Mesh not configured');
   }
 
-  // Get Commerce authentication token
-  const commerceToken = await getAuthToken(actionParams);
+  // Note: We pass credentials directly to mesh resolver instead of getting token
 
   // Prepare GraphQL query for full products
   const query = `
@@ -116,7 +115,12 @@ async function fetchProductsFromMesh(actionParams, config) {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${actionParams.MESH_API_KEY || meshConfig.apiKey}`,
-      'x-commerce-token': commerceToken,
+      // Pass Commerce credentials to mesh resolver (not token)
+      'x-commerce-username': actionParams.COMMERCE_ADMIN_USERNAME,
+      'x-commerce-password': actionParams.COMMERCE_ADMIN_PASSWORD,
+      // Pass environment for config selection
+      'x-environment': config.environment || 'staging',
+      // Catalog Service headers (if needed)
       'x-catalog-api-key': actionParams.CATALOG_SERVICE_API_KEY,
       'x-catalog-environment-id': actionParams.CATALOG_SERVICE_ENVIRONMENT_ID,
       'x-catalog-customer-group': 'b6589fc6ab0dc82cf12099d1c2d40ab994e8410c',
