@@ -94,6 +94,68 @@ Before implementing any feature:
 - Validate product data according to Commerce schemas
 - Use proper error handling for Commerce API calls
 
+### API Mesh Integration
+
+**CRITICAL: JavaScript Compatibility**
+
+API Mesh JavaScript parser has compatibility limitations:
+
+```javascript
+// ✅ CORRECT: String concatenation for API Mesh resolvers
+const inventoryUrl = 'https://example.com/rest/V1/stockItems/' + sku;
+const message = 'Successfully fetched ' + count + ' products';
+
+// ❌ WRONG: Template literals not fully supported in API Mesh
+const inventoryUrl = `https://example.com/rest/V1/stockItems/${sku}`;
+const message = `Successfully fetched ${count} products`;
+```
+
+**CRITICAL: Storage Dependency Pattern**
+
+Always initialize storage directly to avoid circular dependency issues:
+
+```javascript
+// ✅ CORRECT: Direct storage initialization
+const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
+
+const config = loadConfig(actionParams);
+let storage;
+const provider = config.storage.provider;
+
+if (provider === 'app-builder') {
+  storage = await initializeAppBuilderStorage(actionParams);
+} else if (provider === 's3') {
+  storage = await initializeS3Storage(config, actionParams);
+}
+
+// ❌ WRONG: Causes "Cannot initialize action more than once" error
+const { initializeStorage } = require('../../../src/core/storage');
+const storage = await initializeStorage(config, actionParams); // Circular dependency!
+```
+
+**API Mesh Patterns:**
+
+- Use `mesh.json` for API Mesh configuration with CommonJS format resolvers
+- Custom resolvers in `mesh-resolvers.js` to consolidate multiple data sources
+- Enhanced resolvers bridge gaps between Commerce REST API and Catalog Service
+- Pass authentication headers via custom headers (`x-commerce-token`, `x-catalog-*`)
+- Catalog Service authentication requires Commerce instance endpoint, not sandbox
+- API Mesh consolidates 200+ API calls into single GraphQL queries
+- Enhanced resolvers expose hidden/disabled products not visible in Catalog Service
+
+**API Mesh Limitations:**
+
+- External GraphQL schema files not supported in `additionalTypeDefs` (unlike `additionalResolvers`)
+- Type definitions must be inline in `mesh.json` as string array for better readability
+- Keep external `.graphql` files for documentation but reference inline definitions
+
+**Required Configuration:**
+
+- Mesh endpoint and API key in environment configuration
+- Catalog Service credentials in `.env` and `app.config.yaml`
+- Commerce authentication token passed to mesh resolvers
+- Environment-specific mesh configuration (staging/production)
+
 ### Error Handling
 
 - Use consistent error response formats
@@ -157,15 +219,70 @@ Since automatic memories aren't available, use these manual techniques:
 - **Use project structure**: "Create a new utility in src/core/ that can be shared..."
 - **Include version context**: "This is an Adobe App Builder project using staging-first development..."
 
+## Action Architecture & DRY Principles
+
+### CRITICAL: Reuse Step Functions
+
+**NEVER** recreate functionality that exists in step functions. Always reuse established patterns:
+
+```javascript
+// ✅ CORRECT: Reuse existing step functions
+const buildProducts = require('../get-products/steps/buildProducts');
+const createCsv = require('../get-products/steps/createCsv');
+const storeCsv = require('../get-products/steps/storeCsv');
+const validateInput = require('../get-products/steps/validateInput');
+
+// Use formatStepMessage for consistent messaging
+const { formatStepMessage } = require('../../../src/core/utils');
+
+// ❌ WRONG: Recreating CSV generation, file storage, step messaging manually
+```
+
+### Action Structure Pattern
+
+All backend actions should follow this consistent structure:
+
+1. **Import shared step functions** from `/steps/` directories
+2. **Extract and validate parameters** with `extractActionParams()`
+3. **Use consistent step messaging** with `formatStepMessage()`
+4. **Reuse transformation logic** (`buildProducts`, `createCsv`, `storeCsv`)
+5. **Only create new logic** for data fetching (e.g., `fetchProductsFromMesh`)
+
+### Step Function Guidelines
+
+**Always Reuse:**
+
+- `validateInput()` - Input validation
+- `buildProducts()` - Product data transformation  
+- `createCsv()` - CSV generation with proper headers
+- `storeCsv()` - File storage logic
+- `formatStepMessage()` - Consistent step messaging
+- `response.success/error()` - Response formatting
+
+**Only Create New:**
+
+- Data fetching functions (e.g., `fetchProductsFromMesh` vs `fetchAndEnrichProducts`)
+- Source-specific transformations
+
+### Parity Requirements
+
+Actions that serve the same purpose (e.g., `get-products` vs `get-products-mesh`) must have:
+
+- ✅ **Identical step messages** - Same success/error formatting
+- ✅ **Identical CSV structure** - Same headers, filename, download URLs
+- ✅ **Identical response format** - Same storage, performance, message fields
+- ✅ **Shared business logic** - Reuse transformations, validations, file operations
+
 ## When Making Changes
 
-1. Check existing utilities in `src/core/` before creating new ones
-2. Follow the configuration system for new settings
-3. Update documentation when adding features
-4. Test with the provided test scripts
-5. Use staging environment for development
-6. Consider HTMX patterns for UI interactions
-7. Follow the established project patterns and conventions
+1. **Check existing step functions** in `actions/*/steps/` before creating new ones
+2. **Reuse shared utilities** in `src/core/` before creating new ones
+3. Follow the configuration system for new settings
+4. Update documentation when adding features
+5. Test with the provided test scripts
+6. Use staging environment for development
+7. Consider HTMX patterns for UI interactions
+8. **Maintain architectural consistency** across similar actions
 
 ## Configuration Management
 
@@ -551,9 +668,108 @@ if (context.config.performance.enabled) {
 - **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
 - **Required**: For frontend configuration generation (automatic validation)
 
+## API Mesh Integration Patterns
+
+### CRITICAL: HTTP Bridge Pattern (Recommended)
+
+**ALWAYS** use the HTTP Bridge pattern for API Mesh integration to eliminate code duplication:
+
+#### The HTTP Bridge Architecture
+
+```javascript
+// ✅ CORRECT: HTTP Bridge pattern
+// mesh-resolvers.js (~60 lines)
+module.exports = {
+  resolvers: {
+    Query: {
+      mesh_products_full: {
+        resolve: async (parent, args, context) => {
+          // Get credentials from headers
+          const username = context.headers['x-commerce-username'];
+          const password = context.headers['x-commerce-password'];
+
+          // Call existing REST action via HTTP
+          const restResponse = await fetch(REST_ACTION_URL + '?format=json', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          const data = await restResponse.json();
+          return {
+            products: data.products || [],
+            total_count: data.total_count || 0,
+            message: data.message || 'Success via HTTP bridge',
+            status: 'success',
+          };
+        },
+      },
+    },
+  },
+};
+```
+
+#### Why HTTP Bridge Pattern
+
+**✅ Benefits:**
+
+- **Zero Code Duplication**: Single source of truth in REST action
+- **78% Code Reduction**: 60 lines vs 273 lines embedded logic
+- **Perfect Parity**: Identical CSV output, byte-for-byte
+- **Easy Maintenance**: Changes automatically propagate
+- **Standard Debugging**: HTTP patterns everyone understands
+- **Minimal Overhead**: <1% performance impact
+
+**❌ Avoid Embedded Logic:**
+
+- Creates 200+ lines of duplicated Commerce logic
+- Double maintenance burden
+- API Mesh cannot import Node.js modules
+- Harder to debug and understand
+
+#### Required REST Action Support
+
+Enable JSON format in REST actions:
+
+```javascript
+// In REST action main function
+const format = actionParams.format || 'csv';
+
+if (format === 'json') {
+  return response.success({
+    products: builtProducts,
+    total_count: builtProducts.length,
+    message: 'Successfully fetched products',
+    status: 'success',
+  });
+}
+// ... continue with CSV logic
+```
+
+#### Mesh Action Simplification
+
+When using HTTP bridge, skip transformation steps:
+
+```javascript
+// ✅ CORRECT: Skip buildProducts for already-transformed data
+const builtProducts = products; // HTTP bridge returns ready-to-use data
+
+// ❌ WRONG: Double transformation
+const builtProducts = await buildProducts(products, config); // Breaks image URLs
+```
+
+#### API Mesh Constraints
+
+**Critical Limitations:**
+
+- Cannot import Node.js modules (`require()` fails)
+- Cannot access `src/` utilities directly
+- Must use embedded configuration or HTTP calls
+- Template literals not fully supported (use string concatenation)
+
 ## Common Patterns
 
 - Configuration: Use the schema-validated config system
+- API Mesh: Always use HTTP Bridge pattern for code reuse
 
 ## Git Hooks and Code Quality
 
