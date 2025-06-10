@@ -1,53 +1,49 @@
-# package directories
+# Dependencies
 node_modules
-jspm_packages
 
-# build
-build
+# Build Output
 dist
 .manifest-dist.yml
 
-# Config
-config.json
+# Configuration & Secrets
 .env*
 .aio
-config/generated/
 web-src/src/config/generated/
 
-# Generated frontend code
-web-src/src/js/core/url/index.js
+# Generated Files
+mesh-config.js
 
-# Adobe I/O console config
+# Adobe I/O Console
 console.json
 
-# Test output
-junit.xml
-
-# IDE & Temp
-.cache
-.idea
+# Test Coverage
 .nyc_output
 coverage
+
+# Build Tools & Caches
+.cache
+.parcel-cache
+
+# Temporary Files
 .aws.tmp.creds.json
 .wskdebug.props.tmp
 
-# Parcel
-.parcel-cache
+# IDEs & Editors
+.idea
+.vscode/settings.json
 
-# OSX
+# Cursor AI (ignore user-specific data, keep shared rules)
+.cursor/state/
+.cursor/cache/
+.cursor/workspace/
+
+# Operating System
 .DS_Store
 
-# yeoman
-.yo-repository
-
-# logs folder for aio-run-detached
+# Logs
 logs
 dev.log
-
-# workspace
-# Contains sensitive information like API keys and client secrets that should not be committed
-config/workspaces/
-.vite/
-
-# Development server
 .pid
+
+# Workspace (sensitive data)
+config/workspaces/
