@@ -99,27 +99,34 @@ The application uses a comprehensive configuration system:
 
 ## Project Structure
 
+For a comprehensive overview of the project file structure, see the [**Project Structure Guide**](docs/architecture/project-structure.md).
+
+### Quick Overview
+
 ```text
 kukla-integration-service/
-├── actions/              # Backend actions
-│   ├── core/            # Core utilities
-│   ├── commerce/        # Commerce integration
-│   ├── htmx/           # HTMX utilities
-│   ├── frontend/       # Frontend handlers
-│   └── backend/        # Backend handlers
-├── config/              # Configuration
-│   ├── environments/   # Environment-specific settings
-│   ├── schema/        # Configuration schemas
-│   └── defaults/      # Default configurations
-└── web-src/            # Frontend source
-    └── src/
-        ├── js/
-        │   ├── core/       # Auto-generated config and URL modules
-        │   ├── htmx/       # HTMX setup and configuration
-        │   └── ui/         # UI components and interactions
-        └── config/
-            └── generated/  # Build-generated configuration files
+├── 🌐 API Mesh Integration
+│   ├── mesh.json                  # API Mesh configuration
+│   └── mesh-resolvers.js          # HTTP Bridge resolvers
+├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
+│   ├── backend/                   # API endpoints (get-products, get-products-mesh)
+│   └── frontend/                  # HTMX response handlers (browse-files)
+├── 🛠️ src/                        # Shared utilities and core logic
+│   ├── core/                      # Configuration, HTTP, storage, tracing
+│   ├── commerce/                  # Adobe Commerce API integration
+│   └── htmx/                      # HTMX-specific utilities
+├── 🌍 web-src/                    # Frontend assets with HTMX enhancement
+├── 📋 config/                     # Environment-aware configuration system
+├── 🔧 scripts/                    # Build and testing utilities
+└── 📚 docs/                       # Comprehensive documentation
 ```
+
+**Key Architecture Features:**
+
+- **HTTP Bridge Pattern**: API Mesh delegates to REST actions (78% code reduction)
+- **Step Functions**: Reusable action components (DRY principle)
+- **Configuration System**: Environment-aware with schema validation
+- **Progressive Enhancement**: HTMX-first frontend with minimal JavaScript
 
 ## Documentation
 
