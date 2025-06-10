@@ -488,7 +488,7 @@ aio app:info
 - **[Development Setup](../getting-started/setup.md)** - Environment configuration
 - **[Testing Guide](../development/testing.md)** - Pre-deployment testing
 - **[Configuration Management](configuration.md)** - Environment configuration
-- **[Security Practices](security.md)** - Security guidelines
+- **[Adobe App Builder Security](../architecture/adobe-app-builder.md)** - Platform security guidelines
 
 ---
 

@@ -62,8 +62,9 @@ nano config/environments/.env.staging
 # Test the application
 npm start
 
-# Test individual actions
-npm run test:action -- actions/backend/get-products
+# Test individual actions (automatic config loading)
+npm run test:action get-products        # REST API method
+npm run test:action get-products-mesh   # API Mesh method
 
 # Deploy to staging
 npm run deploy
@@ -178,37 +179,48 @@ npm run deploy:prod
 ### **Testing Individual Actions**
 
 ```bash
-# Test specific backend action (auto-loads Commerce config and credentials)
-npm run test:action -- actions/backend/get-products
+# Test backend actions (auto-loads Commerce config and credentials)
+npm run test:action get-products        # REST API export method
+npm run test:action get-products-mesh   # API Mesh export method (HTTP Bridge)
 
-# Test other actions that require parameters
-npm run test:action -- actions/backend/download-file --param fileId=abc123
+# Test file operations
+npm run test:action download-file
+npm run test:action delete-file
 
 # Test frontend actions
-npm run test:action -- actions/frontend/browse-files
+npm run test:action browse-files
+npm run test:action upload-file
 ```
 
-> **No Manual Parameters Needed**: The test script automatically loads Commerce URL from environment configuration and credentials from `.env` file for get-products.
+> **No Manual Parameters Needed**: The test script automatically loads Commerce URL from environment configuration and credentials from `.env` file. Both export methods produce identical results - use API Mesh for performance (1 GraphQL call vs 200+ REST calls).
 
 ### **File Structure for Development**
 
 ```text
 kukla-integration-service/
-├── actions/
-│   ├── backend/           # API endpoints - your main backend logic
-│   │   ├── get-products/
+├── 🌐 API Mesh Integration
+│   ├── mesh.json                  # API Mesh configuration
+│   └── mesh-resolvers.js          # HTTP Bridge resolvers
+├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
+│   ├── backend/                   # API endpoints - your main backend logic
+│   │   ├── get-products/          # REST API product export
+│   │   ├── get-products-mesh/     # API Mesh product export (HTTP Bridge)
 │   │   ├── download-file/
 │   │   └── delete-file/
-│   └── frontend/          # HTMX response handlers
-│       └── browse-files/
-├── src/                   # Shared utilities - check here first!
-│   ├── core/             # Common utilities (HTTP, validation, etc.)
-│   ├── htmx/             # HTMX helpers and response utilities
-│   └── commerce/         # Adobe Commerce integration utilities
-├── web-src/              # Frontend assets
-├── config/               # Environment configurations
-└── docs/                 # This documentation
+│   └── frontend/                  # HTMX response handlers
+│       ├── browse-files/
+│       └── upload-file/
+├── 🛠️ src/                        # Shared utilities - check here first!
+│   ├── core/                      # Configuration, HTTP, storage, tracing
+│   ├── htmx/                      # HTMX helpers and response utilities
+│   └── commerce/                  # Adobe Commerce integration utilities
+├── 🌍 web-src/                    # Frontend assets with HTMX enhancement
+├── 📋 config/                     # Environment-aware configuration system
+├── 🔧 scripts/                    # Build and testing utilities
+└── 📚 docs/                       # This comprehensive documentation
 ```
+
+> **New Features**: API Mesh integration with HTTP Bridge pattern for GraphQL consolidation. See [API Mesh Integration Guide](../development/api-mesh-integration.md) for details.
 
 ## Development Best Practices
 
@@ -374,7 +386,7 @@ git commit -m "Test commit"  # Should auto-format the file
 
 Once your environment is set up:
 
-1. **[Deployment Guide](deployment.md)** - Deploy your first changes
+1. **[Deployment Guide](../deployment/environments.md)** - Deploy your first changes
 2. **[Coding Standards](../development/coding-standards.md)** - Learn the code patterns
 3. **[Architecture Guide](../architecture/adobe-app-builder.md)** - Understand the platform
 4. **[Testing Guide](../development/testing.md)** - Test your changes
