@@ -26,6 +26,53 @@
         <h1>File Browser</h1>
       </header>
 
+      <!-- Export Actions Section -->
+      <section class="content-section">
+        <!-- Section header -->
+        <div class="section-header">
+          <h2 class="section-title">Export Products</h2>
+          <p class="section-description">Generate product CSV files using different methods</p>
+        </div>
+
+        <!-- Export buttons -->
+        <div class="export-actions">
+          <button
+            class="btn btn-primary"
+            hx-post="./api/v1/web/kukla-integration-service/get-products"
+            hx-trigger="click"
+            hx-target="#export-status"
+            hx-swap="innerHTML"
+            hx-indicator="#export-loader"
+            data-export-method="rest-api"
+          >
+            <span class="btn-text">Export via REST API</span>
+            <span class="btn-subtitle">Traditional multiple API calls</span>
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            hx-post="./api/v1/web/kukla-integration-service/get-products-mesh"
+            hx-trigger="click"
+            hx-target="#export-status"
+            hx-swap="innerHTML"
+            hx-indicator="#export-loader"
+            data-export-method="api-mesh"
+          >
+            <span class="btn-text">Export via API Mesh</span>
+            <span class="btn-subtitle">Consolidated GraphQL query</span>
+          </button>
+        </div>
+
+        <!-- Export status and loader -->
+        <div class="export-status-container">
+          <div id="export-loader" class="loader htmx-indicator">
+            <div class="loader-spinner"></div>
+            <span>Processing export...</span>
+          </div>
+          <div id="export-status" class="export-status"></div>
+        </div>
+      </section>
+
       <!-- Table section -->
       <section class="content-section">
         <!-- Section header -->

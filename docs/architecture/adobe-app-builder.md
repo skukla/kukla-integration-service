@@ -35,28 +35,50 @@ Adobe App Builder is a complete framework for building cloud-native applications
 
 ```text
 kukla-integration-service/
-├── actions/                    # Adobe I/O Runtime actions
-│   ├── backend/               # API endpoints (data processing)
-│   │   ├── get-products/      # Product export from Commerce
-│   │   ├── download-file/     # File download operations
-│   │   └── delete-file/       # File deletion operations
-│   └── frontend/              # UI response handlers
-│       └── browse-files/      # File browser HTMX responses
-├── src/                       # Shared utilities
-│   ├── core/                  # Platform utilities (config, URL, storage)
-│   ├── commerce/              # Commerce API integration
-│   └── htmx/                  # Frontend response utilities
-├── web-src/                   # Static frontend assets
+├── 🌐 API Mesh Integration
+│   ├── mesh.json                  # API Mesh configuration
+│   └── mesh-resolvers.js          # HTTP Bridge resolvers (~60 lines)
+├── ⚙️ actions/                    # Adobe I/O Runtime actions
+│   ├── backend/                   # API endpoints (data processing)
+│   │   ├── get-products/          # Product export via REST API (200+ calls)
+│   │   ├── get-products-mesh/     # Product export via API Mesh (1 call)
+│   │   ├── download-file/         # File download operations
+│   │   └── delete-file/           # File deletion operations
+│   └── frontend/                  # UI response handlers
+│       ├── browse-files/          # File browser HTMX responses
+│       └── upload-file/           # File upload HTMX responses
+├── 🛠️ src/                        # Shared utilities
+│   ├── core/                      # Platform utilities (config, URL, storage, tracing)
+│   │   ├── config/                # Environment-aware configuration system
+│   │   ├── http/                  # HTTP client with retry logic
+│   │   ├── storage/               # Multi-provider storage abstraction
+│   │   ├── url/                   # URL building and management
+│   │   └── tracing/               # Performance monitoring
+│   ├── commerce/                  # Commerce API integration
+│   └── htmx/                      # Frontend response utilities
+├── 🌍 web-src/                    # Static frontend assets
 │   └── src/
 │       ├── js/
-│       │   ├── core/          # Auto-generated config and URL modules
-│       │   ├── htmx/          # HTMX setup and configuration
-│       │   └── ui/            # UI components and interactions
+│       │   ├── core/              # Auto-generated config and URL modules
+│       │   ├── htmx/              # HTMX setup and configuration
+│       │   └── ui/                # UI components and interactions
 │       └── config/
-│           └── generated/     # Build-generated configuration files
-├── config/                    # Environment configurations
-└── app.config.yaml           # Adobe App Builder configuration
+│           └── generated/         # Build-generated configuration files
+├── 📋 config/                     # Environment configurations
+│   ├── environments/             # Environment-specific settings
+│   ├── defaults/                  # Default configuration values
+│   └── schema/                    # Configuration validation schemas
+├── 🔧 scripts/                    # Build and testing utilities
+└── app.config.yaml               # Adobe App Builder configuration
 ```
+
+### **Key Architecture Features**
+
+- **API Mesh Integration**: GraphQL consolidation using HTTP Bridge pattern
+- **Step Functions**: Reusable action components following DRY principles
+- **Configuration System**: Environment-aware with schema validation
+- **Storage Abstraction**: Multi-provider support (Adobe I/O Files, AWS S3)
+- **Performance Optimization**: API Mesh reduces 200+ calls to 1 GraphQL query
 
 ### **Action Patterns**
 
