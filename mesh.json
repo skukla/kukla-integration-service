@@ -28,7 +28,7 @@
         }
       }
     ],
-    "additionalResolvers": ["./mesh-config.js", "./mesh-resolvers.js"],
+    "additionalResolvers": ["./mesh-resolvers.js"],
     "additionalTypeDefs": [
       "type MeshProductsFull { products: [JSON] total_count: Int message: String status: String }",
       "extend type Query { mesh_products_full(pageSize: Int): MeshProductsFull }"
