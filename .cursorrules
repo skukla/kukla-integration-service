@@ -143,6 +143,12 @@ const storage = await initializeStorage(config, actionParams); // Circular depen
 - API Mesh consolidates 200+ API calls into single GraphQL queries
 - Enhanced resolvers expose hidden/disabled products not visible in Catalog Service
 
+**API Mesh Limitations:**
+
+- External GraphQL schema files not supported in `additionalTypeDefs` (unlike `additionalResolvers`)
+- Type definitions must be inline in `mesh.json` as string array for better readability
+- Keep external `.graphql` files for documentation but reference inline definitions
+
 **Required Configuration:**
 
 - Mesh endpoint and API key in environment configuration
