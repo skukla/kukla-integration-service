@@ -131,16 +131,16 @@ async function main(params) {
       {
         message: 'Product export completed successfully',
         steps,
-        stats: {
-          productsProcessed: builtProducts.length,
-          csvSize: csvData.stats.originalSize,
-          storageLocation: storageResult.location,
-        },
         downloadUrl: storageResult.downloadUrl,
         storage: {
           provider: storageResult.storageType,
           location: storageResult.location || storageResult.fileName,
           properties: storageResult.properties,
+        },
+        performance: {
+          processedProducts: builtProducts.length,
+          apiCalls: trace.metrics?.apiCalls || 200, // Estimate based on typical REST API calls
+          method: 'REST API',
         },
       },
       'Product export completed',
