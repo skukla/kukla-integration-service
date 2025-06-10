@@ -96,6 +96,20 @@ Before implementing any feature:
 
 ### API Mesh Integration
 
+**CRITICAL: JavaScript Compatibility**
+
+API Mesh JavaScript parser has compatibility limitations:
+
+```javascript
+// ✅ CORRECT: String concatenation for API Mesh resolvers
+const inventoryUrl = 'https://example.com/rest/V1/stockItems/' + sku;
+const message = 'Successfully fetched ' + count + ' products';
+
+// ❌ WRONG: Template literals not fully supported in API Mesh
+const inventoryUrl = `https://example.com/rest/V1/stockItems/${sku}`;
+const message = `Successfully fetched ${count} products`;
+```
+
 **CRITICAL: Storage Dependency Pattern**
 
 Always initialize storage directly to avoid circular dependency issues:
@@ -199,15 +213,68 @@ Since automatic memories aren't available, use these manual techniques:
 - **Use project structure**: "Create a new utility in src/core/ that can be shared..."
 - **Include version context**: "This is an Adobe App Builder project using staging-first development..."
 
+## Action Architecture & DRY Principles
+
+### CRITICAL: Reuse Step Functions
+
+**NEVER** recreate functionality that exists in step functions. Always reuse established patterns:
+
+```javascript
+// ✅ CORRECT: Reuse existing step functions
+const buildProducts = require('../get-products/steps/buildProducts');
+const createCsv = require('../get-products/steps/createCsv');
+const storeCsv = require('../get-products/steps/storeCsv');
+const validateInput = require('../get-products/steps/validateInput');
+
+// Use formatStepMessage for consistent messaging
+const { formatStepMessage } = require('../../../src/core/utils');
+
+// ❌ WRONG: Recreating CSV generation, file storage, step messaging manually
+```
+
+### Action Structure Pattern
+
+All backend actions should follow this consistent structure:
+
+1. **Import shared step functions** from `/steps/` directories
+2. **Extract and validate parameters** with `extractActionParams()`
+3. **Use consistent step messaging** with `formatStepMessage()`
+4. **Reuse transformation logic** (`buildProducts`, `createCsv`, `storeCsv`)
+5. **Only create new logic** for data fetching (e.g., `fetchProductsFromMesh`)
+
+### Step Function Guidelines
+
+**Always Reuse:**
+- `validateInput()` - Input validation
+- `buildProducts()` - Product data transformation  
+- `createCsv()` - CSV generation with proper headers
+- `storeCsv()` - File storage logic
+- `formatStepMessage()` - Consistent step messaging
+- `response.success/error()` - Response formatting
+
+**Only Create New:**
+- Data fetching functions (e.g., `fetchProductsFromMesh` vs `fetchAndEnrichProducts`)
+- Source-specific transformations
+
+### Parity Requirements
+
+Actions that serve the same purpose (e.g., `get-products` vs `get-products-mesh`) must have:
+
+- ✅ **Identical step messages** - Same success/error formatting
+- ✅ **Identical CSV structure** - Same headers, filename, download URLs
+- ✅ **Identical response format** - Same storage, performance, message fields
+- ✅ **Shared business logic** - Reuse transformations, validations, file operations
+
 ## When Making Changes
 
-1. Check existing utilities in `src/core/` before creating new ones
-2. Follow the configuration system for new settings
-3. Update documentation when adding features
-4. Test with the provided test scripts
-5. Use staging environment for development
-6. Consider HTMX patterns for UI interactions
-7. Follow the established project patterns and conventions
+1. **Check existing step functions** in `actions/*/steps/` before creating new ones
+2. **Reuse shared utilities** in `src/core/` before creating new ones
+3. Follow the configuration system for new settings
+4. Update documentation when adding features
+5. Test with the provided test scripts
+6. Use staging environment for development
+7. Consider HTMX patterns for UI interactions
+8. **Maintain architectural consistency** across similar actions
 
 ## Configuration Management
 
