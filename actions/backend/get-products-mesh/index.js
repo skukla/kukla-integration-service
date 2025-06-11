@@ -213,6 +213,10 @@ async function main(params) {
     });
     steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
 
+    // Calculate total duration
+    const endTime = Date.now();
+    const totalDuration = endTime - trace.startTime;
+
     return response.success(
       {
         message: 'Product export completed successfully',
@@ -226,7 +230,9 @@ async function main(params) {
         performance: {
           processedProducts: builtProducts.length,
           apiCalls: 1, // API Mesh consolidates many calls into 1
-          method: 'REST API', // Keep same as REST API for parity
+          method: 'API Mesh', // Show correct method for clarity
+          duration: totalDuration,
+          durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
         },
       },
       'Product export completed',
