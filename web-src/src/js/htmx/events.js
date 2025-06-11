@@ -4,12 +4,7 @@
  */
 
 import { handleError } from '../core/errors/index.js';
-import {
-  showModal,
-  hideModal,
-  handleModalContentSwap,
-  handleModalBeforeSwap,
-} from '../ui/components/modal/index.js';
+import { showModal, hideModal, handleModalContentSwap } from '../ui/components/modal/index.js';
 import { showNotification } from '../ui/components/notifications/index.js';
 
 // Event handler configuration
@@ -47,7 +42,7 @@ export function initializeHtmxEvents() {
 
   // Modal events
   window.htmx.on('htmx:afterSwap', handleModalContentSwap);
-  window.htmx.on('htmx:beforeSwap', handleModalBeforeSwap);
+  // Note: handleModalBeforeSwap is registered in modal/index.js to avoid duplicates
 }
 
 /**
@@ -77,16 +72,15 @@ function handleAfterRequest(event) {
   const target = event.detail.elt;
   const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
 
-  // For delete buttons, we keep the loading state until the modal closes
-  // This provides a smoother experience
+  // For delete buttons, show success notification immediately and close modal
   if (target.classList.contains('delete-confirm-button')) {
-    // Store success message for delete operations to show after modal closes
     if (event.detail.successful) {
       const successMessage = target.getAttribute('data-success-message');
       if (successMessage) {
-        // Store the message and the target element to clean up later
-        window._deleteSuccessMessage = successMessage;
-        window._deleteButtonTarget = target;
+        // Show success notification immediately
+        showNotification(successMessage, 'success');
+        // Close the modal
+        hideModal();
       }
     } else {
       // If the request failed, remove loading state immediately
@@ -110,11 +104,12 @@ function handleAfterRequest(event) {
     delete target.dataset.originalText;
   }
 
-  // Handle success message - but skip download buttons and delete buttons as they have special handling
+  // Handle success message - but skip download buttons, delete buttons, and export buttons as they have special handling
   if (
     event.detail.successful &&
     !target.classList.contains('download-button') &&
-    !target.classList.contains('delete-confirm-button')
+    !target.classList.contains('delete-confirm-button') &&
+    !target.hasAttribute('data-export-method')
   ) {
     const successMessage = target.getAttribute('data-success-message');
     if (successMessage) {
@@ -257,14 +252,19 @@ function handleAfterSwap(event) {
       // Close the modal immediately for a smooth transition
       hideModal();
 
-      // Show the success message after a brief delay to let the modal close animation start
+      // Show the success message immediately
       if (window._deleteSuccessMessage) {
-        setTimeout(() => {
-          showNotification(window._deleteSuccessMessage, 'success');
-          delete window._deleteSuccessMessage;
-        }, 150); // Slightly longer delay for smoother experience
+        showNotification(window._deleteSuccessMessage, 'success');
+        delete window._deleteSuccessMessage;
       }
     }
+  }
+
+  // IMPORTANT: Check for orphaned delete success messages on ANY table content update
+  // This handles race conditions where the message gets stuck between operations
+  if (window._deleteSuccessMessage && !document.querySelector('.delete-confirm-button')) {
+    showNotification(window._deleteSuccessMessage, 'success');
+    delete window._deleteSuccessMessage;
   }
 
   // Handle any custom swap triggers
