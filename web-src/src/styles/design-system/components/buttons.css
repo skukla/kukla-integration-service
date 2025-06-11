@@ -218,15 +218,27 @@
 }
 
 /* Loading State */
-.btn.is-loading {
+.btn.is-loading,
+.btn.htmx-request {
+  opacity: var(--button-loading-opacity);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Hide all text elements during loading */
+.btn.is-loading .btn-label,
+.btn.is-loading .btn-subtitle,
+.btn.is-loading .btn-text,
+.btn.is-loading .btn-description,
+.btn.htmx-request .btn-label,
+.btn.htmx-request .btn-subtitle,
+.btn.htmx-request .btn-text,
+.btn.htmx-request .btn-description {
   opacity: var(--button-loading-opacity);
 }
 
-.btn.is-loading .btn-label {
-  visibility: hidden;
-}
-
-.btn.is-loading::after {
+.btn.is-loading::after,
+.btn.htmx-request::after {
   content: '';
   position: absolute;
   width: var(--button-spinner-size-sm);
@@ -235,10 +247,38 @@
   border-radius: 50%;
   border-top-color: currentColor;
   animation: var(--animation-spin);
+  z-index: 1; /* Ensure spinner appears above text */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+}
+
+/* Special loading state for primary buttons */
+.btn.btn-primary.is-loading {
+  background-color: var(--color-blue-primary);
+  border-color: var(--color-blue-primary);
+  color: var(--color-white);
+}
+
+.btn.btn-primary.is-loading::after {
+  border-color: var(--color-white-20);
+  border-top-color: var(--color-white);
+}
+
+/* Special loading state for secondary buttons */
+.btn.btn-secondary.is-loading {
+  background-color: var(--color-gray-100);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-800);
+}
+
+.btn.btn-secondary.is-loading::after {
+  border-color: var(--color-gray-200);
+  border-top-color: var(--color-gray-600);
 }
 
 /* Special loading state for danger buttons */
@@ -246,12 +286,11 @@
   background-color: var(--color-danger);
   border-color: var(--color-danger);
   color: var(--color-white);
-  opacity: 1; /* Override the loading opacity to keep full visibility */
 }
 
 .btn.btn-danger.is-loading::after {
-  border-color: var(--color-white-20); /* Light white for the base circle */
-  border-top-color: var(--color-white); /* White for the spinning part */
+  border-color: var(--color-white-20);
+  border-top-color: var(--color-white);
 }
 
 /* Loading state size variations */
