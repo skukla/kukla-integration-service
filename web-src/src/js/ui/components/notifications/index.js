@@ -56,6 +56,7 @@ export function showNotification(message, options = {}) {
     canRetry = false,
     onAction,
     onClose,
+    cssClass,
   } = options;
 
   // Get or create notification container
@@ -70,6 +71,7 @@ export function showNotification(message, options = {}) {
       canRetry,
       onAction,
       onClose,
+      cssClass,
     });
     return;
   }
@@ -81,6 +83,7 @@ export function showNotification(message, options = {}) {
     canRetry,
     onAction,
     onClose,
+    cssClass,
   });
 }
 
@@ -110,12 +113,12 @@ function addNotificationToContainer(container, message, options) {
  * @returns {HTMLElement} The notification element
  */
 function createNotificationElement(message, options) {
-  const { type, action, canRetry, onAction, onClose } = options;
+  const { type, action, canRetry, onAction, onClose, cssClass } = options;
 
   const config = NOTIFICATION_CONFIG.TYPES[type] || NOTIFICATION_CONFIG.TYPES.info;
   const notification = document.createElement('div');
 
-  notification.className = `notification ${config.className}`;
+  notification.className = `notification ${config.className}${cssClass ? ` ${cssClass}` : ''}`;
   notification.setAttribute('role', 'alert');
 
   const messageContainer = document.createElement('div');
