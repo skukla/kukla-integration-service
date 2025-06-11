@@ -173,16 +173,15 @@ const coreConfigSchema = {
     // Runtime configuration
     runtime: {
       type: 'object',
-      required: ['package', 'baseUrl', 'namespace'],
+      required: ['package', 'url'],
       properties: {
         package: { type: 'string' },
         version: { type: 'string' },
-        baseUrl: {
+        url: {
           type: 'string',
           format: 'uri',
-          description: 'Adobe I/O Runtime base URL',
+          description: 'Adobe I/O Runtime URL',
         },
-        namespace: { type: 'string' },
         paths: {
           type: 'object',
           properties: {

@@ -171,12 +171,11 @@ const frontendConfigSchema = {
     environment: { type: 'string', enum: ['staging', 'production'] },
     runtime: {
       type: 'object',
-      required: ['package', 'version', 'baseUrl', 'namespace', 'paths', 'actions'],
+      required: ['package', 'version', 'url', 'paths', 'actions'],
       properties: {
         package: { type: 'string' },
         version: { type: 'string' },
-        baseUrl: { type: 'string', format: 'uri' },
-        namespace: { type: 'string' },
+        url: { type: 'string', format: 'uri' },
         paths: {
           type: 'object',
           required: ['base', 'web'],

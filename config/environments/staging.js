@@ -14,7 +14,7 @@ const stagingOverrides = {
     maxTotal: 1000,
   },
   commerce: {
-    baseUrl: 'https://citisignal-com774.adobedemo.com',
+    baseUrl: process.env.COMMERCE_BASE_URL,
     batching: {
       inventory: 25,
       maxConcurrent: 15,
@@ -44,12 +44,10 @@ const stagingOverrides = {
     },
   },
   runtime: {
-    baseUrl: 'https://adobeioruntime.net',
-    namespace: '285361-188maroonwallaby-stage',
+    url: process.env.RUNTIME_URL_STAGING,
   },
   mesh: {
-    endpoint:
-      'https://edge-sandbox-graph.adobe.io/api/e4865722-2b0a-4f3f-bc87-f3302b64487b/graphql',
+    endpoint: process.env.API_MESH_ENDPOINT,
     apiKey: process.env.MESH_API_KEY,
     timeout: 30000,
     retries: 3,
