@@ -12,7 +12,7 @@ const {
 /**
  * Gets an authentication token from Adobe Commerce
  * @param {Object} params - Authentication parameters
- * @param {string} params.COMMERCE_URL - Commerce instance URL
+ * @param {string} params.COMMERCE_BASE_URL - Commerce instance URL
  * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username
  * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password
  * @returns {Promise<string>} Authentication token
