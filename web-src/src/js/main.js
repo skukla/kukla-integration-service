@@ -2,6 +2,7 @@
  * Main application entry point
  * @module main
  */
+import { initializeExportProductsUI } from './components/export-products-ui.js';
 import { initializeHtmx } from './htmx/index.js';
 import { initializeFileBrowser, initializeModal } from './ui/index.js';
 
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeHtmx();
     initializeModal();
     initializeFileBrowser();
+    initializeExportProductsUI();
   } catch (error) {
     // Log critical initialization errors that need attention
     console.error('Application initialization failed:', error);
