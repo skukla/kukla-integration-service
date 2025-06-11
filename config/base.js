@@ -5,7 +5,7 @@
 
 module.exports = {
   products: {
-    fields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
+    fields: ['sku', 'name', 'price', 'qty', 'categories', 'images', 'custom_attributes'],
     batchSize: 50,
   },
   categories: {

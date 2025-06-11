@@ -74,6 +74,16 @@ function buildProductObject(product, categoryMap) {
     price: () => product.price,
     qty: () => product.qty || 0,
     categories: () => {
+      // If categories are already enriched (have name property), use them directly
+      if (
+        product.categories &&
+        Array.isArray(product.categories) &&
+        product.categories.length > 0 &&
+        product.categories[0].name
+      ) {
+        return product.categories.map((cat) => cat.name);
+      }
+      // Otherwise, use the category mapping approach
       const categoryIds = getCategoryIds(product);
       const categoryNames = categoryIds.map((id) => categoryMap[String(id)]).filter(Boolean);
       return categoryNames;
