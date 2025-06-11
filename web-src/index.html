@@ -44,9 +44,11 @@
             hx-swap="innerHTML"
             hx-indicator="#export-loader"
             data-export-method="rest-api"
+            data-loading-states
+            data-loading-class="is-loading"
           >
-            <span class="btn-text">Export via REST API</span>
-            <span class="btn-subtitle">Traditional multiple API calls</span>
+            <span class="btn-label" data-loading-disable>Export via REST API</span>
+            <div class="btn-subtitle" data-loading-disable>Multiple API calls</div>
           </button>
 
           <button
@@ -57,9 +59,11 @@
             hx-swap="innerHTML"
             hx-indicator="#export-loader"
             data-export-method="api-mesh"
+            data-loading-states
+            data-loading-class="is-loading"
           >
-            <span class="btn-text">Export via API Mesh</span>
-            <span class="btn-subtitle">Consolidated GraphQL query</span>
+            <span class="btn-label" data-loading-disable>Export via API Mesh</span>
+            <div class="btn-subtitle" data-loading-disable>Consolidated single GraphQL query</div>
           </button>
         </div>
 
