@@ -6,7 +6,7 @@
 
 import { getRuntimeConfig } from '../config/index.js';
 
-function buildActionUrl(config, action, options = {}) {
+export function buildActionUrl(config, action, options = {}) {
   const { url, package: pkg, version, paths } = config.runtime || config;
   const { params = {}, absolute = true } = options;
 
