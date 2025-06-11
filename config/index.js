@@ -11,6 +11,33 @@ const { detectEnvironment } = require('../src/core/environment');
 dotenv.config();
 
 /**
+ * Override configuration values from environment variables or action parameters
+ * @param {Object} config - Configuration object to update
+ * @param {Object} params - Action parameters
+ * @param {Object} overrides - Map of config paths to environment variable names
+ */
+function applyConfigOverrides(config, params, overrides) {
+  for (const [configPath, envVar] of Object.entries(overrides)) {
+    // Split the config path into parts (e.g., 'commerce.baseUrl' -> ['commerce', 'baseUrl'])
+    const parts = configPath.split('.');
+
+    // Create nested objects if they don't exist
+    let current = config;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!current[parts[i]]) {
+        current[parts[i]] = {};
+      }
+      current = current[parts[i]];
+    }
+
+    // Override the value if it exists in params or env
+    if (params[envVar] || process.env[envVar]) {
+      current[parts[parts.length - 1]] = params[envVar] || process.env[envVar];
+    }
+  }
+}
+
+/**
  * Load configuration with clean mental model organization
  * @param {Object} [params] - Action parameters from Adobe I/O Runtime
  * @param {Object} [options] - Loading options
@@ -30,24 +57,19 @@ function loadConfig(params = {}, options = {}) {
     config = require('./environments/staging');
   }
 
-  // Add credentials from environment or action parameters
-  if (!config.commerce.credentials) {
-    config.commerce.credentials = {};
-  }
+  // Define configuration overrides
+  const configOverrides = {
+    'commerce.baseUrl': 'COMMERCE_BASE_URL',
+    'commerce.credentials.username': 'COMMERCE_ADMIN_USERNAME',
+    'commerce.credentials.password': 'COMMERCE_ADMIN_PASSWORD',
+    'mesh.endpoint': 'API_MESH_ENDPOINT',
+    'mesh.apiKey': 'MESH_API_KEY',
+    'storage.s3.credentials.accessKeyId': 'AWS_ACCESS_KEY_ID',
+    'storage.s3.credentials.secretAccessKey': 'AWS_SECRET_ACCESS_KEY',
+  };
 
-  config.commerce.credentials.username =
-    params.COMMERCE_ADMIN_USERNAME || process.env.COMMERCE_ADMIN_USERNAME;
-  config.commerce.credentials.password =
-    params.COMMERCE_ADMIN_PASSWORD || process.env.COMMERCE_ADMIN_PASSWORD;
-
-  if (!config.storage.s3.credentials) {
-    config.storage.s3.credentials = {};
-  }
-
-  config.storage.s3.credentials.accessKeyId =
-    params.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
-  config.storage.s3.credentials.secretAccessKey =
-    params.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+  // Apply all overrides at once
+  applyConfigOverrides(config, params, configOverrides);
 
   // Optional schema validation
   if (options.validate) {
