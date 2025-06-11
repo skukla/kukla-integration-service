@@ -133,15 +133,11 @@
 /* Action Buttons */
 .actions-container .btn {
   height: var(--file-browser-content-height);
-  width: calc(var(--size-button-min-width) * 1.25);
+  width: calc(var(--size-button-min-width) * 1.5);
   transition: none;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.actions-container .btn-primary {
-  width: calc(var(--size-button-min-width) * 1.5);
 }
 
 /* Empty State */
