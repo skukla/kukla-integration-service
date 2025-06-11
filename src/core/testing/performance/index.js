@@ -16,6 +16,7 @@ function createPerformanceTester(options = {}) {
     iterations: options.iterations || 1,
     format: options.format || 'json',
     baselineFile: options.baselineFile || path.join(process.cwd(), 'config/baseline-metrics.json'),
+    commerceUrl: process.env.COMMERCE_BASE_URL,
   };
 
   const baselineManager = createBaselineManager({
@@ -36,7 +37,7 @@ function createPerformanceTester(options = {}) {
       __ow_query: { env: 'dev' },
       ...scenario.params,
       LOG_LEVEL: 'info',
-      COMMERCE_URL: process.env.COMMERCE_URL,
+      COMMERCE_BASE_URL: process.env.COMMERCE_BASE_URL,
       COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
       COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
     };
@@ -72,7 +73,7 @@ function createPerformanceTester(options = {}) {
       deployed: {
         baseUrl: process.env.API_BASE_URL,
         auth: {
-          commerceUrl: process.env.COMMERCE_URL,
+          commerceUrl: process.env.COMMERCE_BASE_URL,
           commerceAdminUsername: process.env.COMMERCE_ADMIN_USERNAME,
           commerceAdminPassword: process.env.COMMERCE_ADMIN_PASSWORD,
         },
