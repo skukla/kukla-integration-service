@@ -170,14 +170,24 @@ web-src/
 │   │   │   └── utils.js          # Frontend utilities
 │   │   │
 │   │   ├── htmx/                 # HTMX configuration and setup
-│   │   │   └── setup.js          # HTMX initialization and config
+│   │   │   ├── setup.js          # HTMX initialization and config
+│   │   │   ├── events.js         # HTMX event handlers
+│   │   │   └── index.js          # HTMX module exports
 │   │   │
-│   │   ├── ui/                   # UI components and interactions
-│   │   │   ├── notifications.js  # Toast notifications
-│   │   │   ├── loading.js        # Loading states and spinners
-│   │   │   └── file-operations.js # File operation handlers
+│   │   ├── components/           # Feature-specific UI components
+│   │   │   └── export-products-ui.js # Export products notifications and feedback
 │   │   │
-│   │   └── main.js               # Main JavaScript entry point
+│   │   ├── ui/                   # Generic UI utilities and interactions
+│   │   │   ├── components/       # Reusable UI components
+│   │   │   │   ├── notifications/ # Toast notification system
+│   │   │   │   ├── modal/        # Modal component
+│   │   │   │   └── loading/      # Loading states and spinners
+│   │   │   ├── downloads/        # File download handling
+│   │   │   ├── file-browser/     # File browser interactions
+│   │   │   └── index.js          # UI module exports
+│   │   │
+│   │   ├── main.js               # Main JavaScript entry point
+│   │   └── index.js              # Module exports and initialization
 │   │
 │   ├── css/                      # Stylesheets
 │   │   ├── main.css              # Main stylesheet
@@ -207,6 +217,9 @@ web-src/
 - **Auto-Generated Config**: Frontend config generated from backend during build
 - **Component-Based CSS**: Modular stylesheets with design system
 - **HTMX First**: Dynamic updates via HTMX attributes, minimal JavaScript
+- **Clear Component Separation**:
+  - `components/`: Feature-specific UI logic (e.g., export-products-ui)
+  - `ui/`: Generic, reusable UI utilities and components
 
 ## Configuration System (`config/`)
 
