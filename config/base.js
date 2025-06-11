@@ -65,6 +65,13 @@ module.exports = {
       web: '/web',
       api: '/api',
     },
+    actions: {
+      'get-products': 'get-products',
+      'browse-files': 'browse-files',
+      'download-file': 'download-file',
+      'delete-file': 'delete-file',
+      'get-products-mesh': 'get-products-mesh',
+    },
   },
   testing: {
     timeout: 30000,
