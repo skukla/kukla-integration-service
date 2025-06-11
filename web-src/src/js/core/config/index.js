@@ -1,6 +1,6 @@
 /**
- * Frontend Configuration System
- * Mirrors backend configuration patterns with frontend-safe data
+ * Frontend configuration module
+ * @module core/config
  */
 
 import generatedConfig from '../../../config/generated/config.js';
@@ -29,6 +29,15 @@ export function getConfig() {
 }
 
 /**
+ * Get Commerce configuration
+ * @returns {Object} Commerce settings
+ */
+export function getCommerceConfig() {
+  const config = loadConfig();
+  return config.commerce;
+}
+
+/**
  * Get Runtime configuration
  * @returns {Object} Runtime settings and action mappings
  */
@@ -39,11 +48,38 @@ export function getRuntimeConfig() {
 
 /**
  * Get Performance configuration
- * @returns {Object} Performance and timeout settings
+ * @returns {Object} Performance settings
  */
 export function getPerformanceConfig() {
   const config = loadConfig();
   return config.performance;
+}
+
+/**
+ * Get Storage configuration
+ * @returns {Object} Storage settings
+ */
+export function getStorageConfig() {
+  const config = loadConfig();
+  return config.storage;
+}
+
+/**
+ * Get Tracing configuration
+ * @returns {Object} Tracing settings
+ */
+export function getTracingConfig() {
+  const config = loadConfig();
+  return config.performance.tracing;
+}
+
+/**
+ * Get Timeout configuration
+ * @returns {number} Timeout in milliseconds
+ */
+export function getTimeout() {
+  const config = loadConfig();
+  return config.performance.timeout;
 }
 
 /**
@@ -60,7 +96,8 @@ export function getEnvironment() {
  * @returns {boolean} True if staging
  */
 export function isStaging() {
-  return getEnvironment() === 'staging';
+  const config = loadConfig();
+  return config.environment === 'staging';
 }
 
 /**
@@ -68,7 +105,8 @@ export function isStaging() {
  * @returns {boolean} True if production
  */
 export function isProduction() {
-  return getEnvironment() === 'production';
+  const config = loadConfig();
+  return config.environment === 'production';
 }
 
 /**
@@ -78,34 +116,4 @@ export function isProduction() {
 export function getActions() {
   const runtime = getRuntimeConfig();
   return runtime.actions;
-}
-
-/**
- * Get timeout configuration for HTMX
- * @returns {number} Timeout in milliseconds
- */
-export function getTimeout() {
-  const performance = getPerformanceConfig();
-  return performance.timeout;
-}
-
-// Legacy compatibility - keep existing functions
-export function getRuntimeUrl() {
-  console.warn('getRuntimeUrl() is deprecated, use URL module functions instead');
-  const runtime = getRuntimeConfig();
-
-  if (!runtime.baseUrl) {
-    return '/api/v1/web/kukla-integration-service/';
-  }
-
-  // Use the same modern pattern as the URL builder
-  if (runtime.baseUrl.includes('adobeioruntime.net')) {
-    const modernBaseUrl = runtime.baseUrl.replace(
-      'adobeioruntime.net',
-      `${runtime.namespace}.adobeioruntime.net`
-    );
-    return `${modernBaseUrl}/api/v1/web/${runtime.package}/`;
-  } else {
-    return `${runtime.baseUrl}/api/v1/web/${runtime.package}/`;
-  }
 }
