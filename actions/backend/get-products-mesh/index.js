@@ -7,7 +7,6 @@ const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
-const buildProducts = require('../get-products/steps/buildProducts');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
 const validateInput = require('../get-products/steps/validateInput');
@@ -198,12 +197,37 @@ async function main(params) {
     });
     steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
-    // Step 3: Build product data (apply category enrichment)
-    const builtProducts = await traceStep(trace, 'build-products', async () => {
-      return await buildProducts(products);
-    });
+    // Step 3: Products from HTTP Bridge are already built, just pass through
+    const builtProducts = products; // HTTP Bridge returns already-processed products
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
+    // Check format parameter to determine response type
+    const format = actionParams.format || 'csv';
+
+    if (format === 'json') {
+      // Return JSON format for debugging
+      return response.success(
+        {
+          products: builtProducts,
+          total_count: builtProducts.length,
+          message:
+            'Successfully fetched ' +
+            builtProducts.length +
+            ' products with category and inventory data',
+          status: 'success',
+          steps,
+          performance: {
+            processedProducts: builtProducts.length,
+            apiCalls: 1, // API Mesh consolidates many calls into 1
+            method: 'API Mesh',
+          },
+        },
+        'Product data retrieved successfully',
+        {}
+      );
+    }
+
+    // Default CSV format
     // Step 4: Create CSV (reused)
     const csvData = await traceStep(trace, 'create-csv', async () => {
       return await createCsv(builtProducts);
