@@ -65,8 +65,7 @@ function testFrontendValidation() {
       runtime: {
         package: 'kukla-integration-service',
         version: 'v1',
-        baseUrl: 'https://adobeioruntime.net',
-        namespace: '285361-188maroonwallaby-stage',
+        url: 'https://285361-188maroonwallaby-stage.adobeioruntime.net',
         paths: {
           base: '/api',
           web: '/web',
