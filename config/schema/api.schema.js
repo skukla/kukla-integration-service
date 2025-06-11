@@ -103,7 +103,12 @@ const getProductsSchema = {
 const browseFilesSchema = {
   request: {
     ...baseRequestSchema,
-    required: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+    // AWS credentials are only required when using S3 storage
+    properties: {
+      ...baseRequestSchema.properties,
+      AWS_ACCESS_KEY_ID: { type: 'string' },
+      AWS_SECRET_ACCESS_KEY: { type: 'string' },
+    },
   },
   response: {
     ...baseResponseSchema,

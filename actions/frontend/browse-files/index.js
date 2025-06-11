@@ -123,8 +123,16 @@ async function main(params) {
     let storage;
     if (config.storage.provider === 'app-builder') {
       storage = await initializeAppBuilderStorage(actionParams);
-    } else {
+    } else if (config.storage.provider === 's3') {
+      // Check for required AWS credentials
+      if (!actionParams.AWS_ACCESS_KEY_ID || !actionParams.AWS_SECRET_ACCESS_KEY) {
+        logger.error('Missing AWS credentials for S3 storage');
+        return createErrorResponse('Missing AWS credentials for S3 storage', 400);
+      }
       storage = await initializeS3Storage(config, actionParams);
+    } else {
+      logger.error('Invalid storage provider:', config.storage.provider);
+      return createErrorResponse('Invalid storage provider configuration', 400);
     }
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
