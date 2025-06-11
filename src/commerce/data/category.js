@@ -80,6 +80,15 @@ function getCategoryIds(product) {
     });
   }
 
+  // Check custom_attributes for category_ids
+  if (Array.isArray(product.custom_attributes)) {
+    product.custom_attributes.forEach((attr) => {
+      if (attr.attribute_code === 'category_ids' && Array.isArray(attr.value)) {
+        attr.value.forEach((id) => categoryIds.add(String(id)));
+      }
+    });
+  }
+
   return Array.from(categoryIds);
 }
 

@@ -7,6 +7,7 @@ const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
+const buildProducts = require('../get-products/steps/buildProducts');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
 const validateInput = require('../get-products/steps/validateInput');
@@ -197,8 +198,10 @@ async function main(params) {
     });
     steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
-    // Step 3: Products are already built by REST API, just pass through
-    const builtProducts = products;
+    // Step 3: Build product data (apply category enrichment)
+    const builtProducts = await traceStep(trace, 'build-products', async () => {
+      return await buildProducts(products);
+    });
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
     // Step 4: Create CSV (reused)

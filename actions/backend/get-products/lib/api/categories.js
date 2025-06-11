@@ -22,7 +22,7 @@ const categoryCache = new Map();
 function getCachedCategory(categoryId, params = {}) {
   const config = loadConfig(params);
   const cached = categoryCache.get(categoryId);
-  if (cached && Date.now() - cached.timestamp < config.commerce.category.cacheTtl * 1000) {
+  if (cached && Date.now() - cached.timestamp < config.categories.cacheTimeout * 1000) {
     return cached.data;
   }
   if (cached) {
@@ -63,6 +63,14 @@ function getCategoryIds(product) {
       }
     });
   }
+  // Check custom_attributes for category_ids
+  if (Array.isArray(product.custom_attributes)) {
+    product.custom_attributes.forEach((attr) => {
+      if (attr.attribute_code === 'category_ids' && Array.isArray(attr.value)) {
+        attr.value.forEach((id) => categoryIds.add(String(id)));
+      }
+    });
+  }
   return Array.from(categoryIds);
 }
 
@@ -82,7 +90,7 @@ async function getCategory(categoryId, token, params) {
   }
 
   let retryCount = 0;
-  while (retryCount < config.commerce.category.requestRetries) {
+  while (retryCount < config.categories.retries) {
     try {
       const endpoint = endpoints.category(categoryId);
       const url = buildCommerceUrl(config.commerce.baseUrl, endpoint);
@@ -108,8 +116,8 @@ async function getCategory(categoryId, token, params) {
     } catch (error) {
       console.warn(`Attempt ${retryCount + 1} failed for category ${categoryId}:`, error.message);
       retryCount++;
-      if (retryCount < config.commerce.category.requestRetries) {
-        await new Promise((resolve) => setTimeout(resolve, config.commerce.category.retryDelay));
+      if (retryCount < config.categories.retries) {
+        await new Promise((resolve) => setTimeout(resolve, config.categories.retryDelay));
       }
     }
   }
@@ -132,15 +140,24 @@ async function enrichProductsWithCategories(products, token, params) {
     // Get unique category IDs from all products
     const categoryIds = new Set();
     products.forEach((product) => {
+      // Check direct category_ids
       if (Array.isArray(product.category_ids)) {
         product.category_ids.forEach((id) => categoryIds.add(String(id)));
+      }
+      // Check custom_attributes for category_ids
+      if (Array.isArray(product.custom_attributes)) {
+        product.custom_attributes.forEach((attr) => {
+          if (attr.attribute_code === 'category_ids' && Array.isArray(attr.value)) {
+            attr.value.forEach((id) => categoryIds.add(String(id)));
+          }
+        });
       }
     });
 
     // Fetch category details for each unique ID (limit concurrent requests)
     const categoryArray = Array.from(categoryIds);
-    for (let i = 0; i < categoryArray.length; i += config.commerce.category.batchSize) {
-      const batch = categoryArray.slice(i, i + config.commerce.category.batchSize);
+    for (let i = 0; i < categoryArray.length; i += config.categories.batchSize) {
+      const batch = categoryArray.slice(i, i + config.categories.batchSize);
       const batchPromises = batch.map(async (categoryId) => {
         try {
           const category = await getCategory(categoryId, token, params);
@@ -155,32 +172,36 @@ async function enrichProductsWithCategories(products, token, params) {
       await Promise.all(batchPromises);
 
       // Small delay between batches to prevent rate limiting
-      if (i + config.commerce.category.batchSize < categoryArray.length) {
+      if (i + config.categories.batchSize < categoryArray.length) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
 
     // Enrich products with category data
-    return products.map((product) => ({
-      ...product,
-      categories: Array.isArray(product.category_ids)
-        ? product.category_ids
-            .map((id) => {
-              const category = categoryMap.get(String(id));
-              return category ? { id: category.id, name: category.name } : null;
-            })
-            .filter(Boolean)
-        : [],
-    }));
+    return products.map((product) => {
+      // Get category IDs from all possible sources
+      const productCategoryIds = getCategoryIds(product);
+
+      return {
+        ...product,
+        categories: productCategoryIds
+          .map((id) => {
+            const category = categoryMap.get(String(id));
+            return category ? { id: category.id, name: category.name } : null;
+          })
+          .filter(Boolean),
+      };
+    });
   } catch (error) {
     console.error('Error enriching products with categories:', error.message);
     // Fallback: return products with simple category mapping
-    return products.map((product) => ({
-      ...product,
-      categories: Array.isArray(product.category_ids)
-        ? product.category_ids.map((id) => ({ id, name: `Category ${id}` }))
-        : [],
-    }));
+    return products.map((product) => {
+      const productCategoryIds = getCategoryIds(product);
+      return {
+        ...product,
+        categories: productCategoryIds.map((id) => ({ id, name: `Category ${id}` })),
+      };
+    });
   }
 }
 
@@ -204,8 +225,8 @@ async function buildCategoryMap(products, token, params) {
 
   // Fetch categories in batches
   const categoryArray = Array.from(categoryIds);
-  for (let i = 0; i < categoryArray.length; i += config.commerce.category.batchSize) {
-    const batch = categoryArray.slice(i, i + config.commerce.category.batchSize);
+  for (let i = 0; i < categoryArray.length; i += config.categories.batchSize) {
+    const batch = categoryArray.slice(i, i + config.categories.batchSize);
     const batchPromises = batch.map(async (categoryId) => {
       try {
         const category = await getCategory(categoryId, token, params);
@@ -220,7 +241,7 @@ async function buildCategoryMap(products, token, params) {
     await Promise.all(batchPromises);
 
     // Small delay between batches
-    if (i + config.commerce.category.batchSize < categoryArray.length) {
+    if (i + config.categories.batchSize < categoryArray.length) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
