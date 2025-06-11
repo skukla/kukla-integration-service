@@ -47,10 +47,10 @@ const HTMX_CONFIG = {
   timeout: getTimeout(), // From performance configuration
   historyCacheSize: 10, // Keep last 10 pages in cache
   defaultSwapStyle: 'innerHTML', // Default swap style
-  defaultSettleDelay: 20, // Small delay for smooth transitions
-  defaultSwapDelay: 2000, // Extended delay for testing animation smoothness
+  defaultSettleDelay: 0, // No settle delay for immediate feedback
+  defaultSwapDelay: 0, // No delay for immediate response
   includeIndicatorStyles: false, // We use our own indicators
-  globalViewTransitions: true, // Enable view transitions API
+  globalViewTransitions: false, // Disable view transitions to prevent overlay effects
   allowScriptTags: false, // Security: don't allow script tags
   allowEval: false, // Security: don't allow eval
   methodsThatUseUrlParams: ['get'], // Only GET uses URL params
@@ -98,7 +98,7 @@ export function initializeHtmx() {
     withCredentials: false, // Disable credentials globally to avoid CORS issues
     timeout: getTimeout(),
     wsReconnectDelay: 'full-jitter',
-    defaultSwapDelay: HTMX_CONFIG.defaultSwapDelay, // Ensure swap delay is applied
+    defaultSwapDelay: 0, // No swap delay for immediate UI updates
     // Allow requests to different origins since Adobe I/O Runtime uses wildcard CORS
     selfRequestsOnly: false,
   };
