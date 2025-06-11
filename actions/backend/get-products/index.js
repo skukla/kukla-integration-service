@@ -111,7 +111,7 @@ async function main(params) {
 
     // Step 3: Build product data
     const builtProducts = await traceStep(trace, 'build-products', async () => {
-      return await buildProducts(products, config);
+      return await buildProducts(products);
     });
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
