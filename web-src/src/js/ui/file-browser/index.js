@@ -108,11 +108,12 @@ function initializeDeleteHandlers() {
       handleDeleteButtonClick(target);
     }
 
-    const deleteConfirmButton = event.target.closest('[data-delete-url]');
-    if (deleteConfirmButton) {
-      event.preventDefault();
-      handleDeleteConfirmation(deleteConfirmButton);
-    }
+    // Remove conflicting delete confirmation handler - HTMX handles this
+    // const deleteConfirmButton = event.target.closest('[data-delete-url]');
+    // if (deleteConfirmButton) {
+    //   event.preventDefault();
+    //   handleDeleteConfirmation(deleteConfirmButton);
+    // }
 
     const modalCloseButton = event.target.closest('.modal-close');
     if (modalCloseButton) {
@@ -197,40 +198,7 @@ function createDeleteModal(fileName, filePath) {
   }
 }
 
-/**
- * Handle delete confirmation button click
- * @param {HTMLElement} button - The delete confirmation button
- */
-async function handleDeleteConfirmation(button) {
-  const deleteUrl = button.getAttribute('data-delete-url');
-  const fileName = button.getAttribute('data-file-name');
-
-  if (!deleteUrl) {
-    return;
-  }
-
-  button.classList.add('is-loading');
-  button.disabled = true;
-
-  try {
-    const response = await fetch(deleteUrl, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Delete failed: ${response.statusText}`);
-    }
-
-    showNotification(`File ${fileName} deleted successfully`, 'success');
-    hideModal();
-    document.body.dispatchEvent(new Event('fileDeleted'));
-  } catch (error) {
-    showNotification(`Failed to delete ${fileName}: ${error.message}`, 'error');
-  } finally {
-    button.classList.remove('is-loading');
-    button.disabled = false;
-  }
-}
+// handleDeleteConfirmation removed - HTMX handles delete confirmation via hx-delete attribute
 
 /**
  * Refresh the file list

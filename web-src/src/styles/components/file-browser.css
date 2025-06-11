@@ -214,20 +214,7 @@
   }
 }
 
-/* Content Loader */
-#content-loader {
-  display: none;
-  position: absolute;
-  inset: 0;
-  background: var(--loading-background);
-  opacity: var(--loading-opacity);
-  z-index: var(--loading-z-index);
-  transition: var(--loading-transition);
-}
-
-#content-loader.is-loading {
-  display: block;
-}
+/* Content loader now uses the unified loading component system */
 
 /* Storage Provider Indicator */
 .storage-indicator {
