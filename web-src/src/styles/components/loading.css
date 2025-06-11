@@ -1,0 +1,334 @@
+/* Loading Components - Contextual loading patterns for specific use cases
+ * Builds on design system foundation with HTMX integration and export functionality
+ */
+
+/* ============================================================================
+ * CONTEXTUAL LOADING PATTERNS - Three distinct loading states
+ * ============================================================================ */
+
+/* CONTENT LOADER - For fetching/refreshing data (file lists, tables, etc.) */
+
+.content-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  background: var(--color-gray-50);
+  border: var(--border-xs) solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-medium);
+  min-height: var(--size-loading-min-height);
+}
+
+.content-loader.is-active {
+  display: flex;
+}
+
+.content-loader.is-hidden {
+  display: none;
+}
+
+.content-loader-spinner {
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+  border: var(--loading-spinner-border-width-sm) solid var(--color-gray-300);
+  border-top: var(--loading-spinner-border-width-sm) solid var(--color-gray-600);
+  border-radius: 50%;
+  animation: spin var(--duration-spinner) var(--ease-linear) infinite;
+}
+
+.content-loader-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-regular);
+}
+
+/* PROCESS LOADER - For long operations (exports, processing, uploads) */
+
+.process-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-blue-50);
+  border: var(--border-xs) solid var(--color-blue-200);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-blue-primary);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-sm);
+  min-height: 60px;
+}
+
+.process-loader.is-active {
+  display: flex;
+}
+
+.process-loader.is-hidden {
+  display: none;
+}
+
+.process-loader-spinner {
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+  border: var(--spacing-xs) solid var(--color-blue-100);
+  border-top: var(--spacing-xs) solid var(--color-blue-primary);
+  border-radius: 50%;
+  animation: spin var(--duration-spinner) var(--ease-linear) infinite;
+}
+
+.process-loader-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-blue-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* BUTTON LOADER - For button loading states (inline button feedback) */
+
+/* Button Loading State - Centered spinner with proper styling */
+.btn.is-loading,
+.btn.htmx-request {
+  position: relative;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Hide button text during loading but keep layout */
+.btn.is-loading .btn-text,
+.btn.is-loading .btn-subtitle,
+.btn.is-loading .btn-label,
+.btn.htmx-request .btn-text,
+.btn.htmx-request .btn-subtitle,
+.btn.htmx-request .btn-label {
+  opacity: 0;
+}
+
+/* Centered spinner overlay */
+.btn.is-loading::after,
+.btn.htmx-request::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+  border: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.3);
+  border-top: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: spinCentered var(--duration-spinner) var(--ease-linear) infinite;
+  z-index: 1;
+}
+
+/* Spinner colors for different button types */
+.btn.btn-primary.is-loading::after,
+.btn.btn-primary.htmx-request::after {
+  border: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.3);
+  border-top: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.9);
+}
+
+.btn.btn-secondary.is-loading::after,
+.btn.btn-secondary.htmx-request::after {
+  border: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.3);
+  border-top: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.9);
+}
+
+.btn.btn-danger.is-loading::after,
+.btn.btn-danger.htmx-request::after {
+  border: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.3);
+  border-top: var(--loading-spinner-border-width-sm) solid rgba(255, 255, 255, 0.9);
+}
+
+/* Light/outline buttons use dark spinner */
+.btn.btn-light.is-loading::after,
+.btn.btn-outline.is-loading::after,
+.btn.btn-light.htmx-request::after,
+.btn.btn-outline.htmx-request::after {
+  border: var(--loading-spinner-border-width-sm) solid var(--color-gray-300);
+  border-top: var(--loading-spinner-border-width-sm) solid var(--color-gray-700);
+}
+
+/* Export buttons - larger spinner for better visibility */
+.export-actions .btn.is-loading::after,
+.export-actions .btn.htmx-request::after {
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+  border-width: var(--spacing-xs);
+}
+
+/* File action buttons - appropriate size for compact buttons */
+.actions-container .btn.is-loading::after,
+.actions-container .btn.htmx-request::after {
+  width: 18px;
+  height: 18px;
+}
+
+/* Modal buttons */
+.modal-content .btn.is-loading::after,
+.modal-content .btn.htmx-request::after {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================================================
+ * HTMX INTEGRATION - Connect loading states to HTMX requests
+ * ============================================================================ */
+
+/* Hide all loaders by default when used as HTMX indicators */
+.htmx-indicator {
+  display: none;
+}
+
+/* Content Loader HTMX Integration */
+.htmx-request .content-loader.htmx-indicator,
+.htmx-request.content-loader.htmx-indicator {
+  display: flex !important;
+}
+
+/* Process Loader HTMX Integration */
+.htmx-request .process-loader.htmx-indicator,
+.htmx-request.process-loader.htmx-indicator {
+  display: flex !important;
+}
+
+/* Button Loader HTMX Integration - Handled above in main button loading styles */
+
+/* ============================================================================
+ * SIZE VARIATIONS - Responsive loading patterns for contextual loaders
+ * ============================================================================ */
+
+/* Small sizes for compact spaces */
+.content-loader.size-sm {
+  padding: var(--spacing-sm);
+  min-height: calc(var(--spacing-xl) * 2);
+}
+
+.content-loader.size-sm .content-loader-spinner {
+  width: 16px;
+  height: 16px;
+}
+
+.process-loader.size-sm {
+  padding: var(--spacing-sm);
+  min-height: calc(var(--spacing-xl) * 2);
+}
+
+.process-loader.size-sm .process-loader-spinner {
+  width: var(--loading-spinner-size-sm);
+  height: var(--loading-spinner-size-sm);
+}
+
+/* Large sizes for prominent loading states */
+.content-loader.size-lg {
+  padding: var(--spacing-xl);
+  min-height: calc(var(--spacing-3xl) * 2);
+}
+
+.content-loader.size-lg .content-loader-spinner {
+  width: var(--loading-spinner-size-md);
+  height: var(--loading-spinner-size-md);
+}
+
+.process-loader.size-lg {
+  padding: var(--spacing-xl);
+  min-height: calc(var(--spacing-3xl) * 2);
+}
+
+.process-loader.size-lg .process-loader-spinner {
+  width: var(--loading-spinner-size-md);
+  height: var(--loading-spinner-size-md);
+}
+
+/* ============================================================================
+ * CONTEXTUAL ACCESSIBILITY - Component-specific accessibility features
+ * ============================================================================ */
+
+/* Reduced motion support for contextual loaders */
+@media (prefers-reduced-motion: reduce) {
+  .content-loader-spinner,
+  .process-loader-spinner {
+    animation: none;
+    border-color: var(--loading-spinner-color-primary);
+  }
+
+  .btn.is-loading::after,
+  .btn.htmx-request::after {
+    animation: none;
+    border-color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* High contrast mode support for contextual loaders */
+@media (forced-colors: active) {
+  .content-loader,
+  .process-loader {
+    border-color: ButtonText;
+    background-color: ButtonFace;
+    color: ButtonText;
+  }
+
+  .content-loader-spinner,
+  .process-loader-spinner {
+    border-color: ButtonText;
+  }
+}
+
+/* Mobile optimizations for contextual loaders */
+@media (max-width: 768px) {
+  .content-loader,
+  .process-loader {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-xs);
+  }
+
+  .content-loader.size-lg,
+  .process-loader.size-lg {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Print styles for contextual loaders */
+@media print {
+  .content-loader,
+  .process-loader,
+  .btn.is-loading::after,
+  .btn.htmx-request::after {
+    display: none !important;
+  }
+}
+
+/* ============================================================================
+ * CONTEXTUAL ANIMATIONS - Component-specific keyframes
+ * ============================================================================ */
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinCentered {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

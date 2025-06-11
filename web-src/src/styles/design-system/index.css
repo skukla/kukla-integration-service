@@ -12,6 +12,7 @@
 @import './components/modal.css';
 @import './components/loading.css';
 @import './components/notifications.css';
+@import '../components/loading.css';
 @import '../components/file-browser.css';
 @import '../components/export-actions.css';
 
