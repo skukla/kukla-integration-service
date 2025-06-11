@@ -37,6 +37,7 @@ coverage
 .cursor/state/
 .cursor/cache/
 .cursor/workspace/
+.cursorignore
 
 # Operating System
 .DS_Store
@@ -45,6 +46,3 @@ coverage
 logs
 dev.log
 .pid
-
-# Workspace (sensitive data)
-config/workspaces/

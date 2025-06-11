@@ -17,6 +17,9 @@ application:
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string
@@ -36,6 +39,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             annotations:
               require-adobe-auth: false
               final: true
@@ -48,6 +53,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             annotations:
               require-adobe-auth: false
               final: true
@@ -60,6 +67,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             annotations:
               require-adobe-auth: false
               final: true
@@ -80,6 +89,10 @@ application:
               CATALOG_SERVICE_STORE_CODE: $CATALOG_SERVICE_STORE_CODE
               CATALOG_SERVICE_STORE_VIEW_CODE: $CATALOG_SERVICE_STORE_VIEW_CODE
               CATALOG_SERVICE_WEBSITE_CODE: $CATALOG_SERVICE_WEBSITE_CODE
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+              API_MESH_ENDPOINT: $API_MESH_ENDPOINT
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string
