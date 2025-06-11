@@ -27,7 +27,7 @@
       </header>
 
       <!-- Export Actions Section -->
-      <section class="content-section">
+      <section class="content-section export-section">
         <!-- Section header -->
         <div class="section-header">
           <h2 class="section-title">Export Products</h2>
@@ -40,7 +40,7 @@
             class="btn btn-primary"
             hx-post="./api/v1/web/kukla-integration-service/get-products"
             hx-trigger="click"
-            hx-target="#export-status"
+            hx-target="#export-result"
             hx-swap="innerHTML"
             hx-indicator="#export-loader"
             data-export-method="rest-api"
@@ -53,7 +53,7 @@
             class="btn btn-secondary"
             hx-post="./api/v1/web/kukla-integration-service/get-products-mesh"
             hx-trigger="click"
-            hx-target="#export-status"
+            hx-target="#export-result"
             hx-swap="innerHTML"
             hx-indicator="#export-loader"
             data-export-method="api-mesh"
@@ -63,14 +63,13 @@
           </button>
         </div>
 
-        <!-- Export status and loader -->
-        <div class="export-status-container">
-          <div id="export-loader" class="loader htmx-indicator">
-            <div class="loader-spinner"></div>
-            <span>Processing export...</span>
-          </div>
-          <div id="export-status" class="export-status"></div>
+        <!-- Export loader (minimal) -->
+        <div id="export-loader" class="process-loader htmx-indicator">
+          <div class="process-loader-spinner"></div>
+          <span class="process-loader-text">Processing export...</span>
         </div>
+        <!-- Hidden target for HTMX (no visible content) -->
+        <div id="export-result" style="display: none"></div>
       </section>
 
       <!-- Table section -->
@@ -132,7 +131,14 @@
             </div>
 
             <!-- Hidden loader -->
-            <div id="content-loader" data-component="content-loader"></div>
+            <div
+              id="content-loader"
+              class="content-loader htmx-indicator"
+              data-component="content-loader"
+            >
+              <div class="content-loader-spinner"></div>
+              <span class="content-loader-text">Loading files...</span>
+            </div>
           </div>
         </div>
       </section>

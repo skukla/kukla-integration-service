@@ -90,100 +90,27 @@
   line-height: 1.3;
 }
 
-/* Export Status Container */
-.export-status-container {
-  margin-top: var(--spacing-md);
-  min-height: var(--spacing-2xl);
+/* Export Section - Fixed height container to prevent jumping */
+.export-section {
+  position: relative;
+  min-height: 160px; /* Fixed height to accommodate buttons + loader */
 }
 
-/* Loading Indicator - main loader for export operations */
-.loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
-  background: var(--color-blue-50);
-  border: var(--border-xs) solid var(--color-blue-200);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-blue-primary);
-  font-weight: var(--font-weight-medium);
-  margin-bottom: var(--spacing-sm);
-  min-height: 60px;
+/* Export loader - overlay positioning to prevent layout jumping */
+#export-loader {
+  position: absolute;
+  top: 120px; /* Position below buttons */
+  left: 0;
+  right: 0;
+  z-index: 2;
+  margin: 0; /* Remove margin since we're using absolute positioning */
 }
 
-/* Loading Spinner - uses design system spinner */
-.loader-spinner {
-  width: var(--loading-spinner-size-sm);
-  height: var(--loading-spinner-size-sm);
-  border: var(--loading-spinner-border-width-sm) solid var(--color-blue-100);
-  border-top: var(--loading-spinner-border-width-sm) solid var(--color-blue-primary);
-  border-radius: 50%;
-  animation: spin var(--duration-spinner) var(--ease-linear) infinite;
-}
-
-/* HTMX Indicator States - follows design system loading patterns */
-.htmx-indicator {
-  display: none;
-}
-
-/* Show loader when HTMX request is active */
-.htmx-request .htmx-indicator,
-.htmx-request.htmx-indicator {
-  display: flex !important;
-}
-
-/* Also show when body has htmx-request class (global indicator) */
-body.htmx-request #export-loader.htmx-indicator {
-  display: flex !important;
-}
-
-/* Export Status Styling */
-.export-status {
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-top: var(--spacing-sm);
-}
-
-.export-status:empty {
-  display: none;
-}
-
-/* Success Status - uses design system success colors */
-.export-status.success {
-  background: var(--color-success-background);
-  border: var(--border-xs) solid var(--color-success);
-  color: var(--color-success-active);
-}
-
-/* Error Status - uses design system danger colors */
-.export-status.error {
-  background: var(--color-danger-background);
-  border: var(--border-xs) solid var(--color-danger);
-  color: var(--color-danger-active);
-}
+/* Legacy export status styles removed - using toast notifications now */
 
 /* Export Method Indicators - Removed (not helpful) */
 
-/* HTMX Loading States for Buttons - Simple disabled state only */
-.export-actions .btn.htmx-request,
-.export-actions .btn.is-loading {
-  opacity: var(--button-loading-opacity);
-  pointer-events: none;
-  cursor: not-allowed;
-}
-
-/* Override design system button loading spinner for export buttons */
-.export-actions .btn.htmx-request::after,
-.export-actions .btn.is-loading::after {
-  display: none !important;
-}
-
-/* Keep button text visible during loading for export buttons */
-.export-actions .btn.is-loading .btn-label {
-  visibility: visible !important;
-}
+/* Button loading now uses the unified loading component system */
 
 /* Performance Comparison Styling - enhanced with design system tokens */
 .export-actions .btn-primary .btn-subtitle::after {
