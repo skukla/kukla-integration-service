@@ -6,8 +6,9 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
+const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
-const { initializeStorage } = require('../../../src/core/storage');
+const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
 const { createHtmxResponse } = require('../../../src/htmx/formatting');
 
 /**
@@ -115,9 +116,16 @@ async function main(params) {
     // Extract action parameters for storage initialization
     const actionParams = extractActionParams(params);
 
-    // Initialize storage provider
-    logger.info('Initializing storage provider');
-    const storage = await initializeStorage(actionParams);
+    // Load configuration
+    const config = loadConfig(actionParams);
+
+    // Initialize storage based on provider
+    let storage;
+    if (config.storage.provider === 'app-builder') {
+      storage = await initializeAppBuilderStorage(actionParams);
+    } else {
+      storage = await initializeS3Storage(config, actionParams);
+    }
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Route request based on HTTP method
