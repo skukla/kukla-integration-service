@@ -124,19 +124,37 @@ if (!actionName) {
 }
 
 async function testAction(actionUrl, requestParams, environment) {
+  // Extract method from parameters
+  const method = requestParams.__ow_method || 'GET';
+  delete requestParams.__ow_method;
+
+  // Extract body from parameters
+  let body = requestParams.body;
+  delete requestParams.body;
+
   // For staging, don't send parameters as they're configured in app.config.yaml
   // For production, send parameters as needed
-  const shouldSendParams = environment === 'production' && Object.keys(requestParams).length > 0;
+  const shouldSendParams = environment === 'production' || method !== 'GET';
 
   const fetchOptions = {
-    method: shouldSendParams ? 'POST' : 'GET',
+    method: method,
     headers: {
       'Content-Type': 'application/json',
     },
   };
 
   if (shouldSendParams) {
-    fetchOptions.body = JSON.stringify(requestParams);
+    // If body is provided as a string, try to parse it
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        console.warn('Failed to parse body string:', e);
+      }
+    }
+
+    // Use provided body or fallback to requestParams
+    fetchOptions.body = JSON.stringify(body || requestParams);
   }
 
   const response = await fetch(actionUrl, fetchOptions);
