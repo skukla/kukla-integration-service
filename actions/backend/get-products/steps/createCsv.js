@@ -13,6 +13,19 @@ const {
 } = require('../../../../src/core');
 
 /**
+ * RECS header rows that must appear before the data
+ * @constant {Array<string>}
+ */
+const RECS_HEADERS = [
+  '## RECSRecommendations Upload File',
+  "## RECS''## RECS'' indicates a Recommendations pre-process header. Please do not remove these lines.",
+  '## RECS',
+  '## RECSUse this file to upload product display information to Recommendations. Each product has its own row. Each line must contain 19 values and if not all are filled a space should be left.',
+  "## RECSThe last 100 columns (entity.custom1 - entity.custom100) are custom. The name 'customN' can be replaced with a custom name such as 'onSale' or 'brand'.",
+  "## RECSIf the products already exist in Recommendations then changes uploaded here will override the data in Recommendations. Any new attributes entered here will be added to the product''s entry in Recommendations.",
+];
+
+/**
  * CSV header definitions for product export
  * @constant {Array<Object>}
  */
@@ -39,45 +52,60 @@ const CSV_HEADERS = [
 ];
 
 /**
- * Generates a CSV file from product data
- * @param {Array<Object>} products - Array of transformed product objects
- * @returns {Promise<{content: string, stats: Object}>} Generated CSV content and stats
+ * Creates a CSV file from product data
+ * @param {Object[]} products - Array of product objects
+ * @returns {Promise<Object>} CSV generation result
+ * @throws {Error} If CSV generation fails
  */
 async function createCsv(products) {
   try {
-    // Use the core CSV generation without compression for now
-    const result = await csv.generateCsv({
-      records: products,
-      headers: CSV_HEADERS,
-      rowMapper: mapProductToCsvRow,
-      compression: false, // Disable compression to avoid dependency issues
-    });
+    // Try using the core CSV generation first
+    try {
+      const result = await csv.generateCsv({
+        records: products,
+        headers: CSV_HEADERS,
+        rowMapper: mapProductToCsvRow,
+        compression: false, // Disable compression to avoid dependency issues
+        preContent: RECS_HEADERS.join('\n') + '\n', // Add RECS headers before CSV data
+      });
 
-    // Convert Buffer to string for compatibility
-    return {
-      content: result.content.toString(),
-      stats: result.stats,
-    };
+      // Convert Buffer to string for compatibility
+      return {
+        content: result.content.toString(),
+        stats: result.stats,
+      };
+    } catch (coreError) {
+      // Log core module failure before falling back
+      console.warn(`Core CSV generation failed: ${coreError.message}`);
+      throw coreError; // Re-throw to trigger fallback
+    }
   } catch (error) {
-    // Fallback to simple CSV generation if core module fails
-    // Note: This should use proper logger when available from action context
+    try {
+      // Fallback to simple CSV generation if core module fails
+      const headers = CSV_HEADERS.map((h) => h.title).join(',');
+      const rows = products.map((product) => {
+        const mapped = mapProductToCsvRow(product);
+        return CSV_HEADERS.map((h) => mapped[h.id] || '').join(',');
+      });
 
-    const headers = CSV_HEADERS.map((h) => h.title).join(',');
-    const rows = products.map((product) => {
-      const mapped = mapProductToCsvRow(product);
-      return CSV_HEADERS.map((h) => mapped[h.id] || '').join(',');
-    });
+      // Add RECS headers and CSV content
+      const csvContent = [...RECS_HEADERS, headers, ...rows].join('\n');
 
-    const csvContent = [headers, ...rows].join('\n');
-
-    return {
-      content: csvContent,
-      stats: {
-        originalSize: csvContent.length,
-        compressedSize: csvContent.length,
-        savingsPercent: 0,
-      },
-    };
+      return {
+        content: csvContent,
+        stats: {
+          originalSize: csvContent.length,
+          compressedSize: csvContent.length,
+          savingsPercent: 0,
+          rowCount: products.length,
+        },
+      };
+    } catch (fallbackError) {
+      // If both methods fail, throw a descriptive error
+      throw new Error(
+        `Failed to create CSV: Primary method failed (${error.message}), fallback method also failed (${fallbackError.message})`
+      );
+    }
   }
 }
 
