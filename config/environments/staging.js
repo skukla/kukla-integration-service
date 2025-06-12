@@ -25,7 +25,7 @@ const stagingOverrides = {
     },
   },
   storage: {
-    provider: 'app-builder',
+    provider: 's3',
     csv: {
       chunkSize: 200,
       compression: 6,
