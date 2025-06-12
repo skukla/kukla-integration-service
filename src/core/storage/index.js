@@ -246,8 +246,8 @@ async function initializeS3Storage(config, params = {}) {
     },
 
     async list() {
-      // Both app-builder and S3 now use public/ prefix for unified organization
-      const prefix = s3Config.prefix ? `${s3Config.prefix}public/` : 'public/';
+      // Use the configured prefix directly - don't append public/
+      const prefix = s3Config.prefix || '';
 
       const command = new ListObjectsV2Command({
         Bucket: s3Config.bucket,
@@ -261,9 +261,11 @@ async function initializeS3Storage(config, params = {}) {
       const filesWithMetadata = await Promise.all(
         files.map(async (file) => {
           try {
+            // Remove the configured prefix from display name
+            const displayName = file.Key.replace(new RegExp(`^${prefix}`), '');
             return {
-              name: file.Key.replace(/^public\//, ''), // Remove public prefix for display
-              fullPath: file.Key,
+              name: displayName, // Show clean name without prefix
+              fullPath: file.Key, // Keep full path for operations
               size: formatFileSize(file.Size),
               lastModified: formatDate(file.LastModified),
               contentType: 'application/octet-stream', // S3 doesn't provide this directly
@@ -271,7 +273,7 @@ async function initializeS3Storage(config, params = {}) {
           } catch (error) {
             // If we can't read file metadata, include basic info
             return {
-              name: file.Key.replace(/^public\//, ''),
+              name: file.Key.replace(new RegExp(`^${prefix}`), ''),
               fullPath: file.Key,
               size: 'Unknown',
               lastModified: 'Unknown',
