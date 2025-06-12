@@ -3,7 +3,7 @@
  * @module get-products-mesh
  */
 const { loadConfig } = require('../../../config');
-const { getAuthToken } = require('../../../src/commerce/auth');
+const { getAuthToken } = require('../../../src/commerce/api/integration');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
