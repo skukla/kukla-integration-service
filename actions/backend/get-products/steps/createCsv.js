@@ -51,13 +51,18 @@ async function createCsv(products) {
       headers: CSV_HEADERS,
       rowMapper: mapProductToCsvRow,
       compression: false, // Disable compression to avoid dependency issues
-      preContent: RECS_HEADERS.join('\n') + '\n', // Add RECS headers before CSV data
     });
 
-    // Convert Buffer to string for compatibility
+    // Add RECS headers before the CSV content
+    const csvContent = RECS_HEADERS.join('\n') + '\n' + result.content.toString();
+
     return {
-      content: result.content.toString(),
-      stats: result.stats,
+      content: csvContent,
+      stats: {
+        originalSize: csvContent.length,
+        compressedSize: csvContent.length,
+        savingsPercent: 0,
+      },
     };
   } catch (error) {
     // Fallback to simple CSV generation if core module fails
