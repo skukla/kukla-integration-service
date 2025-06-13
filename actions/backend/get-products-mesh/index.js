@@ -3,9 +3,9 @@
  * @module get-products-mesh
  */
 const { loadConfig } = require('../../../config');
-const { getAuthToken } = require('../../../src/commerce/api/integration');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
+const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
@@ -90,12 +90,6 @@ async function fetchProductsFromMesh(actionParams, config) {
     throw new Error('API Mesh not configured');
   }
 
-  // Get Commerce token first
-  const token = await getAuthToken(actionParams);
-  if (!token) {
-    throw new Error('Failed to get Commerce authentication token');
-  }
-
   // Prepare GraphQL query for full products
   const query = `
     query GetProductsFull($pageSize: Int) {
@@ -112,24 +106,18 @@ async function fetchProductsFromMesh(actionParams, config) {
     pageSize: 100, // Get full product data
   };
 
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${actionParams.MESH_API_KEY}`,
+    'x-commerce-username': actionParams.COMMERCE_ADMIN_USERNAME,
+    'x-commerce-password': actionParams.COMMERCE_ADMIN_PASSWORD,
+    'x-environment': config.environment || 'staging',
+  };
+
   // Execute GraphQL query via API Mesh
   const meshResponse = await fetch(meshConfig.endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${actionParams.MESH_API_KEY || meshConfig.apiKey}`,
-      // Pass Commerce token to mesh resolver
-      'x-commerce-token': token,
-      // Pass environment for config selection
-      'x-environment': config.environment || 'staging',
-      // Catalog Service headers (if needed)
-      'x-catalog-api-key': actionParams.CATALOG_SERVICE_API_KEY,
-      'x-catalog-environment-id': actionParams.CATALOG_SERVICE_ENVIRONMENT_ID,
-      'x-catalog-customer-group': 'b6589fc6ab0dc82cf12099d1c2d40ab994e8410c',
-      'x-catalog-store-code': actionParams.CATALOG_SERVICE_STORE_CODE,
-      'x-catalog-store-view-code': actionParams.CATALOG_SERVICE_STORE_VIEW_CODE,
-      'x-catalog-website-code': actionParams.CATALOG_SERVICE_WEBSITE_CODE,
-    },
+    headers,
     body: JSON.stringify({
       query,
       variables,
@@ -184,10 +172,19 @@ async function main(params) {
   }
 
   try {
-    await validateInput(actionParams);
-
     // Initialize configuration and tracing
     const config = loadConfig(actionParams);
+    await validateInput(actionParams, config);
+
+    let storage;
+    const provider = config.storage.provider;
+
+    if (provider === 'app-builder') {
+      storage = await initializeAppBuilderStorage(actionParams);
+    } else if (provider === 's3') {
+      storage = await initializeS3Storage(config, actionParams);
+    }
+
     const trace = createTraceContext('get-products-mesh', actionParams);
     const steps = [];
 
@@ -200,37 +197,10 @@ async function main(params) {
     });
     steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
-    // Step 3: Products from HTTP Bridge are already built, just pass through
-    const builtProducts = products; // HTTP Bridge returns already-processed products
+    // Step 3: Products are already built by REST API, just pass through
+    const builtProducts = products;
     steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
-    // Check format parameter to determine response type
-    const format = actionParams.format || 'csv';
-
-    if (format === 'json') {
-      // Return JSON format for debugging
-      return response.success(
-        {
-          products: builtProducts,
-          total_count: builtProducts.length,
-          message:
-            'Successfully fetched ' +
-            builtProducts.length +
-            ' products with category and inventory data',
-          status: 'success',
-          steps,
-          performance: {
-            processedProducts: builtProducts.length,
-            apiCalls: 1, // API Mesh consolidates many calls into 1
-            method: 'API Mesh',
-          },
-        },
-        'Product data retrieved successfully',
-        {}
-      );
-    }
-
-    // Default CSV format
     // Step 4: Create CSV (reused)
     const csvData = await traceStep(trace, 'create-csv', async () => {
       return await createCsv(builtProducts);
@@ -239,13 +209,9 @@ async function main(params) {
 
     // Step 5: Store CSV (reused)
     const storageResult = await traceStep(trace, 'store-csv', async () => {
-      return await storeCsv(csvData, actionParams, config);
+      return await storeCsv(csvData, config, storage);
     });
     steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
-
-    // Calculate total duration
-    const endTime = Date.now();
-    const totalDuration = endTime - trace.startTime;
 
     return response.success(
       {
@@ -260,16 +226,14 @@ async function main(params) {
         performance: {
           processedProducts: builtProducts.length,
           apiCalls: 1, // API Mesh consolidates many calls into 1
-          method: 'API Mesh', // Show correct method for clarity
-          duration: totalDuration,
-          durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
+          method: 'REST API', // Keep same as REST API for parity
         },
       },
       'Product export completed',
-      {}
+      actionParams
     );
   } catch (error) {
-    return response.error(error, {});
+    return response.error(error, actionParams);
   }
 }
 
