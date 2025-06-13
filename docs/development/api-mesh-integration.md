@@ -54,11 +54,7 @@ User Request → API Mesh → HTTP Bridge Resolver → REST Action → Commerce 
         "name": "commercerest",
         "handler": {
           "openapi": {
-            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
-            "operationHeaders": {
-              "Authorization": "Bearer {context.headers.x-commerce-token}",
-              "Content-Type": "application/json"
-            }
+            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all"
           }
         }
       },
@@ -122,7 +118,11 @@ module.exports = {
             const urlWithFormat = REST_ACTION_URL + '?format=json';
             const restResponse = await fetch(urlWithFormat, {
               method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'x-commerce-username': username,
+                'x-commerce-password': password,
+              },
             });
 
             if (!restResponse.ok) {
@@ -221,7 +221,7 @@ async function main(params) {
     performance: {
       processedProducts: builtProducts.length,
       apiCalls: 1, // API Mesh consolidates many calls into 1
-      method: 'API Mesh HTTP Bridge',
+      method: 'REST API',
     },
   });
 }
