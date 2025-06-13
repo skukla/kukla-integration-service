@@ -668,6 +668,62 @@ if (context.config.performance.enabled) {
 - **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
 - **Required**: For frontend configuration generation (automatic validation)
 
+## Debugging & Troubleshooting
+
+### CRITICAL: Handling Unloggable 500 Errors
+
+When an Adobe I/O Runtime action returns a `500 Internal Server Error` but produces **no logs** (`aio rt activation logs <id>` is empty), it indicates a catastrophic, pre-initialization failure. Standard debugging is ineffective. Follow this protocol:
+
+1.  **Inject "Blast" Logging**:
+    -   Add a unique `TRACE_ID` constant to the top of the failing action file (e.g., `const TRACE_ID = 'DIAGNOSTIC_TRACE_...'`).
+    -   Prepend this `TRACE_ID` to aggressive `console.log` statements at every critical execution step (module load, function entry, before/after API calls).
+    -   **Crucially**, modify the final `catch (error)` block to return a custom JSON object, NOT the standard response handler. This ensures a traceable response even if the logging system fails.
+
+    ```javascript
+    // ✅ CORRECT: Custom error response for diagnostics
+    } catch (error) {
+      console.error(`${TRACE_ID}: MAIN_CATCH_BLOCK_ERROR`, error);
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error_source: 'my-failing-action',
+          trace_id: TRACE_ID,
+          original_error: {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          },
+        }),
+      };
+    }
+    ```
+
+2.  **Inspect the Browser Network Response**:
+    -   After deploying the "blast-logged" action, trigger it from the UI.
+    -   Open the browser's developer tools, go to the Network tab, and inspect the response body of the failed 500 request.
+    -   If you see the `trace_id` in the JSON response, your code **is** being deployed and executed. The `original_error` object will contain the true root cause.
+
+3.  **Validate the Entire Build Pipeline**:
+    -   The error may not be in the action code itself, but in a file that generates it.
+    -   In our case, `mesh-resolvers.template.js` was generating an incorrect `mesh-resolvers.js` file, causing an authentication mismatch.
+    -   Always inspect templates, generators, and configuration files (`config/environments/*.js`) as potential root causes.
+
+4.  **The "Scorched Earth" Solution (Last Resort)**:
+    -   If an action is irrecoverably broken and unloggable, there may be corrupted state on the platform.
+    -   Comment out the entire action definition in `app.config.yaml`.
+    -   Run `npm run deploy`. This will delete the action from the runtime.
+    -   Uncomment the action definition in `app.config.yaml`.
+    -   Run `npm run deploy` again. This will re-provision the action from a clean state.
+
+### CRITICAL: `process.env` Causes Catastrophic Failures
+
+Reinforcing a core principle: **NEVER use `process.env` in any code that runs on Adobe I/O Runtime**.
+
+-   **Symptom**: A `500 Internal Server Error` with no logs.
+-   **Cause**: A configuration file (`config/environments/staging.js`) used `apiKey: process.env.MESH_API_KEY`. In the deployed action, `process.env.MESH_API_KEY` was `undefined`, which caused the underlying `fetch` to crash the entire Node.js runtime before logging could initialize.
+-   **Solution**: Always pass secrets and configuration as action parameters via `.env` -> `app.config.yaml` -> `params`. The code should then reference `params.MY_VARIABLE`.
+
 ## API Mesh Integration Patterns
 
 ### CRITICAL: HTTP Bridge Pattern (Recommended)
