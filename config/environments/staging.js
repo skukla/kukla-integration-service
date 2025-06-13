@@ -50,7 +50,6 @@ const stagingOverrides = {
   mesh: {
     endpoint:
       'https://edge-sandbox-graph.adobe.io/api/e4865722-2b0a-4f3f-bc87-f3302b64487b/graphql',
-    apiKey: process.env.MESH_API_KEY,
     timeout: 30000,
     retries: 3,
   },
