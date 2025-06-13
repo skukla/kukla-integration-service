@@ -140,7 +140,11 @@ module.exports = {
           // Call existing REST action via HTTP Bridge
           const restResponse = await fetch(REST_ACTION_URL + '?format=json', {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+              'Content-Type': 'application/json',
+              'x-commerce-username': username,
+              'x-commerce-password': password,
+            },
           });
 
           const data = await restResponse.json();

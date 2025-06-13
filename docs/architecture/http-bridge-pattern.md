@@ -102,7 +102,12 @@ module.exports = {
             // Single HTTP call to existing REST action
             const response = await fetch(REST_ACTION_URL + '?format=json', {
               method: 'GET',
-              headers: { 'Content-Type': 'application/json' }
+              headers: {
+                'Content-Type': 'application/json',
+                // Forward credentials to the REST action
+                'x-commerce-username': username,
+                'x-commerce-password': password,
+              },
             });
 
             const data = await response.json();
