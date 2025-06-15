@@ -189,10 +189,50 @@ function createCsvTransform(options = {}) {
   });
 }
 
+/**
+ * Creates a CSV writer with the specified headers
+ * @param {Array<Object>} headers - Array of header definitions
+ * @returns {Object} CSV writer instance
+ */
+async function createWriter(headers) {
+  if (!Array.isArray(headers) || headers.length === 0) {
+    throw new Error('CSV headers must be provided');
+  }
+
+  const stringifier = csvWriter.createObjectCsvStringifier({
+    header: headers.map((h) => ({
+      id: h.id || h,
+      title: h.title || h.id || h,
+    })),
+  });
+
+  return {
+    async writeRecords(records) {
+      if (!Array.isArray(records) || records.length === 0) {
+        throw new Error('No records provided for CSV generation');
+      }
+
+      // Generate CSV content
+      const headerString = stringifier.getHeaderString();
+      const recordsString = stringifier.stringifyRecords(records);
+      const content = headerString + recordsString;
+
+      return {
+        content,
+        stats: {
+          originalSize: content.length,
+          rowCount: records.length,
+        },
+      };
+    },
+  };
+}
+
 module.exports = {
   getCsvConfig,
   generateCsv,
   createCsvStream,
   createRowTransformer,
   createCsvTransform,
+  createWriter,
 };

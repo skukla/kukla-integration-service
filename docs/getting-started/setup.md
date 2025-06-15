@@ -89,6 +89,10 @@ COMMERCE_ADMIN_PASSWORD=your-admin-password
 AWS_ACCESS_KEY_ID=your-aws-access-key
 AWS_SECRET_ACCESS_KEY=your-aws-secret-key
 
+# API Mesh Configuration
+API_MESH_ENDPOINT=your-mesh-endpoint
+MESH_API_KEY=your-mesh-api-key
+
 # Application Configuration
 LOG_LEVEL=debug
 CACHE_TTL=300
@@ -98,7 +102,92 @@ FILES_STORAGE_PREFIX=kukla-integration
 FILES_MAX_SIZE=10485760
 ```
 
-> **⚠️ Important**: Commerce URL comes from environment configuration files (`config/environments/staging.js` or `production.js`), NOT from `.env`. Never set `COMMERCE_URL` in `.env`.
+### **Configuration System**
+
+The application uses a sophisticated configuration system that combines:
+
+1. Environment-specific defaults (`config/environments/[staging|production].js`)
+2. Environment variables (`.env`)
+3. Action parameters (from Adobe I/O Runtime)
+
+Configuration values follow this precedence:
+
+1. Action parameters (highest priority)
+2. Environment variables
+3. Environment config defaults (lowest priority)
+
+Example configuration override:
+
+```javascript
+// config/index.js
+const configOverrides = {
+  'commerce.baseUrl': 'COMMERCE_BASE_URL',
+  'commerce.credentials.username': 'COMMERCE_ADMIN_USERNAME',
+  'mesh.endpoint': 'API_MESH_ENDPOINT'
+};
+
+// Values are automatically applied from params or env
+```
+
+### **app.config.yaml Configuration**
+
+**CRITICAL**: Add credentials to `app.config.yaml` inputs for actions to access them:
+
+```yaml
+actions:
+  backend:
+    function: actions/backend/index.js
+    web: 'yes'
+    runtime: nodejs:18
+    inputs:
+      COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
+      COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+      API_MESH_ENDPOINT: $API_MESH_ENDPOINT
+      MESH_API_KEY: $MESH_API_KEY
+      NODE_ENV: $NODE_ENV
+```
+
+> **Why This Matters**: Adobe I/O Runtime passes credentials as action parameters, not environment variables. The configuration system automatically handles overrides from these parameters.
+
+## Commerce Integration
+
+### **Environment Variables**
+
+Required environment variables in `.env`:
+
+```bash
+# Commerce credentials
+COMMERCE_ADMIN_USERNAME=admin
+COMMERCE_ADMIN_PASSWORD=password123
+
+# Storage credentials (if using S3)
+AWS_ACCESS_KEY_ID=your-key
+AWS_SECRET_ACCESS_KEY=your-secret
+```
+
+### **Configuration Files**
+
+The Commerce URL is configured in environment-specific files:
+
+```javascript
+// config/environments/staging.js
+module.exports = {
+  commerce: {
+    baseUrl: 'https://your-staging-instance.adobedemo.com',
+    // ... other settings
+  }
+};
+
+// config/environments/production.js
+module.exports = {
+  commerce: {
+    baseUrl: 'https://your-production-instance.adobedemo.com',
+    // ... other settings
+  }
+};
+```
 
 ### **Adobe Commerce Setup**
 
@@ -119,26 +208,6 @@ FILES_MAX_SIZE=10485760
    - Catalog → Products (Read)
    - Inventory → Stock (Read)
    - System → Categories (Read)
-
-### **app.config.yaml Configuration**
-
-**CRITICAL**: You must add your credentials to `app.config.yaml` inputs for actions to access them:
-
-```yaml
-actions:
-  backend:
-    function: actions/backend/index.js
-    web: 'yes'
-    runtime: nodejs:18
-    inputs:
-      COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
-      COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
-      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-      NODE_ENV: $NODE_ENV
-```
-
-> **Why This Matters**: Adobe I/O Runtime passes credentials as action parameters, not environment variables. Without proper `inputs` configuration, actions cannot access your credentials.
 
 ### **Adobe Developer Console Configuration**
 

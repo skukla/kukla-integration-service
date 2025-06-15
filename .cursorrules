@@ -290,55 +290,33 @@ The application uses a sophisticated configuration system across backend and fro
 
 ### Backend Configuration
 
-Use `loadConfig(params)` and specialized functions for different configuration sections:
+Use `loadConfig(params)` and the configuration override system:
 
 ```javascript
-const { loadConfig, getCommerceConfig, getStorageConfig } = require('../../config');
+const { loadConfig } = require('../../config');
 
 // Load complete configuration
 const config = loadConfig(params);
 
-// Access specific sections
-const commerceConfig = getCommerceConfig();
-const storageConfig = getStorageConfig();
+// Configuration is automatically overridden from:
+// 1. Action parameters (params.VARIABLE_NAME)
+// 2. Environment variables (process.env.VARIABLE_NAME)
+// 3. Environment config defaults
 ```
 
-### Frontend Configuration
+### Configuration Override Pattern
 
-Frontend mirrors backend patterns but with frontend-safe data (credentials excluded):
+Use the `configOverrides` mapping in `config/index.js`:
 
 ```javascript
-import {
-  loadConfig,
-  getCommerceConfig,
-  getStorageConfig,
-  getRuntimeConfig,
-  getPerformanceConfig,
-  isStaging,
-  getTracingConfig,
-} from './core/config.js';
+const configOverrides = {
+  'commerce.baseUrl': 'COMMERCE_BASE_URL',
+  'commerce.credentials.username': 'COMMERCE_ADMIN_USERNAME'
+};
 
-// Load complete configuration
-const config = loadConfig();
-
-// Access specific sections
-const commerce = getCommerceConfig();
-const commerceUrl = commerce.baseUrl;
-
-// Environment checks
-if (isStaging()) {
-  console.log('Running in staging');
-}
+// Automatically creates nested objects and applies overrides
+applyConfigOverrides(config, params, configOverrides);
 ```
-
-### Configuration Generation
-
-Frontend configuration is automatically generated during build from backend config:
-
-- **Build integration**: `npm run build:config` generates frontend config
-- **Security**: Sensitive credentials excluded from frontend
-- **Environment-specific**: Generated config matches build environment
-- **Auto-generated**: File at `web-src/src/config/generated/config.js`
 
 ### Configuration Rules
 
@@ -348,6 +326,15 @@ Frontend configuration is automatically generated during build from backend conf
 - **Environment**: Configuration automatically detects staging vs production
 - **Build process**: Frontend config regenerated on each build/deploy
 - **Legacy**: Old `urlConfig` imports should use new `core/config.js`
+
+### Configuration Generation
+
+Frontend configuration is automatically generated during build from backend config:
+
+- **Build integration**: `npm run build:config` generates frontend config
+- **Security**: Sensitive credentials excluded from frontend
+- **Environment-specific**: Generated config matches build environment
+- **Auto-generated**: File at `web-src/src/config/generated/config.js`
 
 ## URL Management
 
