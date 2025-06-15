@@ -36,7 +36,7 @@ function createApiTester(config) {
 
       const response = await axios.get(`${baseUrl}/get-products`, {
         params: {
-          commerce_url: auth.commerceUrl,
+          commerce_base_url: auth.commerceUrl,
           commerce_admin_username: auth.commerceAdminUsername,
           commerce_admin_password: auth.commerceAdminPassword,
           format: 'csv',
@@ -102,7 +102,7 @@ function createApiTester(config) {
 
       const response = await axios.get(`${baseUrl}/browse-files`, {
         params: {
-          commerce_url: auth.commerceUrl,
+          commerce_base_url: auth.commerceUrl,
           commerce_admin_username: auth.commerceAdminUsername,
           commerce_admin_password: auth.commerceAdminPassword,
           ...params,

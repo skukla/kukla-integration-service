@@ -14,7 +14,7 @@
         }
       },
       {
-        "name": "catalogservice",
+        "name": "commercegraphql",
         "handler": {
           "graphql": {
             "endpoint": "https://citisignal-com774.adobedemo.com/graphql",

@@ -15,28 +15,18 @@ const { loadConfig } = require('../../../config');
  * @returns {string} Built URL
  */
 function buildActionUrl(config, action, options = {}) {
-  const { baseUrl, namespace, package: pkg, version, paths } = config.runtime || config;
+  const { url, package: pkg, version, paths } = config.runtime || config;
   const { params = {}, absolute = true } = options;
 
   // Handle different URL patterns based on environment
   let actionPath;
 
-  if (!absolute || !baseUrl) {
-    // Relative URL for HTMX/static hosting - no namespace in path for modern pattern
+  if (!absolute || !url) {
+    // Relative URL for HTMX/static hosting
     actionPath = `${paths.base}/${version}${paths.web}/${pkg}/${action}`;
   } else {
-    // Absolute URL for backend/API calls
-    if (baseUrl.includes('adobeioruntime.net')) {
-      // Modern Adobe App Builder pattern: put namespace in hostname
-      const modernBaseUrl = baseUrl.replace(
-        'adobeioruntime.net',
-        `${namespace}.adobeioruntime.net`
-      );
-      actionPath = `${modernBaseUrl}${paths.base}/${version}${paths.web}/${pkg}/${action}`;
-    } else {
-      // Other environments or custom URLs - keep as-is
-      actionPath = `${baseUrl}${paths.base}/${version}${paths.web}/${pkg}/${action}`;
-    }
+    // Absolute URL using environment-specific runtime URL
+    actionPath = `${url}${paths.base}/${version}${paths.web}/${pkg}/${action}`;
   }
 
   // Add URL parameters if provided
@@ -105,7 +95,7 @@ function buildRuntimeUrl(action, customBaseUrl = null, params = {}) {
       ...config,
       runtime: {
         ...config.runtime,
-        baseUrl: customBaseUrl,
+        url: customBaseUrl,
       },
     };
     return buildActionUrl(modifiedConfig, action, options);

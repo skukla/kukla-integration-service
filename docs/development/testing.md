@@ -75,8 +75,9 @@ npm run test:action -- actions/backend/get-products
 LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
 
 # Test with Commerce credentials
-COMMERCE_URL=https://your-instance.com \
-COMMERCE_ACCESS_TOKEN=your-token \
+COMMERCE_BASE_URL=https://your-instance.com \
+COMMERCE_ADMIN_USERNAME=admin \
+COMMERCE_ADMIN_PASSWORD=password123 \
 npm run test:action -- actions/backend/get-products
 ```
 
@@ -196,7 +197,9 @@ npm run test:action -- actions/backend/get-products --param '{
 }' --no-auth
 
 # Test Commerce API errors
-COMMERCE_URL=https://invalid-url.com \
+COMMERCE_BASE_URL=https://invalid-url.com \
+COMMERCE_ADMIN_USERNAME=admin \
+COMMERCE_ADMIN_PASSWORD=password123 \
 npm run test:action -- actions/backend/get-products
 ```
 
@@ -325,7 +328,7 @@ aio runtime:log:get --action get-products
 
    ```bash
    # Verify credentials
-   echo $COMMERCE_ACCESS_TOKEN
+   echo $COMMERCE_ADMIN_PASSWORD
 
    # Test authentication separately
    npm run test:action -- actions/backend/auth-test

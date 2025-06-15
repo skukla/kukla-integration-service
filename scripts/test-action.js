@@ -50,12 +50,12 @@ function processActionParameters(actionName, params) {
   // For get-products action, load Commerce URL from config and credentials from .env if not provided
   if (actionName === 'get-products') {
     // Load Commerce URL from environment configuration if not provided
-    if (!processedParams.COMMERCE_URL) {
+    if (!processedParams.COMMERCE_BASE_URL) {
       try {
         const config = loadConfig();
         const commerceUrl = config.commerce.baseUrl;
         if (commerceUrl) {
-          processedParams.COMMERCE_URL = commerceUrl;
+          processedParams.COMMERCE_BASE_URL = commerceUrl;
         }
       } catch (error) {
         // Silently fail - user can provide URL manually
@@ -93,7 +93,7 @@ if (!actionName) {
   console.log(chalk.yellow('Usage: node test-action.js <action-name> [key=value ...] [--raw]'));
   console.log(chalk.yellow('Examples:'));
   console.log(chalk.cyan('  node test-action.js get-products'));
-  console.log(chalk.cyan('  node test-action.js get-products COMMERCE_URL=https://demo.com'));
+  console.log(chalk.cyan('  node test-action.js get-products COMMERCE_BASE_URL=https://demo.com'));
   console.log(chalk.cyan('  node test-action.js delete-file fileName=products.csv'));
   console.log(chalk.cyan('  node test-action.js browse-files modal=true'));
   console.log(chalk.yellow('Options:'));
@@ -124,19 +124,37 @@ if (!actionName) {
 }
 
 async function testAction(actionUrl, requestParams, environment) {
+  // Extract method from parameters
+  const method = requestParams.__ow_method || 'GET';
+  delete requestParams.__ow_method;
+
+  // Extract body from parameters
+  let body = requestParams.body;
+  delete requestParams.body;
+
   // For staging, don't send parameters as they're configured in app.config.yaml
   // For production, send parameters as needed
-  const shouldSendParams = environment === 'production' && Object.keys(requestParams).length > 0;
+  const shouldSendParams = environment === 'production' || method !== 'GET';
 
   const fetchOptions = {
-    method: shouldSendParams ? 'POST' : 'GET',
+    method: method,
     headers: {
       'Content-Type': 'application/json',
     },
   };
 
   if (shouldSendParams) {
-    fetchOptions.body = JSON.stringify(requestParams);
+    // If body is provided as a string, try to parse it
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        console.warn('Failed to parse body string:', e);
+      }
+    }
+
+    // Use provided body or fallback to requestParams
+    fetchOptions.body = JSON.stringify(body || requestParams);
   }
 
   const response = await fetch(actionUrl, fetchOptions);
@@ -201,7 +219,11 @@ function formatStorageInfo(storage) {
  */
 function validateActionParameters(actionName, params) {
   if (actionName === 'get-products') {
-    const requiredParams = ['COMMERCE_URL', 'COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'];
+    const requiredParams = [
+      'COMMERCE_BASE_URL',
+      'COMMERCE_ADMIN_USERNAME',
+      'COMMERCE_ADMIN_PASSWORD',
+    ];
     const missingParams = requiredParams.filter((param) => !params[param]);
 
     if (missingParams.length > 0) {
@@ -213,9 +235,9 @@ function validateActionParameters(actionName, params) {
 
     // Validate URL format
     try {
-      new URL(params.COMMERCE_URL);
+      new URL(params.COMMERCE_BASE_URL);
     } catch (error) {
-      throw new Error('Invalid COMMERCE_URL format - must be a valid URL');
+      throw new Error('Invalid COMMERCE_BASE_URL format - must be a valid URL');
     }
   }
 }

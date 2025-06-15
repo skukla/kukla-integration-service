@@ -103,7 +103,12 @@ const getProductsSchema = {
 const browseFilesSchema = {
   request: {
     ...baseRequestSchema,
-    required: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+    // AWS credentials are only required when using S3 storage
+    properties: {
+      ...baseRequestSchema.properties,
+      AWS_ACCESS_KEY_ID: { type: 'string' },
+      AWS_SECRET_ACCESS_KEY: { type: 'string' },
+    },
   },
   response: {
     ...baseResponseSchema,
@@ -171,12 +176,11 @@ const frontendConfigSchema = {
     environment: { type: 'string', enum: ['staging', 'production'] },
     runtime: {
       type: 'object',
-      required: ['package', 'version', 'baseUrl', 'namespace', 'paths', 'actions'],
+      required: ['package', 'version', 'url', 'paths', 'actions'],
       properties: {
         package: { type: 'string' },
         version: { type: 'string' },
-        baseUrl: { type: 'string', format: 'uri' },
-        namespace: { type: 'string' },
+        url: { type: 'string', format: 'uri' },
         paths: {
           type: 'object',
           required: ['base', 'web'],

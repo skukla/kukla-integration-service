@@ -90,7 +90,7 @@ async function testEndpoint(config, spinner) {
 
     // Get auth token using URL from config but credentials from env
     const token = await getAuthToken({
-      COMMERCE_URL: config.baseUrl,
+      COMMERCE_BASE_URL: config.baseUrl,
       COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
       COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
     });
@@ -100,7 +100,7 @@ async function testEndpoint(config, spinner) {
 
     // Test the endpoint using URL from config
     const response = await getProducts(token, {
-      COMMERCE_URL: config.baseUrl,
+      COMMERCE_BASE_URL: config.baseUrl,
       pageSize: config.pageSize,
       fields: config.fields,
     });

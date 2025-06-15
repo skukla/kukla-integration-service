@@ -101,7 +101,7 @@ async function request(url, options = {}) {
 function normalizeParams(params) {
   const normalized = {};
   const paramMap = {
-    commerce_url: 'COMMERCE_URL',
+    commerce_url: 'COMMERCE_BASE_URL',
     commerce_admin_username: 'COMMERCE_ADMIN_USERNAME',
     commerce_admin_password: 'COMMERCE_ADMIN_PASSWORD',
   };
