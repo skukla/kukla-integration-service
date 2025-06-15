@@ -232,6 +232,7 @@
 .skeleton-cell {
   padding-block: var(--skeleton-cell-padding-block);
   padding-inline: var(--skeleton-cell-padding-inline);
+  text-align: left;
 }
 
 .skeleton-cell:first-child {
@@ -240,17 +241,19 @@
 
 .skeleton-cell:last-child {
   padding-inline-end: var(--spacing-lg);
+  text-align: center; /* Center the last cell (actions) */
 }
 
 /* Skeleton Actions - Button placeholders */
 .skeleton-actions {
   display: flex;
   gap: var(--spacing-sm);
-  justify-content: flex-end;
+  justify-content: center; /* Center the buttons */
+  width: 100%; /* Ensure full width for centering */
 }
 
 .skeleton-button {
-  inline-size: var(--spacing-3xl);
+  inline-size: calc(var(--spacing-3xl) + var(--spacing-2xl)); /* Match table button width */
   block-size: var(--spacing-lg);
   background-color: var(--skeleton-background);
   border-radius: var(--radius-sm);

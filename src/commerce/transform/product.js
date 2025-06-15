@@ -111,10 +111,23 @@ function mapProductToCsvRow(product) {
   return {
     sku: product.sku,
     name: product.name,
-    price: product.price,
-    qty: product.qty,
-    categories: Array.isArray(product.categories) ? product.categories.join(',') : '',
-    base_image: getPrimaryImageUrl(product.images),
+    category_id: Array.isArray(product.categories) ? product.categories[0] : '',
+    message: product.description || '',
+    thumbnail_url: getPrimaryImageUrl(product.images),
+    value: product.price,
+    page_url: product.url || '',
+    inventory: product.qty,
+    margin: product.margin || '',
+    type: product.type_id || '',
+    custom2: '',
+    custom3: '',
+    custom4: '',
+    custom5: '',
+    custom6: '',
+    custom7: '',
+    custom8: '',
+    custom9: '',
+    custom10: '',
   };
 }
 

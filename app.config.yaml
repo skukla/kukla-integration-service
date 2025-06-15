@@ -17,6 +17,9 @@ application:
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string
@@ -24,9 +27,6 @@ application:
               COMMERCE_ADMIN_PASSWORD:
                 type: string
                 description: Admin password for authentication
-              format:
-                type: string
-                description: Response format (csv or json)
             annotations:
               require-adobe-auth: false
               final: true
@@ -39,6 +39,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             annotations:
               require-adobe-auth: false
               final: true
@@ -51,6 +53,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             annotations:
               require-adobe-auth: false
               final: true
@@ -63,6 +67,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             annotations:
               require-adobe-auth: false
               final: true
@@ -78,6 +84,15 @@ application:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               MESH_API_KEY: $MESH_API_KEY
+              CATALOG_SERVICE_API_KEY: $CATALOG_SERVICE_API_KEY
+              CATALOG_SERVICE_ENVIRONMENT_ID: $CATALOG_SERVICE_ENVIRONMENT_ID
+              CATALOG_SERVICE_STORE_CODE: $CATALOG_SERVICE_STORE_CODE
+              CATALOG_SERVICE_STORE_VIEW_CODE: $CATALOG_SERVICE_STORE_VIEW_CODE
+              CATALOG_SERVICE_WEBSITE_CODE: $CATALOG_SERVICE_WEBSITE_CODE
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+              API_MESH_ENDPOINT: $API_MESH_ENDPOINT
+              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
+              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string
@@ -88,6 +103,12 @@ application:
               MESH_API_KEY:
                 type: string
                 description: API key for API Mesh authentication
+              CATALOG_SERVICE_API_KEY:
+                type: string
+                description: API key for Catalog Service authentication
+              CATALOG_SERVICE_ENVIRONMENT_ID:
+                type: string
+                description: Environment ID for Catalog Service
             annotations:
               require-adobe-auth: false
               final: true

@@ -245,29 +245,45 @@ async function initializeS3Storage(config, params = {}) {
       await s3Client.send(command);
     },
 
-    async list(directory = '') {
-      // Both app-builder and S3 now use public/ prefix for unified organization
+    async list() {
+      // Use the configured prefix directly - don't append public/
       const prefix = s3Config.prefix || '';
-      const fullPrefix = directory ? `${prefix}${directory}` : prefix;
 
       const command = new ListObjectsV2Command({
         Bucket: s3Config.bucket,
-        Prefix: fullPrefix,
+        Prefix: prefix,
       });
 
       const response = await s3Client.send(command);
+      const files = response.Contents || [];
 
-      if (!response.Contents) {
-        return [];
-      }
+      // Get metadata for each file
+      const filesWithMetadata = await Promise.all(
+        files.map(async (file) => {
+          try {
+            // Remove the configured prefix from display name
+            const displayName = file.Key.replace(new RegExp(`^${prefix}`), '');
+            return {
+              name: displayName, // Show clean name without prefix
+              fullPath: file.Key, // Keep full path for operations
+              size: formatFileSize(file.Size),
+              lastModified: formatDate(file.LastModified),
+              contentType: 'application/octet-stream', // S3 doesn't provide this directly
+            };
+          } catch (error) {
+            // If we can't read file metadata, include basic info
+            return {
+              name: file.Key.replace(new RegExp(`^${prefix}`), ''),
+              fullPath: file.Key,
+              size: 'Unknown',
+              lastModified: 'Unknown',
+              contentType: 'application/octet-stream',
+            };
+          }
+        })
+      );
 
-      return response.Contents.map((object) => ({
-        name: object.Key.replace(prefix, ''), // Remove prefix for display
-        fullPath: object.Key,
-        size: formatFileSize(object.Size),
-        lastModified: formatDate(object.LastModified),
-        contentType: 'text/csv', // Default for our use case
-      }));
+      return filesWithMetadata;
     },
 
     async getProperties(fileName) {

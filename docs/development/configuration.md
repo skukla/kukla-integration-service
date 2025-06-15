@@ -425,6 +425,70 @@ import { getRuntimeConfig } from './core/config.js';
 - **[Testing Guide](testing.md)** - Testing with configuration
 - **[Deployment Configuration](../deployment/configuration.md)** - Deployment and infrastructure config
 
+## Configuration Override System
+
+The system uses a consolidated approach for handling configuration overrides:
+
+```javascript
+// Define configuration overrides in config/index.js
+const configOverrides = {
+  'commerce.baseUrl': 'COMMERCE_BASE_URL',
+  'commerce.credentials.username': 'COMMERCE_ADMIN_USERNAME',
+  // ... other overrides
+};
+
+// Apply overrides automatically
+applyConfigOverrides(config, params, configOverrides);
+```
+
+### Key Features
+
+1. **Single Source of Truth**: All overrides defined in one mapping object
+2. **Automatic Nesting**: Paths like 'commerce.credentials.username' automatically create nested objects
+3. **Precedence**: Adobe I/O Runtime parameters take priority over environment variables
+4. **Default Values**: All defaults live in environment configuration files
+
+### Usage Pattern
+
+```javascript
+// In actions/backend/your-action/index.js
+const { loadConfig } = require('../../../config');
+
+async function main(params) {
+  const config = loadConfig(params);
+  // config.commerce.baseUrl is automatically set from:
+  // 1. params.COMMERCE_BASE_URL (if exists)
+  // 2. process.env.COMMERCE_BASE_URL (if exists)
+  // 3. environment config default
+}
+```
+
+### Adding New Configuration
+
+To add a new configurable value:
+
+1. Add default in `config/environments/[staging|production].js`
+2. Add override mapping in `config/index.js` if needed:
+
+   ```javascript
+   const configOverrides = {
+     'your.config.path': 'YOUR_ENV_VAR_NAME'
+   };
+   ```
+
+### Development vs Production
+
+- Development: Use `loadValidatedConfig()` for schema validation
+- Production: Use `loadConfig()` for performance
+- Testing: Configuration auto-loads in test scripts
+
+## Security Considerations
+
+- Credentials always flow: `.env` → `app.config.yaml` → action parameters
+- Frontend configuration excludes all sensitive data
+- Environment-specific values stay in environment config files
+- No credentials in code or version control
+
 ---
 
 _This configuration system provides a secure, maintainable foundation for the Adobe App Builder Commerce integration project._
