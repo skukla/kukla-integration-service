@@ -30,6 +30,7 @@ async function storeCsv(csvResult, params = {}) {
 
     const response = {
       fileName: result.fileName,
+      location: result.fileName,
       downloadUrl: result.url,
       properties: {
         name: fileName,

@@ -201,10 +201,15 @@ async function initializeS3Storage(config, params = {}) {
         buildRuntimeUrl('download-file', null, params) +
         `?fileName=${encodeURIComponent(fileName)}`;
 
+      // Also construct the direct S3 URL for debugging and raw output
+      const s3Url = `https://${s3Config.bucket}.s3.${
+        s3Config.region || 'us-east-1'
+      }.amazonaws.com/${key}`;
+
       return {
         fileName: key,
-        url: actionUrl, // Use action URL instead of direct S3 URL
-        downloadUrl: actionUrl, // Use action URL for downloads
+        url: actionUrl,
+        downloadUrl: actionUrl,
         properties: {
           name: fileName,
           key,
@@ -212,6 +217,7 @@ async function initializeS3Storage(config, params = {}) {
           size: content.length,
           lastModified: new Date().toISOString(),
           contentType: 'text/csv',
+          internalUrl: s3Url,
         },
       };
     },
@@ -255,61 +261,47 @@ async function initializeS3Storage(config, params = {}) {
       });
 
       const response = await s3Client.send(command);
-      const files = response.Contents || [];
 
-      // Get metadata for each file
-      const filesWithMetadata = await Promise.all(
-        files.map(async (file) => {
-          try {
-            // Remove the configured prefix from display name
-            const displayName = file.Key.replace(new RegExp(`^${prefix}`), '');
-            return {
-              name: displayName, // Show clean name without prefix
-              fullPath: file.Key, // Keep full path for operations
-              size: formatFileSize(file.Size),
-              lastModified: formatDate(file.LastModified),
-              contentType: 'application/octet-stream', // S3 doesn't provide this directly
-            };
-          } catch (error) {
-            // If we can't read file metadata, include basic info
-            return {
-              name: file.Key.replace(new RegExp(`^${prefix}`), ''),
-              fullPath: file.Key,
-              size: 'Unknown',
-              lastModified: 'Unknown',
-              contentType: 'application/octet-stream',
-            };
-          }
-        })
-      );
+      // Handle cases where Contents might be undefined (e.g., empty bucket/prefix)
+      if (!response.Contents) {
+        return [];
+      }
 
-      return filesWithMetadata;
+      return response.Contents.map((item) => ({
+        name: item.Key.replace(prefix, ''), // Remove prefix for display
+        fullPath: item.Key,
+        size: formatFileSize(item.Size),
+        lastModified: formatDate(item.LastModified),
+        contentType: 'application/octet-stream', // S3 list doesn't provide content type
+      }));
     },
 
     async getProperties(fileName) {
       const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
 
-      const command = new ListObjectsV2Command({
+      // S3 doesn't have a direct 'getProperties' command like aio-lib-files.
+      // We can simulate it by using GetObjectCommand and inspecting the response metadata.
+      // However, this would download the file. For now, we return what we know.
+      // A more efficient way would be a HEAD request if needed.
+      const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
-        Prefix: key,
-        MaxKeys: 1,
+        Key: key,
       });
 
-      const response = await s3Client.send(command);
-
-      if (!response.Contents || response.Contents.length === 0) {
-        throw new Error(`File not found: ${fileName}`);
+      try {
+        const response = await s3Client.send(command);
+        return {
+          name: fileName,
+          size: response.ContentLength,
+          lastModified: response.LastModified.toISOString(),
+          contentType: response.ContentType,
+        };
+      } catch (error) {
+        if (error.name === 'NoSuchKey') {
+          return null;
+        }
+        throw error;
       }
-
-      const object = response.Contents[0];
-      return {
-        name: fileName,
-        size: object.Size,
-        lastModified: object.LastModified,
-        contentType: 'text/csv',
-        key: object.Key,
-        bucket: s3Config.bucket,
-      };
     },
   };
 }
