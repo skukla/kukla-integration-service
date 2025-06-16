@@ -14,7 +14,7 @@ const stagingOverrides = {
     maxTotal: 1000,
   },
   commerce: {
-    baseUrl: process.env.COMMERCE_BASE_URL,
+    baseUrl: 'https://citisignal-com774.adobedemo.com',
     batching: {
       inventory: 25,
       maxConcurrent: 15,
