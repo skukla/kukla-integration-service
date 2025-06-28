@@ -89,10 +89,52 @@ Before implementing any feature:
 
 ### Commerce Integration
 
+**CRITICAL: OAuth 1.0 Authentication**
+
+All Commerce API calls use OAuth 1.0 authentication with HMAC-SHA256 signatures:
+
+```javascript
+// ✅ CORRECT: Use makeCommerceRequest for OAuth authentication
+const { makeCommerceRequest } = require('../../../src/commerce/api/integration');
+
+const response = await makeCommerceRequest('/products', {
+  method: 'GET',
+}, params); // params contains OAuth credentials
+
+// ✅ CORRECT: OAuth credentials in app.config.yaml inputs
+COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
+
+// ❌ WRONG: Don't create custom OAuth implementations
+// ❌ WRONG: Don't test authentication separately - let API calls validate
+```
+
+**OAuth Implementation Rules:**
+
+- **Always use `makeCommerceRequest()`** for Commerce API calls
+- **Never implement custom OAuth** - use the established `createOAuthHeader()` function
+- **No pre-authentication testing** - OAuth validation happens during actual API calls
+- **Parameter extraction** - Use `extractActionParams()` to get OAuth credentials from action parameters
+- **URL handling** - Use `buildCommerceUrl()` for proper Commerce API URL construction
+- **Signature generation** - Follows Postman-style base URL parsing for HMAC-SHA256 signatures
+
+**Required OAuth Credentials:**
+
+All actions that call Commerce APIs must have these inputs in `app.config.yaml`:
+- `COMMERCE_CONSUMER_KEY`
+- `COMMERCE_CONSUMER_SECRET` 
+- `COMMERCE_ACCESS_TOKEN`
+- `COMMERCE_ACCESS_TOKEN_SECRET`
+
+**Commerce Integration Guidelines:**
+
 - Use the established Commerce utilities in `src/commerce/`
 - Handle Commerce API rate limits appropriately
 - Validate product data according to Commerce schemas
 - Use proper error handling for Commerce API calls
+- Always use OAuth 1.0 for authentication (no legacy admin token auth)
 
 ### API Mesh Integration
 
@@ -112,36 +154,46 @@ const message = `Successfully fetched ${count} products`;
 
 **CRITICAL: Storage Dependency Pattern**
 
-Always initialize storage directly to avoid circular dependency issues:
+Always use `storeCsv()` function with correct parameters to avoid circular dependency issues:
 
 ```javascript
-// ✅ CORRECT: Direct storage initialization
-const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
+// ✅ CORRECT: Use storeCsv function (handles storage initialization internally)
+const storeCsv = require('../get-products/steps/storeCsv');
 
-const config = loadConfig(actionParams);
-let storage;
-const provider = config.storage.provider;
+const storageResult = await storeCsv(csvData, actionParams);
 
-if (provider === 'app-builder') {
-  storage = await initializeAppBuilderStorage(actionParams);
-} else if (provider === 's3') {
-  storage = await initializeS3Storage(config, actionParams);
+// Check for storage errors
+if (!storageResult.stored) {
+  throw new Error(`Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`);
 }
 
-// ❌ WRONG: Causes "Cannot initialize action more than once" error
+// ❌ WRONG: Manual storage initialization in actions
 const { initializeStorage } = require('../../../src/core/storage');
 const storage = await initializeStorage(config, actionParams); // Circular dependency!
+
+// ❌ WRONG: Incorrect storeCsv parameters
+await storeCsv(csvData, config, storage); // Wrong - 3 params instead of 2
 ```
+
+**Storage Error Handling Rules:**
+
+- **Always check `storageResult.stored`** - Don't assume storage succeeded
+- **Use proper error messages** - Include specific error details when storage fails
+- **Let storeCsv handle initialization** - Don't manually initialize storage in actions
+- **Correct function signature** - `storeCsv(csvData, actionParams)` only (2 parameters)
+- **Test script display** - Storage errors show as "Storage Failed" not "ERROR"
 
 **API Mesh Patterns:**
 
 - Use `mesh.json` for API Mesh configuration with CommonJS format resolvers
 - Custom resolvers in `mesh-resolvers.js` to consolidate multiple data sources
 - Enhanced resolvers bridge gaps between Commerce REST API and Catalog Service
-- Pass authentication headers via custom headers (`x-commerce-token`, `x-catalog-*`)
+- Pass OAuth credentials via custom headers (`x-commerce-username`, `x-commerce-password`) for HTTP Bridge pattern
+- Pass Catalog Service credentials via custom headers (`x-catalog-*`)
 - Catalog Service authentication requires Commerce instance endpoint, not sandbox
 - API Mesh consolidates 200+ API calls into single GraphQL queries
 - Enhanced resolvers expose hidden/disabled products not visible in Catalog Service
+- HTTP Bridge pattern: Mesh resolvers call existing REST actions via HTTP for code reuse
 
 **API Mesh Limitations:**
 
