@@ -26,25 +26,24 @@ module.exports = {
       mesh_products_full: {
         resolve: async (parent, args, context) => {
           try {
-            // Get credentials from headers
-            const username = context.headers['x-commerce-username'];
-            const password = context.headers['x-commerce-password'];
+            // Get OAuth credentials from headers
+            const consumerKey = context.headers['x-commerce-consumer-key'];
+            const consumerSecret = context.headers['x-commerce-consumer-secret'];
+            const accessToken = context.headers['x-commerce-access-token'];
+            const accessTokenSecret = context.headers['x-commerce-access-token-secret'];
 
-            if (!username || !password) {
-              throw new Error('Commerce credentials not provided');
+            if (!consumerKey || !consumerSecret || !accessToken || !accessTokenSecret) {
+              throw new Error('OAuth credentials not provided');
             }
 
-            // Construct URL for internal get-products action
+            // Construct URL for internal get-products action with JSON format
             const actionUrl = config.runtime.actionUrl + '?format=json';
 
-            // Call existing REST action via HTTP
+            // Call existing REST action via HTTP Bridge (credentials come from app.config.yaml)
             const restResponse = await fetch(actionUrl, {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
-                // Pass the credentials in custom headers
-                'x-commerce-username': username,
-                'x-commerce-password': password,
               },
             });
 

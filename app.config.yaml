@@ -13,11 +13,15 @@ application:
             inputs:
               LOG_LEVEL: debug
               NODE_ENV: staging
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
+              COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+              COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+              COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+              COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
               RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
             parameters:
@@ -27,6 +31,18 @@ application:
               COMMERCE_ADMIN_PASSWORD:
                 type: string
                 description: Admin password for authentication
+              COMMERCE_CONSUMER_KEY:
+                type: string
+                description: OAuth 1.0 consumer key for Commerce API authentication
+              COMMERCE_CONSUMER_SECRET:
+                type: string
+                description: OAuth 1.0 consumer secret for Commerce API authentication
+              COMMERCE_ACCESS_TOKEN:
+                type: string
+                description: OAuth 1.0 access token for Commerce API authentication
+              COMMERCE_ACCESS_TOKEN_SECRET:
+                type: string
+                description: OAuth 1.0 access token secret for Commerce API authentication
             annotations:
               require-adobe-auth: false
               final: true
@@ -79,17 +95,16 @@ application:
             inputs:
               LOG_LEVEL: debug
               NODE_ENV: staging
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
+              COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+              COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+              COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+              COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               MESH_API_KEY: $MESH_API_KEY
-              CATALOG_SERVICE_API_KEY: $CATALOG_SERVICE_API_KEY
-              CATALOG_SERVICE_ENVIRONMENT_ID: $CATALOG_SERVICE_ENVIRONMENT_ID
-              CATALOG_SERVICE_STORE_CODE: $CATALOG_SERVICE_STORE_CODE
-              CATALOG_SERVICE_STORE_VIEW_CODE: $CATALOG_SERVICE_STORE_VIEW_CODE
-              CATALOG_SERVICE_WEBSITE_CODE: $CATALOG_SERVICE_WEBSITE_CODE
-              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               API_MESH_ENDPOINT: $API_MESH_ENDPOINT
               RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
               RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
@@ -103,12 +118,6 @@ application:
               MESH_API_KEY:
                 type: string
                 description: API key for API Mesh authentication
-              CATALOG_SERVICE_API_KEY:
-                type: string
-                description: API key for Catalog Service authentication
-              CATALOG_SERVICE_ENVIRONMENT_ID:
-                type: string
-                description: Environment ID for Catalog Service
             annotations:
               require-adobe-auth: false
               final: true
