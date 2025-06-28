@@ -11,8 +11,13 @@ const { checkMissingParams } = require('../../../../src/core/http/client');
  * @throws {Error} If required parameters are missing or invalid
  */
 async function validateInput(params) {
-  // Only validate credentials as parameters - URL comes from config
-  const requiredParams = ['COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'];
+  // Validate OAuth 1.0 credentials as parameters
+  const requiredParams = [
+    'COMMERCE_CONSUMER_KEY',
+    'COMMERCE_CONSUMER_SECRET',
+    'COMMERCE_ACCESS_TOKEN',
+    'COMMERCE_ACCESS_TOKEN_SECRET',
+  ];
 
   // Check for missing required parameters
   const errorMessage = checkMissingParams(params, requiredParams);
@@ -34,6 +39,8 @@ async function validateInput(params) {
   } catch (error) {
     throw new Error(`Invalid Commerce configuration: ${error.message}`);
   }
+
+  // OAuth credentials will be validated when the first API call is made
 }
 
 module.exports = validateInput;
