@@ -62,8 +62,8 @@ function processActionParameters(actionName, params) {
       }
     }
 
-    // Load credentials from .env if not provided
-    if (!processedParams.COMMERCE_ADMIN_USERNAME || !processedParams.COMMERCE_ADMIN_PASSWORD) {
+    // Load OAuth credentials from .env if not provided
+    if (!processedParams.COMMERCE_CONSUMER_KEY || !processedParams.COMMERCE_ACCESS_TOKEN) {
       try {
         const envPath = path.join(__dirname, '../.env');
         if (fs.existsSync(envPath)) {
@@ -198,6 +198,8 @@ function formatStorageInfo(storage) {
     info = 'App Builder';
   } else if (provider === 's3') {
     info = 'Amazon S3';
+  } else if (provider === 'error') {
+    info = 'Storage Failed';
   } else {
     info = provider.toUpperCase();
   }
@@ -221,8 +223,10 @@ function validateActionParameters(actionName, params) {
   if (actionName === 'get-products') {
     const requiredParams = [
       'COMMERCE_BASE_URL',
-      'COMMERCE_ADMIN_USERNAME',
-      'COMMERCE_ADMIN_PASSWORD',
+      'COMMERCE_CONSUMER_KEY',
+      'COMMERCE_CONSUMER_SECRET',
+      'COMMERCE_ACCESS_TOKEN',
+      'COMMERCE_ACCESS_TOKEN_SECRET',
     ];
     const missingParams = requiredParams.filter((param) => !params[param]);
 
