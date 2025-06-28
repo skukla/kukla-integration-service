@@ -8,7 +8,7 @@ const ora = require('ora');
 
 const { getProducts } = require('../actions/backend/get-products/lib/api/products');
 const { loadConfig } = require('../config');
-const { getAuthToken } = require('../src/commerce/api/integration');
+// OAuth authentication is tested during the actual API calls
 
 require('dotenv').config();
 
@@ -85,22 +85,16 @@ async function testEndpoint(config, spinner) {
     spinner.stop();
     console.log('Using config:', config);
 
-    // Resume spinner for auth
-    spinner.start('Getting authentication token...');
+    // Resume spinner for API call
+    spinner.start('Fetching products from Commerce API...');
 
-    // Get auth token using URL from config but credentials from env
-    const token = await getAuthToken({
+    // Test the endpoint using OAuth credentials
+    const response = await getProducts({
       COMMERCE_BASE_URL: config.baseUrl,
-      COMMERCE_ADMIN_USERNAME: process.env.COMMERCE_ADMIN_USERNAME,
-      COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
-    });
-
-    // Update spinner for API call
-    spinner.text = 'Fetching products from Commerce API...';
-
-    // Test the endpoint using URL from config
-    const response = await getProducts(token, {
-      COMMERCE_BASE_URL: config.baseUrl,
+      COMMERCE_CONSUMER_KEY: process.env.COMMERCE_CONSUMER_KEY,
+      COMMERCE_CONSUMER_SECRET: process.env.COMMERCE_CONSUMER_SECRET,
+      COMMERCE_ACCESS_TOKEN: process.env.COMMERCE_ACCESS_TOKEN,
+      COMMERCE_ACCESS_TOKEN_SECRET: process.env.COMMERCE_ACCESS_TOKEN_SECRET,
       pageSize: config.pageSize,
       fields: config.fields,
     });
@@ -108,13 +102,11 @@ async function testEndpoint(config, spinner) {
     return {
       success: true,
       data: response,
-      authSuccess: !!token,
     };
   } catch (error) {
     return {
       success: false,
       error: error.message,
-      authSuccess: false,
     };
   }
 }
@@ -148,17 +140,15 @@ async function runTests(testOptions = {}) {
     if (results.success) {
       spinner.succeed('API tests passed');
 
-      // Show auth status
-      console.log('✓ Authentication:', results.authSuccess ? 'success' : 'failed');
+      // Authentication was successful if we got data
+      console.log('✓ Authentication: success (OAuth credentials validated)');
       console.log('✓ Product data:', `${results.data.length} products retrieved`);
 
       // Show formatted results
       console.log('\n' + formatProductData(results.data, testOptions));
     } else {
       spinner.fail(`API tests failed: ${results.error}`);
-      if (!results.authSuccess) {
-        console.log('\n❌ Authentication failed - check your credentials');
-      }
+      console.log('\n❌ Check your OAuth credentials if this is an authentication error');
       process.exit(1);
     }
   } catch (error) {
