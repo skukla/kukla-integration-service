@@ -5,7 +5,7 @@
 const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
-const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
+// Storage initialization is handled by storeCsv function
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
@@ -109,8 +109,10 @@ async function fetchProductsFromMesh(actionParams, config) {
   const headers = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${actionParams.MESH_API_KEY}`,
-    'x-commerce-username': actionParams.COMMERCE_ADMIN_USERNAME,
-    'x-commerce-password': actionParams.COMMERCE_ADMIN_PASSWORD,
+    'x-commerce-consumer-key': actionParams.COMMERCE_CONSUMER_KEY,
+    'x-commerce-consumer-secret': actionParams.COMMERCE_CONSUMER_SECRET,
+    'x-commerce-access-token': actionParams.COMMERCE_ACCESS_TOKEN,
+    'x-commerce-access-token-secret': actionParams.COMMERCE_ACCESS_TOKEN_SECRET,
     'x-environment': config.environment || 'staging',
   };
 
@@ -176,14 +178,7 @@ async function main(params) {
     const config = loadConfig(actionParams);
     await validateInput(actionParams, config);
 
-    let storage;
-    const provider = config.storage.provider;
-
-    if (provider === 'app-builder') {
-      storage = await initializeAppBuilderStorage(actionParams);
-    } else if (provider === 's3') {
-      storage = await initializeS3Storage(config, actionParams);
-    }
+    // Storage initialization is handled by storeCsv function
 
     const trace = createTraceContext('get-products-mesh', actionParams);
     const steps = [];
@@ -209,8 +204,16 @@ async function main(params) {
 
     // Step 5: Store CSV (reused)
     const storageResult = await traceStep(trace, 'store-csv', async () => {
-      return await storeCsv(csvData, config, storage);
+      return await storeCsv(csvData, actionParams);
     });
+
+    // Check if storage failed
+    if (!storageResult.stored) {
+      throw new Error(
+        `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`
+      );
+    }
+
     steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
 
     return response.success(
