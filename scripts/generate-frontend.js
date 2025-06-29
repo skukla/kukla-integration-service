@@ -1,6 +1,6 @@
 /**
  * Generate frontend assets from backend configuration and logic
- * Consolidates config and URL generation for simpler build process
+ * Handles config and URL generation for frontend
  */
 
 const fs = require('fs');
@@ -11,11 +11,6 @@ const ora = require('ora');
 
 const { loadConfig } = require('../config');
 const { detectEnvironment } = require('../src/core/environment');
-
-// Parse command line arguments
-const args = process.argv.slice(2);
-const skipMesh = args.includes('--skip-mesh');
-const meshOnly = args.includes('--mesh-only');
 
 // Helper to capitalize first letter
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -119,66 +114,10 @@ export const RUNTIME_ACTIONS = ${JSON.stringify(config.runtime.actions, null, 2)
     urlSpinner.succeed(formatSpinnerSuccess('URL configuration generated'));
   }
 
-  // Generate mesh files if not skipped
-  if (!skipMesh || meshOnly) {
-    const meshSpinner = useSpinners ? createSpinner('Generating mesh files...') : null;
-
-    // Generate mesh configuration
-    const meshConfig = {
-      baseUrl: config.commerce.baseUrl,
-      timeout: config.mesh?.timeout || 30000,
-      pageSize: config.products?.perPage || 50,
-      maxPages: config.products?.maxTotal || 1000,
-    };
-    const meshConfigContent = `/* eslint-disable */\nmodule.exports = ${JSON.stringify(meshConfig, null, 2)};\n`;
-    await writeGeneratedFile('mesh-config.js', meshConfigContent);
-
-    // Generate mesh resolvers
-    const meshResolversContent = `/* eslint-disable */
-const config = require('./mesh-config');
-
-module.exports = {
-  resolvers: {
-    Query: {
-      mesh_products_full: {
-        resolve: async (parent, args, context) => {
-          // Get credentials from headers
-          const username = context.headers['x-commerce-username'];
-          const password = context.headers['x-commerce-password'];
-
-          // Call existing REST action via HTTP
-          const restResponse = await fetch(config.baseUrl + '/rest/V1/products', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + username + ':' + password,
-            },
-          });
-
-          const data = await restResponse.json();
-          return {
-            products: data.products || [],
-            total_count: data.total_count || 0,
-            message: 'Success via HTTP bridge',
-            status: 'success',
-          };
-        },
-      },
-    },
-  },
-};`;
-    await writeGeneratedFile('mesh-resolvers.js', meshResolversContent);
-
-    if (meshSpinner) {
-      await sleep(500); // Give spinner time to spin
-      meshSpinner.succeed(formatSpinnerSuccess('Mesh files generated'));
-    }
-  }
-
   // Only show final success message when run directly (not from build.js)
   if (require.main === module) {
     const envDisplay = capitalize(env);
-    console.log(formatSuccess('All frontend files generated (' + envDisplay + ')'));
+    console.log(formatSuccess('Frontend assets generated (' + envDisplay + ')'));
   }
 }
 

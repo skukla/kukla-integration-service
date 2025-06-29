@@ -35,13 +35,15 @@
     "validate": "node scripts/test-schemas.js --quiet",
     "deploy": "npm run clean && node scripts/build.js && aio app deploy",
     "deploy:prod": "npm run clean && node scripts/build.js && aio app deploy --workspace=Production",
-    "deploy:mesh": "aio api-mesh update mesh.json",
+    "deploy:mesh": "node scripts/update-mesh.js",
+    "deploy:mesh:prod": "node scripts/update-mesh.js --prod",
     "clean": "rm -rf dist",
     "test:api": "node scripts/test-api.js",
     "test:action": "node scripts/test-action.js",
     "test:schemas": "node scripts/test-schemas.js",
     "test:perf": "node scripts/test-performance.js --env staging",
-    "test:perf:prod": "node scripts/test-performance.js --env prod"
+    "test:perf:prod": "node scripts/test-performance.js --env prod",
+    "build:mesh-resolver": "node scripts/generate-mesh-resolver.js"
   },
   "engines": {
     "node": ">=18"

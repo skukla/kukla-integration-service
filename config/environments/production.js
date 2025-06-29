@@ -50,6 +50,14 @@ const productionOverrides = {
     apiKey: process.env.MESH_API_KEY,
     timeout: 30000,
     retries: 3,
+    pagination: {
+      defaultPageSize: 200, // Larger batches for production
+      maxPages: 25,
+    },
+    batching: {
+      categories: 20, // Larger category batches for production
+      inventory: 50, // Larger inventory batches for production
+    },
   },
   testing: {
     logLevel: 'warn',
