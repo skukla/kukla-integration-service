@@ -3,12 +3,17 @@
  * Provides independent spinners for each build step
  */
 
+const { exec } = require('child_process');
+const { promisify } = require('util');
+
 const chalk = require('chalk');
 const ora = require('ora');
 
 const { generateFrontend } = require('./generate-frontend');
 const { validateSchemas } = require('./test-schemas');
 const { detectEnvironment } = require('../src/core/environment');
+
+const execAsync = promisify(exec);
 
 // Helper to capitalize first letter
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
@@ -62,6 +67,12 @@ async function build() {
     const frontendSpinner = createSpinner('Generating frontend assets...');
     await generateFrontend();
     frontendSpinner.succeed(formatSpinnerSuccess('Frontend assets generated'));
+
+    // Step 4: Mesh Resolver Generation
+    const meshSpinner = createSpinner('Generating mesh resolver...');
+    await sleep(500); // Give spinner time to spin
+    await execAsync('node scripts/generate-mesh-resolver.js');
+    meshSpinner.succeed(formatSpinnerSuccess('Mesh resolver generated'));
   } catch (error) {
     // If any spinner is still active, stop it with failure
     ora().fail(chalk.red('Build failed: ' + error.message));
