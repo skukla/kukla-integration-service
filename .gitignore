@@ -12,7 +12,6 @@ dist/
 web-src/src/config/generated/
 web-src/src/js/core/url/index.js
 mesh-config.js
-mesh-resolvers.js
 
 # IDE and OS files
 .DS_Store
