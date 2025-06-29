@@ -475,3 +475,73 @@ aio api-mesh log-get RAYID
 - **Caching**: Add response caching for improved performance
 - **Rate Limiting**: Implement mesh-specific rate limiting
 - **Monitoring**: GraphQL query performance metrics
+
+## Smart Mesh Resolver Generation
+
+The project includes an intelligent mesh resolver generation system that only regenerates resolvers when necessary, improving build performance and preventing unnecessary mesh updates.
+
+### Change Detection
+
+The system uses SHA-256 hashes to detect changes in:
+
+- **Template file** (`mesh-resolvers.template.js`)
+- **Mesh configuration** (pagination, batching, timeout settings)
+
+Generation metadata is embedded in the generated resolver file to track:
+
+```javascript
+/* GENERATION_METADATA: {"templateHash":"abc123...","configHash":"def456...","generatedAt":"2025-06-29T19:42:58.514Z","version":"1.0.0"} */
+```
+
+### Available Commands
+
+```bash
+# Smart generation (only if changes detected)
+npm run build:mesh-resolver
+
+# Force regeneration (bypass change detection)
+npm run build:mesh-resolver:force
+
+# Verbose mode (shows hash details)
+npm run build:mesh-resolver:check
+```
+
+### Example Output
+
+**No changes detected:**
+
+```text
+✅ Mesh resolver is up to date
+   Reason: No changes detected
+```
+
+**Changes detected:**
+
+```text
+🔄 Generating mesh resolver...
+   Reason: Template file has changed
+✅ Successfully generated mesh-resolvers.js from template
+   - Generated at: 2025-06-29T19:42:58.514Z
+```
+
+**Verbose mode:**
+
+```text
+🔍 Change detection details:
+   Template hash: dd2969d8... (existing: dd2969d8...)
+   Config hash: b6908095... (existing: b6908095...)
+   Last generated: 2025-06-29T19:42:58.514Z
+✅ Mesh resolver is up to date
+   Use --force to regenerate anyway
+```
+
+### Build Integration
+
+The smart generation is integrated into the main build process (`scripts/build.js`). During deployment:
+
+1. **Environment detection** - Determines staging vs production
+2. **Schema validation** - Validates configuration schemas  
+3. **Frontend generation** - Generates frontend assets
+4. **Smart mesh generation** - Only regenerates if needed
+
+This ensures efficient builds that don't unnecessarily update the mesh when no changes have occurred.
