@@ -132,9 +132,10 @@ async function testAction(actionUrl, requestParams, environment) {
   let body = requestParams.body;
   delete requestParams.body;
 
-  // For staging, don't send parameters as they're configured in app.config.yaml
-  // For production, send parameters as needed
-  const shouldSendParams = environment === 'production' || method !== 'GET';
+  // Never send body with GET requests (HTTP spec violation)
+  // For staging, parameters are configured in app.config.yaml, so no body needed
+  // For production with non-GET methods, send parameters in body
+  const shouldSendParams = method !== 'GET' && environment === 'production';
 
   const fetchOptions = {
     method: method,
