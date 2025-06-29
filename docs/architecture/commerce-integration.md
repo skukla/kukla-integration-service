@@ -16,7 +16,7 @@ The Kukla Integration Service provides comprehensive Adobe Commerce integration 
 ├─────────────────────────────────────────────────────────────┤
 │  REST API Method          │  API Mesh Method              │
 │  ├── 200+ API Calls       │  └── 1 GraphQL Query          │
-│  ├── Sequential Execution │     (HTTP Bridge Pattern)     │
+│  ├── Sequential Execution │     (True Mesh Pattern)       │
 │  └── Direct Commerce API  │                               │
 ├─────────────────────────────────────────────────────────────┤
 │                    Shared Utilities                        │
@@ -122,9 +122,9 @@ const enrichWithCategories = async (products, config, authToken) => {
 
 ## API Mesh Integration
 
-### **HTTP Bridge Pattern**
+### **True Mesh Pattern**
 
-The API Mesh integration uses the HTTP Bridge pattern to eliminate code duplication:
+The API Mesh integration uses the True Mesh pattern to consolidate multiple Commerce APIs:
 
 ```javascript
 // mesh-resolvers.js
@@ -137,7 +137,7 @@ module.exports = {
           const username = context.headers['x-commerce-username'];
           const password = context.headers['x-commerce-password'];
           
-          // Call existing REST action via HTTP Bridge
+          // Consolidate data from multiple Commerce APIs
           const restResponse = await fetch(REST_ACTION_URL + '?format=json', {
             method: 'GET',
             headers: {
@@ -152,7 +152,7 @@ module.exports = {
           return {
             products: data.products || [],
             total_count: data.total_count || 0,
-            message: data.message || 'Success via HTTP bridge',
+            message: data.message || 'Success via True Mesh consolidation',
             status: 'success'
           };
         }
@@ -193,7 +193,7 @@ module.exports = {
 1. User Request → get-products-mesh action
 2. Validate Input → Extract parameters
 3. GraphQL Query → mesh_products_full resolver
-4. HTTP Bridge → Call get-products?format=json
+4. True Mesh → Consolidate Commerce APIs via GraphQL
 5. REST Processing → Complete data fetching and enrichment
 6. Transform Data → Skip (already done by REST action)
 7. Store File → Reuse existing storage logic
@@ -359,7 +359,7 @@ inputs:
 
 ### **Integration Patterns**
 
-1. **HTTP Bridge for Mesh**: Use for complex logic with existing REST actions
+1. **True Mesh for API consolidation**: Use for complex logic with existing REST actions
 2. **Step Functions**: Reuse data fetching and transformation logic
 3. **Environment Awareness**: Different configurations for staging/production
 4. **Error Boundaries**: Isolate failures to prevent cascading issues
@@ -394,7 +394,7 @@ const mockCommerceAPI = {
 ## Related Documentation
 
 - **[API Mesh Integration](../development/api-mesh-integration.md)** - Complete API Mesh implementation
-- **[HTTP Bridge Pattern](http-bridge-pattern.md)** - Architecture pattern details
+- **[True Mesh Pattern](true-mesh-pattern.md)** - Architecture pattern details
 - **[Configuration System](../development/configuration.md)** - Environment configuration
 - **[Adobe App Builder](adobe-app-builder.md)** - Platform integration patterns
 
