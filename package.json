@@ -43,7 +43,9 @@
     "test:schemas": "node scripts/test-schemas.js",
     "test:perf": "node scripts/test-performance.js --env staging",
     "test:perf:prod": "node scripts/test-performance.js --env prod",
-    "build:mesh-resolver": "node scripts/generate-mesh-resolver.js"
+    "build:mesh-resolver": "node scripts/generate-mesh-resolver.js",
+    "build:mesh-resolver:force": "node scripts/generate-mesh-resolver.js --force",
+    "build:mesh-resolver:check": "node scripts/generate-mesh-resolver.js --verbose"
   },
   "engines": {
     "node": ">=18"
