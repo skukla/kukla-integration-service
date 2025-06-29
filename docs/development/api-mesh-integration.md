@@ -491,7 +491,7 @@ Generation metadata is embedded in the generated resolver file to track:
 
 ```javascript
 /* GENERATION_METADATA: {"templateHash":"abc123...","configHash":"def456...","generatedAt":"2025-06-29T19:42:58.514Z","version":"1.0.0"} */
-```
+```text
 
 ### Available Commands
 
@@ -504,7 +504,7 @@ npm run build:mesh-resolver:force
 
 # Verbose mode (shows hash details)
 npm run build:mesh-resolver:check
-```
+```text
 
 ### Example Output
 
@@ -513,7 +513,7 @@ npm run build:mesh-resolver:check
 ```text
 ✅ Mesh resolver is up to date
    Reason: No changes detected
-```
+```text
 
 **Changes detected:**
 
@@ -522,7 +522,7 @@ npm run build:mesh-resolver:check
    Reason: Template file has changed
 ✅ Successfully generated mesh-resolvers.js from template
    - Generated at: 2025-06-29T19:42:58.514Z
-```
+```text
 
 **Verbose mode:**
 
@@ -533,7 +533,7 @@ npm run build:mesh-resolver:check
    Last generated: 2025-06-29T19:42:58.514Z
 ✅ Mesh resolver is up to date
    Use --force to regenerate anyway
-```
+```text
 
 ### Build Integration
 
@@ -545,3 +545,93 @@ The smart generation is integrated into the main build process (`scripts/build.j
 4. **Smart mesh generation** - Only regenerates if needed
 
 This ensures efficient builds that don't unnecessarily update the mesh when no changes have occurred.
+
+## Enhanced Deployment with Automatic Mesh Updates
+
+The project includes an enhanced deployment system that automatically handles API Mesh updates when mesh resolvers change.
+
+### How It Works
+
+When you run `npm run deploy`, the system:
+
+1. **Detects Changes**: Uses SHA-256 hash comparison to determine if mesh resolvers need regeneration
+2. **Smart Generation**: Only regenerates resolvers if template or configuration changes detected
+3. **Automatic Mesh Update**: If resolvers were regenerated, automatically updates API Mesh
+4. **Retry Logic**: Retries mesh updates up to 3 times with 90-second provisioning waits
+5. **Status Verification**: Confirms mesh update success before completing deployment
+
+### Deployment Flow
+
+```text
+npm run deploy
+├── Environment Detection
+├── Clean Build Artifacts  
+├── Build Process (includes smart mesh resolver generation)
+├── Check Mesh Resolver Status
+├── Deploy App Builder Actions
+└── Conditional Mesh Update (if resolvers changed)
+    ├── Update API Mesh (with retry logic)
+    ├── Wait 90 seconds for provisioning
+    ├── Check mesh status
+    └── Retry if needed (up to 3 attempts)
+```text
+
+### Example Output
+
+**No mesh changes needed:**
+```text
+🚀 Starting enhanced deployment to staging...
+✅ Environment detected: staging
+✅ Build artifacts cleaned
+✅ Build process completed
+✅ Mesh resolver: No changes detected
+✅ App Builder actions deployed
+✅ Mesh resolver unchanged. No mesh update needed.
+�� Deployment to staging completed successfully!
+```text
+
+**Mesh update required:**
+```text
+🚀 Starting enhanced deployment to staging...
+✅ Environment detected: staging
+✅ Build artifacts cleaned
+✅ Build process completed
+✅ Mesh resolver: Changes detected in template or configuration
+✅ App Builder actions deployed
+
+🔄 Mesh resolver was regenerated. Updating API Mesh automatically...
+
+🔄 API Mesh update attempt 1/3 for staging...
+✅ Sent update command to API Mesh in staging
+Update command sent. Mesh is provisioning...
+✅ Wait complete.
+✅ Checked mesh status
+
+------------------- MESH STATUS -------------------
+Status: success
+Endpoint: https://graph.adobe.io/api/mesh-id/graphql
+-------------------------------------------------
+
+✅ API Mesh update successful!
+🎉 Deployment to staging completed successfully!
+```text
+
+### Manual Override
+
+If automatic mesh update fails, you can run it manually:
+
+```bash
+# For staging
+npm run deploy:mesh
+
+# For production  
+npm run deploy:mesh:prod
+```text
+
+### Benefits
+
+- **Zero Manual Steps**: Mesh updates happen automatically when needed
+- **Efficient**: Only updates mesh when resolvers actually change
+- **Reliable**: Retry logic handles temporary mesh provisioning issues
+- **Safe**: Verifies mesh status before considering deployment complete
+- **Transparent**: Clear feedback about what's happening during deployment
