@@ -3,13 +3,11 @@
  * @module get-products-mesh
  */
 const { loadConfig } = require('../../../config');
+const { getAuthToken } = require('../../../src/commerce/api/integration');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
-// Storage initialization is handled by storeCsv function
-const { createTraceContext, traceStep } = require('../../../src/core/tracing');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
-const validateInput = require('../get-products/steps/validateInput');
 
 /**
  * Format file size in bytes to a human-readable string
@@ -17,7 +15,11 @@ const validateInput = require('../get-products/steps/validateInput');
  * @returns {string} Formatted file size
  */
 function formatFileSize(bytes) {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  if (typeof bytes !== 'number' || isNaN(bytes)) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
   let size = bytes;
   let unitIndex = 0;
 
@@ -26,100 +28,59 @@ function formatFileSize(bytes) {
     unitIndex++;
   }
 
-  // Round to 2 decimal places
   return `${Math.round(size * 100) / 100} ${units[unitIndex]}`;
 }
 
 /**
- * Format step message for API response (same as REST API)
- * @param {string} name - Step name
- * @param {string} status - Step status (success/error)
- * @param {Object} details - Step details
- * @returns {string} Formatted step message
- */
-function formatStepMessage(name, status, details = {}) {
-  const stepMessages = {
-    'extract-params': {
-      success: 'Successfully extracted and validated action parameters',
-      error: 'Failed to extract action parameters',
-    },
-    'validate-input': {
-      success: 'Successfully validated Commerce API credentials and URL',
-      error: 'Failed to validate input parameters',
-    },
-    'fetch-and-enrich': {
-      success: (count) =>
-        `Successfully fetched and enriched ${count} products with category and inventory data`,
-      error: 'Failed to fetch products from API Mesh',
-    },
-    'build-products': {
-      success: (count) => `Successfully transformed ${count} products for export`,
-      error: 'Failed to transform product data',
-    },
-    'create-csv': {
-      success: (size) => `Successfully generated CSV file (${formatFileSize(size)})`,
-      error: 'Failed to generate CSV file',
-    },
-    'store-csv': {
-      success: (info) => {
-        const size = parseInt(info.properties.size) || info.properties.size;
-        const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
-        return `Successfully stored CSV file as ${info.fileName} (${formattedSize})`;
-      },
-      error: 'Failed to store CSV file',
-    },
-  };
-
-  return status === 'success'
-    ? typeof stepMessages[name][status] === 'function'
-      ? stepMessages[name][status](details.count || details.size || details.info)
-      : stepMessages[name][status]
-    : `${stepMessages[name][status]}: ${details.error || ''}`;
-}
-
-/**
- * Fetch products from API Mesh (replaces fetchAndEnrichProducts step)
- * @param {Object} actionParams - Action parameters
+ * Fetch enriched products from API Mesh using True Mesh Pattern
  * @param {Object} config - Configuration object
+ * @param {Object} actionParams - Action parameters
  * @returns {Promise<Array>} Products array with enriched data
  */
-async function fetchProductsFromMesh(actionParams, config) {
-  const meshConfig = config.mesh;
+async function fetchEnrichedProductsFromMesh(config, actionParams) {
+  const meshEndpoint = config.mesh.endpoint;
+  const meshApiKey = config.mesh.apiKey;
 
-  if (!meshConfig || !meshConfig.endpoint) {
-    throw new Error('API Mesh not configured');
+  if (!meshEndpoint || !meshApiKey) {
+    throw new Error('Mesh configuration missing: endpoint or API key not found');
   }
 
-  // Prepare GraphQL query for full products
+  // Generate admin token for mesh authentication
+  const adminToken = await getAuthToken(actionParams);
+
+  // GraphQL query for True Mesh Pattern
   const query = `
-    query GetProductsFull($pageSize: Int) {
-      mesh_products_full(pageSize: $pageSize) {
-        products
+    query GetEnrichedProducts($pageSize: Int) {
+      mesh_products_enriched(pageSize: $pageSize) {
+        products {
+          sku
+          name
+          price
+          qty
+          categories { id name }
+          images { filename url position roles }
+          inventory { qty is_in_stock }
+        }
         total_count
         message
         status
+        performance { processedProducts apiCalls method executionTime }
       }
     }
   `;
 
   const variables = {
-    pageSize: 100, // Get full product data
+    pageSize: config.products?.perPage || 100,
   };
 
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${actionParams.MESH_API_KEY}`,
-    'x-commerce-consumer-key': actionParams.COMMERCE_CONSUMER_KEY,
-    'x-commerce-consumer-secret': actionParams.COMMERCE_CONSUMER_SECRET,
-    'x-commerce-access-token': actionParams.COMMERCE_ACCESS_TOKEN,
-    'x-commerce-access-token-secret': actionParams.COMMERCE_ACCESS_TOKEN_SECRET,
-    'x-environment': config.environment || 'staging',
-  };
-
-  // Execute GraphQL query via API Mesh
-  const meshResponse = await fetch(meshConfig.endpoint, {
+  // Make GraphQL request to mesh with admin token
+  const meshResponse = await fetch(meshEndpoint, {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': meshApiKey,
+      'x-commerce-admin-token': adminToken,
+    },
     body: JSON.stringify({
       query,
       variables,
@@ -127,99 +88,97 @@ async function fetchProductsFromMesh(actionParams, config) {
   });
 
   if (!meshResponse.ok) {
-    const errorText = await meshResponse.text();
-    throw new Error(
-      `API Mesh request failed: ${meshResponse.status} ${meshResponse.statusText} - ${errorText}`
-    );
+    throw new Error(`Mesh API request failed: ${meshResponse.status} ${meshResponse.statusText}`);
   }
 
-  const meshData = await meshResponse.json();
+  const result = await meshResponse.json();
 
-  if (meshData.errors) {
-    throw new Error(`GraphQL errors: ${JSON.stringify(meshData.errors)}`);
+  if (result.errors && result.errors.length > 0) {
+    throw new Error(`GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`);
   }
 
-  if (!meshData.data || !meshData.data.mesh_products_full) {
-    throw new Error(`Invalid API Mesh response: ${JSON.stringify(meshData)}`);
+  const meshData = result.data?.mesh_products_enriched;
+  if (!meshData) {
+    throw new Error('No data returned from mesh query');
   }
 
-  const productsData = meshData.data.mesh_products_full;
-
-  if (productsData.status !== 'success') {
-    throw new Error(`Products query failed: ${productsData.message}`);
+  if (meshData.status === 'error') {
+    throw new Error(`Mesh data consolidation error: ${meshData.message}`);
   }
 
-  const products = productsData.products || [];
-
-  if (!Array.isArray(products) || products.length === 0) {
-    throw new Error('No products returned from mesh resolver');
-  }
-
-  // HTTP bridge already returns products in the correct format
-  return products;
+  return meshData.products || [];
 }
 
 /**
- * Main action handler for get-products-mesh (same pattern as REST API)
+ * Main action handler for get-products-mesh
  * @param {Object} params - Action parameters from OpenWhisk
  * @returns {Promise<Object>} Action response
  */
 async function main(params) {
-  // Extract and validate parameters first for consistent usage
   const actionParams = extractActionParams(params);
 
-  // Handle preflight requests first
   if (params.__ow_method === 'options') {
     return response.success({}, 'Preflight success', {});
   }
 
   try {
-    // Initialize configuration and tracing
     const config = loadConfig(actionParams);
-    await validateInput(actionParams, config);
 
-    // Storage initialization is handled by storeCsv function
+    // Step 1: Fetch enriched products from mesh (already processed)
+    const enrichedProducts = await fetchEnrichedProductsFromMesh(config, actionParams);
 
-    const trace = createTraceContext('get-products-mesh', actionParams);
-    const steps = [];
+    // Check format parameter to determine response type
+    const format = actionParams.format || 'csv';
 
-    // Step 1: Validate input (reused)
-    steps.push(formatStepMessage('validate-input', 'success'));
+    if (format === 'json') {
+      return response.success(
+        {
+          products: enrichedProducts,
+          total_count: enrichedProducts.length,
+          message:
+            'Successfully fetched ' +
+            enrichedProducts.length +
+            ' products with category and inventory data',
+          status: 'success',
+          steps: [
+            'Successfully validated Commerce API credentials and mesh configuration',
+            `Successfully fetched and consolidated ${enrichedProducts.length} products with category and inventory data`,
+            `Successfully transformed ${enrichedProducts.length} products for export`,
+          ],
+          performance: {
+            processedProducts: enrichedProducts.length,
+            apiCalls: 1,
+            method: 'API Mesh',
+          },
+        },
+        'Product data retrieved successfully',
+        {}
+      );
+    }
 
-    // Step 2: Fetch and enrich products (API Mesh version)
-    const products = await traceStep(trace, 'fetch-products-mesh', async () => {
-      return await fetchProductsFromMesh(actionParams, config);
-    });
-    steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
+    // Default CSV format
+    // Step 2: Create CSV
+    const csvData = await createCsv(enrichedProducts);
 
-    // Step 3: Products are already built by REST API, just pass through
-    const builtProducts = products;
-    steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
+    // Step 3: Store CSV
+    const storageResult = await storeCsv(csvData, actionParams);
 
-    // Step 4: Create CSV (reused)
-    const csvData = await traceStep(trace, 'create-csv', async () => {
-      return await createCsv(builtProducts);
-    });
-    steps.push(formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
-
-    // Step 5: Store CSV (reused)
-    const storageResult = await traceStep(trace, 'store-csv', async () => {
-      return await storeCsv(csvData, actionParams);
-    });
-
-    // Check if storage failed
     if (!storageResult.stored) {
       throw new Error(
         `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`
       );
     }
 
-    steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
-
     return response.success(
       {
         message: 'Product export completed successfully',
-        steps,
+        steps: [
+          'Successfully validated Commerce API credentials and mesh configuration',
+          `Successfully fetched and consolidated ${enrichedProducts.length} products with category and inventory data`,
+          `Successfully transformed ${enrichedProducts.length} products for export`,
+          `Successfully generated CSV file (${formatFileSize(csvData.stats.originalSize)})`,
+          `Successfully stored CSV file as ${storageResult.fileName} (${formatFileSize(csvData.stats.originalSize)})`,
+        ],
         downloadUrl: storageResult.downloadUrl,
         storage: {
           provider: storageResult.storageType,
@@ -227,19 +186,17 @@ async function main(params) {
           properties: storageResult.properties,
         },
         performance: {
-          processedProducts: builtProducts.length,
-          apiCalls: 1, // API Mesh consolidates many calls into 1
-          method: 'REST API', // Keep same as REST API for parity
+          processedProducts: enrichedProducts.length,
+          apiCalls: 1,
+          method: 'API Mesh',
         },
       },
       'Product export completed',
-      actionParams
+      {}
     );
   } catch (error) {
-    return response.error(error, actionParams);
+    return response.error(error, {});
   }
 }
 
-module.exports = {
-  main,
-};
+module.exports = { main };
