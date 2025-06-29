@@ -12,29 +12,33 @@ try {
   const template = fs.readFileSync(templatePath, 'utf8');
 
   // Load the full application configuration for the staging environment by default
-  const config = loadConfig({ NODE_ENV: 'staging' });
+  const config = loadConfig();
 
-  // Extract only the necessary properties for the mesh resolver
+  // Extract mesh configuration properties for injection into resolver
   const meshConfig = {
-    commerce: {
-      baseUrl: config.commerce.baseUrl,
-      paths: {
-        products: config.commerce.paths.products,
-      },
+    pagination: {
+      defaultPageSize: config.mesh.pagination.defaultPageSize,
+      maxPages: config.mesh.pagination.maxPages,
     },
-    mesh: {
-      timeout: config.mesh.timeout,
-      retries: config.mesh.retries,
+    batching: {
+      categories: config.mesh.batching.categories,
+      inventory: config.mesh.batching.inventory,
     },
+    timeout: config.mesh.timeout,
+    retries: config.mesh.retries,
   };
 
-  // Replace the placeholder in the template with the stringified config object
-  const finalResolver = template.replace('__MESH_CONFIG__', JSON.stringify(meshConfig, null, 2));
+  // Replace all instances of the placeholder with the stringified config object
+  const finalResolver = template.replace(/__MESH_CONFIG__/g, JSON.stringify(meshConfig, null, 2));
 
   // Write the final content to mesh-resolvers.js
   fs.writeFileSync(resolverPath, finalResolver);
 
   console.log('✅ Successfully generated mesh-resolvers.js from template');
+  console.log(`   - Default page size: ${meshConfig.pagination.defaultPageSize}`);
+  console.log(`   - Max pages: ${meshConfig.pagination.maxPages}`);
+  console.log(`   - Category batch size: ${meshConfig.batching.categories}`);
+  console.log(`   - Inventory batch size: ${meshConfig.batching.inventory}`);
 } catch (error) {
   console.error('❌ Error generating mesh-resolvers.js:', error.message);
   process.exit(1);
