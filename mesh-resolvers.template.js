@@ -296,10 +296,8 @@ async function fetchCategoriesFromSource(context, categoryIds) {
 
     await Promise.all(categoryPromises);
 
-    // Add delay between batches (like REST API)
-    if (i + batchSize < categoryIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, requestDelay));
-    }
+    // Note: setTimeout not supported in API Mesh environment
+    // Removed request delay - API Mesh handles rate limiting internally
   }
 
   return categoryMap;
@@ -373,10 +371,8 @@ async function fetchInventoryFromSource(context, skus) {
 
     await Promise.all(inventoryPromises);
 
-    // Add delay between batches (like REST API)
-    if (i + batchSize < skus.length) {
-      await new Promise((resolve) => setTimeout(resolve, requestDelay));
-    }
+    // Note: setTimeout not supported in API Mesh environment
+    // Removed request delay - API Mesh handles rate limiting internally
   }
 
   return inventoryMap;
