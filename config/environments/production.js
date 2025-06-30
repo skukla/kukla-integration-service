@@ -51,12 +51,14 @@ const productionOverrides = {
     timeout: 30000,
     retries: 3,
     pagination: {
-      defaultPageSize: 300, // Optimized based on performance testing
+      defaultPageSize: 100, // Optimized: 7.0s vs 7.9s with 300 (batch testing)
       maxPages: 25,
     },
     batching: {
       categories: 20, // Larger category batches for production
-      inventory: 50, // Larger inventory batches for production
+      inventory: 20, // Optimized from REST API production settings
+      maxConcurrent: 10, // From REST API production optimization
+      requestDelay: 100, // From REST API production optimization (ms)
     },
   },
   testing: {

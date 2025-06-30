@@ -259,13 +259,17 @@ async function fetchCategoriesFromSource(context, categoryIds) {
   // Use existing Commerce configuration
   const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
 
-  // Batch process categories using configured batch size
+  // Batch process categories using optimized batch size (like REST API)
   const meshConfig = __MESH_CONFIG__;
   const batchSize = meshConfig.batching.categories;
+  const maxConcurrent = meshConfig.batching.maxConcurrent || 15; // From REST API optimization
+  const requestDelay = meshConfig.batching.requestDelay || 75; // From REST API optimization
+
   for (let i = 0; i < categoryIds.length; i += batchSize) {
     const batch = categoryIds.slice(i, i + batchSize);
 
-    const categoryPromises = batch.map(async (categoryId) => {
+    // Process with controlled concurrency (like REST API processConcurrently)
+    const categoryPromises = batch.slice(0, maxConcurrent).map(async (categoryId) => {
       try {
         // Use existing category endpoint pattern: /categories/:id
         const url = commerceBaseUrl + '/rest/V1/categories/' + categoryId;
@@ -291,6 +295,11 @@ async function fetchCategoriesFromSource(context, categoryIds) {
     });
 
     await Promise.all(categoryPromises);
+
+    // Add delay between batches (like REST API)
+    if (i + batchSize < categoryIds.length) {
+      await new Promise((resolve) => setTimeout(resolve, requestDelay));
+    }
   }
 
   return categoryMap;
@@ -311,13 +320,17 @@ async function fetchInventoryFromSource(context, skus) {
   // Use existing Commerce configuration
   const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
 
-  // Batch process inventory using configured batch size
+  // Batch process inventory using optimized batch size (like REST API)
   const meshConfig = __MESH_CONFIG__;
   const batchSize = meshConfig.batching.inventory;
+  const maxConcurrent = meshConfig.batching.maxConcurrent || 15; // From REST API optimization
+  const requestDelay = meshConfig.batching.requestDelay || 75; // From REST API optimization
+
   for (let i = 0; i < skus.length; i += batchSize) {
     const batch = skus.slice(i, i + batchSize);
 
-    const inventoryPromises = batch.map(async (sku) => {
+    // Process with controlled concurrency (like REST API processConcurrently)
+    const inventoryPromises = batch.slice(0, maxConcurrent).map(async (sku) => {
       try {
         // Use existing stock item endpoint pattern with search criteria
         const queryParams = new URLSearchParams({
@@ -359,6 +372,11 @@ async function fetchInventoryFromSource(context, skus) {
     });
 
     await Promise.all(inventoryPromises);
+
+    // Add delay between batches (like REST API)
+    if (i + batchSize < skus.length) {
+      await new Promise((resolve) => setTimeout(resolve, requestDelay));
+    }
   }
 
   return inventoryMap;
