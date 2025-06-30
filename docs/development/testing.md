@@ -83,39 +83,62 @@ npm run test:action -- actions/backend/get-products
 
 ## Performance Testing
 
-### **Staging Performance Tests**
+### **Unified Performance Framework**
+
+The project uses a comprehensive performance testing framework with multiple scenarios:
 
 ```bash
-# Run all performance tests in staging
-npm run test:perf
+# List all available scenarios
+npm run test:perf:list
 
-# This tests:
-# - Action execution time
-# - Memory usage
-# - Response size
-# - Commerce API response times
-# - File operation performance
+# Available scenarios:
+# - rest-api-baseline: REST API performance baseline
+# - mesh-baseline: API Mesh performance baseline  
+# - rest-vs-mesh: Direct performance comparison
+# - mesh-analysis: Detailed step-by-step breakdown
+# - mesh-batching: Batch size optimization
+# - mesh-concurrent: Load testing
+# - mesh-regression: Regression detection
+```
+
+### **Common Performance Tests**
+
+```bash
+# Quick baseline tests
+npm run test:perf -- --scenario rest-api-baseline
+npm run test:perf -- --scenario mesh-baseline
+
+# Performance comparison (REST vs Mesh)
+npm run test:perf:compare
+
+# Detailed mesh analysis with step-by-step timing
+npm run test:perf:mesh
+
+# Batch optimization testing
+npm run test:perf:batch
 ```
 
 ### **Production Performance Tests**
 
 ```bash
-# Run performance tests in production (use carefully!)
+# Run tests against production environment
 npm run test:perf:prod
 
-# Recommended: Run with limited scope
-npm run test:perf:prod -- --light-mode
+# Specific production scenarios
+npm run test:perf:prod -- --scenario mesh-baseline
+npm run test:perf:prod -- --scenario rest-vs-mesh
 ```
 
-### **Performance Metrics**
+### **Performance Metrics Tracked**
 
-The performance tests measure:
+The unified framework measures:
 
-- **Action Execution Time**: Time from invocation to response
-- **Memory Usage**: Peak memory consumption during execution
-- **Commerce API Latency**: Response times from Adobe Commerce
-- **File Operation Speed**: Upload/download/delete performance
-- **Concurrent Request Handling**: Multiple simultaneous requests
+- **Execution Time**: Total action duration with baseline comparison
+- **Memory Usage**: Peak memory consumption during processing
+- **API Call Analysis**: Count and efficiency of Commerce API calls
+- **Step-by-Step Timing**: Detailed breakdown (Product Fetch, Parallel Fetch, etc.)
+- **Bottleneck Identification**: Automatic detection of performance issues
+- **Regression Detection**: Comparison against historical baselines
 
 ### **Performance Thresholds**
 
