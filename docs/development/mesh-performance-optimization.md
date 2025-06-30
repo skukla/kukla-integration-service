@@ -76,8 +76,11 @@ mesh: {
 ### Production Monitoring Tool
 
 ```bash
-# Detailed performance analysis
-node scripts/test-mesh-analysis.js
+# Detailed performance analysis (unified framework)
+npm run test:perf:mesh
+
+# Alternative comprehensive analysis
+npm run test:perf -- --scenario mesh-analysis --analysis
 ```
 
 **Provides:**
@@ -115,11 +118,17 @@ node scripts/test-mesh-analysis.js
 ### Debug Commands
 
 ```bash
-# Performance comparison
-npm run test:mesh:perf
+# Performance comparison (REST vs Mesh)
+npm run test:perf:compare
 
-# Detailed analysis  
-node scripts/test-mesh-analysis.js
+# Detailed mesh analysis  
+npm run test:perf:mesh
+
+# Batch optimization testing
+npm run test:perf:batch
+
+# List all available scenarios
+npm run test:perf:list
 
 # Mesh deployment
 npm run deploy:mesh

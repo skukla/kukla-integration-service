@@ -278,8 +278,33 @@ await storeCsv(csvData, config, storage); // Wrong - 3 params instead of 2
 
 - Use the existing test scripts (`npm run test:action`)
 - Test actions individually before integration
-- Use performance testing scripts for optimization
+- Use unified performance testing framework (npm run test:perf:*) for optimization and analysis
 - Test in staging environment before production
+
+### Performance Testing Framework
+
+**CRITICAL: Use Unified Framework for All Performance Testing**
+
+Always use the comprehensive performance framework instead of creating ad-hoc scripts:
+
+```bash
+# Preferred: Use unified framework
+npm run test:perf:list      # List scenarios
+npm run test:perf:compare   # REST vs Mesh comparison
+npm run test:perf:mesh      # Detailed analysis
+npm run test:perf:batch     # Batch optimization
+
+# WRONG: Don't create separate performance scripts
+# node scripts/test-mesh-custom.js  # Avoid this pattern
+```
+
+**Performance Testing Rules:**
+
+- **Use existing scenarios**: 8 comprehensive scenarios available (baselines, comparison, analysis, batching)
+- **Extend framework**: Add new scenarios to `src/core/testing/performance/scenarios.js` instead of new scripts
+- **Baseline tracking**: Framework automatically manages historical performance baselines
+- **Clean output**: Professional reporting with proper success/failure detection
+- **Error handling**: Framework includes comprehensive error recovery and validation
 
 ## Code Quality
 
