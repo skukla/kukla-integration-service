@@ -16,7 +16,7 @@
     ],
     "additionalResolvers": ["./mesh-resolvers.js"],
     "additionalTypeDefs": [
-      "type ProductInventory { qty: Float is_in_stock: Boolean } type ProductCategory { id: String! name: String! } type ProductImage { filename: String url: String position: Int roles: [String] } type ProductsPerformance { processedProducts: Int apiCalls: Int method: String executionTime: Float } type EnrichedProduct { sku: String! name: String price: Float qty: Float categories: [ProductCategory] images: [ProductImage] inventory: ProductInventory } type ProductsResponse { products: [EnrichedProduct] total_count: Int message: String status: String performance: ProductsPerformance } extend type Query { mesh_products_enriched(pageSize: Int): ProductsResponse }"
+      "type ProductInventory { qty: Float is_in_stock: Boolean } type ProductCategory { id: String! name: String! } type ProductImage { filename: String url: String position: Int roles: [String] } type ProductsPerformance { processedProducts: Int apiCalls: Int method: String executionTime: Float totalTime: String productFetch: String dataExtraction: String parallelFetch: String dataEnrichment: String productsApiCalls: Int categoriesApiCalls: Int inventoryApiCalls: Int totalApiCalls: Int uniqueCategories: Int productCount: Int skuCount: Int } type EnrichedProduct { sku: String! name: String price: Float qty: Float categories: [ProductCategory] images: [ProductImage] inventory: ProductInventory } type ProductsResponse { products: [EnrichedProduct] total_count: Int message: String status: String performance: ProductsPerformance } extend type Query { mesh_products_enriched(pageSize: Int): ProductsResponse }"
     ]
   }
 }

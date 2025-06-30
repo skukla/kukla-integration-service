@@ -153,7 +153,24 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
         total_count
         message
         status
-        performance { processedProducts apiCalls method executionTime }
+        performance { 
+          processedProducts 
+          apiCalls 
+          method 
+          executionTime
+          totalTime
+          productFetch
+          dataExtraction
+          parallelFetch
+          dataEnrichment
+          productsApiCalls
+          categoriesApiCalls
+          inventoryApiCalls
+          totalApiCalls
+          uniqueCategories
+          productCount
+          skuCount
+        }
       }
     }
   `;
@@ -186,6 +203,11 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
     throw new Error(`Mesh data consolidation error: ${meshData.message}`);
   }
 
+  // Store performance data globally for detailed logging
+  if (meshData.performance && meshData.performance.totalTime) {
+    global.lastMeshPerformance = meshData.performance;
+  }
+
   return meshData.products || [];
 }
 
@@ -216,6 +238,31 @@ async function main(params) {
       return await fetchEnrichedProductsFromMesh(config, actionParams);
     });
     steps.push(formatStepMessage('fetch-mesh', 'success', { count: enrichedProducts.length }));
+
+    // Log detailed performance data from mesh (if available in global context)
+    if (global.lastMeshPerformance) {
+      console.log('🔍 DETAILED MESH PERFORMANCE BREAKDOWN:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`Total Execution Time: ${global.lastMeshPerformance.totalTime}`);
+      console.log('');
+      console.log('Step Breakdown:');
+      console.log(`  Product Fetch:    ${global.lastMeshPerformance.productFetch}`);
+      console.log(`  Data Extraction:  ${global.lastMeshPerformance.dataExtraction}`);
+      console.log(`  Parallel Fetch:   ${global.lastMeshPerformance.parallelFetch}`);
+      console.log(`  Data Enrichment:  ${global.lastMeshPerformance.dataEnrichment}`);
+      console.log('');
+      console.log('API Call Counts:');
+      console.log(`  Products:    ${global.lastMeshPerformance.productsApiCalls} calls`);
+      console.log(`  Categories:  ${global.lastMeshPerformance.categoriesApiCalls} calls`);
+      console.log(`  Inventory:   ${global.lastMeshPerformance.inventoryApiCalls} calls`);
+      console.log(`  Total:       ${global.lastMeshPerformance.totalApiCalls} calls`);
+      console.log('');
+      console.log('Data Points:');
+      console.log(`  Products:         ${global.lastMeshPerformance.productCount}`);
+      console.log(`  Unique Categories: ${global.lastMeshPerformance.uniqueCategories}`);
+      console.log(`  SKUs:             ${global.lastMeshPerformance.skuCount}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    }
 
     // Check format parameter to determine response type
     const format = actionParams.format || 'csv';
