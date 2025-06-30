@@ -64,6 +64,7 @@ function loadConfig(params = {}, options = {}) {
     'commerce.credentials.password': 'COMMERCE_ADMIN_PASSWORD',
     'mesh.endpoint': 'API_MESH_ENDPOINT',
     'mesh.apiKey': 'MESH_API_KEY',
+    'runtime.url': env === 'production' ? 'RUNTIME_URL_PRODUCTION' : 'RUNTIME_URL_STAGING',
     'storage.s3.credentials.accessKeyId': 'AWS_ACCESS_KEY_ID',
     'storage.s3.credentials.secretAccessKey': 'AWS_SECRET_ACCESS_KEY',
   };

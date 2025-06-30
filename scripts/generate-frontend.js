@@ -67,10 +67,10 @@ async function generateFrontend(useSpinners = false) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  // Load configuration
+  // Load configuration with proper environment detection
   const configSpinner = useSpinners ? createSpinner('Loading configuration...') : null;
-  const config = loadConfig();
   const env = detectEnvironment({}, { allowCliDetection: true });
+  const config = loadConfig({ NODE_ENV: env });
   if (configSpinner) {
     await sleep(500); // Give spinner time to spin
     configSpinner.succeed(formatSpinnerSuccess('Configuration loaded'));
@@ -83,6 +83,7 @@ async function generateFrontend(useSpinners = false) {
     runtime: {
       package: config.runtime.package,
       version: config.runtime.version,
+      url: config.runtime.url,
       paths: config.runtime.paths,
       actions: config.runtime.actions,
     },
@@ -105,6 +106,7 @@ async function generateFrontend(useSpinners = false) {
   const urlContent = `/* eslint-disable */
 export const RUNTIME_PACKAGE = '${config.runtime.package}';
 export const RUNTIME_VERSION = '${config.runtime.version}';
+export const RUNTIME_URL = '${config.runtime.url || ''}';
 export const RUNTIME_PATHS = ${JSON.stringify(config.runtime.paths, null, 2)};
 export const RUNTIME_ACTIONS = ${JSON.stringify(config.runtime.actions, null, 2)};
 `;
