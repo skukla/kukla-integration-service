@@ -120,7 +120,44 @@ async function batchCommerceRequests(requests, params = {}) {
   });
 }
 
+/**
+ * Generate admin token using username/password
+ * @param {Object} params - Parameters containing admin credentials
+ * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username
+ * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password
+ * @returns {Promise<string>} Admin bearer token
+ */
+async function getAuthToken(params) {
+  const config = loadConfig(params);
+  const username = params.COMMERCE_ADMIN_USERNAME;
+  const password = params.COMMERCE_ADMIN_PASSWORD;
+
+  if (!username || !password) {
+    throw new Error(
+      'Missing admin credentials: COMMERCE_ADMIN_USERNAME and COMMERCE_ADMIN_PASSWORD required'
+    );
+  }
+
+  const tokenUrl = buildCommerceUrl(config.commerce.baseUrl, '/integration/admin/token');
+
+  const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get admin token: ${response.status} ${response.statusText}`);
+  }
+
+  const token = await response.json();
+  return token; // Returns the bearer token string
+}
+
 module.exports = {
+  getAuthToken,
   makeCommerceRequest,
   batchCommerceRequests,
   createOAuthHeader,

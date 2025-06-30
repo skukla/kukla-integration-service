@@ -7,21 +7,7 @@
           "openapi": {
             "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
             "operationHeaders": {
-              "Authorization": "Bearer {context.headers.x-commerce-token}",
-              "Content-Type": "application/json"
-            }
-          }
-        }
-      },
-      {
-        "name": "commercegraphql",
-        "handler": {
-          "graphql": {
-            "endpoint": "https://citisignal-com774.adobedemo.com/graphql",
-            "operationHeaders": {
-              "X-Api-Key": "{context.headers.x-catalog-api-key}",
-              "Magento-Environment-Id": "{context.headers.x-catalog-environment-id}",
-              "Magento-Store-Code": "{context.headers.x-catalog-store-code}",
+              "Authorization": "Bearer {context.headers['x-commerce-admin-token']}",
               "Content-Type": "application/json"
             }
           }
@@ -30,8 +16,7 @@
     ],
     "additionalResolvers": ["./mesh-resolvers.js"],
     "additionalTypeDefs": [
-      "type MeshProductsFull { products: [JSON] total_count: Int message: String status: String }",
-      "extend type Query { mesh_products_full(pageSize: Int): MeshProductsFull }"
+      "type ProductInventory { qty: Float is_in_stock: Boolean } type ProductCategory { id: String! name: String! } type ProductImage { filename: String url: String position: Int roles: [String] } type ProductsPerformance { processedProducts: Int apiCalls: Int method: String executionTime: Float } type EnrichedProduct { sku: String! name: String price: Float qty: Float categories: [ProductCategory] images: [ProductImage] inventory: ProductInventory } type ProductsResponse { products: [EnrichedProduct] total_count: Int message: String status: String performance: ProductsPerformance } extend type Query { mesh_products_enriched(pageSize: Int): ProductsResponse }"
     ]
   }
 }

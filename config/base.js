@@ -73,6 +73,18 @@ module.exports = {
       'get-products-mesh': 'get-products-mesh',
     },
   },
+  mesh: {
+    timeout: 30000,
+    retries: 3,
+    pagination: {
+      defaultPageSize: 100,
+      maxPages: 50,
+    },
+    batching: {
+      categories: 10,
+      inventory: 20,
+    },
+  },
   testing: {
     timeout: 30000,
     retries: 3,

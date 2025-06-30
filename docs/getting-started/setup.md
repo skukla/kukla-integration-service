@@ -250,7 +250,7 @@ npm run deploy:prod
 ```bash
 # Test backend actions (auto-loads Commerce config and credentials)
 npm run test:action get-products        # REST API export method
-npm run test:action get-products-mesh   # API Mesh export method (HTTP Bridge)
+npm run test:action get-products-mesh   # API Mesh export method (True Mesh)
 
 # Test file operations
 npm run test:action download-file
@@ -269,11 +269,11 @@ npm run test:action upload-file
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
 │   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # HTTP Bridge resolvers
+│   └── mesh-resolvers.js          # True Mesh Pattern resolvers
 ├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
 │   ├── backend/                   # API endpoints - your main backend logic
 │   │   ├── get-products/          # REST API product export
-│   │   ├── get-products-mesh/     # API Mesh product export (HTTP Bridge)
+│   │   ├── get-products-mesh/     # API Mesh product export (True Mesh)
 │   │   ├── download-file/
 │   │   └── delete-file/
 │   └── frontend/                  # HTMX response handlers
@@ -289,7 +289,7 @@ kukla-integration-service/
 └── 📚 docs/                       # This comprehensive documentation
 ```
 
-> **New Features**: API Mesh integration with HTTP Bridge pattern for GraphQL consolidation. See [API Mesh Integration Guide](../development/api-mesh-integration.md) for details.
+> **New Features**: API Mesh integration with True Mesh pattern for GraphQL consolidation. See [API Mesh Integration Guide](../development/api-mesh-integration.md) for details.
 
 ## Development Best Practices
 

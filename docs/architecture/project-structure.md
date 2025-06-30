@@ -33,7 +33,7 @@ kukla-integration-service/
 │
 ├── 🌐 API Mesh Integration
 │   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # Custom GraphQL resolvers (HTTP Bridge)
+│   └── mesh-resolvers.js          # Custom GraphQL resolvers (True Mesh)
 │
 ├── ⚙️ Actions (Adobe I/O Runtime)
 │   ├── backend/                   # Backend serverless functions
@@ -76,7 +76,7 @@ actions/
 │   │       ├── storeCsv.js       # File storage
 │   │       └── validateInput.js  # Input validation
 │   │
-│   ├── get-products-mesh/        # Product export via API Mesh (HTTP Bridge)
+│   ├── get-products-mesh/        # Product export via API Mesh (True Mesh)
 │   │   ├── index.js              # Main action (reuses get-products steps)
 │   │   └── steps/                # Mesh-specific steps
 │   │       └── fetchProductsFromMesh.js  # GraphQL mesh query
@@ -99,7 +99,7 @@ actions/
 
 - **Step Functions**: Reusable functions in `/steps/` directories
 - **DRY Principle**: Shared steps between similar actions (`buildProducts`, `createCsv`, `storeCsv`)
-- **HTTP Bridge**: API Mesh actions delegate to REST actions via HTTP calls
+- **True Mesh**: API Mesh actions use embedded resolvers to consolidate Commerce APIs
 - **Response Structure**: Consistent response format with steps, storage, and download URLs
 
 ## Source Code (`src/`)
@@ -152,7 +152,7 @@ src/
 - **Modular Design**: Each domain has its own directory
 - **Configuration System**: Environment-aware with schema validation
 - **Storage Abstraction**: Provider-agnostic file operations
-- **HTTP Bridge Support**: URL management for mesh-to-REST communication
+- **True Mesh Support**: URL management for Commerce API consolidation
 
 ## Frontend Assets (`web-src/`)
 
@@ -274,13 +274,13 @@ scripts/
 
 ```text
 mesh.json                         # API Mesh configuration
-mesh-resolvers.js                 # HTTP Bridge resolvers (~60 lines)
+mesh-resolvers.js                 # True Mesh Pattern resolvers (auto-generated)
 ```
 
 ### API Mesh Architecture
 
-- **HTTP Bridge Pattern**: Resolvers delegate to existing REST actions
-- **Code Reuse**: 78% reduction from embedded logic approach
+- **True Mesh Pattern**: Resolvers consolidate data from multiple Commerce APIs
+- **Performance**: Consolidates 200+ API calls into single GraphQL query
 - **Perfect Parity**: Identical CSV output from REST and mesh methods
 - **Template Literal Workaround**: String concatenation for compatibility
 
@@ -300,7 +300,7 @@ docs/
 │   ├── testing.md                # Testing strategies and tools
 │   ├── frontend.md               # HTMX frontend development
 │   ├── design-system.md          # UI design system and components
-│   ├── api-mesh-integration.md   # API Mesh HTTP Bridge pattern
+│   ├── api-mesh-integration.md   # API Mesh True Mesh pattern
 │   ├── configuration.md          # Configuration system guide
 │   ├── url-management.md         # URL building patterns
 │   └── schemas.md                # Schema validation system
@@ -308,7 +308,7 @@ docs/
 ├── architecture/                 # Architectural patterns and decisions
 │   ├── adobe-app-builder.md      # App Builder platform guide
 │   ├── htmx-integration.md       # HTMX frontend architecture
-│   ├── http-bridge-pattern.md    # HTTP Bridge architecture pattern
+│   ├── true-mesh-pattern.md    # True Mesh architecture pattern
 │   ├── project-structure.md      # This document
 │   └── commerce-integration.md   # Commerce API integration
 │
@@ -344,7 +344,7 @@ docs/
 ### 1. **Single Source of Truth**
 
 - Configuration: One config system for backend and frontend
-- Business Logic: REST actions are source of truth, mesh delegates via HTTP Bridge
+- Business Logic: REST actions are source of truth, embedded resolvers consolidate multiple Commerce APIs
 - Step Functions: Reusable functions prevent code duplication
 
 ### 2. **Environment Awareness**
@@ -369,7 +369,7 @@ docs/
 ### 5. **Performance Optimization**
 
 - API Mesh consolidates 200+ Commerce calls to 1 GraphQL query
-- HTTP Bridge adds <1% overhead for 78% code reduction
+- True Mesh consolidates 200+ API calls into single GraphQL query
 - Intelligent caching and compression
 - Efficient file operations
 
