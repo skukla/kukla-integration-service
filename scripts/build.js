@@ -13,6 +13,8 @@ const { generateFrontend } = require('./generate-frontend');
 const { validateSchemas } = require('./test-schemas');
 const { detectEnvironment } = require('../src/core/environment');
 
+// Mesh status will be checked during build for potential use by npm start
+
 const execAsync = promisify(exec);
 
 // Helper to capitalize first letter
@@ -40,6 +42,8 @@ function createSpinner(text) {
 function formatSpinnerSuccess(message) {
   return chalk.green(message);
 }
+
+// Mesh status checking is handled by start-with-mesh.js for npm start
 
 /**
  * Main build function
