@@ -14,7 +14,7 @@ const scenarios = {
     },
     expectedMetrics: {
       maxExecutionTime: 5000, // Allow reasonable time for REST API
-      maxMemoryUsage: 50000000, // 50MB in bytes
+      maxMemory: 50000000, // 50MB in bytes
     },
   },
 
@@ -28,7 +28,7 @@ const scenarios = {
     },
     expectedMetrics: {
       maxExecutionTime: 5000, // Allow reasonable time for mesh
-      maxMemoryUsage: 50000000, // 50MB in bytes (reasonable for mesh processing)
+      maxMemory: 50000000, // 50MB in bytes (reasonable for mesh processing)
     },
   },
 
