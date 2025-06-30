@@ -1,3 +1,4 @@
+/* GENERATION_METADATA: {"templateHash":"dd2969d8d7b29e0bb047422f60c177457ad1dc48d3cc6ebc221abbd09ae7b3ee","configHash":"b69080958926bda6b9ad5dcea164e50e83fd7bdde3261514f90517b9186b7871","generatedAt":"2025-06-29T19:56:44.984Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern
@@ -23,7 +24,18 @@ module.exports = {
             }
 
             // Configuration from injected config
-            const meshConfig = __MESH_CONFIG__;
+            const meshConfig = {
+              pagination: {
+                defaultPageSize: 200,
+                maxPages: 25,
+              },
+              batching: {
+                categories: 20,
+                inventory: 50,
+              },
+              timeout: 30000,
+              retries: 3,
+            };
             const pageSize = args.pageSize || meshConfig.pagination.defaultPageSize;
             const maxPages = args.maxPages || meshConfig.pagination.maxPages;
 
@@ -260,7 +272,18 @@ async function fetchCategoriesFromSource(context, categoryIds) {
   const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
 
   // Batch process categories using configured batch size
-  const meshConfig = __MESH_CONFIG__;
+  const meshConfig = {
+    pagination: {
+      defaultPageSize: 200,
+      maxPages: 25,
+    },
+    batching: {
+      categories: 20,
+      inventory: 50,
+    },
+    timeout: 30000,
+    retries: 3,
+  };
   const batchSize = meshConfig.batching.categories;
   for (let i = 0; i < categoryIds.length; i += batchSize) {
     const batch = categoryIds.slice(i, i + batchSize);
@@ -312,7 +335,18 @@ async function fetchInventoryFromSource(context, skus) {
   const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
 
   // Batch process inventory using configured batch size
-  const meshConfig = __MESH_CONFIG__;
+  const meshConfig = {
+    pagination: {
+      defaultPageSize: 200,
+      maxPages: 25,
+    },
+    batching: {
+      categories: 20,
+      inventory: 50,
+    },
+    timeout: 30000,
+    retries: 3,
+  };
   const batchSize = meshConfig.batching.inventory;
   for (let i = 0; i < skus.length; i += batchSize) {
     const batch = skus.slice(i, i + batchSize);

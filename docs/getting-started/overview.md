@@ -27,7 +27,7 @@ The Kukla Integration Service is an Adobe App Builder application that provides 
 ├─────────────────────────────────────────────────────────────┤
 │                    API Mesh Integration                    │
 │  ├── mesh.json            │  └── mesh-resolvers.js         │
-│  │  (GraphQL config)      │     (HTTP Bridge pattern)     │
+│  │  (GraphQL config)      │     (True Mesh pattern)       │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -49,8 +49,8 @@ The Kukla Integration Service is an Adobe App Builder application that provides 
 ### **API Integration Stack**
 
 - **REST API**: Traditional Commerce API integration (200+ calls)
-- **API Mesh**: GraphQL consolidation using HTTP Bridge pattern (1 call)
-- **HTTP Bridge Pattern**: 78% code reduction while maintaining perfect parity
+- **API Mesh**: GraphQL consolidation using True Mesh pattern (1 call)
+- **True Mesh Pattern**: Consolidates 200+ API calls into single GraphQL query
 - **Configuration System**: Environment-aware with schema validation
 
 ### **Frontend Stack**
@@ -93,7 +93,7 @@ The Kukla Integration Service is an Adobe App Builder application that provides 
 
 ### 🔧 **Developer Experience**
 
-- **HTTP Bridge Pattern**: Eliminates code duplication in API Mesh integration
+- **True Mesh Pattern**: Consolidates multiple Commerce APIs into unified GraphQL schema
 - **Step Functions**: Reusable action components following DRY principles
 - **Schema Validation**: Build-time configuration validation
 - **Comprehensive Testing**: Action testing with automatic configuration
@@ -136,7 +136,7 @@ For complete project structure details, see the [**Project Structure Guide**](..
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
 │   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # HTTP Bridge resolvers (~60 lines)
+│   └── mesh-resolvers.js          # True Mesh Pattern resolvers
 ├── ⚙️ actions/                    # Adobe I/O Runtime actions
 │   ├── backend/                   # API endpoints with step functions
 │   └── frontend/                  # HTMX response handlers
@@ -172,7 +172,7 @@ The service supports multiple environments with schema-validated configuration:
 ### **API Mesh Integration**
 
 - **Consolidation**: 200+ Commerce API calls reduced to 1 GraphQL query
-- **HTTP Bridge**: <1% performance overhead for 78% code reduction
+- **True Mesh**: Consolidates 200+ API calls into single GraphQL query
 - **Perfect Parity**: Identical output between REST and mesh methods
 
 ### **Optimization Features**
@@ -190,12 +190,12 @@ The service supports multiple environments with schema-validated configuration:
 
 ## Integration Patterns
 
-### **API Mesh with HTTP Bridge**
+### **API Mesh with True Mesh Pattern**
 
 - **[API Mesh Integration](../development/api-mesh-integration.md)** - Complete implementation guide
-- **[HTTP Bridge Pattern](../architecture/http-bridge-pattern.md)** - Architecture and benefits
+- **[True Mesh Pattern](../architecture/true-mesh-pattern.md)** - Architecture and benefits
 - **Performance**: Single GraphQL query replaces 200+ REST calls
-- **Maintenance**: Zero code duplication through HTTP delegation
+- **Architecture**: Embedded resolvers consolidate data from multiple Commerce APIs
 
 ### **Configuration System**
 
@@ -209,7 +209,7 @@ The service supports multiple environments with schema-validated configuration:
 
 - **[Adobe App Builder Platform](../architecture/adobe-app-builder.md)** - Platform overview and patterns
 - **[HTMX Integration](../architecture/htmx-integration.md)** - Frontend architecture
-- **[HTTP Bridge Pattern](../architecture/http-bridge-pattern.md)** - API Mesh integration pattern
+- **[True Mesh Pattern](../architecture/true-mesh-pattern.md)** - API Mesh integration pattern
 - **[Project Structure](../architecture/project-structure.md)** - Complete file organization
 - **[Commerce Integration](../architecture/commerce-integration.md)** - API integration patterns
 
@@ -222,4 +222,4 @@ The service supports multiple environments with schema-validated configuration:
 
 ---
 
-_This overview provides a high-level understanding of the project including our latest API Mesh integration and HTTP Bridge pattern. For detailed implementation guides, see the specific documentation sections._
+_This overview provides a high-level understanding of the project including our latest API Mesh integration and True Mesh pattern. For detailed implementation guides, see the specific documentation sections._

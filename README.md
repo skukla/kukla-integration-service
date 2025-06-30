@@ -107,7 +107,7 @@ For a comprehensive overview of the project file structure, see the [**Project S
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
 │   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # HTTP Bridge resolvers
+│   └── mesh-resolvers.js          # True Mesh Pattern resolvers
 ├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
 │   ├── backend/                   # API endpoints (get-products, get-products-mesh)
 │   └── frontend/                  # HTMX response handlers (browse-files)
@@ -123,7 +123,7 @@ kukla-integration-service/
 
 **Key Architecture Features:**
 
-- **HTTP Bridge Pattern**: API Mesh delegates to REST actions (78% code reduction)
+- **True Mesh Pattern**: API Mesh consolidates data from multiple Commerce APIs into single GraphQL query
 - **Step Functions**: Reusable action components (DRY principle)
 - **Configuration System**: Environment-aware with schema validation
 - **Progressive Enhancement**: HTMX-first frontend with minimal JavaScript
