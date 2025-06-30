@@ -168,8 +168,12 @@ function createPerformanceTester(options = {}) {
 
       if (onProgress) await onProgress(`Testing ${action}...`);
 
-      const result = await executeLocalTest(actionScenario, onProgress);
-      results[action] = result;
+      try {
+        const result = await executeLocalTest(actionScenario, onProgress);
+        results[action] = result;
+      } catch (error) {
+        results[action] = { error: error.message, executionTime: 0 };
+      }
     }
 
     // Calculate comparison metrics
@@ -177,9 +181,23 @@ function createPerformanceTester(options = {}) {
     const first = results[firstAction];
     const second = results[secondAction];
 
+    // Check if both tests succeeded
+    if (first.error || second.error || !first.executionTime || !second.executionTime) {
+      return {
+        individual: results,
+        comparison: {
+          error: 'One or both tests failed',
+          withinTolerance: false,
+        },
+      };
+    }
+
     const percentDifference =
       ((second.executionTime - first.executionTime) / first.executionTime) * 100;
     const winner = first.executionTime < second.executionTime ? firstAction : secondAction;
+
+    const tolerance = scenario.comparison?.tolerancePercent || 20;
+    const withinTolerance = Math.abs(percentDifference) <= tolerance;
 
     return {
       individual: results,
@@ -187,8 +205,7 @@ function createPerformanceTester(options = {}) {
         percentDifference: Math.abs(percentDifference),
         fasterAction: winner,
         slowerAction: winner === firstAction ? secondAction : firstAction,
-        withinTolerance:
-          Math.abs(percentDifference) <= (scenario.comparison?.tolerancePercent || 20),
+        withinTolerance,
       },
     };
   }
@@ -359,16 +376,31 @@ async function testScenario(scenario, options = {}) {
     // Check if test actually succeeded (has execution time and no error)
     const testSucceeded = metrics && metrics.executionTime > 0 && !metrics.error;
 
-    const passed =
-      testSucceeded &&
-      (scenario.expectedMetrics
-        ? Object.entries(scenario.expectedMetrics).every(([key, expected]) => {
-            const actual = metrics[key];
-            if (key.startsWith('max')) return actual <= expected;
-            if (key.startsWith('min')) return actual >= expected;
-            return true;
-          })
-        : true);
+    let metricsValidation = true;
+    if (scenario.expectedMetrics) {
+      metricsValidation = Object.entries(scenario.expectedMetrics).every(([key, expected]) => {
+        // Map expected metric names to actual metric keys
+        let actualKey = key;
+        if (key === 'maxExecutionTime') actualKey = 'executionTime';
+        if (key === 'maxMemory') actualKey = 'memory';
+        if (key === 'maxMemoryUsage') actualKey = 'memory';
+        if (key === 'minProductCount') actualKey = 'productCount';
+        if (key === 'maxApiCalls') actualKey = 'apiCalls';
+
+        const actual = metrics[actualKey];
+        let passes = true;
+
+        if (key.startsWith('max')) {
+          passes = actual <= expected;
+        } else if (key.startsWith('min')) {
+          passes = actual >= expected;
+        }
+
+        return passes;
+      });
+    }
+
+    const passed = testSucceeded && metricsValidation;
 
     return {
       passed,
