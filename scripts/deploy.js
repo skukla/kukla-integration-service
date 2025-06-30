@@ -181,6 +181,64 @@ async function updateMeshWithRetry(isProd, maxRetries = 3) {
 }
 
 /**
+ * Parse and display deployment URLs from aio app deploy output
+ */
+function displayDeploymentUrls(deployOutput, environment) {
+  if (!deployOutput) {
+    console.log(chalk.yellow('\n⚠️  No deployment output to parse for URLs\n'));
+    return;
+  }
+
+  console.log(chalk.bold.cyan(`\n🌐 Deployment URLs for ${environment}:\n`));
+
+  // Parse different URL patterns from aio app deploy output
+  const lines = deployOutput.split('\n');
+  const urls = [];
+
+  lines.forEach((line) => {
+    // Match various URL patterns that aio app deploy outputs
+    const urlPatterns = [
+      /https:\/\/[^\s]+\.adobeioruntime\.net[^\s]*/g,
+      /https:\/\/[^\s]+\.adobeio-static\.net[^\s]*/g,
+      /https:\/\/[^\s]+\.adobe\.com[^\s]*/g,
+      /Web app URL:\s+(https:\/\/[^\s]+)/i,
+      /Action URL:\s+(https:\/\/[^\s]+)/i,
+      /Runtime URL:\s+(https:\/\/[^\s]+)/i,
+    ];
+
+    urlPatterns.forEach((pattern) => {
+      const matches = line.match(pattern);
+      if (matches) {
+        matches.forEach((url) => {
+          // Clean up the URL (remove trailing punctuation)
+          const cleanUrl = url.replace(/[.,;:!?]+$/, '');
+          if (!urls.includes(cleanUrl)) {
+            urls.push(cleanUrl);
+          }
+        });
+      }
+    });
+  });
+
+  if (urls.length > 0) {
+    urls.forEach((url) => {
+      const icon = url.includes('adobeio-static.net') ? '🌐' : '⚡';
+      const type = url.includes('adobeio-static.net') ? 'Web App' : 'Runtime';
+      console.log(`  ${icon} ${chalk.bold(type)}: ${chalk.blue.underline(url)}`);
+    });
+  } else {
+    console.log(chalk.yellow('  ⚠️  No URLs found in deployment output'));
+    console.log(chalk.gray('  Raw output (last 10 lines):'));
+    const lastLines = lines.slice(-10).filter((line) => line.trim());
+    lastLines.forEach((line) => {
+      console.log(chalk.gray(`    ${line}`));
+    });
+  }
+
+  console.log(''); // Add spacing
+}
+
+/**
  * Main deployment function
  */
 async function deploy() {
@@ -214,8 +272,11 @@ async function deploy() {
     // Step 5: Deploy App Builder actions
     const deploySpinner = createSpinner('Deploying App Builder actions...');
     const deployCommand = isProd ? 'aio app deploy --workspace=Production' : 'aio app deploy';
-    await execAsync(deployCommand);
+    const deployOutput = await execAsync(deployCommand);
     deploySpinner.succeed(formatSpinnerSuccess('App Builder actions deployed'));
+
+    // Parse and display deployment URLs
+    displayDeploymentUrls(deployOutput.stdout, environment);
 
     // Step 6: Update mesh if resolver was regenerated
     if (meshStatus.regenerated) {
