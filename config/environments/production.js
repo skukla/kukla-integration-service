@@ -51,7 +51,7 @@ const productionOverrides = {
     timeout: 30000,
     retries: 3,
     pagination: {
-      defaultPageSize: 200, // Larger batches for production
+      defaultPageSize: 300, // Optimized based on performance testing
       maxPages: 25,
     },
     batching: {

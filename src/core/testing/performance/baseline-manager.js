@@ -4,29 +4,33 @@ const path = require('path');
 const chalk = require('chalk');
 const ora = require('ora');
 
-const { createLazyConfigGetter } = require('../../config/lazy-loader');
+const { loadConfig } = require('../../../../config');
 
 /**
- * Lazy configuration getter for baseline manager
- * @type {Function}
+ * Get baseline configuration from the main config system
+ * @param {Object} params - Action parameters for configuration
+ * @returns {Object} Baseline configuration
  */
-const getBaselineConfig = createLazyConfigGetter('baseline-manager-config', (config) => ({
-  baseline: {
-    maxAgeDays: config.testing?.performance?.baseline?.maxAgeDays || 30,
-  },
-  thresholds: {
-    executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
-    memory: config.testing?.performance?.thresholds?.memory || 100,
-    products: config.testing?.performance?.thresholds?.products || 1000,
-    categories: config.testing?.performance?.thresholds?.categories || 100,
-    compression: config.testing?.performance?.thresholds?.compression || 50,
-    responseTime: {
-      p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
-      p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
+function getBaselineConfig(params = {}) {
+  const config = loadConfig(params);
+  return {
+    baseline: {
+      maxAgeDays: config.testing?.performance?.baseline?.maxAgeDays || 30,
     },
-    errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
-  },
-}));
+    thresholds: {
+      executionTime: config.testing?.performance?.thresholds?.executionTime || 5000,
+      memory: config.testing?.performance?.thresholds?.memory || 100,
+      products: config.testing?.performance?.thresholds?.products || 1000,
+      categories: config.testing?.performance?.thresholds?.categories || 100,
+      compression: config.testing?.performance?.thresholds?.compression || 50,
+      responseTime: {
+        p95: config.testing?.performance?.thresholds?.responseTime?.p95 || 2000,
+        p99: config.testing?.performance?.thresholds?.responseTime?.p99 || 5000,
+      },
+      errorRate: config.testing?.performance?.thresholds?.errorRate || 0.05,
+    },
+  };
+}
 
 /**
  * Creates a baseline manager for performance metrics
