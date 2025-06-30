@@ -52,7 +52,7 @@ const stagingOverrides = {
     timeout: 30000,
     retries: 3,
     pagination: {
-      defaultPageSize: 100, // Optimized: 7.0s vs 7.9s with 300 (batch testing)
+      defaultPageSize: 150, // REVERTED: Back to known working configuration of 150
       maxPages: 25,
     },
     batching: {
