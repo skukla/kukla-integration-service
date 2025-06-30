@@ -35,7 +35,7 @@
         </div>
 
         <!-- Export buttons -->
-        <div class="export-actions">
+        <div class="export-actions-compact" id="export-container">
           <button
             class="btn btn-primary"
             hx-post="./api/v1/web/kukla-integration-service/get-products"
@@ -63,7 +63,7 @@
             data-loading-class="is-loading"
           >
             <span class="btn-label" data-loading-disable>Export via API Mesh</span>
-            <div class="btn-subtitle" data-loading-disable>Consolidated single GraphQL query</div>
+            <div class="btn-subtitle" data-loading-disable>Single GraphQL query</div>
           </button>
         </div>
 

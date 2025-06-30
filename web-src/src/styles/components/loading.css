@@ -104,7 +104,22 @@
 .btn.htmx-request .btn-text,
 .btn.htmx-request .btn-subtitle,
 .btn.htmx-request .btn-label {
-  opacity: 0;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Also hide any elements with data-loading-disable */
+.btn.is-loading [data-loading-disable],
+.btn.htmx-request [data-loading-disable] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Hide button icons (::before pseudo-elements) during loading */
+.btn.is-loading::before,
+.btn.htmx-request::before {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 /* Centered spinner overlay */
@@ -153,8 +168,8 @@
 }
 
 /* Export buttons - larger spinner for better visibility */
-.export-actions .btn.is-loading::after,
-.export-actions .btn.htmx-request::after {
+.export-actions-compact .btn.is-loading::after,
+.export-actions-compact .btn.htmx-request::after {
   width: var(--loading-spinner-size-sm);
   height: var(--loading-spinner-size-sm);
   border-width: var(--spacing-xs);

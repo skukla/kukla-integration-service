@@ -1,74 +1,109 @@
 /* Export Actions Component Styles
- * Uses design system tokens and follows established component patterns
+ * Compact horizontal layout following design system patterns
  */
 
-.export-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ============================================================================
+ * COMPACT HORIZONTAL LAYOUT
+ * Extends base .btn patterns with layout-specific modifications
+ * ============================================================================ */
+
+.export-actions-compact {
+  display: flex;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-lg);
+  justify-content: center;
 }
 
-@media (max-width: 768px) {
-  .export-actions {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-sm);
+@media (max-width: 600px) {
+  .export-actions-compact {
+    flex-direction: column;
+    align-items: center;
   }
 }
 
-/* Export Button Styling - extends .btn base styles */
-.export-actions .btn {
+/* Base Button Extensions - inherits from design system .btn */
+.export-actions-compact .btn {
+  /* Override base button layout for horizontal icon + text */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  gap: var(--spacing-sm);
+  text-align: left;
+
+  /* Size and spacing */
   padding: var(--spacing-md) var(--spacing-lg);
-  width: 100%;
-  min-height: 4rem;
-  text-align: center;
+  min-height: 3.5rem;
+  min-width: 200px;
+
+  /* Design system tokens */
   border-radius: var(--radius-md);
-  border: var(--border-xs) solid transparent;
   font-family: var(--font-family-primary);
-  cursor: pointer;
-  transition: background-color var(--transition-hover);
-  position: relative;
+  border: var(--border-xs) var(--border-solid) transparent;
+
+  /* Performance optimizations from design system */
+  contain: content;
   will-change: transform, box-shadow;
+
+  /* Touch target optimization from design system */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Transitions using design system tokens */
+  transition: all var(--transition-hover);
+
+  /* Elevation following design system patterns */
+  box-shadow: var(--shadow-sm);
 }
 
-.export-actions .btn:hover {
-  /* Subtle hover effect only */
+/* Hover and interaction states using design system patterns */
+.export-actions-compact .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.export-actions .btn:active {
-  transform: var(--transform-initial);
+.export-actions-compact .btn:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
-.export-actions .btn:disabled {
+.export-actions-compact .btn:disabled {
   opacity: var(--button-loading-opacity);
   cursor: not-allowed;
-  transform: var(--transform-initial);
+  transform: none;
+  box-shadow: var(--shadow-sm);
 }
 
-/* Primary Button (REST API) - uses design system primary colors */
-.export-actions .btn-primary {
+/* Icon styling using design system patterns */
+.export-actions-compact .btn::before {
+  content: '⚡'; /* REST API icon */
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+}
+
+.export-actions-compact .btn-secondary::before {
+  content: '🔗'; /* API Mesh icon */
+}
+
+/* Primary Button - uses design system color tokens */
+.export-actions-compact .btn-primary {
   background: linear-gradient(135deg, var(--color-blue-primary) 0%, var(--color-blue-hover) 100%);
   color: var(--color-white);
   border-color: var(--color-blue-hover);
 }
 
-.export-actions .btn-primary:hover {
+.export-actions-compact .btn-primary:hover {
   background: linear-gradient(135deg, var(--color-blue-hover) 0%, var(--color-blue-active) 100%);
   border-color: var(--color-blue-active);
 }
 
-/* Secondary Button (API Mesh) - uses design system success colors */
-.export-actions .btn-secondary {
+/* Secondary Button - uses design system success tokens */
+.export-actions-compact .btn-secondary {
   background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%);
   color: var(--color-white);
   border-color: var(--color-success-hover);
 }
 
-.export-actions .btn-secondary:hover {
+.export-actions-compact .btn-secondary:hover {
   background: linear-gradient(
     135deg,
     var(--color-success-hover) 0%,
@@ -77,90 +112,148 @@
   border-color: var(--color-success-active);
 }
 
-/* Button Text Styling - uses design system typography */
-.export-actions .btn .btn-label {
+/* Button Text - uses design system typography tokens */
+.export-actions-compact .btn .btn-label,
+.export-actions-compact .btn .btn-subtitle {
+  text-align: left;
+  display: block;
+}
+
+.export-actions-compact .btn .btn-label {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-xs);
-  line-height: 1.2;
+  margin: 0 0 2px 0;
+  line-height: var(--line-height-tight);
+  color: inherit;
 }
 
-.export-actions .btn .btn-subtitle {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-regular);
-  opacity: 0.85;
-  line-height: 1.3;
-  margin-top: var(--spacing-xs);
+.export-actions-compact .btn .btn-subtitle {
+  font-size: var(--font-size-xs);
+  margin: 0;
+  opacity: var(--opacity-70);
+  line-height: var(--line-height-normal);
+  color: inherit;
 }
 
-/* Export Section - Fixed height container to prevent jumping */
-.export-section {
+/* ============================================================================
+ * LOADING STATES - Following design system loading patterns
+ * ============================================================================ */
+
+.export-actions-compact .btn {
   position: relative;
-  min-height: 160px; /* Fixed height to accommodate buttons + loader */
 }
 
-/* Export loader - overlay positioning to prevent layout jumping */
-#export-loader {
-  position: absolute;
-  top: 120px; /* Position below buttons */
-  left: 0;
-  right: 0;
-  z-index: 2;
-  margin: 0; /* Remove margin since we're using absolute positioning */
+.export-actions-compact .btn.is-loading,
+.export-actions-compact .btn.htmx-request {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: var(--button-loading-opacity);
 }
 
-/* Legacy export status styles removed - using toast notifications now */
-
-/* Export Method Indicators - Removed (not helpful) */
-
-/* Button loading now uses the unified loading component system */
-
-/* Performance Comparison Styling - enhanced with design system tokens */
-.export-actions .btn-primary .btn-subtitle::after,
-.export-actions .btn-secondary .btn-subtitle::after {
-  content: none;
+/* Hide icons during loading - design system pattern */
+.export-actions-compact .btn.is-loading::before,
+.export-actions-compact .btn.htmx-request::before {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
-/* Focus States - uses design system focus handling */
-.export-actions .btn:focus-visible {
-  outline: var(--border-sm) solid var(--color-focus-ring);
-  outline-offset: var(--spacing-xs);
+/* Loading spinner handled by design system loading.css - just ensure proper inheritance */
+
+/* ============================================================================
+ * ACCESSIBILITY - Following design system patterns
+ * ============================================================================ */
+
+/* Focus States - using design system focus tokens */
+.export-actions-compact .btn:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
-/* Reduced Motion Support */
+/* Reduced Motion - design system pattern */
 @media (prefers-reduced-motion: reduce) {
-  .export-actions .btn {
+  .export-actions-compact .btn {
     transition: none;
   }
 
-  .loader-spinner {
+  .export-actions-compact .btn:hover {
+    transform: none;
+  }
+
+  .export-actions-compact .btn.is-loading::after,
+  .export-actions-compact .btn.htmx-request::after {
     animation: none;
-    border-color: var(--color-blue-primary);
   }
 }
 
-/* High Contrast Mode Support */
+/* High Contrast Mode - design system pattern */
 @media (forced-colors: active) {
-  .export-actions .btn {
-    border: var(--border-xs) solid ButtonBorder;
+  .export-actions-compact .btn {
+    border: var(--border-sm) var(--border-solid) ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
   }
 
-  .export-actions .btn:hover {
+  .export-actions-compact .btn:hover {
     border-color: Highlight;
   }
 
-  .loader {
-    border: var(--border-xs) solid ButtonBorder;
+  .export-actions-compact .btn:focus-visible {
+    outline: var(--border-sm) var(--border-solid) Highlight;
   }
 }
 
-/* Print Styles */
-@media print {
-  .loader-spinner {
-    display: none;
+/* ============================================================================
+ * RESPONSIVE BEHAVIOR - Design system breakpoints
+ * ============================================================================ */
+
+@media (max-width: 480px) {
+  .export-actions-compact .btn {
+    min-width: 180px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    /* Ensure touch target size from design system */
+    min-height: var(--button-touch-target-size);
   }
 
-  .export-actions {
-    gap: var(--spacing-sm);
+  .export-actions-compact .btn .btn-label {
+    font-size: var(--font-size-sm);
+  }
+
+  .export-actions-compact .btn .btn-subtitle {
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* ============================================================================
+ * LAYOUT INTEGRATION - Design system patterns
+ * ============================================================================ */
+
+/* Export Section - using design system sizing tokens */
+.export-section {
+  position: relative;
+  min-height: var(--size-loading-min-height);
+}
+
+/* Export loader - design system positioning */
+#export-loader {
+  position: absolute;
+  top: calc(var(--spacing-3xl) + var(--spacing-lg));
+  left: 0;
+  right: 0;
+  z-index: var(--loading-z-index);
+  margin: 0;
+}
+
+/* Print Styles - design system pattern */
+@media print {
+  .export-actions-compact .btn {
+    background: none !important;
+    color: ButtonText !important;
+    border: var(--border-xs) var(--border-solid) currentColor !important;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .export-actions-compact .btn.is-loading::after {
+    display: none;
   }
 }
