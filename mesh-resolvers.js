@@ -1,4 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"f9c5c553af7009f9e43d0bb42a204ea7e68d8e74017478a7904b022620923568","configHash":"94eeb545424be338940471287c9822a00118a6e8c38d832d9b8bdb7802fee702","generatedAt":"2025-06-30T03:05:07.556Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"b0e219f504ddf1b296ffd6a3eb8007787b7fa62a0a34c7436ae87a9bcabb7983","configHash":"94eeb545424be338940471287c9822a00118a6e8c38d832d9b8bdb7802fee702","generatedAt":"2025-06-30T03:10:59.020Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern
@@ -323,10 +323,8 @@ async function fetchCategoriesFromSource(context, categoryIds) {
 
     await Promise.all(categoryPromises);
 
-    // Add delay between batches (like REST API)
-    if (i + batchSize < categoryIds.length) {
-      await new Promise((resolve) => setTimeout(resolve, requestDelay));
-    }
+    // Note: setTimeout not supported in API Mesh environment
+    // Removed request delay - API Mesh handles rate limiting internally
   }
 
   return categoryMap;
@@ -413,10 +411,8 @@ async function fetchInventoryFromSource(context, skus) {
 
     await Promise.all(inventoryPromises);
 
-    // Add delay between batches (like REST API)
-    if (i + batchSize < skus.length) {
-      await new Promise((resolve) => setTimeout(resolve, requestDelay));
-    }
+    // Note: setTimeout not supported in API Mesh environment
+    // Removed request delay - API Mesh handles rate limiting internally
   }
 
   return inventoryMap;
