@@ -1,8 +1,33 @@
-# API Mesh Integration with HTTP Bridge Pattern
+# API Mesh Integration with True Mesh Pattern
 
 ## Overview
 
-This document describes the implementation of Adobe App Builder API Mesh integration using the **HTTP Bridge Pattern** to consolidate Commerce API calls while eliminating code duplication and maintaining perfect parity with existing REST API functionality.
+This document describes the implementation of Adobe App Builder API Mesh integration using the **True Mesh Pattern** to consolidate Commerce API calls using embedded custom resolvers that fetch data directly from multiple Commerce APIs within a single GraphQL query.
+
+## Architecture
+
+The True Mesh Pattern consolidates data within the mesh itself:
+
+```text
+User Request → API Mesh → Embedded Resolver → Commerce APIs (parallel) → Consolidated Data
+```text
+
+### Performance Benefits
+
+- **200+ API calls** consolidated into **1 GraphQL query**
+- **Parallel data fetching** within mesh resolver
+- **Template-generated consistency** across environments
+- **Raw data consolidation** with shared transformation logic
+
+## True Mesh Solution (Current Implementation)
+
+The True Mesh pattern provides optimal performance and architectural benefits:
+
+### Architecture Flow
+
+```text
+User Request → API Mesh → Embedded Resolver → Commerce APIs → Consolidated Data
+```text
 
 ## Problem Statement
 
@@ -19,7 +44,7 @@ For 119 products with categories and inventory, this results in **200+ API calls
 - Complex error handling
 - Poor performance at scale
 
-## HTTP Bridge Solution (Recommended)
+## True Mesh Pattern (Current Implementation)
 
 The HTTP Bridge pattern solves both performance and architectural challenges:
 
@@ -30,7 +55,7 @@ User Request → API Mesh → HTTP Bridge Resolver → REST Action → Commerce 
                 ↓                ↓                    ↓
            Single GraphQL    ~60 lines of       Existing business
               Query          HTTP client          logic reused
-```
+```text
 
 ### Key Benefits
 
@@ -80,7 +105,7 @@ User Request → API Mesh → HTTP Bridge Resolver → REST Action → Commerce 
     ]
   }
 }
-```
+```text
 
 ### 2. HTTP Bridge Resolver (`mesh-resolvers.js`)
 
@@ -157,7 +182,7 @@ module.exports = {
     },
   },
 };
-```
+```text
 
 ### 3. Enhanced REST Action
 
@@ -190,7 +215,7 @@ async function main(params) {
   // Default CSV format continues unchanged
   // ... existing CSV logic ...
 }
-```
+```text
 
 ### 4. Simplified Mesh Action
 
@@ -225,7 +250,7 @@ async function main(params) {
     },
   });
 }
-```
+```text
 
 ## Performance Comparison
 
@@ -246,7 +271,7 @@ mesh: {
   endpoint: 'https://edge-sandbox-graph.adobe.io/api/e4865722-2b0a-4f3f-bc87-f3302b64487b/graphql',
   timeout: 30000,
 }
-```
+```text
 
 ### Action Configuration (`app.config.yaml`)
 
@@ -260,7 +285,7 @@ get-products-mesh:
     COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
     COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
     MESH_API_KEY: $MESH_API_KEY
-```
+```text
 
 ### Environment Variables (`.env`)
 
@@ -268,7 +293,7 @@ get-products-mesh:
 MESH_API_KEY=your_mesh_api_key_here
 COMMERCE_ADMIN_USERNAME=admin
 COMMERCE_ADMIN_PASSWORD=your_password
-```
+```text
 
 ## GraphQL Query Structure
 
@@ -283,7 +308,7 @@ query GetProductsFull($pageSize: Int) {
     status
   }
 }
-```
+```text
 
 **Response Structure:**
 
@@ -314,7 +339,7 @@ query GetProductsFull($pageSize: Int) {
     }
   }
 }
-```
+```text
 
 ## Testing and Verification
 
@@ -331,7 +356,7 @@ node scripts/test-action.js get-products-mesh   # HTTP Bridge: 119 products, 15.
 curl -s "REST_DOWNLOAD_URL" > rest_products.csv
 curl -s "MESH_DOWNLOAD_URL" > mesh_products.csv
 diff rest_products.csv mesh_products.csv        # No differences
-```
+```text
 
 ### Performance Testing
 
@@ -340,7 +365,7 @@ diff rest_products.csv mesh_products.csv        # No differences
 npm run test:performance get-products           # ~6-8 seconds (200+ API calls)
 npm run test:performance get-products-mesh      # ~6-8 seconds (1 GraphQL + REST call)
 # Network overhead: <1% (50ms bridge call vs 6+ seconds total)
-```
+```text
 
 ## API Mesh Constraints & Solutions
 
@@ -387,7 +412,7 @@ aio api-mesh update mesh.json
 
 # Check status
 aio api-mesh status
-```
+```text
 
 ### App Builder Deployment
 
@@ -398,7 +423,7 @@ npm run deploy
 # Test both methods
 node scripts/test-action.js get-products
 node scripts/test-action.js get-products-mesh
-```
+```text
 
 ## Troubleshooting
 
@@ -432,7 +457,7 @@ curl "REST_ACTION_URL?format=json" | jq '.products | length'
 # Check mesh logs
 aio api-mesh log-list
 aio api-mesh log-get RAYID
-```
+```text
 
 ## Best Practices
 
@@ -450,3 +475,163 @@ aio api-mesh log-get RAYID
 - **Caching**: Add response caching for improved performance
 - **Rate Limiting**: Implement mesh-specific rate limiting
 - **Monitoring**: GraphQL query performance metrics
+
+## Smart Mesh Resolver Generation
+
+The project includes an intelligent mesh resolver generation system that only regenerates resolvers when necessary, improving build performance and preventing unnecessary mesh updates.
+
+### Change Detection
+
+The system uses SHA-256 hashes to detect changes in:
+
+- **Template file** (`mesh-resolvers.template.js`)
+- **Mesh configuration** (pagination, batching, timeout settings)
+
+Generation metadata is embedded in the generated resolver file to track:
+
+```javascript
+/* GENERATION_METADATA: {"templateHash":"abc123...","configHash":"def456...","generatedAt":"2025-06-29T19:42:58.514Z","version":"1.0.0"} */
+```text
+
+### Available Commands
+
+```bash
+# Smart generation (only if changes detected)
+npm run build:mesh-resolver
+
+# Force regeneration (bypass change detection)
+npm run build:mesh-resolver:force
+
+# Verbose mode (shows hash details)
+npm run build:mesh-resolver:check
+```text
+
+### Example Output
+
+**No changes detected:**
+
+```text
+✅ Mesh resolver is up to date
+   Reason: No changes detected
+```text
+
+**Changes detected:**
+
+```text
+🔄 Generating mesh resolver...
+   Reason: Template file has changed
+✅ Successfully generated mesh-resolvers.js from template
+   - Generated at: 2025-06-29T19:42:58.514Z
+```text
+
+**Verbose mode:**
+
+```text
+🔍 Change detection details:
+   Template hash: dd2969d8... (existing: dd2969d8...)
+   Config hash: b6908095... (existing: b6908095...)
+   Last generated: 2025-06-29T19:42:58.514Z
+✅ Mesh resolver is up to date
+   Use --force to regenerate anyway
+```text
+
+### Build Integration
+
+The smart generation is integrated into the main build process (`scripts/build.js`). During deployment:
+
+1. **Environment detection** - Determines staging vs production
+2. **Schema validation** - Validates configuration schemas  
+3. **Frontend generation** - Generates frontend assets
+4. **Smart mesh generation** - Only regenerates if needed
+
+This ensures efficient builds that don't unnecessarily update the mesh when no changes have occurred.
+
+## Enhanced Deployment with Automatic Mesh Updates
+
+The project includes an enhanced deployment system that automatically handles API Mesh updates when mesh resolvers change.
+
+### How It Works
+
+When you run `npm run deploy`, the system:
+
+1. **Detects Changes**: Uses SHA-256 hash comparison to determine if mesh resolvers need regeneration
+2. **Smart Generation**: Only regenerates resolvers if template or configuration changes detected
+3. **Automatic Mesh Update**: If resolvers were regenerated, automatically updates API Mesh
+4. **Retry Logic**: Retries mesh updates up to 3 times with 90-second provisioning waits
+5. **Status Verification**: Confirms mesh update success before completing deployment
+
+### Deployment Flow
+
+```text
+npm run deploy
+├── Environment Detection
+├── Clean Build Artifacts  
+├── Build Process (includes smart mesh resolver generation)
+├── Check Mesh Resolver Status
+├── Deploy App Builder Actions
+└── Conditional Mesh Update (if resolvers changed)
+    ├── Update API Mesh (with retry logic)
+    ├── Wait 90 seconds for provisioning
+    ├── Check mesh status
+    └── Retry if needed (up to 3 attempts)
+```text
+
+### Example Output
+
+**No mesh changes needed:**
+```text
+🚀 Starting enhanced deployment to staging...
+✅ Environment detected: staging
+✅ Build artifacts cleaned
+✅ Build process completed
+✅ Mesh resolver: No changes detected
+✅ App Builder actions deployed
+✅ Mesh resolver unchanged. No mesh update needed.
+�� Deployment to staging completed successfully!
+```text
+
+**Mesh update required:**
+```text
+🚀 Starting enhanced deployment to staging...
+✅ Environment detected: staging
+✅ Build artifacts cleaned
+✅ Build process completed
+✅ Mesh resolver: Changes detected in template or configuration
+✅ App Builder actions deployed
+
+🔄 Mesh resolver was regenerated. Updating API Mesh automatically...
+
+🔄 API Mesh update attempt 1/3 for staging...
+✅ Sent update command to API Mesh in staging
+Update command sent. Mesh is provisioning...
+✅ Wait complete.
+✅ Checked mesh status
+
+------------------- MESH STATUS -------------------
+Status: success
+Endpoint: https://graph.adobe.io/api/mesh-id/graphql
+-------------------------------------------------
+
+✅ API Mesh update successful!
+🎉 Deployment to staging completed successfully!
+```text
+
+### Manual Override
+
+If automatic mesh update fails, you can run it manually:
+
+```bash
+# For staging
+npm run deploy:mesh
+
+# For production  
+npm run deploy:mesh:prod
+```text
+
+### Benefits
+
+- **Zero Manual Steps**: Mesh updates happen automatically when needed
+- **Efficient**: Only updates mesh when resolvers actually change
+- **Reliable**: Retry logic handles temporary mesh provisioning issues
+- **Safe**: Verifies mesh status before considering deployment complete
+- **Transparent**: Clear feedback about what's happening during deployment

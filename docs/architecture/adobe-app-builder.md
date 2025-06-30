@@ -37,7 +37,7 @@ Adobe App Builder is a complete framework for building cloud-native applications
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
 │   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # HTTP Bridge resolvers (~60 lines)
+│   └── mesh-resolvers.js          # True Mesh Pattern resolvers (auto-generated)
 ├── ⚙️ actions/                    # Adobe I/O Runtime actions
 │   ├── backend/                   # API endpoints (data processing)
 │   │   ├── get-products/          # Product export via REST API (200+ calls)
@@ -74,7 +74,7 @@ kukla-integration-service/
 
 ### **Key Architecture Features**
 
-- **API Mesh Integration**: GraphQL consolidation using HTTP Bridge pattern
+- **API Mesh Integration**: GraphQL consolidation using True Mesh pattern
 - **Step Functions**: Reusable action components following DRY principles
 - **Configuration System**: Environment-aware with schema validation
 - **Storage Abstraction**: Multi-provider support (Adobe I/O Files, AWS S3)

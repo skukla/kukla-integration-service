@@ -80,6 +80,58 @@ Before implementing any feature:
 - Use environment-specific configurations from `config/environments/`
 - Follow staging-first development workflow
 
+### Command Line Operations
+
+**CRITICAL: Always Prefer npm Scripts**
+
+Use npm scripts instead of direct CLI commands for consistency and integration:
+
+```bash
+# ✅ CORRECT: Use npm scripts
+npm run deploy          # Deploy to staging
+npm run deploy:prod     # Deploy to production
+npm run deploy:mesh     # Update API Mesh
+npm run test:action     # Test individual actions
+npm run build:config    # Generate frontend configuration
+
+# ❌ WRONG: Direct CLI commands
+aio app deploy
+aio api-mesh update mesh.json
+aio rt activation logs
+```
+
+**npm Scripts Benefits:**
+- **Consistency**: Same commands work across environments
+- **Integration**: Automatically handles build steps and validation
+- **Documentation**: Scripts are self-documenting in package.json
+- **Workflow**: Integrates with IDE and CI/CD systems
+
+### Command Line Operations
+
+**CRITICAL: Always Prefer npm Scripts**
+
+Use npm scripts instead of direct CLI commands for consistency and integration:
+
+```bash
+# ✅ CORRECT: Use npm scripts
+npm run deploy          # Deploy to staging
+npm run deploy:prod     # Deploy to production
+npm run deploy:mesh     # Update API Mesh
+npm run test:action     # Test individual actions
+npm run build:config    # Generate frontend configuration
+
+# ❌ WRONG: Direct CLI commands
+aio app deploy
+aio api-mesh update mesh.json
+aio rt activation logs
+```
+
+**npm Scripts Benefits:**
+- **Consistency**: Same commands work across environments
+- **Integration**: Automatically handles build steps and validation
+- **Documentation**: Scripts are self-documenting in package.json
+- **Workflow**: Integrates with IDE and CI/CD systems
+
 ### HTMX Integration
 
 - Use HTMX attributes for dynamic UI updates
@@ -188,12 +240,12 @@ await storeCsv(csvData, config, storage); // Wrong - 3 params instead of 2
 - Use `mesh.json` for API Mesh configuration with CommonJS format resolvers
 - Custom resolvers in `mesh-resolvers.js` to consolidate multiple data sources
 - Enhanced resolvers bridge gaps between Commerce REST API and Catalog Service
-- Pass OAuth credentials via custom headers (`x-commerce-username`, `x-commerce-password`) for HTTP Bridge pattern
+- **True Mesh Pattern**: Mesh resolvers consolidate data from multiple Commerce APIs into single GraphQL query
+- Pass OAuth credentials via admin token headers (`x-commerce-admin-token`) for mesh authentication
 - Pass Catalog Service credentials via custom headers (`x-catalog-*`)
 - Catalog Service authentication requires Commerce instance endpoint, not sandbox
 - API Mesh consolidates 200+ API calls into single GraphQL queries
 - Enhanced resolvers expose hidden/disabled products not visible in Catalog Service
-- HTTP Bridge pattern: Mesh resolvers call existing REST actions via HTTP for code reuse
 
 **API Mesh Limitations:**
 
@@ -517,6 +569,10 @@ When validation fails, build stops with detailed errors:
 - Error Responses: Use consistent error formatting
 - Logging: Use appropriate log levels and formatting
 - URL Building: Use the established URL management functions
+- API Mesh: Always use True Mesh pattern with embedded resolvers
+- **CRITICAL - Data Transformation**: NEVER transform data in mesh resolvers - always use buildProducts step
+- **CRITICAL - Mesh Actions**: NEVER skip buildProducts step - always use it for consistency  
+- **CRITICAL - Raw Data**: Mesh resolvers should return raw consolidated data, not transformed data
 
 ## Dependencies
 
@@ -765,37 +821,87 @@ Reinforcing a core principle: **NEVER use `process.env` in any code that runs on
 
 ## API Mesh Integration Patterns
 
-### CRITICAL: HTTP Bridge Pattern (Recommended)
+### CRITICAL: Data Transformation Separation
 
-**ALWAYS** use the HTTP Bridge pattern for API Mesh integration to eliminate code duplication:
-
-#### The HTTP Bridge Architecture
+**NEVER** perform data transformation in mesh resolvers. Always maintain strict separation of concerns:
 
 ```javascript
-// ✅ CORRECT: HTTP Bridge pattern
-// mesh-resolvers.js (~60 lines)
+// ✅ CORRECT: Mesh resolver returns RAW consolidated data
+// mesh-resolvers.js
+const enrichedProduct = {
+  ...product,
+  qty: inventory.qty,
+  categories: categoryObjects, // Raw category objects with id/name
+  media_gallery_entries: product.media_gallery_entries, // Raw media data
+  inventory: { qty: inventory.qty, is_in_stock: inventory.is_in_stock }
+};
+
+// ✅ CORRECT: Action uses buildProducts step for transformation
+// actions/backend/get-products-mesh/index.js
+const builtProducts = await buildProducts(enrichedProducts, config);
+
+// ❌ WRONG: Mesh resolver doing transformation
+enrichedProduct.images = product.media_gallery_entries.map(transformImageEntry);
+enrichedProduct.categories = categoryObjects.map(cat => cat.name);
+
+// ❌ WRONG: Action skipping buildProducts
+const builtProducts = enrichedProducts; // Skips transformation!
+```
+
+**Transformation Responsibility Rules:**
+
+- **Mesh Resolver**: ONLY consolidate raw data from multiple APIs
+- **buildProducts Step**: ALWAYS handle data transformation (categories, images, etc.)
+- **Actions**: NEVER skip buildProducts step - always use it for consistency
+- **Raw Data**: Mesh should return data in same format as Commerce API responses
+
+**Why This Matters:**
+
+- **Code Reuse**: Same transformation logic used by REST API and Mesh methods
+- **Consistency**: Identical CSV output guaranteed through shared transformation
+- **Maintainability**: Single source of truth for business logic
+- **Testing**: One transformation path to test and debug
+
+### CRITICAL: True Mesh Pattern (Current Implementation)
+
+**Our API Mesh implementation uses embedded custom resolvers that consolidate multiple Commerce API calls into a single GraphQL query:**
+
+#### The True Mesh Architecture
+
+```javascript
+// ✅ CORRECT: True Mesh Pattern with embedded resolvers
+// mesh-resolvers.js (auto-generated from template)
 module.exports = {
   resolvers: {
     Query: {
-      mesh_products_full: {
+      mesh_products_enriched: {
         resolve: async (parent, args, context) => {
-          // Get credentials from headers
-          const username = context.headers['x-commerce-username'];
-          const password = context.headers['x-commerce-password'];
-
-          // Call existing REST action via HTTP
-          const restResponse = await fetch(REST_ACTION_URL + '?format=json', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          });
-
-          const data = await restResponse.json();
-          return {
-            products: data.products || [],
-            total_count: data.total_count || 0,
-            message: data.message || 'Success via HTTP bridge',
-            status: 'success',
-          };
+          // Get admin token from headers
+          const adminToken = context.headers['x-commerce-admin-token'];
+          
+          // Step 1: Fetch all products from Commerce API
+          const allProducts = await fetchAllProductsFromSource(context, pageSize, maxPages);
+          
+          // Step 2: Extract category IDs and SKUs
+          const categoryIds = new Set();
+          const skus = [];
+          // ... extraction logic
+          
+          // Step 3: Fetch category and inventory data in parallel
+          const [categoryMap, inventoryMap] = await Promise.all([
+            fetchCategoriesFromSource(context, Array.from(categoryIds)),
+            fetchInventoryFromSource(context, skus),
+          ]);
+          
+          // Step 4: Return RAW consolidated data (no transformation)
+          const enrichedProducts = allProducts.map((product) => ({
+            ...product,
+            qty: inventory.qty,
+            categories: categoryObjects, // Raw objects with id/name
+            // Keep media_gallery_entries as-is for buildProducts
+          }));
+          
+          return { products: enrichedProducts, total_count: enrichedProducts.length };
         },
       },
     },
@@ -803,54 +909,23 @@ module.exports = {
 };
 ```
 
-#### Why HTTP Bridge Pattern
+#### Why True Mesh Pattern
 
 **✅ Benefits:**
 
-- **Zero Code Duplication**: Single source of truth in REST action
-- **78% Code Reduction**: 60 lines vs 273 lines embedded logic
-- **Perfect Parity**: Identical CSV output, byte-for-byte
-- **Easy Maintenance**: Changes automatically propagate
-- **Standard Debugging**: HTTP patterns everyone understands
-- **Minimal Overhead**: <1% performance impact
+- **Consolidates 200+ API calls** into single GraphQL query
+- **True unified schema** - single endpoint for all product data
+- **Configuration integration** - uses project's configuration system
+- **Template generation** - auto-generated with environment-specific settings
+- **Raw data consolidation** - lets buildProducts handle transformation
+- **Perfect API Mesh integration** - leverages full GraphQL Mesh capabilities
 
-**❌ Avoid Embedded Logic:**
+**✅ Architecture:**
 
-- Creates 200+ lines of duplicated Commerce logic
-- Double maintenance burden
-- API Mesh cannot import Node.js modules
-- Harder to debug and understand
-
-#### Required REST Action Support
-
-Enable JSON format in REST actions:
-
-```javascript
-// In REST action main function
-const format = actionParams.format || 'csv';
-
-if (format === 'json') {
-  return response.success({
-    products: builtProducts,
-    total_count: builtProducts.length,
-    message: 'Successfully fetched products',
-    status: 'success',
-  });
-}
-// ... continue with CSV logic
-```
-
-#### Mesh Action Simplification
-
-When using HTTP bridge, skip transformation steps:
-
-```javascript
-// ✅ CORRECT: Skip buildProducts for already-transformed data
-const builtProducts = products; // HTTP bridge returns ready-to-use data
-
-// ❌ WRONG: Double transformation
-const builtProducts = await buildProducts(products, config); // Breaks image URLs
-```
+- **Mesh Resolver**: Consolidates raw data from multiple Commerce APIs
+- **App Builder Action**: Calls mesh → Uses buildProducts → Generates CSV
+- **Single GraphQL Query**: Replaces hundreds of REST API calls
+- **Configuration Driven**: Environment-specific batch sizes and endpoints
 
 #### API Mesh Constraints
 
@@ -861,10 +936,60 @@ const builtProducts = await buildProducts(products, config); // Breaks image URL
 - Must use embedded configuration or HTTP calls
 - Template literals not fully supported (use string concatenation)
 
+### CRITICAL: Data Transformation Separation
+
+**NEVER** perform data transformation in mesh resolvers. Always maintain strict separation of concerns:
+
+```javascript
+// ✅ CORRECT: Mesh resolver returns RAW consolidated data
+// mesh-resolvers.js
+const enrichedProduct = {
+  ...product,
+  qty: inventory.qty,
+  categories: categoryObjects, // Raw category objects with id/name
+  media_gallery_entries: product.media_gallery_entries, // Raw media data
+  inventory: { qty: inventory.qty, is_in_stock: inventory.is_in_stock }
+};
+
+// ✅ CORRECT: Action uses buildProducts step for transformation
+// actions/backend/get-products-mesh/index.js
+const builtProducts = await buildProducts(enrichedProducts, config);
+
+// ❌ WRONG: Mesh resolver doing transformation
+enrichedProduct.images = product.media_gallery_entries.map(transformImageEntry);
+enrichedProduct.categories = categoryObjects.map(cat => cat.name);
+
+// ❌ WRONG: Action skipping buildProducts
+const builtProducts = enrichedProducts; // Skips transformation!
+```
+
+**Transformation Responsibility Rules:**
+
+- **Mesh Resolver**: ONLY consolidate raw data from multiple APIs
+- **buildProducts Step**: ALWAYS handle data transformation (categories, images, etc.)
+- **Actions**: NEVER skip buildProducts step - always use it for consistency
+- **Raw Data**: Mesh should return data in same format as Commerce API responses
+
+**Why This Matters:**
+
+- **Code Reuse**: Same transformation logic used by REST API and Mesh methods
+- **Consistency**: Identical CSV output guaranteed through shared transformation
+- **Maintainability**: Single source of truth for business logic
+- **Testing**: One transformation path to test and debug
+
 ## Common Patterns
 
 - Configuration: Use the schema-validated config system
-- API Mesh: Always use HTTP Bridge pattern for code reuse
+- File Operations: Use Adobe I/O Files SDK through existing utilities
+- Commerce API: Use established Commerce integration patterns
+- Frontend Updates: Use HTMX for dynamic content
+- Error Responses: Use consistent error formatting
+- Logging: Use appropriate log levels and formatting
+- URL Building: Use the established URL management functions
+- API Mesh: Always use True Mesh pattern with embedded resolvers
+- **CRITICAL - Data Transformation**: NEVER transform data in mesh resolvers - always use buildProducts step
+- **CRITICAL - Mesh Actions**: NEVER skip buildProducts step - always use it for consistency  
+- **CRITICAL - Raw Data**: Mesh resolvers should return raw consolidated data, not transformed data
 
 ## Git Hooks and Code Quality
 
@@ -883,3 +1008,124 @@ The project uses **Husky v9.1.7** for automated code quality enforcement via git
 - **Modern command**: Use `npx husky init` for new setups
 - **Current setup**: Fully functional despite deprecation warning
 - **No action needed**: Existing configuration continues to work perfectly
+
+## Recent Implementation Updates
+
+### OAuth 1.0 Authentication (Implemented)
+
+**CRITICAL: All Commerce API calls now use OAuth 1.0 authentication**
+
+The project has been fully migrated to OAuth 1.0 authentication with HMAC-SHA256 signatures:
+
+```javascript
+// ✅ CORRECT: OAuth implementation pattern
+const { makeCommerceRequest } = require('../../../src/commerce/api/integration');
+
+// OAuth credentials automatically extracted from action parameters
+const response = await makeCommerceRequest('/products', {
+  method: 'GET',
+}, params);
+```
+
+**Key Implementation Details:**
+
+- **Core function**: `makeCommerceRequest()` handles all OAuth authentication automatically
+- **Signature generation**: `createOAuthHeader()` implements proper HMAC-SHA256 with Postman-style URL parsing
+- **Parameter handling**: `extractActionParams()` extracts OAuth credentials from Adobe I/O Runtime parameters
+- **No pre-testing**: Authentication validation happens during actual API calls (no redundant auth tests)
+- **Batch support**: `batchCommerceRequests()` for multiple authenticated API calls
+
+**Required Configuration:**
+
+All Commerce actions must have these OAuth credentials in `app.config.yaml`:
+```yaml
+COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
+```
+
+**Migration Complete:**
+
+- ✅ All actions updated to use OAuth authentication
+- ✅ Legacy admin token authentication removed
+- ✅ Test scripts updated for OAuth credential handling
+- ✅ Mesh resolvers updated for OAuth credential passing
+
+### Storage Error Handling (Fixed)
+
+**CRITICAL: Storage error handling has been standardized**
+
+Fixed storage display issues and error handling across all actions:
+
+```javascript
+// ✅ CORRECT: Storage error handling pattern
+const storageResult = await storeCsv(csvData, actionParams);
+
+// Always check for storage errors
+if (!storageResult.stored) {
+  throw new Error(`Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`);
+}
+```
+
+**Key Fixes:**
+
+- **Function signature**: `storeCsv(csvData, actionParams)` - exactly 2 parameters
+- **Error checking**: Always verify `storageResult.stored` before proceeding
+- **Error display**: Test scripts show "Storage Failed" instead of "ERROR"
+- **No manual initialization**: Let `storeCsv()` handle storage initialization internally
+- **Consistent responses**: All actions return proper storage provider information
+
+**Storage Rules:**
+
+- **Never manually initialize storage** in actions - use `storeCsv()` function
+- **Always check storage results** - Don't assume storage operations succeed
+- **Proper error messages** - Include specific error details when storage fails
+- **Test script integration** - Storage provider correctly displayed in test output
+
+### Validation Simplification (Cleaned Up)
+
+**CRITICAL: Authentication validation has been simplified**
+
+Removed redundant authentication testing to improve performance:
+
+```javascript
+// ✅ CORRECT: Simple parameter validation (no auth testing)
+async function validateInput(params, config) {
+  // Validate OAuth credentials are present
+  checkMissingParams(params, ['COMMERCE_CONSUMER_KEY', 'COMMERCE_CONSUMER_SECRET', 
+                              'COMMERCE_ACCESS_TOKEN', 'COMMERCE_ACCESS_TOKEN_SECRET']);
+  
+  // OAuth credentials will be validated when the first API call is made
+}
+
+// ❌ WRONG: Separate authentication testing (removed)
+// await testOAuthAuthentication(params); // Redundant with actual API calls
+```
+
+**Validation Changes:**
+
+- **No pre-authentication testing** - OAuth validation happens during actual API calls
+- **Parameter presence only** - Validate credentials exist, don't test them separately
+- **Performance improvement** - Eliminates unnecessary API calls during validation
+- **Simpler error handling** - Authentication errors come from actual Commerce API calls
+- **Removed modules**: Deleted `actions/backend/get-products/lib/auth.js` (no longer needed)
+
+**Benefits:**
+
+- ✅ Faster action execution (no redundant API calls)
+- ✅ Simpler codebase (less authentication testing code)
+- ✅ Better error messages (from actual Commerce API responses)
+- ✅ Consistent with production patterns (validate during use, not before)
+
+## File Recreation Strategy
+
+### CRITICAL: Heredoc Pattern for Reliable File Creation
+
+When edit tools fail or produce incomplete results, use heredoc pattern:
+cat > path/to/file.js << 'EOF'
+// Complete file content here
+EOF
+
+Use heredoc when: edit tools fail, multiple search_replace attempts fail, complex changes needed.
+Benefits: Guarantees complete file replacement, works reliably, eliminates edit tool inconsistencies.
