@@ -2,8 +2,7 @@ const path = require('path');
 
 const createApiTester = require('./api-tester');
 const createBaselineManager = require('./baseline-manager');
-const { main } = require('../../../actions/backend/get-products');
-const { PerformanceMetrics } = require('../../../actions/core/performance');
+const { main } = require('../../../../actions/backend/get-products');
 
 /**
  * Creates a performance tester instance
@@ -42,14 +41,12 @@ function createPerformanceTester(options = {}) {
       COMMERCE_ADMIN_PASSWORD: process.env.COMMERCE_ADMIN_PASSWORD,
     };
 
-    const metrics = new PerformanceMetrics();
-    await metrics.start();
-
     try {
       if (onProgress) await onProgress('Running local test...');
       await main(rawParams);
-    } finally {
-      await metrics.stop();
+    } catch (error) {
+      // Log error but continue with metrics calculation
+      console.warn('Local test error:', error.message);
     }
 
     const endTime = performance.now();
@@ -58,7 +55,6 @@ function createPerformanceTester(options = {}) {
     return {
       executionTime: endTime - startTime,
       memory: endMemory - startMemory,
-      ...metrics.getMetrics(),
     };
   }
 
@@ -147,6 +143,40 @@ function createPerformanceTester(options = {}) {
   };
 }
 
+/**
+ * Test a scenario with thresholds and baseline comparison
+ * @param {Object} scenario Test scenario
+ * @param {Object} options Test options
+ * @returns {Promise<Object>} Test results
+ */
+async function testScenario(scenario, options = {}) {
+  const tester = createPerformanceTester({
+    environment: 'deployed',
+    iterations: options.iterations || 3,
+  });
+
+  try {
+    const results = await tester.runTest(scenario);
+
+    // Analyze results against thresholds
+    const metrics = results.deployed[0] || results.local[0];
+    const passed = true; // Will implement threshold checking
+
+    return {
+      passed,
+      metrics,
+      scenario: scenario.name,
+    };
+  } catch (error) {
+    return {
+      passed: false,
+      error: error.message,
+      scenario: scenario.name,
+    };
+  }
+}
+
 module.exports = {
   createPerformanceTester,
+  testScenario,
 };

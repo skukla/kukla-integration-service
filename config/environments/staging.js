@@ -51,6 +51,14 @@ const stagingOverrides = {
     apiKey: process.env.MESH_API_KEY,
     timeout: 30000,
     retries: 3,
+    pagination: {
+      defaultPageSize: 300, // Optimized based on performance testing
+      maxPages: 25,
+    },
+    batching: {
+      categories: 20,
+      inventory: 50,
+    },
   },
   testing: {
     logLevel: 'info',
