@@ -52,12 +52,14 @@ const stagingOverrides = {
     timeout: 30000,
     retries: 3,
     pagination: {
-      defaultPageSize: 300, // Optimized based on performance testing
+      defaultPageSize: 100, // Optimized: 7.0s vs 7.9s with 300 (batch testing)
       maxPages: 25,
     },
     batching: {
       categories: 20,
-      inventory: 50,
+      inventory: 25, // Optimized from REST API (was 50)
+      maxConcurrent: 15, // From REST API optimization
+      requestDelay: 75, // From REST API optimization (ms)
     },
   },
   testing: {

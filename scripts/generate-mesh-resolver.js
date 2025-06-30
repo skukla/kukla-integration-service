@@ -106,6 +106,8 @@ try {
     batching: {
       categories: config.mesh.batching.categories,
       inventory: config.mesh.batching.inventory,
+      maxConcurrent: config.mesh.batching.maxConcurrent,
+      requestDelay: config.mesh.batching.requestDelay,
     },
     timeout: config.mesh.timeout,
     retries: config.mesh.retries,

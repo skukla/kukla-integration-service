@@ -6,6 +6,7 @@ const { loadConfig } = require('../../../config');
 const { getAuthToken } = require('../../../src/commerce/api/integration');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
+const { createTraceContext, traceStep } = require('../../../src/core/tracing');
 const createCsv = require('../get-products/steps/createCsv');
 const storeCsv = require('../get-products/steps/storeCsv');
 
@@ -32,7 +33,95 @@ function formatFileSize(bytes) {
 }
 
 /**
- * Fetch enriched products from API Mesh using True Mesh Pattern
+ * Format step message for API response
+ * @param {string} name - Step name
+ * @param {string} status - Step status (success/error)
+ * @param {Object} details - Step details
+ * @returns {string} Formatted step message
+ */
+function formatStepMessage(name, status, details = {}) {
+  const stepMessages = {
+    'validate-mesh': {
+      success: 'Successfully validated Commerce API credentials and mesh configuration',
+      error: 'Failed to validate mesh configuration',
+    },
+    'fetch-mesh': {
+      success: (count) =>
+        `Successfully fetched and consolidated ${count} products with category and inventory data`,
+      error: 'Failed to fetch products from API Mesh',
+    },
+    'create-csv': {
+      success: (size) => `Successfully generated CSV file (${formatFileSize(size)})`,
+      error: 'Failed to generate CSV file',
+    },
+    'store-csv': {
+      success: (info) => {
+        const size = parseInt(info.properties.size) || info.properties.size;
+        const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
+        return `Successfully stored CSV file as ${info.fileName} (${formattedSize})`;
+      },
+      error: 'Failed to store CSV file',
+    },
+  };
+
+  return status === 'success'
+    ? typeof stepMessages[name][status] === 'function'
+      ? stepMessages[name][status](details.count || details.size || details.info)
+      : stepMessages[name][status]
+    : `${stepMessages[name][status]}: ${details.error || ''}`;
+}
+
+/**
+ * Make GraphQL request to mesh with retry logic (like REST API processConcurrently)
+ * @param {string} endpoint - Mesh endpoint URL
+ * @param {Object} requestBody - GraphQL request body
+ * @param {Object} headers - Request headers
+ * @param {Object} options - Retry options
+ * @returns {Promise<Object>} GraphQL response
+ */
+async function makeMeshRequestWithRetry(endpoint, requestBody, headers, options = {}) {
+  const { retries = 3, retryDelay = 1000, timeout = 30000 } = options;
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Mesh API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.errors && result.errors.length > 0) {
+        throw new Error(`GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`);
+      }
+
+      return result;
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) {
+        // Wait before retry (like REST API)
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+
+  throw new Error(`Mesh request failed after ${retries + 1} attempts: ${lastError.message}`);
+}
+
+/**
+ * Fetch enriched products from API Mesh using True Mesh Pattern with performance optimizations
  * @param {Object} config - Configuration object
  * @param {Object} actionParams - Action parameters
  * @returns {Promise<Array>} Products array with enriched data
@@ -69,33 +158,24 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
     }
   `;
 
+  // Use optimized batch size from configuration (like REST API)
   const variables = {
-    pageSize: config.products?.perPage || 100,
+    pageSize: config.mesh.pagination.defaultPageSize || config.products.batchSize || 100,
   };
 
-  // Make GraphQL request to mesh with admin token
-  const meshResponse = await fetch(meshEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': meshApiKey,
-      'x-commerce-admin-token': adminToken,
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
+  const requestBody = { query, variables };
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': meshApiKey,
+    'x-commerce-admin-token': adminToken,
+  };
+
+  // Apply retry logic and timeout configuration (like REST API)
+  const result = await makeMeshRequestWithRetry(meshEndpoint, requestBody, headers, {
+    retries: config.mesh.retries || 3,
+    retryDelay: 1000,
+    timeout: config.mesh.timeout || 30000,
   });
-
-  if (!meshResponse.ok) {
-    throw new Error(`Mesh API request failed: ${meshResponse.status} ${meshResponse.statusText}`);
-  }
-
-  const result = await meshResponse.json();
-
-  if (result.errors && result.errors.length > 0) {
-    throw new Error(`GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`);
-  }
 
   const meshData = result.data?.mesh_products_enriched;
   if (!meshData) {
@@ -124,8 +204,18 @@ async function main(params) {
   try {
     const config = loadConfig(actionParams);
 
-    // Step 1: Fetch enriched products from mesh (already processed)
-    const enrichedProducts = await fetchEnrichedProductsFromMesh(config, actionParams);
+    // Initialize tracing like REST API
+    const trace = createTraceContext('get-products-mesh', actionParams);
+    const steps = [];
+
+    // Step 1: Validate mesh configuration
+    steps.push(formatStepMessage('validate-mesh', 'success'));
+
+    // Step 2: Fetch enriched products from mesh (already processed)
+    const enrichedProducts = await traceStep(trace, 'fetch-mesh', async () => {
+      return await fetchEnrichedProductsFromMesh(config, actionParams);
+    });
+    steps.push(formatStepMessage('fetch-mesh', 'success', { count: enrichedProducts.length }));
 
     // Check format parameter to determine response type
     const format = actionParams.format || 'csv';
@@ -140,15 +230,13 @@ async function main(params) {
             enrichedProducts.length +
             ' products with category and inventory data',
           status: 'success',
-          steps: [
-            'Successfully validated Commerce API credentials and mesh configuration',
-            `Successfully fetched and consolidated ${enrichedProducts.length} products with category and inventory data`,
-            `Successfully transformed ${enrichedProducts.length} products for export`,
-          ],
+          steps,
           performance: {
             processedProducts: enrichedProducts.length,
             apiCalls: 1,
             method: 'API Mesh',
+            duration: Date.now() - trace.startTime,
+            durationFormatted: `${((Date.now() - trace.startTime) / 1000).toFixed(1)}s`,
           },
         },
         'Product data retrieved successfully',
@@ -157,11 +245,16 @@ async function main(params) {
     }
 
     // Default CSV format
-    // Step 2: Create CSV
-    const csvData = await createCsv(enrichedProducts);
+    // Step 3: Create CSV
+    const csvData = await traceStep(trace, 'create-csv', async () => {
+      return await createCsv(enrichedProducts);
+    });
+    steps.push(formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
 
-    // Step 3: Store CSV
-    const storageResult = await storeCsv(csvData, actionParams);
+    // Step 4: Store CSV
+    const storageResult = await traceStep(trace, 'store-csv', async () => {
+      return await storeCsv(csvData, actionParams);
+    });
 
     if (!storageResult.stored) {
       throw new Error(
@@ -169,16 +262,16 @@ async function main(params) {
       );
     }
 
+    steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
+
+    // Calculate total duration like REST API
+    const endTime = Date.now();
+    const totalDuration = endTime - trace.startTime;
+
     return response.success(
       {
         message: 'Product export completed successfully',
-        steps: [
-          'Successfully validated Commerce API credentials and mesh configuration',
-          `Successfully fetched and consolidated ${enrichedProducts.length} products with category and inventory data`,
-          `Successfully transformed ${enrichedProducts.length} products for export`,
-          `Successfully generated CSV file (${formatFileSize(csvData.stats.originalSize)})`,
-          `Successfully stored CSV file as ${storageResult.fileName} (${formatFileSize(csvData.stats.originalSize)})`,
-        ],
+        steps,
         downloadUrl: storageResult.downloadUrl,
         storage: {
           provider: storageResult.storageType,
@@ -189,6 +282,8 @@ async function main(params) {
           processedProducts: enrichedProducts.length,
           apiCalls: 1,
           method: 'API Mesh',
+          duration: totalDuration,
+          durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
         },
       },
       'Product export completed',
