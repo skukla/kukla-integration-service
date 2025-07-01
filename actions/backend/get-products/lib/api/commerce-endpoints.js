@@ -30,9 +30,10 @@ function products(params = {}, actionParams = {}) {
   }
 
   // Add fields to include media gallery entries for images and total_count for pagination
+  // Explicitly request url field in media_gallery_entries to get AEM asset URLs when available
   queryParams.append(
     'fields',
-    'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries,custom_attributes],total_count'
+    'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries[file,url,position,types],custom_attributes],total_count'
   );
 
   const query = queryParams.toString();
