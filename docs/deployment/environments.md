@@ -430,10 +430,7 @@ jobs:
 1. **Slow Deployments**
 
    ```bash
-   # Use npm run deploy for development iteration
-npm run deploy
-
-   # Use npm run deploy for clean builds
+   # Deploy to staging for development
    npm run deploy
    ```
 
