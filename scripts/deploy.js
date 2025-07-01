@@ -14,7 +14,7 @@ const { detectEnvironment } = require('../src/core/environment');
 const execAsync = promisify(exec);
 
 /**
- * Sleep helper for smoother animations
+ * Sleep helper
  */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -37,49 +37,116 @@ function formatSpinnerSuccess(message) {
 }
 
 /**
- * Run a command with proper error handling
+ * Update API Mesh with configurable retry logic
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.isProd - Whether this is production environment
+ * @param {number} options.waitTimeSeconds - Seconds to wait between status checks (default: 90)
+ * @param {number} options.maxStatusChecks - Maximum number of status checks (default: 2)
+ * @returns {Promise<boolean>} Success/failure status
  */
-function runCommand(command, { isInteractive = false, spinnerText, successText }) {
-  const spinner = ora(spinnerText).start();
+async function updateMeshWithRetry({
+  isProd = false,
+  waitTimeSeconds = 90,
+  maxStatusChecks = 2,
+} = {}) {
+  const environment = isProd ? 'production' : 'staging';
 
-  return new Promise((resolve, reject) => {
-    if (isInteractive) {
-      spinner.stop();
-      console.log(chalk.blue(`\n▶️ Running interactive command: ${command}`));
+  try {
+    console.log(chalk.cyan(`\n🔄 Updating API Mesh for ${environment}...\n`));
+
+    // Send mesh update command
+    const updateCommand = `aio api-mesh:update mesh.json${isProd ? ' --ignoreCache' : ''} --autoConfirmAction`;
+
+    // Use spawn for production interactive mode, execAsync for staging
+    if (isProd) {
+      console.log(chalk.blue(`▶️ Running interactive command: ${updateCommand}`));
       console.log(chalk.yellow('Please follow the prompts from the command below.\n'));
+
+      await new Promise((resolve, reject) => {
+        const [cmd, ...args] = updateCommand.split(' ');
+        const child = spawn(cmd, args, {
+          stdio: 'inherit',
+          shell: true,
+        });
+
+        child.on('close', (code) => {
+          if (code !== 0) {
+            console.log(chalk.red(`\n❌ Command failed with exit code ${code}`));
+            reject(new Error('Update command failed'));
+          } else {
+            console.log(chalk.green('\n✅ Update command completed'));
+            resolve();
+          }
+        });
+
+        child.on('error', (err) => {
+          console.log(chalk.red(`\n❌ Failed to start command: ${updateCommand}`));
+          reject(err);
+        });
+      });
+    } else {
+      const updateSpinner = createSpinner('Sending mesh update command...');
+      await execAsync(updateCommand);
+      updateSpinner.succeed(formatSpinnerSuccess('Mesh update command sent'));
     }
 
-    const [cmd, ...args] = command.split(' ');
-    const child = spawn(cmd, args, {
-      stdio: isInteractive ? 'inherit' : 'pipe',
-      shell: true,
-    });
+    console.log(chalk.blue('\nMesh is provisioning...\n'));
 
-    let stdout = '';
-    let stderr = '';
+    // Poll status for up to maxStatusChecks attempts
+    let statusAttempt = 1;
 
-    if (!isInteractive) {
-      child.stdout.on('data', (data) => (stdout += data.toString()));
-      child.stderr.on('data', (data) => (stderr += data.toString()));
-    }
+    while (statusAttempt <= maxStatusChecks) {
+      // Wait before checking status
+      console.log(
+        chalk.blue(
+          `⏳ Waiting ${waitTimeSeconds} seconds before status check ${statusAttempt}/${maxStatusChecks}...`
+        )
+      );
+      await sleep(waitTimeSeconds * 1000);
+      console.log(chalk.green('✅ Wait complete\n'));
 
-    child.on('close', (code) => {
-      if (code !== 0) {
-        spinner.fail(chalk.red(`Error: Command failed with exit code ${code}`));
-        if (!isInteractive) console.error(chalk.red(stderr));
-        reject(new Error(stderr));
+      // Check mesh status
+      const statusSpinner = createSpinner(
+        `Checking mesh status (${statusAttempt}/${maxStatusChecks})...`
+      );
+      const result = await execAsync('aio api-mesh:status');
+      const statusOutput = result.stdout;
+      statusSpinner.succeed(formatSpinnerSuccess('Mesh status checked'));
+
+      const lowerStatus = statusOutput.toLowerCase();
+
+      console.log(chalk.cyan('\n------------------- MESH STATUS -------------------'));
+      console.log(chalk.white(statusOutput.trim()));
+      console.log(chalk.cyan('-------------------------------------------------\n'));
+
+      if (lowerStatus.includes('success')) {
+        console.log(chalk.bold.green('✅ API Mesh update successful!\n'));
+        return true;
+      } else if (lowerStatus.includes('error') || lowerStatus.includes('failed')) {
+        console.log(
+          chalk.bold.red(
+            `❌ API Mesh update failed with error. Please check manually or run: npm run deploy:mesh${isProd ? ':prod' : ''}\n`
+          )
+        );
+        return false;
+      } else if (statusAttempt < maxStatusChecks) {
+        console.log(chalk.yellow(`⏳ Mesh still updating... (${lowerStatus.trim()})\n`));
+        statusAttempt++;
       } else {
-        spinner.succeed(chalk.green(successText || spinnerText));
-        resolve(stdout);
+        console.log(
+          chalk.bold.red(
+            `❌ API Mesh update timed out after ${maxStatusChecks} checks. Please check manually or run: npm run deploy:mesh${isProd ? ':prod' : ''}\n`
+          )
+        );
+        return false;
       }
-    });
+    }
 
-    child.on('error', (err) => {
-      spinner.fail(chalk.red(`Failed to start command: ${command}`));
-      console.error(err);
-      reject(err);
-    });
-  });
+    return false;
+  } catch (error) {
+    console.log(chalk.bold.red(`❌ Mesh update failed: ${error.message}\n`));
+    return false;
+  }
 }
 
 /**
@@ -103,122 +170,45 @@ async function checkMeshResolverRegeneration() {
 }
 
 /**
- * Update API Mesh with retry logic
- */
-async function updateMeshWithRetry(isProd, maxRetries = 3) {
-  const environment = isProd ? 'production' : 'staging';
-  const waitTimeInSeconds = 90;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(
-        chalk.cyan(`\n🔄 API Mesh update attempt ${attempt}/${maxRetries} for ${environment}...\n`)
-      );
-
-      // Update the mesh
-      const updateCommand = `aio api-mesh:update mesh.json${isProd ? ' --ignoreCache' : ''} --autoConfirmAction`;
-      await runCommand(updateCommand, {
-        isInteractive: isProd,
-        spinnerText: `Updating API Mesh in ${environment}...`,
-        successText: `Sent update command to API Mesh in ${environment}`,
-      });
-
-      console.log(chalk.blue('\nUpdate command sent. Mesh is provisioning...'));
-
-      // Wait for mesh to provision
-      const waitSpinner = ora(
-        `Waiting ${waitTimeInSeconds} seconds for mesh provisioning...`
-      ).start();
-      await new Promise((resolve) => setTimeout(resolve, waitTimeInSeconds * 1000));
-      waitSpinner.succeed(chalk.green('Wait complete.'));
-
-      // Check mesh status
-      const statusOutput = await runCommand('aio api-mesh:status', {
-        spinnerText: 'Checking mesh status...',
-        successText: 'Checked mesh status',
-      });
-
-      console.log(chalk.cyan('\n------------------- MESH STATUS -------------------\n'));
-      console.log(chalk.white(statusOutput.trim()));
-      console.log(chalk.cyan('\n-------------------------------------------------\n'));
-
-      if (statusOutput.includes('success')) {
-        console.log(chalk.bold.green('✅ API Mesh update successful!\n'));
-        return true;
-      } else if (attempt < maxRetries) {
-        console.log(
-          chalk.bold.yellow(
-            `⚠️  API Mesh status is not "success". Retrying... (${attempt}/${maxRetries})\n`
-          )
-        );
-        await sleep(10000); // Wait 10 seconds before retry
-      } else {
-        console.log(
-          chalk.bold.red(
-            `❌ API Mesh update failed after ${maxRetries} attempts. Please check manually.\n`
-          )
-        );
-        return false;
-      }
-    } catch (error) {
-      if (attempt < maxRetries) {
-        console.log(
-          chalk.bold.yellow(
-            `⚠️  Mesh update attempt ${attempt} failed: ${error.message}. Retrying...\n`
-          )
-        );
-        await sleep(10000); // Wait 10 seconds before retry
-      } else {
-        console.log(
-          chalk.bold.red(`❌ Mesh update failed after ${maxRetries} attempts: ${error.message}\n`)
-        );
-        return false;
-      }
-    }
-  }
-
-  return false;
-}
-
-// Removed URL parsing function - we now preserve the raw aio app deploy output
-// which is more helpful as it shows individual action URLs and Experience Cloud shell URL
-
-/**
  * Main deployment function
  */
 async function deploy() {
   const isProd = process.argv.includes('--workspace=Production');
   const environment = isProd ? 'production' : 'staging';
 
-  console.log(chalk.bold.cyan(`\n🚀 Starting enhanced deployment to ${environment}...\n`));
+  console.log(chalk.bold.cyan(`\n🚀 Starting deployment to ${environment}...\n`));
 
   try {
     // Step 1: Environment Detection
     const envSpinner = createSpinner('Detecting environment...');
-    await sleep(500);
+    await sleep(800); // Longer delay for first step
     const env = detectEnvironment({}, { allowCliDetection: true });
     envSpinner.succeed(formatSpinnerSuccess(`Environment detected: ${env}`));
+    await sleep(300); // Small delay between steps
 
     // Step 2: Clean build
     const cleanSpinner = createSpinner('Cleaning build artifacts...');
     await execAsync('npm run clean');
     cleanSpinner.succeed(formatSpinnerSuccess('Build artifacts cleaned'));
+    await sleep(300);
 
     // Step 3: Run build process
     const buildSpinner = createSpinner('Running build process...');
     await execAsync('node scripts/build.js');
     buildSpinner.succeed(formatSpinnerSuccess('Build process completed'));
+    await sleep(300);
 
     // Step 4: Check if mesh resolver was regenerated
     const meshCheckSpinner = createSpinner('Checking mesh resolver status...');
     const meshStatus = await checkMeshResolverRegeneration();
     meshCheckSpinner.succeed(formatSpinnerSuccess(`Mesh resolver: ${meshStatus.reason}`));
+    await sleep(500); // Longer delay before deployment
 
     // Step 5: Deploy App Builder actions
-    const deploySpinner = createSpinner('Deploying App Builder actions...');
+    console.log(chalk.blue('\n🔧 Deploying App Builder actions...\n'));
     const deployCommand = isProd ? 'aio app deploy --workspace=Production' : 'aio app deploy';
 
-    // Use spawn to show real-time output like npm start does
+    // Use spawn to show real-time output during deployment
     const [cmd, ...args] = deployCommand.split(' ');
 
     await new Promise((resolve, reject) => {
@@ -226,16 +216,16 @@ async function deploy() {
 
       child.on('close', (code) => {
         if (code !== 0) {
-          deploySpinner.fail(chalk.red('App Builder deployment failed'));
+          console.log(chalk.red('\n❌ App Builder deployment failed'));
           reject(new Error(`Deployment failed with exit code ${code}`));
         } else {
-          deploySpinner.succeed(formatSpinnerSuccess('App Builder actions deployed'));
+          console.log(chalk.green('\n✅ App Builder actions deployed'));
           resolve();
         }
       });
 
       child.on('error', (err) => {
-        deploySpinner.fail(chalk.red('Failed to start deployment'));
+        console.log(chalk.red('\n❌ Failed to start deployment'));
         reject(err);
       });
     });
@@ -243,13 +233,17 @@ async function deploy() {
     // Step 6: Update mesh if resolver was regenerated
     if (meshStatus.regenerated) {
       console.log(
-        chalk.yellow('\n🔄 Mesh resolver was regenerated. Updating API Mesh automatically...\n')
+        chalk.yellow('\n🔄 Mesh resolver was regenerated. Updating API Mesh automatically...')
       );
 
-      const meshUpdateSuccess = await updateMeshWithRetry(isProd);
+      const meshUpdateSuccess = await updateMeshWithRetry({
+        isProd,
+        waitTimeSeconds: 90,
+        maxStatusChecks: 2,
+      });
 
       if (!meshUpdateSuccess) {
-        console.log(chalk.red('⚠️  Mesh update failed. You may need to run manually:'));
+        console.log(chalk.red('\n⚠️  Mesh update failed. You may need to run manually:'));
         console.log(chalk.cyan(`   npm run deploy:mesh${isProd ? ':prod' : ''}\n`));
         process.exit(1);
       }
