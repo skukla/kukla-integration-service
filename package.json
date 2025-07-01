@@ -28,7 +28,6 @@
     "prettier": "^3.5.3"
   },
   "scripts": {
-    "start": "node scripts/start-with-mesh.js",
     "build": "node scripts/build.js && aio app build",
     "build:config": "node scripts/generate-frontend.js",
     "build:mesh": "node scripts/generate-frontend.js --mesh-only",

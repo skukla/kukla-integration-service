@@ -67,7 +67,7 @@ The application uses a comprehensive configuration system:
 
    ```bash
    # Quick development cycle
-   npm start                   # Generates frontend assets + fast deploy to staging
+   npm run deploy             # Generates frontend assets + deploy to staging
 
    # Reliable deployment
    npm run deploy              # Generates frontend assets + clean deploy to staging
@@ -86,13 +86,13 @@ The application uses a comprehensive configuration system:
 
    ### Key URLs
 
-   - **Staging App**: Check Adobe Developer Console after `npm start`
+   - **Staging App**: Check Adobe Developer Console after `npm run deploy`
    - **Adobe Experience Platform**: Links provided during deployment
 
    ### Development Process
 
    1. Make your changes locally
-   2. Run `npm start` for quick testing or `npm run deploy` for reliable deployment
+   2. Run `npm run deploy` for deployment to staging environment
    3. Test your changes on the staging URL
    4. Repeat until ready for production
    5. Deploy to production with `npm run deploy:prod`
@@ -160,7 +160,7 @@ Our documentation is organized into focused guides:
 
 ```bash
 # Quick Development
-npm start                    # Fast deploy to staging (no clean)
+npm run deploy              # Deploy to staging
 
 # Reliable Deployment
 npm run deploy              # Clean build and deploy to staging
@@ -181,9 +181,8 @@ npm run test:perf:prod      # Performance testing (production)
 
 Our development approach uses staging workspace for all development:
 
-1. **Quick Development**: `npm start` - Fast deploy for iteration
-2. **Reliable Deploy**: `npm run deploy` - Clean deploy to staging
-3. **Production**: `npm run deploy:prod` - Clean deploy to production
+1. **Development**: `npm run deploy` - Deploy to staging for testing
+2. **Production**: `npm run deploy:prod` - Deploy to production
 
 **Why staging-only?** Adobe I/O Files SDK requires proper credentials and works best in Adobe's environment. This approach eliminates local development complexity while providing a fast, reliable development experience.
 

@@ -105,7 +105,7 @@ The Kukla Integration Service is an Adobe App Builder application that provides 
 
 ```bash
 # Quick development iteration
-npm start                    # Fast deploy to staging
+npm run deploy              # Deploy to staging
 
 # Reliable staging deployment
 npm run deploy              # Clean build and deploy to staging

@@ -101,6 +101,7 @@ aio rt activation logs
 ```
 
 **npm Scripts Benefits:**
+
 - **Consistency**: Same commands work across environments
 - **Integration**: Automatically handles build steps and validation
 - **Documentation**: Scripts are self-documenting in package.json
@@ -127,6 +128,7 @@ aio rt activation logs
 ```
 
 **npm Scripts Benefits:**
+
 - **Consistency**: Same commands work across environments
 - **Integration**: Automatically handles build steps and validation
 - **Documentation**: Scripts are self-documenting in package.json
@@ -175,8 +177,9 @@ COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
 **Required OAuth Credentials:**
 
 All actions that call Commerce APIs must have these inputs in `app.config.yaml`:
+
 - `COMMERCE_CONSUMER_KEY`
-- `COMMERCE_CONSUMER_SECRET` 
+- `COMMERCE_CONSUMER_SECRET`
 - `COMMERCE_ACCESS_TOKEN`
 - `COMMERCE_ACCESS_TOKEN_SECRET`
 
@@ -314,6 +317,92 @@ npm run test:perf:batch     # Batch optimization
 - Use meaningful variable and function names
 - Handle edge cases and errors gracefully
 
+## Frontend UI & Design System Compliance
+
+### CRITICAL: Design System First Approach (Recent Implementation)
+
+**Always use established design system tokens and patterns for UI components:**
+
+#### Design System Compliance Pattern
+
+```css
+/* ✅ CORRECT: Use design system tokens */
+.btn-export {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  border-radius: var(--border-radius-sm);
+  opacity: var(--opacity-70);
+  transition: all var(--transition-quick) var(--transition-ease);
+}
+
+/* ❌ WRONG: Hardcoded values */
+.btn-export {
+  padding: 8px 12px;
+  font-size: 14px; 
+  line-height: 1.2;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+```
+
+**Component Inheritance Pattern:**
+
+```css
+/* ✅ CORRECT: Extend base design system components */
+.btn-export-primary {
+  @extend .btn; /* Inherit from design system base */
+  @extend .btn-primary; /* Inherit design system variant */
+  /* Only add component-specific customizations */
+}
+
+/* ❌ WRONG: Recreate entire button from scratch */
+.btn-export-primary {
+  /* 50+ lines of duplicated button styles */
+}
+```
+
+### Loading States & Content Visibility
+
+**CRITICAL: Complete Content Hiding During Loading**
+
+Loading states must hide ALL content including icons, text, and subtitles:
+
+```css
+/* ✅ CORRECT: Complete content hiding */
+.btn.is-loading * {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.btn.is-loading::before {
+  visibility: hidden !important; /* Hide icon pseudo-elements */
+}
+
+/* ❌ WRONG: Partial hiding that leaves content visible */
+.btn.is-loading .btn-text {
+  display: none; /* Text hidden but icons/subtitles still show */
+}
+```
+
+**Design System Integration Rules:**
+
+- **Use design tokens**: Always reference `--token-name` instead of hardcoded values
+- **Extend base components**: Build on `.btn`, `.card`, etc. established patterns  
+- **Maintain accessibility**: Follow design system focus, contrast, and motion patterns
+- **Performance optimize**: Use design system `contain`, `will-change`, `touch-action` patterns
+- **Responsive behavior**: Use design system breakpoints and touch targets
+- **Loading consistency**: Follow established loading state hiding patterns
+
+**Recent Export Button Implementation:**
+
+- **Layout**: Compact horizontal with emoji icons (⚡ REST API, 🔗 API Mesh)
+- **Tokens**: Full design system token compliance for all properties
+- **Loading**: Complete content hiding with centered spinner
+- **Accessibility**: Proper focus states, high contrast support, reduced motion
+- **Inheritance**: Proper extension of base `.btn` design system patterns
+
 ## Security
 
 - Never commit credentials or secrets
@@ -324,10 +413,35 @@ npm run test:perf:batch     # Batch optimization
 
 ## Deployment
 
-- Use `npm start` for quick development iteration
-- Use `npm run deploy` for reliable staging deployment
+- Use `npm run deploy` for development deployment (includes automatic mesh updates)
+- Use `npm run deploy` for reliable staging deployment (includes mesh updates)
 - Use `npm run deploy:prod` for production
 - Always test in staging before production deployment
+
+### Enhanced npm Scripts (Recent Implementation)
+
+**CRITICAL: Development vs Production Optimization**
+
+Different retry and timeout settings for development vs production:
+
+```bash
+# ✅ Development: npm run deploy
+# - Automatic mesh updates when resolvers change
+# - Optimized for staging environment
+# - Fast iteration with helpful URL output
+
+# ✅ Production: npm run deploy:prod  
+# - Production-robust deployment
+# - Multi-environment support
+# - Same helpful URL format for consistency
+```
+
+**Recent Benefits Added:**
+
+- **Automatic mesh updates**: Both scripts detect resolver changes and update mesh
+- **Preserved URL output**: Both scripts show helpful individual action URLs
+- **Consistent developer experience**: Same workflow regardless of command used
+- **Environment optimization**: Different timeouts for dev vs production needs
 
 ## Context-Aware Development
 
@@ -468,6 +582,41 @@ Frontend configuration is automatically generated during build from backend conf
 ## URL Management
 
 The application uses a consistent URL management system across backend and frontend contexts:
+
+### CRITICAL: Frontend URL Generation Issues (Recent Fix)
+
+**Frontend actions served from static domain must use absolute URLs to reach runtime domain:**
+
+#### The Problem Pattern
+
+```javascript
+// ❌ WRONG: Relative URLs fail when static and runtime domains differ
+// Frontend: https://285361-namespace-stage.adobeio-static.net
+// Actions:  https://285361-namespace-stage.adobeioruntime.net
+const actionUrl = '/api/browse-files'; // 404 - tries static domain
+```
+
+#### The Solution Pattern
+
+```javascript
+// ✅ CORRECT: Absolute URLs with proper domain detection
+const config = getConfig();
+const actionUrl = `${config.runtime.url}/api/v1/web/${config.runtime.namespace}/${actionName}`;
+```
+
+**Root Cause Resolution:**
+
+1. **Configuration Missing**: Added `runtime.url` override in `config/index.js`
+2. **Environment Detection**: Fixed frontend generation to pass detected environment
+3. **URL Format**: Removed incorrect version suffixes from package names
+4. **Domain Separation**: Frontend (static) vs Actions (runtime) domains
+
+**Critical Fix Pattern:**
+
+- Always use absolute URLs for HTMX frontend actions
+- Frontend generation must detect environment for proper URL building
+- Configuration system must include runtime URL overrides
+- Never assume relative URLs work across Adobe I/O domain boundaries
 
 ### Backend URL Building
 
@@ -794,10 +943,10 @@ if (context.config.performance.enabled) {
 
 When an Adobe I/O Runtime action returns a `500 Internal Server Error` but produces **no logs** (`aio rt activation logs <id>` is empty), it indicates a catastrophic, pre-initialization failure. Standard debugging is ineffective. Follow this protocol:
 
-1.  **Inject "Blast" Logging**:
-    -   Add a unique `TRACE_ID` constant to the top of the failing action file (e.g., `const TRACE_ID = 'DIAGNOSTIC_TRACE_...'`).
-    -   Prepend this `TRACE_ID` to aggressive `console.log` statements at every critical execution step (module load, function entry, before/after API calls).
-    -   **Crucially**, modify the final `catch (error)` block to return a custom JSON object, NOT the standard response handler. This ensures a traceable response even if the logging system fails.
+1. **Inject "Blast" Logging**:
+    - Add a unique `TRACE_ID` constant to the top of the failing action file (e.g., `const TRACE_ID = 'DIAGNOSTIC_TRACE_...'`).
+    - Prepend this `TRACE_ID` to aggressive `console.log` statements at every critical execution step (module load, function entry, before/after API calls).
+    - **Crucially**, modify the final `catch (error)` block to return a custom JSON object, NOT the standard response handler. This ensures a traceable response even if the logging system fails.
 
     ```javascript
     // ✅ CORRECT: Custom error response for diagnostics
@@ -819,30 +968,80 @@ When an Adobe I/O Runtime action returns a `500 Internal Server Error` but produ
     }
     ```
 
-2.  **Inspect the Browser Network Response**:
-    -   After deploying the "blast-logged" action, trigger it from the UI.
-    -   Open the browser's developer tools, go to the Network tab, and inspect the response body of the failed 500 request.
-    -   If you see the `trace_id` in the JSON response, your code **is** being deployed and executed. The `original_error` object will contain the true root cause.
+2. **Inspect the Browser Network Response**:
+    - After deploying the "blast-logged" action, trigger it from the UI.
+    - Open the browser's developer tools, go to the Network tab, and inspect the response body of the failed 500 request.
+    - If you see the `trace_id` in the JSON response, your code **is** being deployed and executed. The `original_error` object will contain the true root cause.
 
-3.  **Validate the Entire Build Pipeline**:
-    -   The error may not be in the action code itself, but in a file that generates it.
-    -   In our case, `mesh-resolvers.template.js` was generating an incorrect `mesh-resolvers.js` file, causing an authentication mismatch.
-    -   Always inspect templates, generators, and configuration files (`config/environments/*.js`) as potential root causes.
+3. **Validate the Entire Build Pipeline**:
+    - The error may not be in the action code itself, but in a file that generates it.
+    - In our case, `mesh-resolvers.template.js` was generating an incorrect `mesh-resolvers.js` file, causing an authentication mismatch.
+    - Always inspect templates, generators, and configuration files (`config/environments/*.js`) as potential root causes.
 
-4.  **The "Scorched Earth" Solution (Last Resort)**:
-    -   If an action is irrecoverably broken and unloggable, there may be corrupted state on the platform.
-    -   Comment out the entire action definition in `app.config.yaml`.
-    -   Run `npm run deploy`. This will delete the action from the runtime.
-    -   Uncomment the action definition in `app.config.yaml`.
-    -   Run `npm run deploy` again. This will re-provision the action from a clean state.
+4. **The "Scorched Earth" Solution (Last Resort)**:
+    - If an action is irrecoverably broken and unloggable, there may be corrupted state on the platform.
+    - Comment out the entire action definition in `app.config.yaml`.
+    - Run `npm run deploy`. This will delete the action from the runtime.
+    - Uncomment the action definition in `app.config.yaml`.
+    - Run `npm run deploy` again. This will re-provision the action from a clean state.
 
 ### CRITICAL: `process.env` Causes Catastrophic Failures
 
 Reinforcing a core principle: **NEVER use `process.env` in any code that runs on Adobe I/O Runtime**.
 
--   **Symptom**: A `500 Internal Server Error` with no logs.
--   **Cause**: A configuration file (`config/environments/staging.js`) used `apiKey: process.env.MESH_API_KEY`. In the deployed action, `process.env.MESH_API_KEY` was `undefined`, which caused the underlying `fetch` to crash the entire Node.js runtime before logging could initialize.
--   **Solution**: Always pass secrets and configuration as action parameters via `.env` -> `app.config.yaml` -> `params`. The code should then reference `params.MY_VARIABLE`.
+- **Symptom**: A `500 Internal Server Error` with no logs.
+- **Cause**: A configuration file (`config/environments/staging.js`) used `apiKey: process.env.MESH_API_KEY`. In the deployed action, `process.env.MESH_API_KEY` was `undefined`, which caused the underlying `fetch` to crash the entire Node.js runtime before logging could initialize.
+- **Solution**: Always pass secrets and configuration as action parameters via `.env` -> `app.config.yaml` -> `params`. The code should then reference `params.MY_VARIABLE`.
+
+## Mesh Resolver Development Workflow
+
+### CRITICAL: Template-First Development Pattern
+
+**ALWAYS** follow this exact workflow when modifying mesh resolvers:
+
+```bash
+# ✅ CORRECT: Complete mesh update workflow
+1. Edit mesh-resolvers.template.js (NEVER edit mesh-resolvers.js directly)
+2. Use npm run deploy for complete workflow
+3. Test changes: npm run test:action get-products-mesh
+
+# ❌ WRONG: Partial workflow that bypasses proper mesh updates
+# npm run build:mesh-resolver  # Only regenerates, doesn't deploy!
+# npm run deploy:mesh          # Only updates mesh, doesn't deploy app!
+```
+
+**Mesh Resolver Development Rules:**
+
+- **Template First**: Always edit `mesh-resolvers.template.js`, never `mesh-resolvers.js`
+- **Complete Workflow**: Use `npm run deploy` for development (build → regenerate → deploy → mesh update)
+- **Production**: Use `npm run deploy:prod` + `npm run deploy:mesh:prod` for production deployment
+- **Smart Mesh Updates**: Scripts use proper status polling instead of sending multiple update commands
+- **Test**: Always test mesh changes with `npm run test:action get-products-mesh`
+
+**Mesh Update Logic (Improved Pattern):**
+
+- **Single Update Command**: Send mesh update command only once per attempt
+- **Status Polling**: Poll mesh status every 30s until completion (max 3 minutes for dev, 10 minutes for prod)
+- **Proper Retries**: Only retry if there's an actual error, not just "in progress" status
+- **No Redundant Updates**: Never send multiple update commands simultaneously
+
+**Template Substitution Patterns:**
+
+```javascript
+// ✅ CORRECT: Use template variables for environment-specific values
+const commerceUrl = '{{{COMMERCE_BASE_URL}}}' + '/rest/V1/products';
+
+// ❌ WRONG: Hardcoded values that won't work across environments
+const commerceUrl = 'https://staging.example.com/rest/V1/products';
+```
+
+**Why This Matters:**
+
+- `mesh-resolvers.js` is auto-generated from `mesh-resolvers.template.js`
+- Direct edits to `mesh-resolvers.js` are lost on regeneration
+- Template ensures environment-specific configuration substitution
+- Deployment updates the mesh with new resolver code
+- Testing validates resolver changes work correctly
 
 ## API Mesh Integration Patterns
 
@@ -1063,6 +1262,7 @@ const response = await makeCommerceRequest('/products', {
 **Required Configuration:**
 
 All Commerce actions must have these OAuth credentials in `app.config.yaml`:
+
 ```yaml
 COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
 COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
@@ -1154,3 +1354,83 @@ EOF
 
 Use heredoc when: edit tools fail, multiple search_replace attempts fail, complex changes needed.
 Benefits: Guarantees complete file replacement, works reliably, eliminates edit tool inconsistencies.
+
+## Recent Implementation Patterns (Successfully Applied)
+
+### Git Workflow for Feature Implementation
+
+**CRITICAL: Clean Branch Strategy for UI/UX Improvements**
+
+Recent successful pattern for implementing UI improvements:
+
+1. **Create descriptive feature branch**: `fix/csv-output-fixes` (covers scope of changes)
+2. **Incremental commits with specific focus**:
+   - `fix: resolve browse-files 404 error with absolute URLs` - Single problem focus
+   - `feat: enhance npm scripts with improved URL output and automatic mesh updates` - Enhancement focus
+   - `feat: implement compact horizontal export buttons with design system compliance` - UI focus
+
+3. **Fast-forward merge strategy**:
+   - Rebase feature branch on master before merge
+   - Use fast-forward merge to maintain clean history
+   - Delete feature branch after successful merge
+
+### UI Implementation Success Pattern
+
+**Proven approach for component improvements:**
+
+1. **Start with problem analysis**: Identify specific UX issues (404 errors, loading states)
+2. **Design system first**: Always check existing patterns before creating new ones  
+3. **Multiple design options**: Create variations for user selection when UI is subjective
+4. **User feedback integration**: Let user choose preferred design before final implementation
+5. **Clean up unused code**: Remove alternative implementations after user selection
+6. **Design system audit**: Ensure full compliance with established tokens and patterns
+
+### Configuration and URL Issues Resolution
+
+**Systematic approach to Adobe I/O Runtime URL problems:**
+
+1. **Domain analysis**: Identify static vs runtime domain separation
+2. **Configuration gaps**: Add missing overrides (`runtime.url` in config system)
+3. **Environment detection**: Fix generation scripts to pass proper environment
+4. **URL format validation**: Remove incorrect suffixes and ensure proper formatting
+5. **Frontend generation integration**: Update scripts to handle environment-specific URLs
+
+**Key Success Factors:**
+
+- **Incremental changes**: Each commit solves one specific problem
+- **Thorough testing**: Deploy and verify each change works independently  
+- **Clean documentation**: Comprehensive commit messages with problem/solution clarity
+- **User-centered approach**: Multiple options when design is subjective, user final choice
+- **Design system compliance**: Always audit against established patterns
+
+### API Mesh `additionalTypeDefs` Constraint
+
+**CRITICAL: `additionalTypeDefs` must be a single line.**
+
+The `mesh.json` configuration file requires that all `additionalTypeDefs` be provided as a single-line string within a string array. Multi-line formats or arrays of multiple strings will cause parsing errors during mesh deployment.
+
+```javascript
+// ✅ CORRECT: All types in a single-line string
+"additionalTypeDefs": [
+  "type Product { sku: String } type Category { id: Int } extend type Query { my_query: [Product] }"
+]
+
+// ❌ WRONG: Multi-line strings not supported
+"additionalTypeDefs": [
+  `type Product {
+     sku: String
+   }`
+]
+
+// ❌ WRONG: Multiple strings in the array not supported
+"additionalTypeDefs": [
+  "type Product { sku: String }",
+  "type Category { id: Int }",
+  "extend type Query { my_query: [Product] }"
+]
+```
+
+**Rule:**
+- When editing `mesh.json`, ensure the `additionalTypeDefs` value is a single-line string.
+- Do not reformat the type definitions into multiple lines for readability.
+- Add new types or fields by modifying the existing single-line string.

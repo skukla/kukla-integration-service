@@ -11,11 +11,10 @@ This guide covers the deployment process for the Adobe App Builder Commerce inte
 ### **Quick Development Iteration**
 
 ```bash
-# Build and deploy to staging automatically
-npm start
+# Build and deploy to staging
+npm run deploy
 # ↳ Builds and deploys to staging
-# ↳ Opens browser to staging URL
-# ↳ Watches for file changes and auto-redeploys
+# ↳ Shows deployment URLs
 ```
 
 ### **Reliable Staging Deployment**
@@ -132,16 +131,16 @@ module.exports = {
 ### **Development Cycle**
 
 ```bash
-# 1. Start development with auto-deploy
-npm start
+# 1. Deploy to staging for development
+npm run deploy
 
-# 2. Make code changes
-# Files are automatically watched and redeployed
+# 2. Make code changes and redeploy
+npm run deploy
 
 # 3. Test changes in browser
-# Staging URL opens automatically
+# Use the staging URLs shown after deployment
 
-# 4. When satisfied, deploy clean build
+# 4. When satisfied, validate deployment
 npm run deploy
 
 # 5. Test thoroughly in staging
@@ -194,17 +193,11 @@ Before deploying:
 #### **Staging Deployment**
 
 ```bash
-# Option 1: Quick development deployment
-npm start
-# - Watches for changes
-# - Auto-redeploys on file changes
-# - Opens browser to staging URL
-
-# Option 2: Clean build deployment
+# Staging deployment
 npm run deploy
 # - Runs clean build
 # - Deploys to staging workspace
-# - More reliable for testing
+# - Shows deployment URLs for testing
 ```
 
 #### **Production Deployment**
@@ -437,8 +430,8 @@ jobs:
 1. **Slow Deployments**
 
    ```bash
-   # Use npm start for faster iteration during development
-   npm start
+   # Use npm run deploy for development iteration
+npm run deploy
 
    # Use npm run deploy for clean builds
    npm run deploy

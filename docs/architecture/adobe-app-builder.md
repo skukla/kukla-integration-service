@@ -255,7 +255,7 @@ Adobe App Builder uses a staging-first development approach:
 
 ```bash
 # Quick development iteration
-npm start
+npm run deploy
 # ↳ Generates frontend config and URLs
 # ↳ Builds and deploys to staging
 # ↳ Opens browser to staging URL
