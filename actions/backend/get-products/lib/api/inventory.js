@@ -4,11 +4,11 @@
  */
 
 const { loadConfig } = require('../../../../../config');
+const { getAuthToken } = require('../../../../../src/commerce/api/integration');
 const { buildCommerceUrl } = require('../../../../../src/core/routing');
-const { getAuthToken } = require('../auth');
 
 /**
- * Get inventory data for a list of SKUs
+ * Get inventory data for a list of SKUs using simple Stock Items API
  * @param {string[]} skus - List of product SKUs
  * @param {Object} params - Request parameters
  * @returns {Promise<Object>} Inventory data keyed by SKU
@@ -61,20 +61,14 @@ async function getInventory(skus, params) {
 
     const data = await response.json();
 
-    // Process inventory data
+    // Process MSI source items data
     for (const item of data.items || []) {
-      if (!results[item.sku]) {
+      if (item.sku) {
         results[item.sku] = {
-          qty: 0,
-          is_in_stock: false,
+          qty: parseFloat(item.quantity) || 0,
+          is_in_stock: item.status === 1,
         };
       }
-
-      // Sum quantities across all sources
-      results[item.sku].qty += parseFloat(item.quantity) || 0;
-
-      // Product is in stock if any source has it in stock
-      results[item.sku].is_in_stock = results[item.sku].is_in_stock || item.status === 1;
     }
   }
 
