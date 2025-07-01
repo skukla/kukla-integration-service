@@ -11,72 +11,7 @@ const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
 const { createTraceContext, traceStep } = require('../../../src/core/tracing');
-
-/**
- * Format file size in bytes to a human-readable string
- * @param {number} bytes - File size in bytes
- * @returns {string} Formatted file size
- */
-function formatFileSize(bytes) {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let size = bytes;
-  let unitIndex = 0;
-
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-
-  // Round to 2 decimal places
-  return `${Math.round(size * 100) / 100} ${units[unitIndex]}`;
-}
-
-/**
- * Format step message for API response
- * @param {string} name - Step name
- * @param {string} status - Step status (success/error)
- * @param {Object} details - Step details
- * @returns {string} Formatted step message
- */
-function formatStepMessage(name, status, details = {}) {
-  const stepMessages = {
-    'extract-params': {
-      success: 'Successfully extracted and validated action parameters',
-      error: 'Failed to extract action parameters',
-    },
-    'validate-input': {
-      success: 'Successfully validated Commerce API credentials and URL',
-      error: 'Failed to validate input parameters',
-    },
-    'fetch-and-enrich': {
-      success: (count) =>
-        `Successfully fetched and enriched ${count} products with category and inventory data`,
-      error: 'Failed to fetch products from Commerce API',
-    },
-    'build-products': {
-      success: (count) => `Successfully transformed ${count} products for export`,
-      error: 'Failed to transform product data',
-    },
-    'create-csv': {
-      success: (size) => `Successfully generated CSV file (${formatFileSize(size)})`,
-      error: 'Failed to generate CSV file',
-    },
-    'store-csv': {
-      success: (info) => {
-        const size = parseInt(info.properties.size) || info.properties.size;
-        const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
-        return `Successfully stored CSV file as ${info.fileName} (${formattedSize})`;
-      },
-      error: 'Failed to store CSV file',
-    },
-  };
-
-  return status === 'success'
-    ? typeof stepMessages[name][status] === 'function'
-      ? stepMessages[name][status](details.count || details.size || details.info)
-      : stepMessages[name][status]
-    : `${stepMessages[name][status]}: ${details.error || ''}`;
-}
+const { formatStepMessage } = require('../../../src/core/utils');
 
 /**
  * Main action handler for get-products
@@ -108,6 +43,9 @@ async function main(params) {
       return await fetchAndEnrichProducts(actionParams, config);
     });
     steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
+
+    // Sort products by SKU for consistent output
+    products.sort((a, b) => a.sku.localeCompare(b.sku));
 
     // Step 3: Build product data
     const builtProducts = await traceStep(trace, 'build-products', async () => {
