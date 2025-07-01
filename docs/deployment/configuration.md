@@ -632,10 +632,10 @@ describe('Configuration', () => {
 
    ```bash
    # Force specific environment
-   NODE_ENV=staging npm start
+   NODE_ENV=staging npm run deploy
 
    # Debug configuration loading
-   DEBUG=config:* npm start
+   DEBUG=config:* npm run deploy
    ```
 
 ## Related Documentation
