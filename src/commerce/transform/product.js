@@ -111,7 +111,13 @@ function mapProductToCsvRow(product) {
   return {
     sku: product.sku,
     name: product.name,
-    category_id: Array.isArray(product.categories) ? product.categories[0] : '',
+    category_id: Array.isArray(product.categories)
+      ? typeof product.categories[0] === 'string'
+        ? product.categories[0]
+        : product.categories[0] && product.categories[0].name
+          ? product.categories[0].name
+          : ''
+      : '',
     message: product.description || '',
     thumbnail_url: getPrimaryImageUrl(product.images),
     value: product.price,
