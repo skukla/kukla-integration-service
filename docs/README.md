@@ -70,7 +70,7 @@ docs/
 | API Mesh integration  | [API Mesh Integration](development/api-mesh-integration.md)          | `mesh-resolvers.js`, `mesh.json`       |
 | True Mesh pattern     | [True Mesh Pattern](architecture/true-mesh-pattern.md)              | `mesh-resolvers.js`                     |
 | Configuration setup   | [Configuration Guide](development/configuration.md)                 | `config/`, `.env`, `app.config.yaml`   |
-| Deploy changes        | [Deployment Guide](deployment/environments.md)                       | `npm start`, `npm run deploy`           |
+| Deploy changes        | [Deployment Guide](deployment/environments.md)                       | `npm run deploy`, `npm run deploy:prod` |
 | Test actions          | [Testing Guide](development/testing.md)                              | `npm run test:action`                   |
 
 ## 📖 Documentation Conventions

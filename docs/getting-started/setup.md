@@ -59,8 +59,8 @@ nano config/environments/.env.staging
 ### 4. **Verify Setup**
 
 ```bash
-# Test the application
-npm start
+# Deploy the application
+npm run deploy
 
 # Test individual actions (automatic config loading)
 npm run test:action get-products        # REST API method
@@ -229,11 +229,10 @@ module.exports = {
 This project uses a staging-first approach - there's no local server:
 
 ```bash
-# Quick iteration during development
-npm start
+# Deploy to staging for development
+npm run deploy
 # ↳ Builds and deploys to staging automatically
-# ↳ Opens browser to staging URL
-# ↳ Watches for file changes
+# ↳ Shows deployment URLs for testing
 
 # More reliable deployment
 npm run deploy
