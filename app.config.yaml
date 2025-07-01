@@ -115,6 +115,18 @@ application:
               COMMERCE_ADMIN_PASSWORD:
                 type: string
                 description: Admin password for authentication
+              COMMERCE_CONSUMER_KEY:
+                type: string
+                description: OAuth 1.0 consumer key for Commerce API authentication
+              COMMERCE_CONSUMER_SECRET:
+                type: string
+                description: OAuth 1.0 consumer secret for Commerce API authentication
+              COMMERCE_ACCESS_TOKEN:
+                type: string
+                description: OAuth 1.0 access token for Commerce API authentication
+              COMMERCE_ACCESS_TOKEN_SECRET:
+                type: string
+                description: OAuth 1.0 access token secret for Commerce API authentication
               MESH_API_KEY:
                 type: string
                 description: API key for API Mesh authentication
