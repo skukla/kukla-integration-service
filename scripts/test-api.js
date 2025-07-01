@@ -6,9 +6,9 @@
 
 const ora = require('ora');
 
-const { getProducts } = require('../actions/backend/get-products/lib/api/products');
 const { loadConfig } = require('../config');
-// OAuth authentication is tested during the actual API calls
+const { makeCommerceRequest } = require('../src/commerce/api/integration');
+const { extractActionParams } = require('../src/core/http/client');
 
 require('dotenv').config();
 
@@ -88,20 +88,28 @@ async function testEndpoint(config, spinner) {
     // Resume spinner for API call
     spinner.start('Fetching products from Commerce API...');
 
-    // Test the endpoint using OAuth credentials
-    const response = await getProducts({
-      COMMERCE_BASE_URL: config.baseUrl,
+    // Create action parameters for OAuth authentication
+    const actionParams = extractActionParams({
       COMMERCE_CONSUMER_KEY: process.env.COMMERCE_CONSUMER_KEY,
       COMMERCE_CONSUMER_SECRET: process.env.COMMERCE_CONSUMER_SECRET,
       COMMERCE_ACCESS_TOKEN: process.env.COMMERCE_ACCESS_TOKEN,
       COMMERCE_ACCESS_TOKEN_SECRET: process.env.COMMERCE_ACCESS_TOKEN_SECRET,
-      pageSize: config.pageSize,
-      fields: config.fields,
     });
+
+    // Test the endpoint using OAuth authentication (same as working actions)
+    const endpoint = `/products?searchCriteria[pageSize]=${config.pageSize}&searchCriteria[currentPage]=1`;
+    const requestOptions = {
+      method: 'GET',
+    };
+
+    const response = await makeCommerceRequest(endpoint, requestOptions, actionParams);
+
+    // Extract products from Commerce API response
+    const products = response.body?.items || [];
 
     return {
       success: true,
-      data: response,
+      data: products,
     };
   } catch (error) {
     return {

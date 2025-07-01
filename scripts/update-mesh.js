@@ -49,7 +49,8 @@ function runCommand(command, { isInteractive = false, spinnerText, successText }
 async function main() {
   const isProd = process.argv.includes('--prod');
   const environment = isProd ? 'production' : 'staging';
-  const waitTimeInSeconds = 90;
+  const pollIntervalSeconds = isProd ? 60 : 30; // Longer intervals for production
+  const maxPollAttempts = isProd ? 10 : 6; // More attempts for production (10 min vs 3 min)
 
   console.log(chalk.bold.cyan(`\n🚀 Starting API Mesh update for ${environment} environment...\n`));
 
@@ -67,26 +68,48 @@ async function main() {
     });
     console.log(chalk.blue('\nUpdate command sent. Mesh is provisioning...'));
 
-    const waitSpinner = ora(`Waiting ${waitTimeInSeconds} seconds...`).start();
-    await new Promise((resolve) => setTimeout(resolve, waitTimeInSeconds * 1000));
-    waitSpinner.succeed(chalk.green('Wait complete.'));
+    // Poll status until completion or timeout
+    let pollAttempt = 1;
+    let lastStatus = '';
 
-    const statusOutput = await runCommand('aio api-mesh:status', {
-      spinnerText: 'Checking final mesh status...',
-      successText: 'Checked final mesh status',
-    });
+    while (pollAttempt <= maxPollAttempts) {
+      const waitSpinner = ora(
+        `Waiting ${pollIntervalSeconds}s before status check ${pollAttempt}/${maxPollAttempts}...`
+      ).start();
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalSeconds * 1000));
+      waitSpinner.succeed(chalk.green('Wait complete'));
 
-    console.log(chalk.cyan('\n------------------- MESH STATUS -------------------\n'));
-    console.log(chalk.white(statusOutput.trim()));
-    console.log(chalk.cyan('\n-------------------------------------------------\n'));
+      const statusOutput = await runCommand('aio api-mesh:status', {
+        spinnerText: `Checking mesh status (${pollAttempt}/${maxPollAttempts})...`,
+        successText: `Checked mesh status (${pollAttempt}/${maxPollAttempts})`,
+      });
 
-    if (statusOutput.includes('success')) {
-      console.log(chalk.bold.green('✅ API Mesh update successful!\n'));
-    } else {
-      console.log(
-        chalk.bold.yellow('⚠️  API Mesh status is not "success". Please check the output above.\n')
-      );
+      lastStatus = statusOutput.toLowerCase();
+
+      console.log(chalk.cyan('\n------------------- MESH STATUS -------------------\n'));
+      console.log(chalk.white(statusOutput.trim()));
+      console.log(chalk.cyan('\n-------------------------------------------------\n'));
+
+      if (lastStatus.includes('success')) {
+        console.log(chalk.bold.green('✅ API Mesh update successful!\n'));
+        return;
+      } else if (lastStatus.includes('error') || lastStatus.includes('failed')) {
+        console.log(chalk.red(`❌ Mesh update failed with error. Status: ${lastStatus.trim()}`));
+        process.exit(1);
+      } else {
+        // Still in progress (provisioning, updating, etc.)
+        console.log(chalk.yellow(`⏳ Mesh still updating... (${lastStatus.trim()})`));
+        pollAttempt++;
+      }
     }
+
+    // If we're here, we hit max polls
+    console.log(
+      chalk.yellow(`⏱️  Mesh update timed out after ${maxPollAttempts * pollIntervalSeconds}s`)
+    );
+    console.log(
+      chalk.bold.yellow('⚠️  Please check mesh status manually with: aio api-mesh:status\n')
+    );
   } catch (error) {
     console.error(chalk.red('\nScript failed. Please see the error messages above.'));
     process.exit(1);

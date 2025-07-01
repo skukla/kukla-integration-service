@@ -99,6 +99,7 @@ try {
 
   // Extract mesh configuration properties for injection into resolver
   const meshConfig = {
+    commerceBaseUrl: config.commerce.baseUrl, // Include for hash calculation
     pagination: {
       defaultPageSize: config.mesh.pagination.defaultPageSize,
       maxPages: config.mesh.pagination.maxPages,
@@ -147,6 +148,10 @@ try {
   // Replace all instances of the placeholder with the stringified config object
   let finalResolver = template.replace(/__MESH_CONFIG__/g, JSON.stringify(meshConfig, null, 2));
 
+  // Replace Commerce base URL template variables
+  const commerceBaseUrl = config.commerce.baseUrl;
+  finalResolver = finalResolver.replace(/\{\{\{COMMERCE_BASE_URL\}\}\}/g, commerceBaseUrl);
+
   // Add generation metadata as a comment at the top of the file
   const metadataComment = `/* GENERATION_METADATA: ${JSON.stringify(metadata)} */\n`;
   finalResolver = metadataComment + finalResolver;
@@ -155,6 +160,7 @@ try {
   fs.writeFileSync(resolverPath, finalResolver);
 
   console.log('✅ Successfully generated mesh-resolvers.js from template');
+  console.log(`   - Commerce base URL: ${commerceBaseUrl}`);
   console.log(`   - Default page size: ${meshConfig.pagination.defaultPageSize}`);
   console.log(`   - Max pages: ${meshConfig.pagination.maxPages}`);
   console.log(`   - Category batch size: ${meshConfig.batching.categories}`);
