@@ -80,6 +80,7 @@ async function generateCsv({
   rowMapper,
   compression: compressionOptions,
   chunkSize,
+  preContent,
   params = {},
 }) {
   const csvConfig = getCsvConfig(params);
@@ -101,7 +102,8 @@ async function generateCsv({
 
   // Generate CSV content with streaming for memory efficiency
   const headerString = stringifier.getHeaderString();
-  let csvContent = headerString;
+  let csvContent = preContent ? preContent : '';
+  csvContent += headerString;
 
   // Process records in chunks for memory efficiency
   for (let i = 0; i < records.length; i += chunkSize) {
