@@ -1,4 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"9ff66b1bf2ad17e165cf7f044896c9bd9cf9d9204ba8d87e03c3ab92deef5e98","configHash":"1ee5ec6b14a02b2056d1d1cd9c3277c7f02115a98acd724d0f4e3b63905e3e40","generatedAt":"2025-06-30T04:29:31.560Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"8325afb7e3c614a5d02428feccfa7202b00a2c708bac76b586972399464b31e5","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-01T22:57:39.473Z","version":"1.0.0"} */
 /* GENERATION_METADATA: {"templateHash":"dd2969d8d7b29e0bb047422f60c177457ad1dc48d3cc6ebc221abbd09ae7b3ee","configHash":"f9b465e5b2e75c29ed4e701d3bd084d7827f8aa545ab3123626de7668748d184","generatedAt":"2025-06-30T00:53:26.971Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
@@ -9,218 +9,499 @@
  * with admin token authentication via operationHeaders.
  */
 
+// Configuration from injected config
+const meshConfig = {
+  pagination: {
+    defaultPageSize: 150,
+    maxPages: 25,
+  },
+  batching: {
+    categories: 20,
+    inventory: 20,
+    maxConcurrent: 10,
+    requestDelay: 100,
+  },
+  timeout: 30000,
+  retries: 3,
+};
+
+const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
+
+// Web Crypto API-based OAuth implementation for API Mesh
+async function createOAuthHeader(oauthParams, method, url) {
+  const { consumerKey, consumerSecret, accessToken, accessTokenSecret } = oauthParams;
+
+  // OAuth 1.0 parameters
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+    b.toString(16).padStart(2, '0')
+  ).join('');
+
+  // Parse URL to get base URL and parameters
+  const urlObj = new URL(url);
+  const baseUrl = urlObj.protocol + '//' + urlObj.host + urlObj.pathname;
+
+  // Collect OAuth parameters
+  const oauthSignatureParams = {
+    oauth_consumer_key: consumerKey,
+    oauth_token: accessToken,
+    oauth_signature_method: 'HMAC-SHA256',
+    oauth_timestamp: timestamp,
+    oauth_nonce: nonce,
+    oauth_version: '1.0',
+  };
+
+  // Collect query parameters
+  const queryParams = {};
+  for (const [key, value] of urlObj.searchParams) {
+    queryParams[key] = value;
+  }
+
+  // Combine all parameters for signature base
+  const allParams = { ...oauthSignatureParams, ...queryParams };
+
+  // Create parameter string (percent encode keys and values, then sort)
+  const parameterString = Object.keys(allParams)
+    .sort()
+    .map((key) => percentEncode(key) + '=' + percentEncode(allParams[key]))
+    .join('&');
+
+  // Create signature base string
+  const signatureBaseString =
+    method.toUpperCase() + '&' + percentEncode(baseUrl) + '&' + percentEncode(parameterString);
+
+  // Create signing key
+  const signingKey = percentEncode(consumerSecret) + '&' + percentEncode(accessTokenSecret);
+
+  // Generate HMAC-SHA256 signature using Web Crypto API
+  const signature = await generateHmacSignature(signingKey, signatureBaseString);
+
+  // Add signature to OAuth parameters
+  oauthSignatureParams.oauth_signature = signature;
+
+  // Create Authorization header
+  const headerParams = Object.keys(oauthSignatureParams)
+    .sort()
+    .map((key) => percentEncode(key) + '="' + percentEncode(oauthSignatureParams[key]) + '"')
+    .join(', ');
+
+  return 'OAuth ' + headerParams;
+}
+
+// Web Crypto API HMAC-SHA256 implementation
+async function generateHmacSignature(key, data) {
+  try {
+    // Convert strings to ArrayBuffer
+    const keyBuffer = new TextEncoder().encode(key);
+    const dataBuffer = new TextEncoder().encode(data);
+
+    // Import the key for HMAC
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBuffer,
+      {
+        name: 'HMAC',
+        hash: 'SHA-256',
+      },
+      false,
+      ['sign']
+    );
+
+    // Generate signature
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, dataBuffer);
+
+    // Convert to base64
+    const signatureArray = new Uint8Array(signatureBuffer);
+    let binaryString = '';
+    for (let i = 0; i < signatureArray.length; i++) {
+      binaryString += String.fromCharCode(signatureArray[i]);
+    }
+
+    return btoa(binaryString);
+  } catch (error) {
+    throw new Error('Failed to generate HMAC signature: ' + error.message);
+  }
+}
+
+// Percent encoding for OAuth (RFC 3986)
+function percentEncode(str) {
+  if (str === null || str === undefined) return '';
+  return encodeURIComponent(str).replace(/[!'()*]/g, function (c) {
+    return '%' + c.charCodeAt(0).toString(16).toUpperCase();
+  });
+}
+
+// Main mesh products resolver with Web Crypto OAuth
+async function fetchAllProductsFromSource(context, pageSize, maxPages) {
+  const stepStart = Date.now();
+  const allProducts = [];
+  let currentPage = 1;
+
+  // Get OAuth credentials from context headers
+  const oauthParams = {
+    consumerKey: context.headers['x-commerce-consumer-key'],
+    consumerSecret: context.headers['x-commerce-consumer-secret'],
+    accessToken: context.headers['x-commerce-access-token'],
+    accessTokenSecret: context.headers['x-commerce-access-token-secret'],
+  };
+
+  if (
+    !oauthParams.consumerKey ||
+    !oauthParams.consumerSecret ||
+    !oauthParams.accessToken ||
+    !oauthParams.accessTokenSecret
+  ) {
+    throw new Error(
+      'OAuth credentials required in headers: x-commerce-consumer-key, x-commerce-consumer-secret, x-commerce-access-token, x-commerce-access-token-secret'
+    );
+  }
+
+  try {
+    while (currentPage <= maxPages) {
+      const url =
+        commerceBaseUrl +
+        '/rest/V1/products?searchCriteria[pageSize]=' +
+        pageSize +
+        '&searchCriteria[currentPage]=' +
+        currentPage +
+        '&fields=items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries[file,url,position,types],custom_attributes],total_count';
+
+      const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: authHeader,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          'Products API request failed: ' + response.status + ' ' + response.statusText
+        );
+      }
+
+      const data = await response.json();
+
+      if (!data.items || !Array.isArray(data.items)) {
+        break;
+      }
+
+      allProducts.push(...data.items);
+
+      if (
+        data.items.length < pageSize ||
+        !data.total_count ||
+        allProducts.length >= data.total_count
+      ) {
+        break;
+      }
+
+      currentPage++;
+    }
+
+    return allProducts;
+  } catch (error) {
+    throw new Error('Failed to fetch products: ' + error.message);
+  }
+}
+
+async function fetchCategoriesFromSource(context, categoryIds, performanceMetrics) {
+  const stepStart = Date.now();
+  const categoryMap = {};
+  const batchSize = meshConfig.batching.categories;
+
+  // Only fetch uncached categories
+  if (categoryIds.length === 0) {
+    // All categories were cached - no API calls needed!
+    return categoryMap;
+  }
+
+  // Get OAuth credentials from context headers
+  const oauthParams = {
+    consumerKey: context.headers['x-commerce-consumer-key'],
+    consumerSecret: context.headers['x-commerce-consumer-secret'],
+    accessToken: context.headers['x-commerce-access-token'],
+    accessTokenSecret: context.headers['x-commerce-access-token-secret'],
+  };
+
+  if (
+    !oauthParams.consumerKey ||
+    !oauthParams.consumerSecret ||
+    !oauthParams.accessToken ||
+    !oauthParams.accessTokenSecret
+  ) {
+    throw new Error('OAuth credentials required for categories');
+  }
+
+  try {
+    // Process in batches
+    for (let i = 0; i < categoryIds.length; i += batchSize) {
+      const batch = categoryIds.slice(i, i + batchSize);
+
+      const promises = batch.map(async (categoryId) => {
+        const url = commerceBaseUrl + '/rest/V1/categories/' + categoryId;
+        const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Authorization: authHeader,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.warn('Category ' + categoryId + ' fetch failed: ' + response.status);
+          return null;
+        }
+
+        const category = await response.json();
+        return { id: categoryId, data: category };
+      });
+
+      const results = await Promise.all(promises);
+
+      results.forEach((result) => {
+        if (result && result.data) {
+          categoryMap[result.id] = result.data;
+        }
+      });
+    }
+
+    return categoryMap;
+  } catch (error) {
+    throw new Error('Failed to fetch categories: ' + error.message);
+  }
+}
+
+/**
+ * Get admin Bearer token using username/password authentication
+ * @param {Object} context - GraphQL context with headers
+ * @returns {Promise<string>} Bearer token
+ */
+async function getAdminToken(context) {
+  const username = context.adminCredentials?.username;
+  const password = context.adminCredentials?.password;
+
+  if (!username || !password) {
+    throw new Error(
+      'Admin credentials required for inventory: adminUsername and adminPassword GraphQL variables'
+    );
+  }
+
+  const tokenUrl =
+    'https://citisignal-com774.adobedemo.com' + '/rest/all/V1/integration/admin/token';
+
+  const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get admin token: ' + response.status + ' ' + response.statusText);
+  }
+
+  const token = await response.json();
+  return token; // Returns the bearer token string
+}
+
+async function fetchInventoryFromSource(context, skus, performanceMetrics) {
+  const stepStart = Date.now();
+  const inventoryMap = {};
+
+  try {
+    // Use Bearer token authentication for inventory (like REST API does)
+    const bearerToken = await getAdminToken(context);
+    const batchSize = meshConfig.batching.inventory;
+
+    console.log('Fetching inventory for', skus.length, 'SKUs with Bearer token');
+
+    for (let i = 0; i < skus.length; i += batchSize) {
+      const batch = skus.slice(i, i + batchSize);
+
+      // Use same format as working REST API
+      const searchCriteria = {
+        filterGroups: [
+          {
+            filters: [
+              {
+                field: 'sku',
+                value: batch.join(','),
+                conditionType: 'in',
+              },
+            ],
+          },
+        ],
+      };
+
+      const queryParams = new URLSearchParams({
+        searchCriteria: JSON.stringify(searchCriteria),
+      });
+
+      const url =
+        'https://citisignal-com774.adobedemo.com' +
+        '/rest/all/V1/inventory/source-items?' +
+        queryParams.toString();
+
+      console.log('Calling inventory API:', url.substring(0, 100) + '...');
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer ' + bearerToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Inventory API response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(
+          'Inventory batch fetch failed: ' +
+            response.status +
+            ' ' +
+            response.statusText +
+            ' - ' +
+            errorText
+        );
+        continue;
+      }
+
+      const data = await response.json();
+      console.log('Inventory API returned', data.items?.length || 0, 'items');
+
+      if (data.items && Array.isArray(data.items)) {
+        data.items.forEach((item) => {
+          if (item.sku) {
+            console.log('Inventory for', item.sku, ':', item.quantity);
+            inventoryMap[item.sku] = {
+              qty: item.quantity || 0,
+              is_in_stock: item.status === 1,
+            };
+          }
+        });
+      }
+    }
+
+    console.log('Final inventory map has', Object.keys(inventoryMap).length, 'entries');
+    return inventoryMap;
+  } catch (error) {
+    console.error('Inventory fetch error:', error);
+    throw new Error('Failed to fetch inventory: ' + error.message);
+  }
+}
+
+// Export the resolvers
 module.exports = {
   resolvers: {
     Query: {
       mesh_products_enriched: {
         resolve: async (parent, args, context) => {
-          const startTime = Date.now();
-          const performanceMetrics = {
-            steps: {},
-            apiCalls: {
-              products: 0,
-              categories: 0,
-              inventory: 0,
-              total: 0,
-            },
-            timing: {},
-          };
-
           try {
-            // Get admin token from headers (will be passed to operationHeaders)
-            const adminToken = context.headers['x-commerce-admin-token'];
-
-            if (!adminToken) {
-              throw new Error('Admin token required via x-commerce-admin-token header');
-            }
-
-            // Configuration from injected config
-            const meshConfig = {
-              pagination: {
-                defaultPageSize: 150,
-                maxPages: 25,
-              },
-              batching: {
-                categories: 20,
-                inventory: 20,
-                maxConcurrent: 10,
-                requestDelay: 100,
-              },
-              timeout: 30000,
-              retries: 3,
-            };
             const pageSize = args.pageSize || meshConfig.pagination.defaultPageSize;
-            const maxPages = args.maxPages || meshConfig.pagination.maxPages;
+            const maxPages = meshConfig.pagination.maxPages;
 
-            // STEP 1: Fetch all products
-            const step1Start = Date.now();
-            const allProducts = await fetchAllProductsFromSource(
-              context,
-              pageSize,
-              maxPages,
-              performanceMetrics
-            );
-            const step1Time = Date.now() - step1Start;
-            performanceMetrics.steps.productFetch = step1Time;
-            performanceMetrics.timing.productFetch = step1Time + 'ms';
+            // Store admin credentials from GraphQL arguments
+            context.adminCredentials = {
+              username: args.adminUsername,
+              password: args.adminPassword,
+            };
 
-            // STEP 2: Extract category IDs and SKUs
-            const step2Start = Date.now();
+            // Step 1: Fetch all products
+            const allProducts = await fetchAllProductsFromSource(context, pageSize, maxPages);
+
+            // Step 2: Extract category IDs and SKUs
             const categoryIds = new Set();
             const skus = [];
 
             allProducts.forEach((product) => {
-              skus.push(product.sku);
-
-              // Extract category IDs from various locations
-              if (Array.isArray(product.category_ids)) {
-                product.category_ids.forEach((id) => categoryIds.add(String(id)));
+              // Extract SKUs
+              if (product.sku) {
+                skus.push(product.sku);
               }
 
-              if (Array.isArray(product.custom_attributes)) {
+              // Extract category IDs from custom attributes
+              if (product.custom_attributes && Array.isArray(product.custom_attributes)) {
                 product.custom_attributes.forEach((attr) => {
-                  if (attr.attribute_code === 'category_ids' && Array.isArray(attr.value)) {
-                    attr.value.forEach((id) => categoryIds.add(String(id)));
+                  if (attr.attribute_code === 'category_ids' && attr.value) {
+                    try {
+                      const ids = Array.isArray(attr.value) ? attr.value : attr.value.split(',');
+                      ids.forEach((id) => categoryIds.add(id.toString()));
+                    } catch (e) {
+                      // Skip invalid category IDs
+                    }
                   }
                 });
               }
             });
 
-            const step2Time = Date.now() - step2Start;
-            performanceMetrics.steps.dataExtraction = step2Time;
-            performanceMetrics.timing.dataExtraction = step2Time + 'ms';
-
-            // STEP 3: Fetch category and inventory data in parallel
-            const step3Start = Date.now();
+            // Step 3: Fetch category and inventory data in parallel
             const [categoryMap, inventoryMap] = await Promise.all([
-              fetchCategoriesFromSource(context, Array.from(categoryIds), performanceMetrics),
-              fetchInventoryFromSource(context, skus, performanceMetrics),
+              fetchCategoriesFromSource(context, Array.from(categoryIds)),
+              fetchInventoryFromSource(context, skus),
             ]);
-            const step3Time = Date.now() - step3Start;
-            performanceMetrics.steps.parallelFetch = step3Time;
-            performanceMetrics.timing.parallelFetch = step3Time + 'ms';
 
-            // STEP 4: Enrich products with category, inventory, and image data
-            const step4Start = Date.now();
+            // Step 4: Enrich products with category and inventory data (RAW - no transformation)
+            const enrichedProducts = allProducts.map((product) => {
+              const sku = product.sku;
+              const inventory = inventoryMap[sku] || { qty: 0, is_in_stock: false };
 
-            // MEMORY OPTIMIZATION: Pre-allocate array with known size
-            const enrichedProducts = new Array(allProducts.length);
+              // Extract category objects from custom attributes
+              let categoryObjects = [];
+              if (product.custom_attributes && Array.isArray(product.custom_attributes)) {
+                product.custom_attributes.forEach((attr) => {
+                  if (attr.attribute_code === 'category_ids' && attr.value) {
+                    try {
+                      const ids = Array.isArray(attr.value) ? attr.value : attr.value.split(',');
+                      categoryObjects = ids
+                        .map((id) => categoryMap[id.toString()])
+                        .filter((cat) => cat)
+                        .map((cat) => ({ id: cat.id, name: cat.name }));
+                    } catch (e) {
+                      // Skip invalid category data
+                    }
+                  }
+                });
+              }
 
-            // SIMPLIFIED OPTIMIZATION: Use map with pre-allocated array
-            allProducts.forEach((product, index) => {
-              // Get inventory data
-              const inventory = inventoryMap[product.sku] || { qty: 0, is_in_stock: false };
+              // Return RAW consolidated data - let buildProducts step handle transformation
+              // Sort media_gallery_entries to prioritize AEM URLs (starting with http) over catalog paths
+              let sortedMediaGallery = [];
+              if (product.media_gallery_entries && Array.isArray(product.media_gallery_entries)) {
+                sortedMediaGallery = [...product.media_gallery_entries].sort((a, b) => {
+                  const aIsUrl = a.file && a.file.startsWith('http');
+                  const bIsUrl = b.file && b.file.startsWith('http');
 
-              // Add inventory to product as qty field for compatibility
-              const enrichedProduct = {
+                  // AEM URLs (starting with http) should come first
+                  if (aIsUrl && !bIsUrl) return -1;
+                  if (!aIsUrl && bIsUrl) return 1;
+
+                  // If both are URLs or both are paths, maintain original order
+                  return 0;
+                });
+              }
+
+              return {
                 ...product,
                 qty: inventory.qty,
-                inventory: {
-                  qty: inventory.qty,
-                  is_in_stock: inventory.is_in_stock,
-                },
+                categories: categoryObjects, // Raw category objects with id/name
+                inventory: inventory,
+                media_gallery_entries: sortedMediaGallery, // AEM URLs prioritized over catalog paths
               };
-
-              // Add category objects for buildProducts compatibility
-              const categoryObjects = [];
-
-              // From direct category_ids
-              if (Array.isArray(product.category_ids)) {
-                product.category_ids.forEach((id) => {
-                  const categoryName = categoryMap[String(id)];
-                  if (categoryName) {
-                    categoryObjects.push({ id: String(id), name: categoryName });
-                  }
-                });
-              }
-
-              // From custom_attributes
-              if (Array.isArray(product.custom_attributes)) {
-                product.custom_attributes.forEach((attr) => {
-                  if (attr.attribute_code === 'category_ids' && Array.isArray(attr.value)) {
-                    attr.value.forEach((id) => {
-                      const categoryName = categoryMap[String(id)];
-                      if (categoryName) {
-                        categoryObjects.push({ id: String(id), name: categoryName });
-                      }
-                    });
-                  }
-                });
-              }
-
-              // Add categories in the format expected by buildProducts
-              if (categoryObjects.length > 0) {
-                enrichedProduct.categories = categoryObjects;
-              }
-
-              // Add images in the format expected by buildProducts
-              if (
-                Array.isArray(product.media_gallery_entries) &&
-                product.media_gallery_entries.length > 0
-              ) {
-                enrichedProduct.images = product.media_gallery_entries.map(transformImageEntry);
-              }
-
-              enrichedProducts[index] = enrichedProduct;
             });
-
-            const step4Time = Date.now() - step4Start;
-            performanceMetrics.steps.dataEnrichment = step4Time;
-            performanceMetrics.timing.dataEnrichment = step4Time + 'ms';
-
-            const executionTime = Date.now() - startTime;
-
-            // Calculate API call totals
-            performanceMetrics.apiCalls.total =
-              performanceMetrics.apiCalls.products +
-              performanceMetrics.apiCalls.categories +
-              performanceMetrics.apiCalls.inventory;
 
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
-              message:
-                'Successfully fetched and enriched ' +
-                enrichedProducts.length +
-                ' products with detailed performance analysis',
-              status: 'success',
-              performance: {
-                processedProducts: enrichedProducts.length,
-                apiCalls: performanceMetrics.apiCalls.total,
-                method: 'API Mesh',
-                executionTime: executionTime,
-                // Flattened performance data
-                totalTime: executionTime + 'ms',
-                productFetch: performanceMetrics.timing.productFetch,
-                dataExtraction: performanceMetrics.timing.dataExtraction,
-                parallelFetch: performanceMetrics.timing.parallelFetch,
-                dataEnrichment: performanceMetrics.timing.dataEnrichment,
-                productsApiCalls: performanceMetrics.apiCalls.products,
-                categoriesApiCalls: performanceMetrics.apiCalls.categories,
-                inventoryApiCalls: performanceMetrics.apiCalls.inventory,
-                totalApiCalls: performanceMetrics.apiCalls.total,
-                uniqueCategories: Array.from(categoryIds).length,
-                productCount: allProducts.length,
-                skuCount: skus.length,
-              },
             };
           } catch (error) {
-            return {
-              products: [],
-              total_count: 0,
-              message: 'Error: ' + error.message,
-              status: 'error',
-              performance: {
-                processedProducts: 0,
-                apiCalls: performanceMetrics.apiCalls.total,
-                method: 'API Mesh',
-                executionTime: Date.now() - startTime,
-                breakdown: {
-                  error: error.message,
-                  partialMetrics: performanceMetrics,
-                },
-              },
-            };
+            console.error('Mesh resolver error:', error);
+            throw new Error('Failed to fetch enriched products: ' + error.message);
           }
         },
       },
@@ -229,349 +510,7 @@ module.exports = {
 };
 
 /**
- * Transforms a media gallery entry into a simplified image object.
- * Based on src/commerce/transform/product.js transformImageEntry function
- * @private
- * @param {Object} img - Media gallery entry from Adobe Commerce
- * @param {string} img.file - Image file path
- * @param {number} img.position - Image position/order
- * @param {Array<string>} [img.types] - Image type/role identifiers
- * @returns {Object} Simplified image object
- */
-function transformImageEntry(img) {
-  // Determine the appropriate URL
-  let url;
-  if (img.url) {
-    // Use the provided URL if available
-    url = img.url;
-  } else if (img.file && img.file.startsWith('http')) {
-    // If file is already a full URL, use it directly
-    url = img.file;
-  } else {
-    // Construct catalog URL for relative paths
-    url = 'catalog/product' + img.file;
-  }
-
-  const imageObj = {
-    filename: img.file,
-    url: url,
-    position: img.position,
-  };
-  if (img.types && img.types.length > 0) {
-    imageObj.roles = img.types;
-  }
-  return imageObj;
-}
-
-/**
  * In-memory category cache for resolver execution
  * OPTIMIZATION: Prevents redundant category lookups within single request
  */
 const categoryCache = new Map();
-
-/**
- * Fetch category data using direct REST API calls with performance tracking
- * OPTIMIZATION: Uses in-memory caching to avoid redundant lookups
- */
-async function fetchCategoriesFromSource(context, categoryIds, performanceMetrics) {
-  const stepStart = Date.now();
-  const categoryMap = {};
-
-  // Check cache first - OPTIMIZATION
-  const uncachedCategoryIds = [];
-  categoryIds.forEach((categoryId) => {
-    if (categoryCache.has(categoryId)) {
-      categoryMap[categoryId] = categoryCache.get(categoryId);
-    } else {
-      uncachedCategoryIds.push(categoryId);
-    }
-  });
-
-  // Only fetch uncached categories
-  if (uncachedCategoryIds.length === 0) {
-    // All categories were cached - no API calls needed!
-    return categoryMap;
-  }
-
-  // Get admin token from context headers
-  const adminToken = context.headers['x-commerce-admin-token'];
-  if (!adminToken) {
-    throw new Error('Admin token required in x-commerce-admin-token header');
-  }
-
-  // Use existing Commerce configuration
-  const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
-
-  // Individual category fetching with caching optimization
-  const meshConfig = {
-    pagination: {
-      defaultPageSize: 150,
-      maxPages: 25,
-    },
-    batching: {
-      categories: 20,
-      inventory: 20,
-      maxConcurrent: 10,
-      requestDelay: 100,
-    },
-    timeout: 30000,
-    retries: 3,
-  };
-  const batchSize = meshConfig.batching.categories;
-  const maxConcurrent = meshConfig.batching.maxConcurrent || 15;
-
-  for (let i = 0; i < uncachedCategoryIds.length; i += batchSize) {
-    const batch = uncachedCategoryIds.slice(i, i + batchSize);
-
-    const categoryPromises = batch.slice(0, maxConcurrent).map(async (categoryId) => {
-      try {
-        const url = commerceBaseUrl + '/rest/V1/categories/' + categoryId;
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            Authorization: 'Bearer ' + adminToken,
-            'Content-Type': 'application/json',
-            // HTTP OPTIMIZATION: Connection and compression headers
-            Connection: 'keep-alive',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Cache-Control': 'no-cache',
-            'User-Agent': 'Adobe-App-Builder-Mesh/1.0',
-          },
-        });
-
-        performanceMetrics.apiCalls.categories++;
-
-        if (response.ok) {
-          const category = await response.json();
-          if (category && category.name) {
-            // Store in both cache and result map
-            categoryCache.set(categoryId, category.name);
-            categoryMap[categoryId] = category.name;
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to fetch category ' + categoryId + ': ' + error.message);
-      }
-    });
-
-    await Promise.all(categoryPromises);
-  }
-
-  return categoryMap;
-}
-
-/**
- * Fetch inventory data using BULK REST API calls with performance tracking
- * OPTIMIZATION: Uses 'in' condition to fetch multiple SKUs in single calls
- */
-async function fetchInventoryFromSource(context, skus, performanceMetrics) {
-  const stepStart = Date.now();
-  const inventoryMap = {};
-
-  // Get admin token from context headers
-  const adminToken = context.headers['x-commerce-admin-token'];
-  if (!adminToken) {
-    throw new Error('Admin token required in x-commerce-admin-token header');
-  }
-
-  // Use existing Commerce configuration
-  const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
-
-  // BULK OPTIMIZATION: Use larger batch sizes for 'in' condition
-  const bulkBatchSize = 40; // REVERTED: Back to 40 to avoid extra API call
-  const maxConcurrent = 3; // Limit concurrent bulk calls
-
-  // Split SKUs into batches for bulk processing
-  const batches = [];
-  for (let i = 0; i < skus.length; i += bulkBatchSize) {
-    batches.push(skus.slice(i, i + bulkBatchSize));
-  }
-
-  // Process batches with controlled concurrency
-  for (let i = 0; i < batches.length; i += maxConcurrent) {
-    const currentBatches = batches.slice(i, i + maxConcurrent);
-
-    const batchPromises = currentBatches.map(async (batch) => {
-      const apiCallStart = Date.now();
-
-      try {
-        // BULK OPTIMIZATION: Use 'in' condition for multiple SKUs in single call
-        const skuList = batch.join(',');
-        const queryParams = new URLSearchParams({
-          'searchCriteria[filter_groups][0][filters][0][field]': 'sku',
-          'searchCriteria[filter_groups][0][filters][0][value]': skuList,
-          'searchCriteria[filter_groups][0][filters][0][condition_type]': 'in',
-          'searchCriteria[pageSize]': batch.length.toString(),
-        });
-
-        const url = commerceBaseUrl + '/rest/V1/stockItems?' + queryParams.toString();
-
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            Authorization: 'Bearer ' + adminToken,
-            'Content-Type': 'application/json',
-            // HTTP OPTIMIZATION: Connection and compression headers
-            Connection: 'keep-alive',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Cache-Control': 'no-cache',
-            'User-Agent': 'Adobe-App-Builder-Mesh/1.0',
-          },
-        });
-
-        performanceMetrics.apiCalls.inventory++;
-
-        if (response.ok) {
-          // RESPONSE OPTIMIZATION: Efficient JSON parsing with error handling
-          let result;
-          try {
-            result = await response.json();
-          } catch (jsonError) {
-            throw new Error('Failed to parse inventory response JSON: ' + jsonError.message);
-          }
-
-          if (result && result.items && result.items.length > 0) {
-            // Process all returned stock items
-            result.items.forEach((stockItem) => {
-              if (stockItem.sku) {
-                inventoryMap[stockItem.sku] = {
-                  qty: stockItem.qty || 0,
-                  is_in_stock: stockItem.is_in_stock || false,
-                };
-              }
-            });
-          }
-
-          // Set defaults for any SKUs not returned
-          batch.forEach((sku) => {
-            if (!inventoryMap[sku]) {
-              inventoryMap[sku] = { qty: 0, is_in_stock: false };
-            }
-          });
-        } else {
-          // Default inventory for failed lookups
-          batch.forEach((sku) => {
-            inventoryMap[sku] = { qty: 0, is_in_stock: false };
-          });
-        }
-      } catch (error) {
-        // Default inventory for failed lookups
-        batch.forEach((sku) => {
-          inventoryMap[sku] = { qty: 0, is_in_stock: false };
-        });
-      }
-    });
-
-    await Promise.all(batchPromises);
-  }
-
-  return inventoryMap;
-}
-
-/**
- * Fetch all products using direct REST API calls with performance tracking
- * OPTIMIZATION: Uses parallel page fetching for better performance
- */
-async function fetchAllProductsFromSource(context, pageSize, maxPages, performanceMetrics) {
-  const stepStart = Date.now();
-  const allProducts = [];
-
-  // Get admin token from context headers
-  const adminToken = context.headers['x-commerce-admin-token'];
-  if (!adminToken) {
-    throw new Error('Admin token required in x-commerce-admin-token header');
-  }
-
-  // Use existing Commerce configuration
-  const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
-
-  // OPTIMIZATION: First fetch to determine total pages
-  const firstPageResponse = await fetchProductPage(
-    1,
-    pageSize,
-    adminToken,
-    commerceBaseUrl,
-    performanceMetrics
-  );
-
-  if (!firstPageResponse || !firstPageResponse.items) {
-    return allProducts;
-  }
-
-  allProducts.push(...firstPageResponse.items);
-  const totalPages = Math.min(Math.ceil(firstPageResponse.total_count / pageSize), maxPages);
-
-  // OPTIMIZATION: If multiple pages needed, fetch remaining pages in parallel
-  if (totalPages > 1) {
-    const remainingPages = [];
-    for (let page = 2; page <= totalPages; page++) {
-      remainingPages.push(page);
-    }
-
-    // Fetch remaining pages in parallel with concurrency limit
-    const maxConcurrentPages = 3; // REVERTED: Back to 3 for optimal performance
-
-    for (let i = 0; i < remainingPages.length; i += maxConcurrentPages) {
-      const pageBatch = remainingPages.slice(i, i + maxConcurrentPages);
-
-      const batchPromises = pageBatch.map((page) =>
-        fetchProductPage(page, pageSize, adminToken, commerceBaseUrl, performanceMetrics)
-      );
-
-      const batchResults = await Promise.all(batchPromises);
-
-      // Add results from this batch
-      batchResults.forEach((result) => {
-        if (result && result.items) {
-          allProducts.push(...result.items);
-        }
-      });
-    }
-  }
-
-  return allProducts;
-}
-
-/**
- * Helper function to fetch a single page of products
- * OPTIMIZATION: Enhanced with HTTP connection optimization
- */
-async function fetchProductPage(page, pageSize, adminToken, commerceBaseUrl, performanceMetrics) {
-  const apiCallStart = Date.now();
-
-  // FIELD OPTIMIZATION: Only fetch fields actually used in final output
-  // Reverted custom attributes filtering to ensure category data is available
-  const queryParams = new URLSearchParams({
-    'searchCriteria[pageSize]': pageSize,
-    'searchCriteria[currentPage]': page,
-    fields: 'items[sku,name,price,categories,media_gallery_entries,custom_attributes],total_count',
-  });
-
-  const url = commerceBaseUrl + '/rest/V1/products?' + queryParams.toString();
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: 'Bearer ' + adminToken,
-      'Content-Type': 'application/json',
-      // HTTP OPTIMIZATION: Connection and compression headers
-      Connection: 'keep-alive',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Cache-Control': 'no-cache',
-      'User-Agent': 'Adobe-App-Builder-Mesh/1.0',
-    },
-  });
-
-  performanceMetrics.apiCalls.products++;
-
-  if (!response.ok) {
-    throw new Error('Products API request failed: ' + response.status + ' ' + response.statusText);
-  }
-
-  // RESPONSE OPTIMIZATION: Efficient JSON parsing with error handling
-  try {
-    return await response.json();
-  } catch (jsonError) {
-    throw new Error('Failed to parse product response JSON: ' + jsonError.message);
-  }
-}
