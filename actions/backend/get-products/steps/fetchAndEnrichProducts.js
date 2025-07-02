@@ -11,9 +11,10 @@ const { getInventory } = require('../lib/api/inventory');
  * Fetch products from Commerce API with OAuth authentication
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object with Commerce URL
+ * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Array>} Array of product objects
  */
-async function fetchAndEnrichProducts(params, config) {
+async function fetchAndEnrichProducts(params, config, trace = null) {
   // Direct object access with full autocompletion ✨
   const commerceUrl = config.commerce.baseUrl;
 
@@ -34,7 +35,8 @@ async function fetchAndEnrichProducts(params, config) {
         {
           method: 'GET',
         },
-        params
+        params,
+        trace
       );
 
       if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
@@ -58,14 +60,14 @@ async function fetchAndEnrichProducts(params, config) {
     console.log(`Enriching ${allProducts.length} products with category and inventory data...`);
 
     // Get auth token for enrichment calls
-    const token = await getAuthToken(params);
+    const token = await getAuthToken(params, trace);
 
     // Enrich with categories
-    const enrichedProducts = await enrichProductsWithCategories(allProducts, token, params);
+    const enrichedProducts = await enrichProductsWithCategories(allProducts, token, params, trace);
 
     // Get SKUs for inventory lookup
     const skus = allProducts.map((product) => product.sku);
-    const inventoryMap = await getInventory(skus, params);
+    const inventoryMap = await getInventory(skus, params, trace);
 
     // Add inventory data to products
     const finalProducts = enrichedProducts.map((product) => ({

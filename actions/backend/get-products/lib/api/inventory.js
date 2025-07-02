@@ -6,14 +6,16 @@
 const { loadConfig } = require('../../../../../config');
 const { getAuthToken } = require('../../../../../src/commerce/api/integration');
 const { buildCommerceUrl } = require('../../../../../src/core/routing');
+const { incrementApiCalls } = require('../../../../../src/core/tracing');
 
 /**
  * Get inventory data for a list of SKUs using simple Stock Items API
  * @param {string[]} skus - List of product SKUs
  * @param {Object} params - Request parameters
+ * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object>} Inventory data keyed by SKU
  */
-async function getInventory(skus, params) {
+async function getInventory(skus, params, trace = null) {
   const config = loadConfig(params);
   const token = await getAuthToken(params);
   const url = buildCommerceUrl(config.commerce.baseUrl, config.commerce.paths.stockItem);
@@ -42,6 +44,11 @@ async function getInventory(skus, params) {
         },
       ],
     };
+
+    // Track API call if trace context is provided
+    if (trace) {
+      incrementApiCalls(trace);
+    }
 
     const response = await fetch(
       `${url}?${new URLSearchParams({
