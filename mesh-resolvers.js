@@ -1,5 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"8325afb7e3c614a5d02428feccfa7202b00a2c708bac76b586972399464b31e5","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-01T22:57:39.473Z","version":"1.0.0"} */
-/* GENERATION_METADATA: {"templateHash":"dd2969d8d7b29e0bb047422f60c177457ad1dc48d3cc6ebc221abbd09ae7b3ee","configHash":"f9b465e5b2e75c29ed4e701d3bd084d7827f8aa545ab3123626de7668748d184","generatedAt":"2025-06-30T00:53:26.971Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"295a61015511e3764b7e94e41e6161d6c3a9fb4ae46d2a75f6d990b83093c170","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-01T23:51:02.102Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern with Performance Analysis
@@ -132,7 +131,7 @@ function percentEncode(str) {
 }
 
 // Main mesh products resolver with Web Crypto OAuth
-async function fetchAllProductsFromSource(context, pageSize, maxPages) {
+async function fetchAllProductsFromSource(context, pageSize, maxPages, performance = null) {
   const stepStart = Date.now();
   const allProducts = [];
   let currentPage = 1;
@@ -167,6 +166,12 @@ async function fetchAllProductsFromSource(context, pageSize, maxPages) {
         '&fields=items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries[file,url,position,types],custom_attributes],total_count';
 
       const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
+
+      // Track API call
+      if (performance) {
+        performance.productsApiCalls++;
+        performance.totalApiCalls++;
+      }
 
       const response = await fetch(url, {
         method: 'GET',
@@ -207,7 +212,7 @@ async function fetchAllProductsFromSource(context, pageSize, maxPages) {
   }
 }
 
-async function fetchCategoriesFromSource(context, categoryIds, performanceMetrics) {
+async function fetchCategoriesFromSource(context, categoryIds, performance = null) {
   const stepStart = Date.now();
   const categoryMap = {};
   const batchSize = meshConfig.batching.categories;
@@ -243,6 +248,13 @@ async function fetchCategoriesFromSource(context, categoryIds, performanceMetric
       const promises = batch.map(async (categoryId) => {
         const url = commerceBaseUrl + '/rest/V1/categories/' + categoryId;
         const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
+
+        // Track API call
+        if (performance) {
+          performance.categoriesApiCalls++;
+          performance.totalApiCalls++;
+        }
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -278,9 +290,10 @@ async function fetchCategoriesFromSource(context, categoryIds, performanceMetric
 /**
  * Get admin Bearer token using username/password authentication
  * @param {Object} context - GraphQL context with headers
+ * @param {Object} [performance] - Optional performance tracking
  * @returns {Promise<string>} Bearer token
  */
-async function getAdminToken(context) {
+async function getAdminToken(context, performance = null) {
   const username = context.adminCredentials?.username;
   const password = context.adminCredentials?.password;
 
@@ -292,6 +305,12 @@ async function getAdminToken(context) {
 
   const tokenUrl =
     'https://citisignal-com774.adobedemo.com' + '/rest/all/V1/integration/admin/token';
+
+  // Track API call
+  if (performance) {
+    performance.inventoryApiCalls++;
+    performance.totalApiCalls++;
+  }
 
   const response = await fetch(tokenUrl, {
     method: 'POST',
@@ -309,13 +328,13 @@ async function getAdminToken(context) {
   return token; // Returns the bearer token string
 }
 
-async function fetchInventoryFromSource(context, skus, performanceMetrics) {
+async function fetchInventoryFromSource(context, skus, performance = null) {
   const stepStart = Date.now();
   const inventoryMap = {};
 
   try {
     // Use Bearer token authentication for inventory (like REST API does)
-    const bearerToken = await getAdminToken(context);
+    const bearerToken = await getAdminToken(context, performance);
     const batchSize = meshConfig.batching.inventory;
 
     console.log('Fetching inventory for', skus.length, 'SKUs with Bearer token');
@@ -348,6 +367,12 @@ async function fetchInventoryFromSource(context, skus, performanceMetrics) {
         queryParams.toString();
 
       console.log('Calling inventory API:', url.substring(0, 100) + '...');
+
+      // Track API call
+      if (performance) {
+        performance.inventoryApiCalls++;
+        performance.totalApiCalls++;
+      }
 
       const response = await fetch(url, {
         method: 'GET',
@@ -403,8 +428,24 @@ module.exports = {
       mesh_products_enriched: {
         resolve: async (parent, args, context) => {
           try {
+            const startTime = Date.now();
             const pageSize = args.pageSize || meshConfig.pagination.defaultPageSize;
             const maxPages = meshConfig.pagination.maxPages;
+
+            // Initialize performance tracking
+            const performance = {
+              processedProducts: 0,
+              apiCalls: 0,
+              productsApiCalls: 0,
+              categoriesApiCalls: 0,
+              inventoryApiCalls: 0,
+              totalApiCalls: 0,
+              uniqueCategories: 0,
+              productCount: 0,
+              skuCount: 0,
+              method: 'API Mesh',
+              executionTime: 0,
+            };
 
             // Store admin credentials from GraphQL arguments
             context.adminCredentials = {
@@ -413,7 +454,12 @@ module.exports = {
             };
 
             // Step 1: Fetch all products
-            const allProducts = await fetchAllProductsFromSource(context, pageSize, maxPages);
+            const allProducts = await fetchAllProductsFromSource(
+              context,
+              pageSize,
+              maxPages,
+              performance
+            );
 
             // Step 2: Extract category IDs and SKUs
             const categoryIds = new Set();
@@ -442,8 +488,8 @@ module.exports = {
 
             // Step 3: Fetch category and inventory data in parallel
             const [categoryMap, inventoryMap] = await Promise.all([
-              fetchCategoriesFromSource(context, Array.from(categoryIds)),
-              fetchInventoryFromSource(context, skus),
+              fetchCategoriesFromSource(context, Array.from(categoryIds), performance),
+              fetchInventoryFromSource(context, skus, performance),
             ]);
 
             // Step 4: Enrich products with category and inventory data (RAW - no transformation)
@@ -495,9 +541,23 @@ module.exports = {
               };
             });
 
+            // Calculate final performance metrics
+            const endTime = Date.now();
+            performance.executionTime = (endTime - startTime) / 1000; // Convert to seconds
+            performance.processedProducts = enrichedProducts.length;
+            performance.productCount = enrichedProducts.length;
+            performance.skuCount = skus.length;
+            performance.uniqueCategories = categoryIds.size;
+
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
+              message:
+                'Successfully fetched ' +
+                enrichedProducts.length +
+                ' products with category and inventory data',
+              status: 'success',
+              performance: performance,
             };
           } catch (error) {
             console.error('Mesh resolver error:', error);
