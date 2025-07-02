@@ -204,13 +204,16 @@ async function main(params) {
     }
 
     if (actionParams.format === 'json') {
+      // Use mesh performance data if available, otherwise use trace data
+      const performanceData = meshResponse.performance || formatTrace(trace);
+
       return response.success({
         products: enrichedProducts,
         total_count: enrichedProducts.length,
         message: `Successfully fetched ${enrichedProducts.length} products`,
         status: 'success',
         steps,
-        performance: formatTrace(trace),
+        performance: performanceData,
       });
     }
 
