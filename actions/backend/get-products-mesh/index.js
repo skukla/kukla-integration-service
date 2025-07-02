@@ -5,7 +5,7 @@
 const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../../../src/core/http/client');
 const { response } = require('../../../src/core/http/responses');
-const { createTraceContext, traceStep, formatTrace } = require('../../../src/core/tracing');
+const { createTraceContext, traceStep } = require('../../../src/core/tracing');
 const { formatStepMessage } = require('../../../src/core/utils');
 // Import shared step functions for consistency
 const buildProducts = require('../get-products/steps/buildProducts');
@@ -205,7 +205,12 @@ async function main(params) {
 
     if (actionParams.format === 'json') {
       // Use mesh performance data if available, otherwise use trace data
-      const performanceData = meshResponse.performance || formatTrace(trace);
+      const meshPerformanceData = meshResponse.performance || {};
+      const performanceData = {
+        ...meshPerformanceData,
+        // Map totalApiCalls to apiCalls for UI consistency
+        apiCalls: meshPerformanceData.totalApiCalls || meshPerformanceData.apiCalls || 1,
+      };
 
       return response.success({
         products: enrichedProducts,
