@@ -645,13 +645,10 @@ module.exports = {
             if (performance.inventoryApiCalls > 0) sourcesUsed++; // Inventory API
             performance.dataSourcesUnified = sourcesUsed;
 
-            // Calculate what REST API would require vs mesh consolidation
-            const potentialRestCalls =
-              performance.productsApiCalls + // Same product calls
-              performance.categoriesFetched +
-              performance.categoriesCached + // Individual category calls (no cache benefit)
-              Math.ceil(skus.length / 20); // Inventory batch calls
-            performance.queryConsolidation = potentialRestCalls + ':1';
+            // Calculate actual mesh consolidation ratio
+            // Use actual calls made by mesh for consistency
+            const actualMeshCalls = performance.totalApiCalls || performance.apiCalls;
+            performance.queryConsolidation = actualMeshCalls + ':1';
 
             // Calculate actual cache hit rate
             if (performance.categoriesCached + performance.categoriesFetched > 0) {
