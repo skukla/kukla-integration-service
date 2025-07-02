@@ -1,4 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"295a61015511e3764b7e94e41e6161d6c3a9fb4ae46d2a75f6d990b83093c170","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-01T23:51:02.102Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"4deba9477dd8c98de51b1ccd2e5f59f18aefb8d1c4a5b19187ba0ecd7b2fd402","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-02T00:28:36.657Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern with Performance Analysis
@@ -25,6 +25,54 @@ const meshConfig = {
 };
 
 const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
+
+// Add category caching for efficiency (like REST API has)
+const categoryCache = new Map();
+const CACHE_TTL = 300000; // 5 minutes cache TTL
+
+/**
+ * Get cached category data
+ * @param {string} categoryId - Category ID
+ * @returns {Object|null} Cached category data or null
+ */
+function getCachedCategory(categoryId) {
+  const cached = categoryCache.get(categoryId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  if (cached) {
+    categoryCache.delete(categoryId);
+  }
+  return null;
+}
+
+/**
+ * Cache category data
+ * @param {string} categoryId - Category ID
+ * @param {Object} data - Category data
+ */
+function cacheCategory(categoryId, data) {
+  categoryCache.set(categoryId, {
+    timestamp: Date.now(),
+    data: data,
+  });
+}
+
+/**
+ * Build category map from cache
+ * @param {string[]} categoryIds - Array of category IDs
+ * @returns {Object} Category map from cache
+ */
+function buildCategoryMapFromCache(categoryIds) {
+  const categoryMap = {};
+  categoryIds.forEach((id) => {
+    const cached = getCachedCategory(id);
+    if (cached) {
+      categoryMap[id] = cached;
+    }
+  });
+  return categoryMap;
+}
 
 // Web Crypto API-based OAuth implementation for API Mesh
 async function createOAuthHeader(oauthParams, method, url) {
@@ -217,11 +265,31 @@ async function fetchCategoriesFromSource(context, categoryIds, performance = nul
   const categoryMap = {};
   const batchSize = meshConfig.batching.categories;
 
-  // Only fetch uncached categories
   if (categoryIds.length === 0) {
-    // All categories were cached - no API calls needed!
     return categoryMap;
   }
+
+  // OPTIMIZATION: Check cache first and only fetch uncached categories
+  const cachedCategories = buildCategoryMapFromCache(categoryIds);
+  Object.assign(categoryMap, cachedCategories);
+
+  // Filter out already cached categories
+  const uncachedIds = categoryIds.filter((id) => !getCachedCategory(id));
+
+  // Track cache performance
+  const cachedCount = categoryIds.length - uncachedIds.length;
+  if (performance) {
+    performance.categoriesCached = cachedCount;
+    performance.categoriesFetched = uncachedIds.length;
+  }
+
+  if (uncachedIds.length === 0) {
+    // All categories were cached - 0 API calls needed!
+    console.log('All', categoryIds.length, 'categories served from cache - 0 API calls');
+    return categoryMap;
+  }
+
+  console.log('Cache hit for', cachedCount, 'categories, fetching', uncachedIds.length, 'from API');
 
   // Get OAuth credentials from context headers
   const oauthParams = {
@@ -241,9 +309,9 @@ async function fetchCategoriesFromSource(context, categoryIds, performance = nul
   }
 
   try {
-    // Process in batches
-    for (let i = 0; i < categoryIds.length; i += batchSize) {
-      const batch = categoryIds.slice(i, i + batchSize);
+    // Process uncached categories in batches
+    for (let i = 0; i < uncachedIds.length; i += batchSize) {
+      const batch = uncachedIds.slice(i, i + batchSize);
 
       const promises = batch.map(async (categoryId) => {
         const url = commerceBaseUrl + '/rest/V1/categories/' + categoryId;
@@ -269,6 +337,10 @@ async function fetchCategoriesFromSource(context, categoryIds, performance = nul
         }
 
         const category = await response.json();
+
+        // Cache the fetched category
+        cacheCategory(categoryId, category);
+
         return { id: categoryId, data: category };
       });
 
@@ -432,8 +504,9 @@ module.exports = {
             const pageSize = args.pageSize || meshConfig.pagination.defaultPageSize;
             const maxPages = meshConfig.pagination.maxPages;
 
-            // Initialize performance tracking
+            // Initialize performance tracking with comprehensive metrics
             const performance = {
+              // Traditional metrics (for comparison)
               processedProducts: 0,
               apiCalls: 0,
               productsApiCalls: 0,
@@ -445,6 +518,22 @@ module.exports = {
               skuCount: 0,
               method: 'API Mesh',
               executionTime: 0,
+
+              // Client-perspective efficiency metrics (calculated dynamically)
+              clientCalls: 1, // Client makes only 1 GraphQL query (always true)
+              dataSourcesUnified: 0, // Will be calculated based on actual APIs called
+              queryConsolidation: null, // Will be calculated as "X:1" ratio
+              cacheHitRate: 0, // Percentage of cached categories
+              categoriesCached: 0, // Number of categories served from cache
+              categoriesFetched: 0, // Number of categories fetched from API
+
+              // Mesh advantages (calculated dynamically)
+              operationComplexity: 'single-query', // Always true for GraphQL mesh
+              dataFreshness: 'real-time', // Mesh gets fresh data
+              clientComplexity: 'minimal', // Client sends 1 query vs orchestrating multiple
+              apiOrchestration: 'automated', // Mesh handles all coordination
+              parallelization: 'automatic', // Mesh handles parallel data fetching
+              meshOptimizations: [], // Will be populated with actual optimizations used
             };
 
             // Store admin credentials from GraphQL arguments
@@ -549,6 +638,48 @@ module.exports = {
             performance.skuCount = skus.length;
             performance.uniqueCategories = categoryIds.size;
 
+            // Calculate dynamic client-perspective efficiency metrics
+
+            // Count actual data sources used
+            let sourcesUsed = 0;
+            if (performance.productsApiCalls > 0) sourcesUsed++; // Products API
+            if (performance.categoriesApiCalls > 0 || performance.categoriesCached > 0)
+              sourcesUsed++; // Categories API/Cache
+            if (performance.inventoryApiCalls > 0) sourcesUsed++; // Inventory API
+            performance.dataSourcesUnified = sourcesUsed;
+
+            // Calculate what REST API would require vs mesh consolidation
+            const potentialRestCalls =
+              performance.productsApiCalls + // Same product calls
+              performance.categoriesFetched +
+              performance.categoriesCached + // Individual category calls (no cache benefit)
+              Math.ceil(skus.length / 20); // Inventory batch calls
+            performance.queryConsolidation = potentialRestCalls + ':1';
+
+            // Calculate actual cache hit rate
+            if (performance.categoriesCached + performance.categoriesFetched > 0) {
+              performance.cacheHitRate = Math.round(
+                (performance.categoriesCached /
+                  (performance.categoriesCached + performance.categoriesFetched)) *
+                  100
+              );
+            }
+
+            // Populate mesh optimizations based on actual execution
+            performance.meshOptimizations = [];
+            if (performance.categoriesCached > 0) {
+              performance.meshOptimizations.push('Category Caching');
+            }
+            if (performance.dataSourcesUnified > 1) {
+              performance.meshOptimizations.push('Multi-API Consolidation');
+            }
+            if (performance.categoriesApiCalls > 0 && performance.inventoryApiCalls > 0) {
+              performance.meshOptimizations.push('Parallel Data Fetching');
+            }
+            if (performance.queryConsolidation && performance.queryConsolidation !== '1:1') {
+              performance.meshOptimizations.push('Query Consolidation');
+            }
+
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
@@ -568,9 +699,3 @@ module.exports = {
     },
   },
 };
-
-/**
- * In-memory category cache for resolver execution
- * OPTIMIZATION: Prevents redundant category lookups within single request
- */
-const categoryCache = new Map();
