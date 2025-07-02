@@ -40,7 +40,7 @@ async function main(params) {
 
     // Step 2: Fetch and enrich products
     const products = await traceStep(trace, 'fetch-products', async () => {
-      return await fetchAndEnrichProducts(actionParams, config);
+      return await fetchAndEnrichProducts(actionParams, config, trace);
     });
     steps.push(formatStepMessage('fetch-and-enrich', 'success', { count: products.length }));
 
@@ -70,7 +70,7 @@ async function main(params) {
           steps,
           performance: {
             processedProducts: builtProducts.length,
-            apiCalls: trace.metrics?.apiCalls || 200,
+            apiCalls: trace.metrics?.apiCalls || 0,
             method: 'REST API',
           },
         },
@@ -108,7 +108,7 @@ async function main(params) {
         },
         performance: {
           processedProducts: builtProducts.length,
-          apiCalls: trace.metrics?.apiCalls || 200, // Estimate based on typical REST API calls
+          apiCalls: trace.metrics?.apiCalls || 0, // Actual tracked API calls
           method: 'REST API',
           duration: totalDuration,
           durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
