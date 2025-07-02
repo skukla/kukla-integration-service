@@ -132,6 +132,20 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
           uniqueCategories
           productCount
           skuCount
+          # Dynamic efficiency metrics
+          clientCalls
+          dataSourcesUnified
+          queryConsolidation
+          cacheHitRate
+          categoriesCached
+          categoriesFetched
+          # Mesh advantages
+          operationComplexity
+          dataFreshness
+          clientComplexity
+          apiOrchestration
+          parallelization
+          meshOptimizations
         }
       }
     }

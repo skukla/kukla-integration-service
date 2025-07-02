@@ -90,7 +90,7 @@ function handleExportError(message, methodName) {
 }
 
 /**
- * Create enhanced success notification with metrics
+ * Create enhanced success notification with comprehensive metrics
  * @param {Object} response - Response data
  * @returns {string} HTML string for rich notification
  */
@@ -100,29 +100,85 @@ function createSuccessNotificationContent(response) {
   const duration = performance.durationFormatted || 'N/A';
   const apiCalls = performance.apiCalls || 1;
   const method = performance.method || 'Export';
+  const isApiMesh = method === 'API Mesh';
 
-  return `
-    <div class="notification-metrics">
-      <div class="notification-header">
-        <span class="notification-title">📦 Export Complete!</span>
-        <span class="notification-subtitle">Successfully exported ${productCount} products</span>
-        <span class="notification-details">Your CSV file is ready for download</span>
-      </div>
-      
+  // Build metrics HTML based on method type
+  let metricsHTML = '';
+
+  if (isApiMesh) {
+    // API Mesh: Show dynamic efficiency advantages
+    const consolidation = performance.queryConsolidation || 'N/A';
+    const dataSources = performance.dataSourcesUnified || 0;
+    const optimizations = performance.meshOptimizations || [];
+
+    metricsHTML = `
       <div class="notification-metrics-grid">
-        <div class="notification-metric">
-          <span class="metric-value">${apiCalls}</span>
-          <span class="metric-label">API Calls</span>
+        <div class="notification-metric highlight">
+          <span class="metric-value">${consolidation}</span>
+          <span class="metric-label">Query Efficiency</span>
         </div>
         <div class="notification-metric">
-          <span class="metric-value">${method}</span>
-          <span class="metric-label">Method</span>
+          <span class="metric-value">${dataSources}</span>
+          <span class="metric-label">APIs Unified</span>
+        </div>
+        <div class="notification-metric">
+          <span class="metric-value">${apiCalls}</span>
+          <span class="metric-label">Backend Calls</span>
         </div>
         <div class="notification-metric">
           <span class="metric-value">${duration}</span>
           <span class="metric-label">Duration</span>
         </div>
       </div>
+      <div class="notification-advantages">
+        ${
+          optimizations.length > 0
+            ? optimizations.map((opt) => `<span class="advantage-tag">✨ ${opt}</span>`).join('')
+            : '<span class="advantage-tag">🔗 Single GraphQL Query</span><span class="advantage-tag">🎯 Automated Orchestration</span>'
+        }
+      </div>
+    `;
+  } else {
+    // REST API: Show dynamic traditional metrics with comparison context
+    const dataSources = performance.dataSourcesUnified || 0;
+    const consolidation = performance.queryConsolidation || 'N/A';
+
+    metricsHTML = `
+      <div class="notification-metrics-grid">
+        <div class="notification-metric">
+          <span class="metric-value">${apiCalls}</span>
+          <span class="metric-label">Backend Calls</span>
+        </div>
+        <div class="notification-metric">
+          <span class="metric-value">${dataSources}</span>
+          <span class="metric-label">APIs Used</span>
+        </div>
+        <div class="notification-metric">
+          <span class="metric-value">${consolidation}</span>
+          <span class="metric-label">Client:Server</span>
+        </div>
+        <div class="notification-metric">
+          <span class="metric-value">${duration}</span>
+          <span class="metric-label">Duration</span>
+        </div>
+      </div>
+      <div class="notification-advantages">
+        <span class="advantage-tag">📦 Pre-aggregated Data</span>
+        <span class="advantage-tag">⚡ Parallel Processing</span>
+        <span class="advantage-tag">🔄 Server-side Orchestration</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="notification-metrics">
+      <div class="notification-header">
+        <span class="notification-title">📦 Export Complete!</span>
+        <span class="notification-subtitle">Successfully exported ${productCount} products via ${method}</span>
+        <span class="notification-details">Your CSV file is ready for download</span>
+      </div>
+      
+      ${metricsHTML}
     </div>
   `;
 }
