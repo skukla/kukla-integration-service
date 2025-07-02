@@ -275,6 +275,9 @@ async function main(params) {
           properties: storageResult.properties,
         },
         performance: {
+          // Include all mesh performance data (same as JSON response)
+          ...meshPerformanceData,
+          // Override/add specific fields for CSV response
           processedProducts: meshPerformanceData.processedProducts || builtProducts.length,
           apiCalls: meshPerformanceData.totalApiCalls || meshPerformanceData.apiCalls || 1,
           method: meshPerformanceData.method || 'API Mesh',
