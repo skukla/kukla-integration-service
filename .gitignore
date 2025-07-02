@@ -77,3 +77,6 @@ coverage
 logs
 dev.log
 .pid
+
+# Workspace
+kukla-integration-service.code-workspace
