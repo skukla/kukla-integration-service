@@ -1,4 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"4deba9477dd8c98de51b1ccd2e5f59f18aefb8d1c4a5b19187ba0ecd7b2fd402","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-02T00:28:36.657Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"061f726dfe200167ad142dd3598696f0417d9e11cb4b45984434939491db794c","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-02T01:27:07.393Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern with Performance Analysis
@@ -648,13 +648,10 @@ module.exports = {
             if (performance.inventoryApiCalls > 0) sourcesUsed++; // Inventory API
             performance.dataSourcesUnified = sourcesUsed;
 
-            // Calculate what REST API would require vs mesh consolidation
-            const potentialRestCalls =
-              performance.productsApiCalls + // Same product calls
-              performance.categoriesFetched +
-              performance.categoriesCached + // Individual category calls (no cache benefit)
-              Math.ceil(skus.length / 20); // Inventory batch calls
-            performance.queryConsolidation = potentialRestCalls + ':1';
+            // Calculate actual mesh consolidation ratio
+            // Use actual calls made by mesh for consistency
+            const actualMeshCalls = performance.totalApiCalls || performance.apiCalls;
+            performance.queryConsolidation = actualMeshCalls + ':1';
 
             // Calculate actual cache hit rate
             if (performance.categoriesCached + performance.categoriesFetched > 0) {

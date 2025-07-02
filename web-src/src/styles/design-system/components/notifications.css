@@ -256,14 +256,16 @@
 /* Simplified metrics layout */
 .notification-metrics-grid {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-md);
+  gap: var(--spacing-xl);
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md) var(--spacing-lg);
   background: var(--color-success-background);
   border-radius: var(--radius-md);
   border: var(--border-xs) solid var(--color-gray-200);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 /* Simplified metric items */
@@ -272,7 +274,8 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  flex: 1;
+  /* Fixed width for 2 metrics instead of flex */
+  min-width: 120px;
 }
 
 .notification-metric .metric-value {
@@ -289,23 +292,11 @@
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.025em;
-}
-
-/* Simple visual separators */
-.notification-metric:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  right: calc(-1 * var(--spacing-lg) / 2);
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 20px;
-  background: var(--color-gray-300);
-  opacity: 0.5;
-}
-
-.notification-metric {
-  position: relative;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  word-break: keep-all;
+  hyphens: none;
 }
 
 /* Subtle color coding for values */
@@ -317,27 +308,27 @@
   color: var(--color-success-active);
 }
 
-.notification-metric:nth-child(3) .metric-value {
-  color: var(--color-warning-active);
-}
-
-/* Simplified notification container sizing */
+/* Properly sized notification container */
 .notification.notification-success {
-  min-width: 300px;
-  max-width: 380px;
+  min-width: 380px;
+  max-width: 420px;
+  padding: var(--spacing-md);
+  box-sizing: border-box;
 }
 
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .notification-metrics {
-    min-width: 280px;
-    max-width: 300px;
+    min-width: 300px;
+    max-width: 340px;
   }
 
   .notification-metrics-grid {
     flex-direction: column;
     gap: var(--spacing-sm);
     align-items: stretch;
+    padding: var(--spacing-md);
+    margin: var(--spacing-sm) 0;
   }
 
   .notification-metric {
@@ -345,6 +336,7 @@
     justify-content: space-between;
     text-align: left;
     padding: var(--spacing-xs) 0;
+    min-width: unset;
   }
 
   .notification-metric:not(:last-child)::after {
@@ -356,8 +348,8 @@
   }
 
   .notification.notification-success {
-    min-width: 280px;
-    max-width: 320px;
+    min-width: 300px;
+    max-width: 360px;
   }
 }
 
@@ -365,22 +357,27 @@
    Enhanced Metrics with Advantage Tags
    ======================================== */
 
-/* Advantage Tags Container */
+/* Advantage Tags Container - Fixed overflow */
 .notification-advantages {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-3xs); /* Small gap plus pill margin for optimal spacing */
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-sm);
   border-top: 1px solid var(--color-gray-200);
+  max-width: 100%;
+  box-sizing: border-box;
+  /* Ensure tags stay within bounds */
+  overflow: hidden;
 }
 
-/* Individual Advantage Tags */
+/* Individual Advantage Tags - Better text containment */
 .advantage-tag {
   display: inline-flex;
   align-items: center;
-  padding: var(--spacing-2xs) var(--spacing-xs);
-  font-size: var(--font-size-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin: var(--spacing-xs); /* Increased margin for better separation */
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   background: var(--color-success-background);
@@ -388,30 +385,24 @@
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-full);
   white-space: nowrap;
+  /* Better text containment */
+  max-width: fit-content;
+  box-sizing: border-box;
+  /* Prevent individual tags from being too wide */
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Highlighted Metric (for key efficiency metrics) */
-.notification-metric.highlight {
-  position: relative;
-  background: linear-gradient(
-    135deg,
-    var(--color-success-background) 0%,
-    var(--color-blue-background, rgba(20, 115, 230, 0.1)) 100%
-  );
-  border: 1px solid var(--color-success-border, var(--color-gray-300));
-  border-radius: var(--radius-sm);
-  transform: scale(1.02);
-}
-
+/* Highlighted Metric (for key efficiency metrics) - Very subtle approach */
 .notification-metric.highlight .metric-value {
-  color: var(--color-success-active, var(--color-gray-800));
+  color: var(--color-success-active);
   font-weight: var(--font-weight-bold);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .notification-metric.highlight .metric-label {
-  color: var(--color-success-active, var(--color-gray-600));
-  font-weight: var(--font-weight-medium);
+  color: var(--color-success-active);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* Mobile Responsive for Enhanced Metrics */
@@ -425,10 +416,6 @@
   .advantage-tag {
     font-size: var(--font-size-2xs);
     padding: var(--spacing-3xs, 2px) var(--spacing-2xs);
-  }
-
-  .notification-metric.highlight {
-    transform: none; /* Disable scaling on mobile */
   }
 }
 
@@ -448,5 +435,104 @@
   .notification-metric.highlight .metric-value,
   .notification-metric.highlight .metric-label {
     color: HighlightText;
+  }
+}
+
+/* ========================================
+   Collapsible Endpoints List
+   ======================================== */
+
+/* Endpoints container */
+.notification-endpoints {
+  margin-top: var(--spacing-md);
+  border-top: 1px solid var(--color-gray-200);
+  padding-top: var(--spacing-sm);
+}
+
+/* Toggle button */
+.endpoints-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  padding: var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.endpoints-toggle:hover {
+  color: var(--color-blue-primary);
+}
+
+.toggle-icon {
+  font-size: var(--font-size-xs);
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.toggle-text {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Endpoints list container */
+.endpoints-list {
+  display: none;
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gray-200);
+}
+
+/* Individual endpoint items */
+.endpoint-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-2xs) 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.endpoint-item:not(:last-child) {
+  border-bottom: 1px solid var(--color-gray-200);
+  padding-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
+.endpoint-method {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-blue-primary);
+  font-family: var(--font-family-mono, monospace);
+  font-size: var(--font-size-2xs);
+  background: var(--color-blue-background);
+  padding: var(--spacing-3xs, 2px) var(--spacing-2xs);
+  border-radius: var(--radius-xs);
+  min-width: 60px;
+  text-align: center;
+}
+
+.endpoint-url {
+  color: var(--color-gray-700);
+  font-weight: var(--font-weight-regular);
+  flex: 1;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .endpoint-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2xs);
+  }
+
+  .endpoint-method {
+    min-width: unset;
   }
 }
