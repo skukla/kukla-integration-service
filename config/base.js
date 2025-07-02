@@ -83,6 +83,8 @@ module.exports = {
     batching: {
       categories: 10,
       inventory: 20,
+      maxConcurrent: 5,
+      requestDelay: 200,
     },
   },
   testing: {
