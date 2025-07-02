@@ -152,6 +152,9 @@ try {
   const commerceBaseUrl = config.commerce.baseUrl;
   finalResolver = finalResolver.replace(/\{\{\{COMMERCE_BASE_URL\}\}\}/g, commerceBaseUrl);
 
+  // Remove any existing generation metadata comments
+  finalResolver = finalResolver.replace(/\/\* GENERATION_METADATA: .* \*\/\n?/g, '');
+
   // Add generation metadata as a comment at the top of the file
   const metadataComment = `/* GENERATION_METADATA: ${JSON.stringify(metadata)} */\n`;
   finalResolver = metadataComment + finalResolver;
