@@ -47,7 +47,10 @@ function createTraceContext(actionName, params) {
     params: { ...params },
     errors: [],
     currentStep: null,
-    metrics: [],
+    metrics: {
+      apiCalls: 0,
+      performance: [],
+    },
     config: tracingConfig, // Store config for later use
   };
 
@@ -104,7 +107,7 @@ async function traceStep(context, stepName, stepFn) {
       }
     }
 
-    context.metrics.push(metric);
+    context.metrics.performance.push(metric);
     return result;
   } catch (error) {
     const stepEnd = Date.now();
@@ -132,6 +135,18 @@ async function traceStep(context, stepName, stepFn) {
 }
 
 /**
+ * Increments the API call counter in the trace context
+ * @param {Object} context - Trace context
+ * @param {number} [count=1] - Number of API calls to add
+ */
+function incrementApiCalls(context, count = 1) {
+  if (context.disabled) {
+    return;
+  }
+  context.metrics.apiCalls += count;
+}
+
+/**
  * Formats the trace context into a readable summary
  * @param {Object} context - Trace context
  * @returns {Object} Formatted trace summary
@@ -147,7 +162,8 @@ function formatTrace(context) {
     id: context.id,
     action: context.action,
     duration,
-    metrics: context.metrics,
+    metrics: context.metrics.performance,
+    apiCalls: context.metrics.apiCalls,
     errors: context.errors,
     params: context.params,
   };
@@ -172,4 +188,5 @@ module.exports = {
   createTraceContext,
   traceStep,
   formatTrace,
+  incrementApiCalls,
 };

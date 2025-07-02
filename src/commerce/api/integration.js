@@ -9,6 +9,7 @@ const {
   http: { buildHeaders },
 } = require('../../core');
 const { buildCommerceUrl } = require('../../core/routing');
+const { incrementApiCalls } = require('../../core/tracing');
 
 /**
  * Creates OAuth 1.0 authorization header for Adobe Commerce
@@ -85,9 +86,10 @@ function createOAuthHeader(params, method, url) {
  * @param {string} url - Request URL
  * @param {Object} options - Request options
  * @param {Object} params - Request parameters including OAuth credentials
+ * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object>} Response data
  */
-async function makeCommerceRequest(url, options = {}, params = {}) {
+async function makeCommerceRequest(url, options = {}, params = {}, trace = null) {
   const config = loadConfig(params);
 
   // Let buildCommerceUrl handle the full URL construction
@@ -97,6 +99,12 @@ async function makeCommerceRequest(url, options = {}, params = {}) {
   const authHeader = createOAuthHeader(params, options.method || 'GET', fullUrl);
 
   const client = createClient({}, params);
+
+  // Track API call if trace context is provided
+  if (trace) {
+    incrementApiCalls(trace);
+  }
+
   return client.request(url, {
     ...options,
     headers: {
@@ -125,9 +133,10 @@ async function batchCommerceRequests(requests, params = {}) {
  * @param {Object} params - Parameters containing admin credentials
  * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username
  * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password
+ * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<string>} Admin bearer token
  */
-async function getAuthToken(params) {
+async function getAuthToken(params, trace = null) {
   const config = loadConfig(params);
   const username = params.COMMERCE_ADMIN_USERNAME;
   const password = params.COMMERCE_ADMIN_PASSWORD;
@@ -139,6 +148,11 @@ async function getAuthToken(params) {
   }
 
   const tokenUrl = buildCommerceUrl(config.commerce.baseUrl, '/integration/admin/token');
+
+  // Track API call if trace context is provided
+  if (trace) {
+    incrementApiCalls(trace);
+  }
 
   const response = await fetch(tokenUrl, {
     method: 'POST',
