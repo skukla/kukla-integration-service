@@ -94,8 +94,10 @@ try {
   const templatePath = path.join(__dirname, '..', 'mesh-resolvers.template.js');
   const resolverPath = path.join(__dirname, '..', 'mesh-resolvers.js');
 
-  // Load configuration for the current environment (not hardcoded to staging)
-  const config = loadConfig();
+  // Load configuration for the current environment with CLI detection
+  const { detectEnvironment } = require('../src/core/environment');
+  const env = detectEnvironment({}, { allowCliDetection: true });
+  const config = loadConfig({ NODE_ENV: env });
 
   // Extract mesh configuration properties for injection into resolver
   const meshConfig = {
