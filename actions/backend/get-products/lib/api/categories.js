@@ -8,6 +8,7 @@ const endpoints = require('./commerce-endpoints');
 const { loadConfig } = require('../../../../../config');
 const { request, buildHeaders } = require('../../../../../src/core/http/client');
 const { buildCommerceUrl } = require('../../../../../src/core/routing');
+const { incrementApiCalls } = require('../../../../../src/core/tracing');
 
 // In-memory cache for category data
 const categoryCache = new Map();
@@ -79,9 +80,10 @@ function getCategoryIds(product) {
  * @param {string} categoryId - Category ID
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
+ * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object|null>} Category details or null if failed
  */
-async function getCategory(categoryId, token, params) {
+async function getCategory(categoryId, token, params, trace = null) {
   const config = loadConfig(params);
   // Check cache first
   const cached = getCachedCategory(categoryId, params);
@@ -94,6 +96,12 @@ async function getCategory(categoryId, token, params) {
     try {
       const endpoint = endpoints.category(categoryId);
       const url = buildCommerceUrl(config.commerce.baseUrl, endpoint);
+
+      // Track API call if trace context is provided
+      if (trace) {
+        incrementApiCalls(trace);
+      }
+
       const response = await request(url, {
         method: 'GET',
         headers: buildHeaders(token),
@@ -129,9 +137,10 @@ async function getCategory(categoryId, token, params) {
  * @param {Object[]} products - Array of product objects
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
+ * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object[]>} Products enriched with category data
  */
-async function enrichProductsWithCategories(products, token, params) {
+async function enrichProductsWithCategories(products, token, params, trace = null) {
   try {
     const config = loadConfig(params);
     // Create a map to store category details
@@ -160,7 +169,7 @@ async function enrichProductsWithCategories(products, token, params) {
       const batch = categoryArray.slice(i, i + config.categories.batchSize);
       const batchPromises = batch.map(async (categoryId) => {
         try {
-          const category = await getCategory(categoryId, token, params);
+          const category = await getCategory(categoryId, token, params, trace);
           if (category) {
             categoryMap.set(categoryId, category);
           }
