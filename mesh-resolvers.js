@@ -1,4 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"061f726dfe200167ad142dd3598696f0417d9e11cb4b45984434939491db794c","configHash":"d2754f1ebd4738fddb14bb23a89d7ce9b1081478eabecf3f992b8d1389d5352d","generatedAt":"2025-07-02T01:27:07.393Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"f52b0c91fbdbede24145f40ec745e26afa433b314f15f8fdc1ebb291cc810f36","configHash":"06a6f650ad570ca1cbaa810a6aed40ddc930f9e34cfb878309976d3e4a7e2c00","generatedAt":"2025-07-02T02:00:59.468Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern with Performance Analysis
@@ -8,17 +8,18 @@
  * with admin token authentication via operationHeaders.
  */
 
-// Configuration from injected config
+// Configuration from injected config (replaced during generation)
 const meshConfig = {
+  commerceBaseUrl: 'https://citisignal-com774.adobedemo.com',
   pagination: {
     defaultPageSize: 150,
     maxPages: 25,
   },
   batching: {
     categories: 20,
-    inventory: 20,
-    maxConcurrent: 10,
-    requestDelay: 100,
+    inventory: 25,
+    maxConcurrent: 15,
+    requestDelay: 75,
   },
   timeout: 30000,
   retries: 3,

@@ -8,21 +8,8 @@
  * with admin token authentication via operationHeaders.
  */
 
-// Configuration from injected config
-const meshConfig = {
-  pagination: {
-    defaultPageSize: 150,
-    maxPages: 25,
-  },
-  batching: {
-    categories: 20,
-    inventory: 20,
-    maxConcurrent: 10,
-    requestDelay: 100,
-  },
-  timeout: 30000,
-  retries: 3,
-};
+// Configuration from injected config (replaced during generation)
+const meshConfig = __MESH_CONFIG__;
 
 const commerceBaseUrl = '{{{COMMERCE_BASE_URL}}}';
 
