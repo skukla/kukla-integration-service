@@ -3,8 +3,9 @@
  * @module get-products
  */
 
-// Test without domain catalogs first
+// Use domain catalogs for thin orchestrator pattern
 const { loadConfig } = require('../../../config');
+const { products, files, shared } = require('../../../src');
 
 /**
  * Main function for get-products action
@@ -13,37 +14,49 @@ const { loadConfig } = require('../../../config');
  */
 async function main(params) {
   try {
-    // Test if basic config works
-    const config = loadConfig(params);
+    // Extract action parameters and load configuration
+    const actionParams = shared.extractActionParams(params);
+    const config = loadConfig(actionParams);
 
-    // Test basic response
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Basic test working',
-        test: {
-          config: typeof config,
-          configKeys: Object.keys(config).slice(0, 5), // First 5 keys
-        },
-      }),
-    };
+    const steps = [];
+
+    // Step 1: Validate input
+    steps.push(shared.formatStepMessage('validate', 'success'));
+
+    // Step 2: Fetch and enrich products using domain functions
+    const productData = await products.fetchAndEnrichProducts(actionParams, config);
+    steps.push(
+      shared.formatStepMessage('fetch-products', 'success', { count: productData.length })
+    );
+
+    // Step 3: Build products with proper transformation
+    const builtProducts = await products.buildProducts(productData, config);
+    steps.push(
+      shared.formatStepMessage('build-products', 'success', { count: builtProducts.length })
+    );
+
+    // Step 4: Create CSV
+    const csvData = await products.createCsv(builtProducts, config);
+    steps.push(
+      shared.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize })
+    );
+
+    // Step 5: Store CSV using files domain
+    const storageResult = await files.storeFile(csvData, actionParams, config);
+    steps.push(shared.formatStepMessage('store-csv', 'success', { info: storageResult }));
+
+    // Return success response using shared utilities
+    return shared.success({
+      steps,
+      storage: storageResult,
+      downloadUrl: storageResult.downloadUrl,
+    });
   } catch (error) {
     console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-        stack: error.stack,
-      }),
-    };
+    // Use shared error handling
+    const errorObj = new Error(error.message);
+    errorObj.status = 500;
+    return shared.error(errorObj);
   }
 }
 
