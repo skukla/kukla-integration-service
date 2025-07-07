@@ -7,7 +7,7 @@ This document outlines the step-by-step migration from the current scattered uti
 ## Current vs Target Architecture
 
 ### Current Structure (Problems)
-```
+```text
 src/
 ├── core/                        # 🔴 Too generic, hard to find
 │   ├── http/
@@ -24,7 +24,7 @@ actions/
 ```
 
 ### Target Structure (Solutions)
-```
+```text
 src/
 ├── index.js                    # 🎯 Single catalog entry point
 ├── products/                   # 🎯 Domain-organized
