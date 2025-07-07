@@ -53,100 +53,6 @@ actions/
 
 ## Migration Strategy
 
-### Phase 0: Configuration Simplification (DOCUMENTED - TO BE IMPLEMENTED) ⏳
-
-**Goal**: Replace complex multi-environment configuration with simple, environment-variable-based system.
-
-**IMPLEMENTATION DETAILS** (from preliminary work):
-
-**Configuration Redesign Pattern:**
-```javascript
-// New Single File: config/index.js (271 lines)
-const config = {
-  // Direct environment variable access
-  commerce: {
-    baseUrl: process.env.COMMERCE_BASE_URL,
-    oauth: {
-      consumerKey: process.env.COMMERCE_CONSUMER_KEY,
-      consumerSecret: process.env.COMMERCE_CONSUMER_SECRET,
-      accessToken: process.env.COMMERCE_ACCESS_TOKEN,
-      accessTokenSecret: process.env.COMMERCE_ACCESS_TOKEN_SECRET,
-    },
-  },
-  
-  storage: {
-    provider: 's3', // or 'app-builder'
-    s3: {
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    },
-  },
-  
-  mesh: {
-    endpoint: process.env.API_MESH_ENDPOINT,
-    apiKey: process.env.MESH_API_KEY,
-  },
-  
-  runtime: {
-    url: process.env.RUNTIME_URL,
-  },
-};
-
-// Backward compatibility function
-function loadConfig(params = {}) {
-  // Allow action parameters to override environment variables
-  const overrides = {};
-  
-  if (params.COMMERCE_CONSUMER_KEY) {
-    overrides.commerce = {
-      ...config.commerce,
-      oauth: {
-        consumerKey: params.COMMERCE_CONSUMER_KEY,
-        consumerSecret: params.COMMERCE_CONSUMER_SECRET,
-        accessToken: params.COMMERCE_ACCESS_TOKEN,
-        accessTokenSecret: params.COMMERCE_ACCESS_TOKEN_SECRET,
-      },
-    };
-  }
-  
-  return { ...config, ...overrides };
-}
-```
-
-**Files to Remove:**
-- `config/base.js` - Base configuration (replaced by direct env vars)
-- `config/environments/staging.js` - Environment-specific config
-- `config/environments/production.js` - Environment-specific config
-- `config/schema/core.schema.js` - Configuration validation (simplified)
-- `config/schema/api.schema.js` - API validation (simplified)
-- `config/schema/index.js` - Schema exports
-- `src/core/environment.js` - Environment detection (Adobe I/O workspaces handle this)
-
-**Scripts to Update:**
-- `scripts/test-action.js` - Remove detectEnvironment import
-- `scripts/deploy.js` - Remove detectEnvironment import  
-- `scripts/generate-mesh-resolver.js` - Remove detectEnvironment import
-- `scripts/build.js` - Remove detectEnvironment import
-- `scripts/generate-frontend.js` - Remove detectEnvironment import
-
-**Benefits of This Approach:**
-- ✅ Single source of truth for configuration
-- ✅ No complex environment detection or merging
-- ✅ Adobe I/O workspaces naturally handle environment separation
-- ✅ Direct environment variable access (no weird override patterns)
-- ✅ Simplified from 300+ lines across 8 files to 271 lines in 1 file
-- ✅ Maintains backward compatibility with existing actions
-
-**Key Principle:** Adobe I/O workspaces (staging/production) handle environment separation automatically, so we don't need complex environment detection in our code.
-
-**Testing Requirements:**
-- All existing actions must continue to work
-- Configuration loading must maintain same API
-- Scripts must work without environment detection
-- Deployment must work to both staging and production
-
 ### Phase 1: Create Catalog Foundation (1-2 hours)
 **Goal**: Establish the new structure without breaking existing functionality
 
@@ -326,7 +232,7 @@ function loadConfig(params = {}) {
 **Current shared functionality locations:**
 - `src/core/http/` - HTTP utilities
 - `src/core/tracing/` - performance tracking
-- `config/` - configuration system
+- `config/` - configuration loading functions (keep current system)
 - `src/core/utils.js` - generic utilities
 
 **Migration steps:**
@@ -335,7 +241,8 @@ function loadConfig(params = {}) {
    ```javascript
    // src/shared/config.js
    function loadConfig(params) {
-     // Move from config/index.js
+     // Move existing loadConfig function from config/index.js
+     // Keep current configuration system intact
    }
    
    function getEnvironment(params) {
@@ -408,7 +315,100 @@ function loadConfig(params = {}) {
    rm -rf src/core/ (except what's moved to shared)
    ```
 
-2. **Final test**: Full application functionality
+2. **Test**: Full application functionality with new architecture
+
+### Phase 8: Configuration Simplification (1-2 hours)
+**Goal**: Replace complex multi-environment configuration with simple, environment-variable-based system
+
+**IMPLEMENTATION DETAILS** (from preliminary work):
+
+**Configuration Redesign Pattern:**
+```javascript
+// New Single File: config/index.js (271 lines)
+const config = {
+  // Direct environment variable access
+  commerce: {
+    baseUrl: process.env.COMMERCE_BASE_URL,
+    oauth: {
+      consumerKey: process.env.COMMERCE_CONSUMER_KEY,
+      consumerSecret: process.env.COMMERCE_CONSUMER_SECRET,
+      accessToken: process.env.COMMERCE_ACCESS_TOKEN,
+      accessTokenSecret: process.env.COMMERCE_ACCESS_TOKEN_SECRET,
+    },
+  },
+  
+  storage: {
+    provider: 's3', // or 'app-builder'
+    s3: {
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
+    },
+  },
+  
+  mesh: {
+    endpoint: process.env.API_MESH_ENDPOINT,
+    apiKey: process.env.MESH_API_KEY,
+  },
+  
+  runtime: {
+    url: process.env.RUNTIME_URL,
+  },
+};
+
+// Backward compatibility function
+function loadConfig(params = {}) {
+  // Allow action parameters to override environment variables
+  const overrides = {};
+  
+  if (params.COMMERCE_CONSUMER_KEY) {
+    overrides.commerce = {
+      ...config.commerce,
+      oauth: {
+        consumerKey: params.COMMERCE_CONSUMER_KEY,
+        consumerSecret: params.COMMERCE_CONSUMER_SECRET,
+        accessToken: params.COMMERCE_ACCESS_TOKEN,
+        accessTokenSecret: params.COMMERCE_ACCESS_TOKEN_SECRET,
+      },
+    };
+  }
+  
+  return { ...config, ...overrides };
+}
+```
+
+**Files to Remove:**
+- `config/base.js` - Base configuration (replaced by direct env vars)
+- `config/environments/staging.js` - Environment-specific config
+- `config/environments/production.js` - Environment-specific config
+- `config/schema/core.schema.js` - Configuration validation (simplified)
+- `config/schema/api.schema.js` - API validation (simplified)
+- `config/schema/index.js` - Schema exports
+- `src/core/environment.js` - Environment detection (Adobe I/O workspaces handle this)
+
+**Scripts to Update:**
+- `scripts/test-action.js` - Remove detectEnvironment import
+- `scripts/deploy.js` - Remove detectEnvironment import  
+- `scripts/generate-mesh-resolver.js` - Remove detectEnvironment import
+- `scripts/build.js` - Remove detectEnvironment import
+- `scripts/generate-frontend.js` - Remove detectEnvironment import
+
+**Benefits of This Approach:**
+- ✅ Single source of truth for configuration
+- ✅ No complex environment detection or merging
+- ✅ Adobe I/O workspaces naturally handle environment separation
+- ✅ Direct environment variable access (no weird override patterns)
+- ✅ Simplified from 300+ lines across 8 files to 271 lines in 1 file
+- ✅ Maintains backward compatibility with existing actions
+
+**Key Principle:** Adobe I/O workspaces (staging/production) handle environment separation automatically, so we don't need complex environment detection in our code.
+
+**Testing Requirements:**
+- All existing actions must continue to work
+- Configuration loading must maintain same API
+- Scripts must work without environment detection
+- Deployment must work to both staging and production
 
 ## Testing Strategy
 
@@ -440,5 +440,6 @@ function loadConfig(params = {}) {
 - **Phase 3-4**: 3-5 hours (Files + Commerce)
 - **Phase 5-6**: 3-5 hours (Shared + Actions)
 - **Phase 7**: 1 hour (Cleanup)
+- **Phase 8**: 1-2 hours (Configuration Simplification)
 
-**Total**: 10-16 hours over 2-3 development sessions 
+**Total**: 11-18 hours over 2-3 development sessions 
