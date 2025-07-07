@@ -3,18 +3,17 @@
  * @module commerce/api/client
  */
 
-const { loadConfig } = require('../../../config');
 const { http } = require('../../core');
 const { buildCommerceUrl } = require('../../core/routing');
 
 /**
  * Creates a Commerce API client
+ * @param {Object} config - Configuration object
  * @param {Object} options - Client options
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} [params] - Action parameters for additional options
  * @returns {Object} API client methods
  */
-function createClient(options = {}, params = {}) {
-  const config = loadConfig(params);
+function createClient(config, options = {}, params = {}) {
   const clientConfig = {
     baseUrl: options.baseUrl || config.commerce.baseUrl,
     version: options.version || config.commerce.version,

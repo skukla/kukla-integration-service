@@ -42,7 +42,7 @@ async function main(params) {
     );
 
     // Step 5: Store CSV using files domain
-    const storageResult = await files.storeFile(csvData, actionParams, config);
+    const storageResult = await files.storeFile(csvData, config, actionParams);
     steps.push(shared.formatStepMessage('store-csv', 'success', { info: storageResult }));
 
     // Return success response using shared utilities
