@@ -19,7 +19,10 @@ function loadConfig(params = {}) {
   // Load environment variables once
   const commerceBaseUrl = params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL;
   const storageProvider = params.STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || 's3';
-  const runtimeUrl = params.RUNTIME_URL || process.env.RUNTIME_URL;
+  const runtimeUrl =
+    params.RUNTIME_URL ||
+    process.env.RUNTIME_URL ||
+    'https://285361-188maroonwallaby-stage.adobeioruntime.net';
   const meshEndpoint = params.API_MESH_ENDPOINT || process.env.API_MESH_ENDPOINT || null;
   const meshApiKey = params.MESH_API_KEY || process.env.MESH_API_KEY || null;
 

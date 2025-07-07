@@ -24,24 +24,7 @@ function createHtmlResponse(html, status = 200) {
   });
 }
 
-/**
- * Create JSON error response
- * @param {string} error - Error message
- * @param {number} status - HTTP status code
- * @returns {Object} Response object
- */
-function createErrorResponse(error, status) {
-  return {
-    statusCode: status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      success: false,
-      error,
-    }),
-  };
-}
+// Removed: Custom error response function - use shared.error() instead
 
 /**
  * Handles GET requests for file browsing and modal operations
@@ -73,7 +56,9 @@ async function handleGetRequest(params, actionParams, logger, storage) {
     return createHtmlResponse(getFileListHtml(csvFiles, storageInfo));
   } catch (error) {
     logger.error('Error in GET request:', error);
-    return createErrorResponse(error.message, 500);
+    const errorObj = new Error(error.message);
+    errorObj.status = 500;
+    return shared.error(errorObj);
   }
 }
 
@@ -88,7 +73,9 @@ async function handleDeleteRequest(params, logger, storage) {
   try {
     const fileName = params.fileName;
     if (!fileName) {
-      return createErrorResponse('File name is required', 400);
+      const errorObj = new Error('File name is required');
+      errorObj.status = 400;
+      return shared.error(errorObj);
     }
 
     logger.info(`Deleting file: ${fileName}`);
@@ -96,7 +83,9 @@ async function handleDeleteRequest(params, logger, storage) {
     return createHtmlResponse('');
   } catch (error) {
     logger.error('Error in DELETE request:', error);
-    return createErrorResponse(error.message, 500);
+    const errorObj = new Error(error.message);
+    errorObj.status = 500;
+    return shared.error(errorObj);
   }
 }
 
@@ -125,12 +114,17 @@ async function main(params) {
         return handleGetRequest(params, actionParams, logger, storage);
       case 'delete':
         return handleDeleteRequest(params, logger, storage);
-      default:
-        return createErrorResponse('Method not allowed', 400);
+      default: {
+        const methodError = new Error('Method not allowed');
+        methodError.status = 400;
+        return shared.error(methodError);
+      }
     }
   } catch (error) {
     logger.error('Error in main:', error);
-    return createErrorResponse(error.message, 500);
+    const errorObj = new Error(error.message);
+    errorObj.status = 500;
+    return shared.error(errorObj);
   }
 }
 
