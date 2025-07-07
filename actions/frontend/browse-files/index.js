@@ -28,13 +28,16 @@ function createHtmlResponse(html, status = 200) {
 
 /**
  * Handles GET requests for file browsing and modal operations
- * @param {Object} params - Request parameters
- * @param {Object} actionParams - Processed action parameters
- * @param {Object} logger - Logger instance
- * @param {Object} storage - Storage provider instance
+ * @param {Object} requestContext - Request context
+ * @param {Object} requestContext.params - Request parameters
+ * @param {Object} requestContext.actionParams - Processed action parameters
+ * @param {Object} requestContext.logger - Logger instance
+ * @param {Object} requestContext.storage - Storage provider instance
  * @returns {Promise<Object>} Response object
  */
-async function handleGetRequest(params, actionParams, logger, storage) {
+async function handleGetRequest(requestContext) {
+  const { params, actionParams, logger, storage } = requestContext;
+
   try {
     // Handle modal requests
     if (params.modal === 'delete' && params.fileName) {
@@ -105,13 +108,15 @@ async function main(params) {
     const config = loadConfig(actionParams);
 
     // Initialize storage using files domain
-    const storage = await files.initializeStorage(actionParams, config);
+    const storage = await files.initializeStorage(config, actionParams);
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Route request based on HTTP method
     switch (params.__ow_method) {
-      case 'get':
-        return handleGetRequest(params, actionParams, logger, storage);
+      case 'get': {
+        const requestContext = { params, actionParams, logger, storage };
+        return handleGetRequest(requestContext);
+      }
       case 'delete':
         return handleDeleteRequest(params, logger, storage);
       default: {

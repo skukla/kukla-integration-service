@@ -4,7 +4,6 @@
  */
 
 const { createClient } = require('./client');
-const { loadConfig } = require('../../../config');
 const {
   http: { buildHeaders },
 } = require('../../core');
@@ -51,7 +50,7 @@ function createOAuthHeader(params, method, url) {
   const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
   const queryParams = Object.fromEntries(urlObj.searchParams.entries());
 
-  // Combine OAuth params and query params for signature (key difference from our old implementation)
+  // Combine OAuth params and query params for signature (Postman-compatible approach)
   const allParams = { ...oauthParams, ...queryParams };
 
   // Create parameter string for signature
@@ -85,20 +84,19 @@ function createOAuthHeader(params, method, url) {
  * Makes a Commerce API request with OAuth 1.0 authentication
  * @param {string} url - Request URL
  * @param {Object} options - Request options
+ * @param {Object} config - Configuration object with Commerce settings
  * @param {Object} params - Request parameters including OAuth credentials
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object>} Response data
  */
-async function makeCommerceRequest(url, options = {}, params = {}, trace = null) {
-  const config = loadConfig(params);
-
+async function makeCommerceRequest(url, options = {}, config, params = {}, trace = null) {
   // Let buildCommerceUrl handle the full URL construction
   const fullUrl = url.startsWith('http') ? url : buildCommerceUrl(config.commerce.baseUrl, url);
 
   // Create OAuth authorization header
   const authHeader = createOAuthHeader(params, options.method || 'GET', fullUrl);
 
-  const client = createClient({}, params);
+  const client = createClient(config, {}, params);
 
   // Track API call if trace context is provided
   if (trace) {
@@ -118,26 +116,29 @@ async function makeCommerceRequest(url, options = {}, params = {}, trace = null)
 /**
  * Batches multiple Commerce API requests with OAuth 1.0 authentication
  * @param {Array<Object>} requests - Array of request objects
+ * @param {Object} config - Configuration object with Commerce settings
  * @param {Object} params - Request parameters including OAuth credentials
  * @returns {Promise<Array>} Array of responses
  */
-async function batchCommerceRequests(requests, params = {}) {
-  const client = createClient({}, params);
+async function batchCommerceRequests(requests, config, params = {}) {
+  const client = createClient(config, {}, params);
   return client.processBatch(requests, async (batch) => {
-    return Promise.all(batch.map((req) => makeCommerceRequest(req.url, req.options, params)));
+    return Promise.all(
+      batch.map((req) => makeCommerceRequest(req.url, req.options, config, params))
+    );
   });
 }
 
 /**
  * Generate admin token using username/password
+ * @param {Object} config - Configuration object with Commerce settings
  * @param {Object} params - Parameters containing admin credentials
  * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username
  * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<string>} Admin bearer token
  */
-async function getAuthToken(params, trace = null) {
-  const config = loadConfig(params);
+async function getAuthToken(config, params, trace = null) {
   const username = params.COMMERCE_ADMIN_USERNAME;
   const password = params.COMMERCE_ADMIN_PASSWORD;
 

@@ -1,10 +1,10 @@
 /**
- * Storage Provider Abstraction
+ * Core storage provider abstraction
  * @module files/storage
  * @description Unified interface for different storage providers (S3, Adobe I/O Files)
  */
 
-const Files = require('@adobe/aio-lib-files');
+const { Files } = require('@adobe/aio-sdk');
 const {
   S3Client,
   PutObjectCommand,
@@ -13,17 +13,15 @@ const {
   ListObjectsV2Command,
 } = require('@aws-sdk/client-s3');
 
-const { loadConfig } = require('../../config');
-const { formatFileSize, formatDate } = require('../shared').utils;
-const { buildRuntimeUrl } = require('../shared').routing;
+const { buildRuntimeUrl } = require('../shared/routing');
+const { formatFileSize, formatDate } = require('../shared/utils');
 
 /**
- * Initialize Adobe I/O Files (App Builder) storage
- * @param {Object} config - Configuration object
- * @param {Object} [params] - Action parameters for URL building
- * @returns {Promise<Object>} Storage client wrapper
+ * Validates the Adobe I/O Runtime environment for App Builder storage
+ * @private
+ * @throws {Error} If OpenWhisk credentials are missing
  */
-async function initializeAppBuilderStorage(config, params = {}) {
+function validateAppBuilderEnvironment() {
   const owApiKey = process.env.__OW_API_KEY;
   const owNamespace = process.env.__OW_NAMESPACE;
 
@@ -32,7 +30,15 @@ async function initializeAppBuilderStorage(config, params = {}) {
       `OpenWhisk credentials not found for App Builder storage. API Key: ${!!owApiKey}, Namespace: ${!!owNamespace}`
     );
   }
+}
 
+/**
+ * Creates and tests the Adobe I/O Files client
+ * @private
+ * @param {Object} params - Action parameters for logging
+ * @returns {Promise<Object>} Initialized Files client
+ */
+async function createAppBuilderClient(params) {
   const files = await Files.init();
 
   if (!files || typeof files.write !== 'function') {
@@ -56,34 +62,97 @@ async function initializeAppBuilderStorage(config, params = {}) {
     throw new Error(`Adobe I/O Files list operation failed: ${listError.message}`);
   }
 
+  return files;
+}
+
+/**
+ * Creates the write method for App Builder storage
+ * @private
+ * @param {Object} files - Files client instance
+ * @param {Object} config - Configuration object
+ * @returns {Function} Write method implementation
+ */
+function createAppBuilderWriteMethod(files, config) {
+  return async function write(fileName, content) {
+    // Store files in public directory for organization and accessibility
+    const publicFileName = `public/${fileName}`;
+    await files.write(publicFileName, content);
+    const properties = await files.getProperties(publicFileName);
+
+    // Generate action-based download URL for consistent interface across providers
+    const actionUrl =
+      buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fileName)}`;
+
+    return {
+      fileName: publicFileName, // Return the full path for consistency
+      url: actionUrl, // Use action URL instead of direct file URL
+      downloadUrl: actionUrl, // Use action URL for downloads
+      properties: {
+        name: fileName, // But keep the original name in properties
+        size: content.length,
+        lastModified: properties.lastModified,
+        contentType: properties.contentType || 'text/csv',
+        internalUrl: properties.url, // Keep the original URL for internal reference
+      },
+    };
+  };
+}
+
+/**
+ * Creates the list method for App Builder storage
+ * @private
+ * @param {Object} files - Files client instance
+ * @returns {Function} List method implementation
+ */
+function createAppBuilderListMethod(files) {
+  return async function list(directory = 'public/') {
+    // Both app-builder and S3 now use public/ prefix for unified organization
+    const fileList = await files.list();
+    const filteredFiles = fileList.filter((file) => file.name.startsWith(directory));
+
+    // Get metadata for each file
+    const filesWithMetadata = await Promise.all(
+      filteredFiles.map(async (file) => {
+        try {
+          const properties = await files.getProperties(file.name);
+          const content = await files.read(file.name);
+          return {
+            name: file.name.replace(/^public\//, ''), // Remove public prefix for display
+            fullPath: file.name,
+            size: formatFileSize(content.length),
+            lastModified: formatDate(properties.lastModified),
+            contentType: properties.contentType || 'application/octet-stream',
+          };
+        } catch (error) {
+          // If we can't read file metadata, include basic info
+          return {
+            name: file.name.replace(/^public\//, ''),
+            fullPath: file.name,
+            size: 'Unknown',
+            lastModified: 'Unknown',
+            contentType: 'application/octet-stream',
+          };
+        }
+      })
+    );
+
+    return filesWithMetadata;
+  };
+}
+
+/**
+ * Creates the storage wrapper methods for App Builder
+ * @private
+ * @param {Object} files - Files client instance
+ * @param {Object} config - Configuration object
+ * @returns {Object} Storage wrapper with methods
+ */
+function createAppBuilderStorageWrapper(files, config) {
   return {
     provider: 'app-builder',
     client: files,
 
-    async write(fileName, content) {
-      // Store files in public directory for organization and accessibility
-      const publicFileName = `public/${fileName}`;
-      await files.write(publicFileName, content);
-      const properties = await files.getProperties(publicFileName);
-
-      // Generate action-based download URL for consistent interface across providers
-      const actionUrl =
-        buildRuntimeUrl('download-file', null, config) +
-        `?fileName=${encodeURIComponent(fileName)}`;
-
-      return {
-        fileName: publicFileName, // Return the full path for consistency
-        url: actionUrl, // Use action URL instead of direct file URL
-        downloadUrl: actionUrl, // Use action URL for downloads
-        properties: {
-          name: fileName, // But keep the original name in properties
-          size: content.length,
-          lastModified: properties.lastModified,
-          contentType: properties.contentType || 'text/csv',
-          internalUrl: properties.url, // Keep the original URL for internal reference
-        },
-      };
-    },
+    write: createAppBuilderWriteMethod(files, config),
 
     async read(fileName) {
       // Handle both full path and filename-only
@@ -97,39 +166,7 @@ async function initializeAppBuilderStorage(config, params = {}) {
       await files.delete(fullPath);
     },
 
-    async list(directory = 'public/') {
-      // Both app-builder and S3 now use public/ prefix for unified organization
-      const fileList = await files.list();
-      const filteredFiles = fileList.filter((file) => file.name.startsWith(directory));
-
-      // Get metadata for each file
-      const filesWithMetadata = await Promise.all(
-        filteredFiles.map(async (file) => {
-          try {
-            const properties = await files.getProperties(file.name);
-            const content = await files.read(file.name);
-            return {
-              name: file.name.replace(/^public\//, ''), // Remove public prefix for display
-              fullPath: file.name,
-              size: formatFileSize(content.length),
-              lastModified: formatDate(properties.lastModified),
-              contentType: properties.contentType || 'application/octet-stream',
-            };
-          } catch (error) {
-            // If we can't read file metadata, include basic info
-            return {
-              name: file.name.replace(/^public\//, ''),
-              fullPath: file.name,
-              size: 'Unknown',
-              lastModified: 'Unknown',
-              contentType: 'application/octet-stream',
-            };
-          }
-        })
-      );
-
-      return filesWithMetadata;
-    },
+    list: createAppBuilderListMethod(files),
 
     async getProperties(fileName) {
       // Handle both full path and filename-only
@@ -146,12 +183,25 @@ async function initializeAppBuilderStorage(config, params = {}) {
 }
 
 /**
- * Initialize AWS S3 storage
+ * Initialize Adobe I/O Files storage
  * @param {Object} config - Configuration object
- * @param {Object} params - Action parameters containing credentials
+ * @param {Object} params - Action parameters for logging
  * @returns {Promise<Object>} Storage client wrapper
  */
-async function initializeS3Storage(config, params = {}) {
+async function initializeAppBuilderStorage(config, params = {}) {
+  validateAppBuilderEnvironment();
+  const files = await createAppBuilderClient(params);
+  return createAppBuilderStorageWrapper(files, config);
+}
+
+/**
+ * Validates S3 configuration and credentials
+ * @private
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Object} Validated S3 configuration
+ */
+function validateS3Config(config, params) {
   const s3Config = config.storage.s3;
   if (!s3Config.bucket) {
     throw new Error('S3 bucket not configured');
@@ -164,72 +214,132 @@ async function initializeS3Storage(config, params = {}) {
     throw new Error('AWS credentials not found in action parameters');
   }
 
-  const s3Client = new S3Client({
+  return {
+    s3Config,
+    accessKeyId,
+    secretAccessKey,
+  };
+}
+
+/**
+ * Creates S3 client with credentials
+ * @private
+ * @param {Object} s3Config - S3 configuration
+ * @param {string} accessKeyId - AWS access key ID
+ * @param {string} secretAccessKey - AWS secret access key
+ * @returns {Object} S3 client instance
+ */
+function createS3Client(s3Config, accessKeyId, secretAccessKey) {
+  return new S3Client({
     region: s3Config.region || 'us-east-1',
     credentials: {
       accessKeyId,
       secretAccessKey,
     },
   });
+}
 
+/**
+ * Creates the write method for S3 storage
+ * @private
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Full configuration object
+ * @returns {Function} Write method implementation
+ */
+function createS3WriteMethod(s3Client, s3Config, config) {
+  return async function write(fileName, content) {
+    const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
+
+    const command = new PutObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: key,
+      Body: content,
+      ContentType: 'text/csv',
+    });
+
+    await s3Client.send(command);
+
+    const actionUrl =
+      buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fileName)}`;
+
+    const s3Url = `https://${s3Config.bucket}.s3.${
+      s3Config.region || 'us-east-1'
+    }.amazonaws.com/${key}`;
+
+    return {
+      fileName: key,
+      url: actionUrl,
+      downloadUrl: actionUrl,
+      properties: {
+        name: fileName,
+        key,
+        bucket: s3Config.bucket,
+        size: content.length,
+        lastModified: new Date().toISOString(),
+        contentType: 'text/csv',
+        internalUrl: s3Url,
+      },
+    };
+  };
+}
+
+/**
+ * Creates the list method for S3 storage
+ * @private
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @returns {Function} List method implementation
+ */
+function createS3ListMethod(s3Client, s3Config) {
+  return async function list() {
+    const prefix = s3Config.prefix || '';
+    const command = new ListObjectsV2Command({
+      Bucket: s3Config.bucket,
+      Prefix: prefix,
+    });
+
+    const response = await s3Client.send(command);
+
+    if (!response.Contents) {
+      return [];
+    }
+
+    return response.Contents.map((item) => ({
+      name: item.Key.replace(prefix, ''),
+      fullPath: item.Key,
+      size: formatFileSize(item.Size),
+      lastModified: formatDate(item.LastModified),
+      contentType: 'application/octet-stream',
+    }));
+  };
+}
+
+/**
+ * Creates S3 storage wrapper methods
+ * @private
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Full configuration object
+ * @returns {Object} Storage wrapper with methods
+ */
+function createS3StorageWrapper(s3Client, s3Config, config) {
   return {
     provider: 's3',
     client: s3Client,
     bucket: s3Config.bucket,
     prefix: s3Config.prefix || '',
 
-    async write(fileName, content) {
-      const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
-
-      const command = new PutObjectCommand({
-        Bucket: s3Config.bucket,
-        Key: key,
-        Body: content,
-        ContentType: 'text/csv',
-        // Note: Public access should be configured via S3 bucket policy
-        // rather than object ACLs for better security and modern S3 practices
-      });
-
-      await s3Client.send(command);
-
-      // Generate action-based download URL instead of direct S3 URL
-      // This allows secure access without requiring public S3 bucket policy
-      const actionUrl =
-        buildRuntimeUrl('download-file', null, config) +
-        `?fileName=${encodeURIComponent(fileName)}`;
-
-      // Also construct the direct S3 URL for debugging and raw output
-      const s3Url = `https://${s3Config.bucket}.s3.${
-        s3Config.region || 'us-east-1'
-      }.amazonaws.com/${key}`;
-
-      return {
-        fileName: key,
-        url: actionUrl,
-        downloadUrl: actionUrl,
-        properties: {
-          name: fileName,
-          key,
-          bucket: s3Config.bucket,
-          size: content.length,
-          lastModified: new Date().toISOString(),
-          contentType: 'text/csv',
-          internalUrl: s3Url,
-        },
-      };
-    },
+    write: createS3WriteMethod(s3Client, s3Config, config),
 
     async read(fileName) {
       const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
-
       const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
         Key: key,
       });
 
       const response = await s3Client.send(command);
-
-      // Convert stream to buffer
       const chunks = [];
       for await (const chunk of response.Body) {
         chunks.push(chunk);
@@ -239,7 +349,6 @@ async function initializeS3Storage(config, params = {}) {
 
     async delete(fileName) {
       const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
-
       const command = new DeleteObjectCommand({
         Bucket: s3Config.bucket,
         Key: key,
@@ -248,38 +357,10 @@ async function initializeS3Storage(config, params = {}) {
       await s3Client.send(command);
     },
 
-    async list() {
-      // Use the configured prefix directly - don't append public/
-      const prefix = s3Config.prefix || '';
-
-      const command = new ListObjectsV2Command({
-        Bucket: s3Config.bucket,
-        Prefix: prefix,
-      });
-
-      const response = await s3Client.send(command);
-
-      // Handle cases where Contents might be undefined (e.g., empty bucket/prefix)
-      if (!response.Contents) {
-        return [];
-      }
-
-      return response.Contents.map((item) => ({
-        name: item.Key.replace(prefix, ''), // Remove prefix for display
-        fullPath: item.Key,
-        size: formatFileSize(item.Size),
-        lastModified: formatDate(item.LastModified),
-        contentType: 'application/octet-stream', // S3 list doesn't provide content type
-      }));
-    },
+    list: createS3ListMethod(s3Client, s3Config),
 
     async getProperties(fileName) {
       const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
-
-      // S3 doesn't have a direct 'getProperties' command like aio-lib-files.
-      // We can simulate it by using GetObjectCommand and inspecting the response metadata.
-      // However, this would download the file. For now, we return what we know.
-      // A more efficient way would be a HEAD request if needed.
       const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
         Key: key,
@@ -304,12 +385,24 @@ async function initializeS3Storage(config, params = {}) {
 }
 
 /**
+ * Initialize AWS S3 storage
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Promise<Object>} Storage client wrapper
+ */
+async function initializeS3Storage(config, params = {}) {
+  const { s3Config, accessKeyId, secretAccessKey } = validateS3Config(config, params);
+  const s3Client = createS3Client(s3Config, accessKeyId, secretAccessKey);
+  return createS3StorageWrapper(s3Client, s3Config, config);
+}
+
+/**
  * Initialize storage provider based on configuration
+ * @param {Object} config - Configuration object with storage settings
  * @param {Object} [params] - Action parameters containing credentials
  * @returns {Promise<Object>} Initialized storage client
  */
-async function initializeStorage(params = {}) {
-  const config = loadConfig(params);
+async function initializeStorage(config, params = {}) {
   const provider = config.storage.provider;
 
   switch (provider) {

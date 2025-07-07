@@ -2,29 +2,27 @@
  * Commerce API Module
  * @module commerce/api
  *
- * Provides Commerce API request functionality with OAuth 1.0 authentication,
- * client management, and batch processing capabilities.
- * Uses functional composition with pure functions and clear input/output contracts.
+ * Provides Commerce API client functionality with OAuth 1.0 authentication
+ * and batched request processing for Adobe Commerce integration.
  */
 
 const { createOAuthHeader } = require('./auth');
-const { loadConfig } = require('../../config');
 const { http } = require('../shared');
 const { buildCommerceUrl } = require('../shared');
 const { incrementApiCalls } = require('../shared');
 
 /**
- * Creates a Commerce API client with configuration and request capabilities
+ * Creates a Commerce API client with authentication
+ * @param {Object} config - Configuration object
  * @param {Object} options - Client options
- * @param {string} [options.baseUrl] - Override base URL
+ * @param {string} [options.baseUrl] - Base URL override
  * @param {string} [options.version] - API version
  * @param {number} [options.timeout] - Request timeout
  * @param {Object} [options.retry] - Retry configuration
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} [params] - Action parameters for OAuth credentials
  * @returns {Object} API client methods
  */
-function createClient(options = {}, params = {}) {
-  const config = loadConfig(params);
+function createClient(config, options = {}, params = {}) {
   const clientConfig = {
     baseUrl: options.baseUrl || config.commerce.baseUrl,
     version: options.version || config.commerce.version,
@@ -104,21 +102,20 @@ function createClient(options = {}, params = {}) {
  * @param {string} [options.method='GET'] - HTTP method
  * @param {Object} [options.headers] - Additional headers
  * @param {Object} [options.body] - Request body
+ * @param {Object} config - Configuration object
  * @param {Object} params - Request parameters including OAuth credentials
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object>} Response data
  * @throws {Error} When OAuth credentials are missing or request fails
  */
-async function makeCommerceRequest(url, options = {}, params = {}, trace = null) {
-  const config = loadConfig(params);
-
+async function makeCommerceRequest(url, options = {}, config, params = {}, trace = null) {
   // Let buildCommerceUrl handle the full URL construction
   const fullUrl = url.startsWith('http') ? url : buildCommerceUrl(config.commerce.baseUrl, url);
 
   // Create OAuth authorization header
   const authHeader = createOAuthHeader(params, options.method || 'GET', fullUrl);
 
-  const client = createClient({}, params);
+  const client = createClient(config, {}, params);
 
   // Track API call if trace context is provided
   if (trace) {
@@ -140,16 +137,17 @@ async function makeCommerceRequest(url, options = {}, params = {}, trace = null)
  * @param {Array<Object>} requests - Array of request objects
  * @param {string} requests[].url - Request URL
  * @param {Object} [requests[].options] - Request options
+ * @param {Object} config - Configuration object
  * @param {Object} params - Request parameters including OAuth credentials
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Array>} Array of responses
  * @throws {Error} When batch processing fails
  */
-async function batchCommerceRequests(requests, params = {}, trace = null) {
-  const client = createClient({}, params);
+async function batchCommerceRequests(requests, config, params = {}, trace = null) {
+  const client = createClient(config, {}, params);
   return client.processBatch(requests, async (batch) => {
     return Promise.all(
-      batch.map((req) => makeCommerceRequest(req.url, req.options, params, trace))
+      batch.map((req) => makeCommerceRequest(req.url, req.options, config, params, trace))
     );
   });
 }
@@ -158,12 +156,12 @@ async function batchCommerceRequests(requests, params = {}, trace = null) {
  * Makes a cached Commerce API request
  * @param {string} url - Request URL
  * @param {Object} options - Request options
- * @param {Object} params - Action parameters for configuration
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters for OAuth credentials
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object>} Response data
  */
-async function makeCachedCommerceRequest(url, options = {}, params = {}, trace = null) {
-  const config = loadConfig(params);
+async function makeCachedCommerceRequest(url, options = {}, config, params = {}, trace = null) {
   const { MemoryCache } = require('../files').cache;
 
   const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
@@ -173,7 +171,7 @@ async function makeCachedCommerceRequest(url, options = {}, params = {}, trace =
     return cached;
   }
 
-  const response = await makeCommerceRequest(url, options, params, trace);
+  const response = await makeCommerceRequest(url, options, config, params, trace);
   MemoryCache.set(cacheKey, response);
   return response;
 }
@@ -238,25 +236,27 @@ async function processConcurrently(items, processor, options = {}) {
 
 /**
  * Creates a simple request function for Commerce API endpoints
+ * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters
  * @param {Object} [trace] - Optional trace context
  * @returns {Function} Request function configured with auth
  */
-function createRequestFunction(params, trace = null) {
+function createRequestFunction(config, params, trace = null) {
   return async (url, options = {}) => {
-    return makeCommerceRequest(url, options, params, trace);
+    return makeCommerceRequest(url, options, config, params, trace);
   };
 }
 
 /**
  * Creates a batch request function for Commerce API endpoints
+ * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters
  * @param {Object} [trace] - Optional trace context
  * @returns {Function} Batch request function configured with auth
  */
-function createBatchRequestFunction(params, trace = null) {
+function createBatchRequestFunction(config, params, trace = null) {
   return async (requests) => {
-    return batchCommerceRequests(requests, params, trace);
+    return batchCommerceRequests(requests, config, params, trace);
   };
 }
 

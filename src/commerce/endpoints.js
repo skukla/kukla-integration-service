@@ -6,8 +6,6 @@
  * Uses functional composition with pure functions and clear input/output contracts.
  */
 
-const { loadConfig } = require('../../config');
-
 /**
  * Builds product endpoint URL with query parameters
  * @param {Object} params - Query parameters
@@ -15,11 +13,10 @@ const { loadConfig } = require('../../config');
  * @param {number} [params.currentPage] - Current page number
  * @param {string} [params.searchTerm] - Search term for product name/SKU
  * @param {Array<string>} [params.fields] - Specific fields to include
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Product endpoint URL with query parameters
  */
-function buildProductsEndpoint(params = {}, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildProductsEndpoint(params = {}, config) {
   const queryParams = new URLSearchParams();
 
   // Add pagination criteria
@@ -55,11 +52,10 @@ function buildProductsEndpoint(params = {}, actionParams = {}) {
 /**
  * Builds stock item endpoint URL for inventory data
  * @param {string|Array<string>} sku - Product SKU or array of SKUs
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Stock item endpoint URL
  */
-function buildStockItemEndpoint(sku, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildStockItemEndpoint(sku, config) {
   const queryParams = new URLSearchParams();
 
   if (Array.isArray(sku)) {
@@ -80,11 +76,10 @@ function buildStockItemEndpoint(sku, actionParams = {}) {
 /**
  * Builds category endpoint URL for a specific category
  * @param {string} id - Category ID
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Category endpoint URL
  */
-function buildCategoryEndpoint(id, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildCategoryEndpoint(id, config) {
   return config.commerce.paths.category.replace(':id', id);
 }
 
@@ -93,11 +88,10 @@ function buildCategoryEndpoint(id, actionParams = {}) {
  * @param {Object} [params] - Query parameters
  * @param {number} [params.pageSize] - Number of categories per page
  * @param {number} [params.currentPage] - Current page number
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Category list endpoint URL
  */
-function buildCategoryListEndpoint(params = {}, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildCategoryListEndpoint(params = {}, config) {
   const queryParams = new URLSearchParams();
 
   // Add pagination if provided
@@ -115,22 +109,20 @@ function buildCategoryListEndpoint(params = {}, actionParams = {}) {
 
 /**
  * Builds admin token endpoint URL
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Admin token endpoint URL
  */
-function buildAdminTokenEndpoint(actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildAdminTokenEndpoint(config) {
   return config.commerce.paths.adminToken || '/integration/admin/token';
 }
 
 /**
  * Builds customer endpoint URL
  * @param {string} [customerId] - Customer ID (optional)
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Customer endpoint URL
  */
-function buildCustomerEndpoint(customerId = null, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildCustomerEndpoint(customerId = null, config) {
   const basePath = config.commerce.paths.customer || '/customers';
   return customerId ? `${basePath}/${customerId}` : basePath;
 }
@@ -139,11 +131,10 @@ function buildCustomerEndpoint(customerId = null, actionParams = {}) {
  * Builds order endpoint URL
  * @param {string} [orderId] - Order ID (optional)
  * @param {Object} [params] - Query parameters
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Order endpoint URL
  */
-function buildOrderEndpoint(orderId = null, params = {}, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildOrderEndpoint(orderId = null, params = {}, config) {
   const basePath = config.commerce.paths.order || '/orders';
   let endpoint = orderId ? `${basePath}/${orderId}` : basePath;
 
@@ -162,11 +153,10 @@ function buildOrderEndpoint(orderId = null, params = {}, actionParams = {}) {
 /**
  * Builds search endpoint URL for complex queries
  * @param {Object} searchCriteria - Search criteria object
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Search endpoint URL
  */
-function buildSearchEndpoint(searchCriteria, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function buildSearchEndpoint(searchCriteria, config) {
   const queryParams = new URLSearchParams();
 
   // Convert search criteria to URL parameters
@@ -201,11 +191,10 @@ function buildGenericEndpoint(basePath, params = {}) {
 
 /**
  * Gets all configured Commerce API endpoint paths
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Object} Object containing all endpoint paths
  */
-function getEndpointPaths(actionParams = {}) {
-  const config = loadConfig(actionParams);
+function getEndpointPaths(config) {
   return { ...config.commerce.paths };
 }
 

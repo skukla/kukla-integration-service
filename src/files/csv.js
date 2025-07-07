@@ -1,5 +1,5 @@
 /**
- * CSV File Operations
+ * CSV Operations Module
  * @module files/csv
  * @description Generic CSV generation utilities with memory optimization and streaming
  */
@@ -8,16 +8,14 @@ const { Transform } = require('stream');
 
 const csvWriter = require('csv-writer');
 
-const { loadConfig } = require('../../config');
-const { compression } = require('../shared').http;
+const { compression } = require('../shared/http');
 
 /**
  * Gets CSV configuration from the main config
- * @param {Object} [params] - Action parameters
+ * @param {Object} config - Configuration object
  * @returns {Object} CSV configuration
  */
-function getCsvConfig(params = {}) {
-  const config = loadConfig(params);
+function getCsvConfig(config) {
   return {
     chunkSize: config.storage.csv.chunkSize,
     compression: {
@@ -73,7 +71,7 @@ function createCsvStringifier(headers) {
  * @param {Object|boolean} [options.compression] - Compression options or false to disable
  * @param {number} [options.chunkSize=100] - Number of records to process in each chunk
  * @param {string} [options.preContent] - Content to prepend to CSV
- * @param {Object} [options.params] - Action parameters
+ * @param {Object} options.config - Configuration object
  * @returns {Promise<{content: Buffer, stats: Object}>} Compressed CSV content and stats
  * @throws {Error} If records array is empty or if CSV generation fails
  */
@@ -84,9 +82,9 @@ async function generateCsv({
   compression: compressionOptions,
   chunkSize,
   preContent,
-  params = {},
+  config,
 }) {
-  const csvConfig = getCsvConfig(params);
+  const csvConfig = getCsvConfig(config);
   chunkSize = chunkSize || csvConfig.chunkSize;
 
   if (!Array.isArray(records) || records.length === 0) {
@@ -175,20 +173,20 @@ function createCsvStream({ headers, rowMapper }) {
 /**
  * Creates a transform stream for CSV processing
  * @param {Object} options - Stream options
- * @param {Object} [options.params] - Action parameters
+ * @param {Object} options.config - Configuration object
  * @returns {Transform} Transform stream
  */
 function createCsvTransform(options = {}) {
-  const { params = {}, ...transformOptions } = options;
-  const csvConfig = getCsvConfig(params);
-  const config = {
+  const { config, ...transformOptions } = options;
+  const csvConfig = getCsvConfig(config);
+  const streamConfig = {
     ...csvConfig,
     ...transformOptions,
   };
 
   return new Transform({
     objectMode: true,
-    highWaterMark: config.stream.bufferSize,
+    highWaterMark: streamConfig.stream.bufferSize,
     transform(chunk, encoding, callback) {
       // Process chunk
       callback(null, chunk);

@@ -43,16 +43,15 @@ function getBearerToken(params) {
   return match ? match[1] : undefined;
 }
 /**
- * Generic HTTP client for making requests
+ * Builds request options for HTTP requests
  * @param {string} url - The URL to make the request to
- * @param {Object} options - Request options (method, headers, body, etc.)
- * @returns {Promise<Object>} The response data
+ * @param {Object} options - Request options
+ * @returns {Object} Complete request options
  */
-async function request(url, options = {}) {
+function buildRequestOptions(url, options) {
   const agent = url.startsWith('https:') ? createHttpsAgent() : undefined;
-  // Ensure method is uppercase
   const method = (options.method || 'GET').toUpperCase();
-  // Build request options
+
   const requestOptions = {
     ...options,
     method,
@@ -62,27 +61,79 @@ async function request(url, options = {}) {
     },
     agent,
   };
-  // Handle request body
-  if (method !== 'GET' && method !== 'HEAD' && options.body) {
-    requestOptions.body =
-      typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+
+  // Add body for non-GET/HEAD requests
+  if (shouldIncludeBody(method) && options.body) {
+    requestOptions.body = normalizeRequestBody(options.body);
   }
+
+  return requestOptions;
+}
+
+/**
+ * Checks if HTTP method should include a body
+ * @param {string} method - HTTP method
+ * @returns {boolean} True if method should include body
+ */
+function shouldIncludeBody(method) {
+  return method !== 'GET' && method !== 'HEAD';
+}
+
+/**
+ * Normalizes request body to string format
+ * @param {*} body - Request body
+ * @returns {string} Normalized body string
+ */
+function normalizeRequestBody(body) {
+  return typeof body === 'string' ? body : JSON.stringify(body);
+}
+
+/**
+ * Processes HTTP response and extracts body
+ * @param {Response} response - Fetch response object
+ * @returns {Promise<*>} Parsed response body
+ */
+async function processResponseBody(response) {
+  const contentType = response.headers.get('content-type');
+
+  if (contentType && contentType.includes('application/json')) {
+    return await response.json();
+  } else {
+    return await response.text();
+  }
+}
+
+/**
+ * Creates HTTP error from response
+ * @param {Response} response - Fetch response object
+ * @param {*} body - Response body
+ * @returns {Error} HTTP error with status information
+ */
+function createHttpError(response, body) {
+  const error = new Error(`HTTP error! status: ${response.status}`);
+  error.status = response.status;
+  error.statusText = response.statusText;
+  error.body = body;
+  return error;
+}
+
+/**
+ * Generic HTTP client for making requests
+ * @param {string} url - The URL to make the request to
+ * @param {Object} options - Request options (method, headers, body, etc.)
+ * @returns {Promise<Object>} The response data
+ */
+async function request(url, options = {}) {
+  const requestOptions = buildRequestOptions(url, options);
+
   try {
     const response = await fetch(url, requestOptions);
-    const contentType = response.headers.get('content-type');
-    let body;
-    if (contentType && contentType.includes('application/json')) {
-      body = await response.json();
-    } else {
-      body = await response.text();
-    }
+    const body = await processResponseBody(response);
+
     if (!response.ok) {
-      const error = new Error(`HTTP error! status: ${response.status}`);
-      error.status = response.status;
-      error.statusText = response.statusText;
-      error.body = body;
-      throw error;
+      throw createHttpError(response, body);
     }
+
     return {
       statusCode: response.status,
       headers: response.headers,
@@ -106,7 +157,7 @@ function normalizeParams(params) {
     commerce_consumer_secret: 'COMMERCE_CONSUMER_SECRET',
     commerce_access_token: 'COMMERCE_ACCESS_TOKEN',
     commerce_access_token_secret: 'COMMERCE_ACCESS_TOKEN_SECRET',
-    // Legacy mappings for backward compatibility
+    // Additional Commerce credential mappings
     commerce_admin_username: 'COMMERCE_ADMIN_USERNAME',
     commerce_admin_password: 'COMMERCE_ADMIN_PASSWORD',
   };
@@ -151,7 +202,7 @@ function extractActionParams(params) {
     if (headers['x-commerce-access-token-secret']) {
       headerParams.COMMERCE_ACCESS_TOKEN_SECRET = headers['x-commerce-access-token-secret'];
     }
-    // Legacy support for username/password headers
+    // Commerce credential headers for HTTP bridge pattern
     if (headers['x-commerce-username']) {
       headerParams.COMMERCE_ADMIN_USERNAME = headers['x-commerce-username'];
     }

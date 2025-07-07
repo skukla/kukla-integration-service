@@ -79,18 +79,18 @@ function transformImages(mediaGallery) {
 }
 
 /**
- * Builds a product object with all fields.
- * @param {Object} product - The product object from Adobe Commerce
+ * Transforms a single product from Commerce API format to standardized format
+ * @param {Object} product - Product object from Commerce API
  * @param {Object<string, string>} categoryMap - Map of category IDs to names
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Object} Transformed product object
  */
-function buildProductObject(product, categoryMap, params = {}) {
+function buildProductObject(product, categoryMap, config) {
   if (!product || typeof product !== 'object') {
     return {};
   }
 
-  const PRODUCT_FIELDS = getProductFields(params);
+  const PRODUCT_FIELDS = getProductFields(config);
 
   const fieldMappings = {
     sku: () => product.sku || '',
@@ -139,6 +139,58 @@ function buildProductObject(product, categoryMap, params = {}) {
 }
 
 /**
+ * Extracts primary category ID from product categories
+ * @param {Array|undefined} categories - Product categories array
+ * @returns {string} Primary category ID or name
+ */
+function extractPrimaryCategoryId(categories) {
+  if (!Array.isArray(categories) || categories.length === 0) {
+    return '';
+  }
+
+  const firstCategory = categories[0];
+
+  // Handle string category IDs
+  if (typeof firstCategory === 'string') {
+    return firstCategory;
+  }
+
+  // Handle category objects with name property
+  if (firstCategory && firstCategory.name) {
+    return firstCategory.name;
+  }
+
+  return '';
+}
+
+/**
+ * Extracts product description for CSV message field
+ * @param {Object} product - Product object
+ * @returns {string} Product description
+ */
+function extractProductMessage(product) {
+  return product.description || product.short_description || '';
+}
+
+/**
+ * Converts product value to number with fallback
+ * @param {*} price - Product price value
+ * @returns {number} Numeric price value
+ */
+function normalizeProductValue(price) {
+  return parseFloat(price) || 0;
+}
+
+/**
+ * Converts product inventory to integer with fallback
+ * @param {*} qty - Product quantity value
+ * @returns {number} Integer quantity value
+ */
+function normalizeProductInventory(qty) {
+  return parseInt(qty, 10) || 0;
+}
+
+/**
  * Maps a product object to a CSV row for RECS compatibility
  * @param {Object} product - Product object
  * @returns {Object} CSV row object with RECS headers
@@ -151,18 +203,12 @@ function mapProductToCsvRow(product) {
   return {
     sku: product.sku || '',
     name: product.name || '',
-    category_id: Array.isArray(product.categories)
-      ? typeof product.categories[0] === 'string'
-        ? product.categories[0]
-        : product.categories[0] && product.categories[0].name
-          ? product.categories[0].name
-          : ''
-      : '',
-    message: product.description || product.short_description || '',
+    category_id: extractPrimaryCategoryId(product.categories),
+    message: extractProductMessage(product),
     thumbnail_url: getPrimaryImageUrl(product.images),
-    value: parseFloat(product.price) || 0,
+    value: normalizeProductValue(product.price),
     page_url: product.url || '',
-    inventory: parseInt(product.qty, 10) || 0,
+    inventory: normalizeProductInventory(product.qty),
     margin: product.margin || '',
     type: product.type_id || '',
     custom2: '',
@@ -181,16 +227,16 @@ function mapProductToCsvRow(product) {
  * Transforms multiple products into objects with all fields
  * @param {Array<Object>} products - Array of products from Adobe Commerce
  * @param {Object<string, string>} categoryMap - Map of category IDs to names
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Array<Object>} Array of transformed product objects
  */
-function buildProducts(products, categoryMap, params = {}) {
+function buildProducts(products, categoryMap, config) {
   if (!Array.isArray(products)) {
     return [];
   }
 
   return products
-    .map((product) => buildProductObject(product, categoryMap, params))
+    .map((product) => buildProductObject(product, categoryMap, config))
     .filter((product) => product.sku); // Filter out invalid products
 }
 
