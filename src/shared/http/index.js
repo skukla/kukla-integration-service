@@ -5,14 +5,14 @@
 
 const client = require('./client');
 const compression = require('./compression');
-const responses = require('./responses');
+const { response } = require('./responses');
 
 // Internal exports for core module
 module.exports = {
   // Client utilities
   client,
   // Response handling
-  response: responses,
+  response,
   // Compression utilities
   compression,
 };
@@ -20,6 +20,6 @@ module.exports = {
 // Public API exports
 module.exports.public = {
   ...client,
-  ...responses,
+  ...response,
   compression: compression.addCompression,
 };
