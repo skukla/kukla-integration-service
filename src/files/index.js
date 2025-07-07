@@ -1,27 +1,212 @@
 /**
  * Files Domain Catalog
- *
- * This catalog will export all file-related functionality including:
- * - File storage operations (CSV, general files)
- * - File browser and listing
- * - Download and delete operations
- *
- * Following functional composition principles - each function will be pure
- * with clear input/output contracts.
- *
- * To be populated in Phase 3 with functions moved from:
- * - src/core/storage/
- * - actions/backend/get-products/steps/storeCsv.js
- * - actions/frontend/browse-files/
- * - actions/backend/download-file/
- * - actions/backend/delete-file/
+ * @module files
+ * @description Centralized access to all file operation functionality
  */
 
+// Storage provider abstraction
+const { CacheConfig, MemoryCache, HttpCache, FileCache } = require('./cache');
+const {
+  // Configuration
+  getCsvConfig,
+  // CSV generation
+  generateCsv,
+  createCsvStream,
+  createCsvTransform,
+  createWriter,
+  // Utilities
+  createRowTransformer,
+  createCsvStringifier,
+} = require('./csv');
+const {
+  // Error handling utilities
+  createFileOperationError,
+  isFileOperationError,
+  mapErrorCodeToType,
+  createUserFriendlyErrorMessage,
+  createFileError,
+  // File operations
+  readFile,
+  writeFile,
+  deleteFile,
+  listFiles,
+  getFileProperties,
+  // Utilities
+  getContentType,
+  validatePath,
+  removePublicPrefix,
+  getFileMetadata,
+} = require('./operations');
+const {
+  extractCleanFilename,
+  addPublicPrefix,
+  normalizePath,
+  isPathSafe,
+  joinPaths,
+  getDirectory,
+  getFilename,
+  getExtension,
+  changeExtension,
+} = require('./paths');
+const {
+  initializeStorage,
+  initializeAppBuilderStorage,
+  initializeS3Storage,
+} = require('./storage');
+
+/**
+ * High-level file management functions
+ * These provide commonly used patterns for file operations
+ */
+
+/**
+ * Stores a CSV file with proper error handling and metadata
+ * @param {string} csvData - CSV content to store
+ * @param {Object} params - Action parameters containing credentials
+ * @param {string} [fileName='products.csv'] - Name of the file to store
+ * @returns {Promise<Object>} Storage result with metadata
+ */
+async function storeCsvFile(csvData, params, fileName = 'products.csv') {
+  try {
+    const storage = await initializeStorage(params);
+    const result = await storage.write(fileName, csvData);
+
+    return {
+      stored: true,
+      provider: storage.provider,
+      fileName: result.fileName,
+      url: result.url,
+      downloadUrl: result.downloadUrl,
+      properties: result.properties,
+    };
+  } catch (error) {
+    return {
+      stored: false,
+      error: {
+        message: error.message,
+        type: error.type || 'STORAGE_ERROR',
+      },
+    };
+  }
+}
+
+/**
+ * Reads a file with automatic path cleaning and error handling
+ * @param {string} fileName - Name of the file to read
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Promise<Buffer>} File content
+ */
+async function readStoredFile(fileName, params) {
+  const storage = await initializeStorage(params);
+  const cleanFileName = extractCleanFilename(fileName);
+  return await storage.read(cleanFileName);
+}
+
+/**
+ * Deletes a file with automatic path cleaning and error handling
+ * @param {string} fileName - Name of the file to delete
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Promise<void>}
+ */
+async function deleteStoredFile(fileName, params) {
+  const storage = await initializeStorage(params);
+  const cleanFileName = extractCleanFilename(fileName);
+  await storage.delete(cleanFileName);
+}
+
+/**
+ * Lists all CSV files with metadata
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Promise<Array<Object>>} Array of file metadata objects
+ */
+async function listCsvFiles(params) {
+  const storage = await initializeStorage(params);
+  const allFiles = await storage.list();
+  return allFiles.filter((file) => file.name.endsWith('.csv'));
+}
+
+/**
+ * Files domain public API
+ * Organized by functional area for easy discovery
+ */
 module.exports = {
-  // Will be populated in Phase 3:
-  // storeFile: require('./storage').storeFile,
-  // deleteFile: require('./storage').deleteFile,
-  // downloadFile: require('./storage').downloadFile,
-  // listFiles: require('./browser').listFiles,
-  // generateBrowserHtml: require('./browser').generateBrowserHtml,
+  // === STORAGE PROVIDERS ===
+  storage: {
+    initializeStorage,
+    initializeAppBuilderStorage,
+    initializeS3Storage,
+  },
+
+  // === FILE OPERATIONS ===
+  operations: {
+    // Core operations
+    readFile,
+    writeFile,
+    deleteFile,
+    listFiles,
+    getFileProperties,
+
+    // High-level operations
+    storeCsvFile,
+    readStoredFile,
+    deleteStoredFile,
+    listCsvFiles,
+
+    // Error handling
+    createFileOperationError,
+    isFileOperationError,
+    createFileError,
+
+    // Utilities
+    getContentType,
+    validatePath,
+    getFileMetadata,
+  },
+
+  // === CSV OPERATIONS ===
+  csv: {
+    // Generation
+    generateCsv,
+    createCsvStream,
+    createCsvTransform,
+    createWriter,
+
+    // Configuration
+    getCsvConfig,
+
+    // Utilities
+    createRowTransformer,
+    createCsvStringifier,
+  },
+
+  // === PATH UTILITIES ===
+  paths: {
+    extractCleanFilename,
+    addPublicPrefix,
+    normalizePath,
+    isPathSafe,
+    joinPaths,
+    getDirectory,
+    getFilename,
+    getExtension,
+    changeExtension,
+    removePublicPrefix,
+  },
+
+  // === CACHE UTILITIES ===
+  cache: {
+    CacheConfig,
+    MemoryCache,
+    HttpCache,
+    FileCache,
+  },
+
+  // === ERROR HANDLING ===
+  errors: {
+    mapErrorCodeToType,
+    createUserFriendlyErrorMessage,
+    createFileOperationError,
+    isFileOperationError,
+    createFileError,
+  },
 };
