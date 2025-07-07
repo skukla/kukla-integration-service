@@ -5,6 +5,66 @@
  */
 
 /**
+ * Performs standard environment detection using parameters and environment variables
+ * @param {Object} params - Action parameters
+ * @returns {string|null} Environment name or null if not detected
+ */
+function detectStandardEnvironment(params) {
+  // Check action parameters first
+  if (params.NODE_ENV) {
+    return params.NODE_ENV;
+  }
+
+  // Check environment variables
+  if (process.env.NODE_ENV) {
+    return process.env.NODE_ENV;
+  }
+
+  // Check OpenWhisk namespace
+  if (process.env.__OW_NAMESPACE?.includes('stage')) {
+    return 'staging';
+  }
+
+  return null;
+}
+
+/**
+ * Attempts to detect environment using Adobe CLI workspace information
+ * @returns {string|null} Environment name or null if not detected
+ */
+function detectCliEnvironment() {
+  try {
+    const { execSync } = require('child_process');
+    const aioInfo = execSync('aio app info --json', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 5000,
+    });
+    const info = JSON.parse(aioInfo);
+
+    return parseCliWorkspaceInfo(info);
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Parses Adobe CLI workspace information to determine environment
+ * @param {Object} info - Parsed CLI info object
+ * @returns {string|null} Environment name or null if not detected
+ */
+function parseCliWorkspaceInfo(info) {
+  const workspace = info.all?.application?.project?.workspace?.name || '';
+  const namespace = info.all?.application?.ow?.namespace || '';
+
+  if (workspace.toLowerCase().includes('stage') || namespace.includes('stage')) {
+    return 'staging';
+  }
+
+  return null;
+}
+
+/**
  * Detect the current environment (staging or production)
  * @param {Object} [params] - Action parameters from Adobe I/O Runtime
  * @param {Object} [options] - Detection options
@@ -18,36 +78,17 @@
  * 5. Default to 'production'
  */
 function detectEnvironment(params = {}, options = {}) {
-  // Standard detection (works in both local and runtime contexts)
-  const standardDetection =
-    params.NODE_ENV ||
-    process.env.NODE_ENV ||
-    (process.env.__OW_NAMESPACE?.includes('stage') ? 'staging' : null);
-
-  if (standardDetection) {
-    return standardDetection;
+  // Try standard detection first
+  const standardResult = detectStandardEnvironment(params);
+  if (standardResult) {
+    return standardResult;
   }
 
-  // CLI detection (only for local testing when explicitly enabled)
+  // Try CLI detection if enabled
   if (options.allowCliDetection) {
-    try {
-      const { execSync } = require('child_process');
-      const aioInfo = execSync('aio app info --json', {
-        encoding: 'utf8',
-        stdio: 'pipe',
-        timeout: 5000,
-      });
-      const info = JSON.parse(aioInfo);
-
-      // Check workspace or namespace for staging indicators
-      const workspace = info.all?.application?.project?.workspace?.name || '';
-      const namespace = info.all?.application?.ow?.namespace || '';
-
-      if (workspace.toLowerCase().includes('stage') || namespace.includes('stage')) {
-        return 'staging';
-      }
-    } catch (error) {
-      // CLI detection failed, fall through to default
+    const cliResult = detectCliEnvironment();
+    if (cliResult) {
+      return cliResult;
     }
   }
 

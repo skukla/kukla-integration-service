@@ -4,15 +4,16 @@
  */
 
 const { ErrorMonitor } = require('./errors');
-const { PerformanceMonitor, MetricTypes } = require('./performance');
+const { createPerformanceMonitor, MetricTypes } = require('./performance');
 
 /**
  * Create monitoring middleware
+ * @param {Object} config Configuration object
  * @param {Object} options Monitoring options
  * @returns {Function} Monitoring middleware
  */
-function createMonitoringMiddleware(options = {}) {
-  const perfMonitor = new PerformanceMonitor(options.logger, options.performance);
+function createMonitoringMiddleware(config, options = {}) {
+  const perfMonitor = createPerformanceMonitor(config, options.logger, options.performance);
   const errorMonitor = new ErrorMonitor(options.logger, options.errors);
 
   return async function monitor(req, res, next) {
@@ -31,8 +32,10 @@ function createMonitoringMiddleware(options = {}) {
 }
 
 module.exports = {
-  PerformanceMonitor,
+  createPerformanceMonitor,
   ErrorMonitor,
   MetricTypes,
   createMonitoringMiddleware,
+  // Legacy export for backward compatibility
+  PerformanceMonitor: createPerformanceMonitor,
 };

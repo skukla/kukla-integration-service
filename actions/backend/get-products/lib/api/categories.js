@@ -83,8 +83,10 @@ function getCategoryIds(product) {
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<Object|null>} Category details or null if failed
  */
-async function getCategory(categoryId, token, params, trace = null) {
+async function getCategory(categoryId, apiContext) {
+  const { token, params, trace = null } = apiContext;
   const config = loadConfig(params);
+
   // Check cache first
   const cached = getCachedCategory(categoryId, params);
   if (cached) {
@@ -135,12 +137,14 @@ async function getCategory(categoryId, token, params, trace = null) {
 /**
  * Enrich products with real category data
  * @param {Object[]} products - Array of product objects
- * @param {string} token - Authentication token
- * @param {Object} params - Request parameters
- * @param {Object} [trace] - Optional trace context for API call tracking
+ * @param {Object} apiContext - API context
+ * @param {string} apiContext.token - Authentication token
+ * @param {Object} apiContext.params - Request parameters
+ * @param {Object} [apiContext.trace] - Optional trace context for API call tracking
  * @returns {Promise<Object[]>} Products enriched with category data
  */
-async function enrichProductsWithCategories(products, token, params, trace = null) {
+async function enrichProductsWithCategories(products, apiContext) {
+  const { token, params, trace = null } = apiContext;
   try {
     const config = loadConfig(params);
     // Create a map to store category details
@@ -169,7 +173,7 @@ async function enrichProductsWithCategories(products, token, params, trace = nul
       const batch = categoryArray.slice(i, i + config.categories.batchSize);
       const batchPromises = batch.map(async (categoryId) => {
         try {
-          const category = await getCategory(categoryId, token, params, trace);
+          const category = await getCategory(categoryId, { token, params, trace });
           if (category) {
             categoryMap.set(categoryId, category);
           }
@@ -238,7 +242,7 @@ async function buildCategoryMap(products, token, params) {
     const batch = categoryArray.slice(i, i + config.categories.batchSize);
     const batchPromises = batch.map(async (categoryId) => {
       try {
-        const category = await getCategory(categoryId, token, params);
+        const category = await getCategory(categoryId, { token, params });
         if (category) {
           categoryMap[categoryId] = category.name;
         }

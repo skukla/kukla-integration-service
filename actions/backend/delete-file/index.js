@@ -5,7 +5,9 @@
 
 const { Core } = require('@adobe/aio-sdk');
 
-// Use domain catalogs instead of scattered imports
+// Load configuration
+const { loadConfig } = require('../../../config');
+// Use domain catalogs for thin orchestrator pattern
 const { files, shared } = require('../../../src');
 
 /**
@@ -35,8 +37,11 @@ async function main(params) {
     // Extract action parameters for storage credentials
     const actionParams = shared.extractActionParams(params);
 
+    // Load configuration
+    const config = loadConfig(actionParams);
+
     // Initialize storage provider using files domain
-    const storage = await files.initializeStorage(actionParams);
+    const storage = await files.initializeStorage(config, actionParams);
 
     // Delete the file using files domain
     await files.deleteFile(storage, cleanFileName);

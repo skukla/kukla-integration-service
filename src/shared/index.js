@@ -47,9 +47,7 @@ module.exports = {
   createMetrics: monitoring.createMetrics,
   formatMetrics: monitoring.formatMetrics,
   // Error handling utilities
-  createError: errors.createError,
-  createErrorResponse: errors.createErrorResponse,
-  handleError: errors.handleError,
+  createError: utils.createError,
   // Environment utilities
   detectEnvironment: environment.detectEnvironment,
   isStaging: environment.isStaging,
@@ -99,9 +97,7 @@ module.exports = {
   },
 
   errors: {
-    createError: errors.createError,
-    createErrorResponse: errors.createErrorResponse,
-    handleError: errors.handleError,
+    createError: utils.createError,
     // Add structured error types
     storage: errors.storage,
     http: errors.http,

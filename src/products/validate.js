@@ -10,7 +10,6 @@
  * - src/commerce/data/product.js
  */
 
-const { loadConfig } = require('../../config');
 const { checkMissingParams } = require('../shared');
 
 /**
@@ -24,9 +23,10 @@ const PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
  * Pure function that checks required OAuth credentials and configuration.
  *
  * @param {Object} params - Action parameters
+ * @param {Object} config - Configuration object
  * @throws {Error} If required parameters are missing or invalid
  */
-async function validateInput(params) {
+async function validateInput(params, config) {
   // Validate OAuth 1.0 credentials as parameters
   const requiredParams = [
     'COMMERCE_CONSUMER_KEY',
@@ -43,7 +43,6 @@ async function validateInput(params) {
 
   // Validate Commerce URL from configuration
   try {
-    const config = loadConfig(params);
     const commerceUrl = config.commerce.baseUrl;
 
     if (!commerceUrl) {
@@ -60,14 +59,13 @@ async function validateInput(params) {
 }
 
 /**
- * Gets product fields with parameter support
+ * Gets product fields with configuration support
  * Pure function that returns configured product fields.
  *
- * @param {Object} [params] - Action parameters
+ * @param {Object} config - Configuration object
  * @returns {Array} Product fields array
  */
-function getProductFields(params = {}) {
-  const config = loadConfig(params);
+function getProductFields(config) {
   return config.products?.fields || PRODUCT_FIELDS;
 }
 
@@ -76,12 +74,11 @@ function getProductFields(params = {}) {
  * Pure function that checks product data integrity.
  *
  * @param {Object} product - Product data to validate
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Object} Validation result with any errors
  */
-function validateProduct(product, params = {}) {
+function validateProduct(product, config) {
   const errors = [];
-  const config = loadConfig(params);
   const VALIDATION_RULES = config.products?.validation || {};
 
   // Check required fields (sku and name are always required)
@@ -122,10 +119,11 @@ function validateProduct(product, params = {}) {
  *
  * @param {Object} params - Request parameters
  * @param {Array<string>} [params.fields] - Optional array of field names to include
+ * @param {Object} config - Configuration object
  * @returns {Array<string>} Array of field names to include
  */
-function getRequestedFields(params) {
-  const availableFields = getProductFields(params);
+function getRequestedFields(params, config) {
+  const availableFields = getProductFields(config);
 
   if (!Array.isArray(params.fields) || params.fields.length === 0) {
     return availableFields;
@@ -147,10 +145,10 @@ function getRequestedFields(params) {
  * Pure function that validates multiple products and collects all errors.
  *
  * @param {Object[]} products - Array of product objects to validate
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Object} Validation result with products and any errors
  */
-function validateProductData(products, params = {}) {
+function validateProductData(products, config) {
   if (!Array.isArray(products)) {
     return {
       isValid: false,
@@ -165,7 +163,7 @@ function validateProductData(products, params = {}) {
   const allErrors = [];
 
   products.forEach((product, index) => {
-    const validation = validateProduct(product, params);
+    const validation = validateProduct(product, config);
 
     if (validation.isValid) {
       validProducts.push(product);
@@ -238,7 +236,7 @@ function validateProductConfig(config) {
  */
 async function validateMeshInput(params, config) {
   // First validate basic input requirements
-  await validateInput(params);
+  await validateInput(params, config);
 
   // Validate mesh-specific configuration
   if (!config.mesh) {

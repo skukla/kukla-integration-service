@@ -2,99 +2,22 @@
  * Commerce Data Module
  * @module commerce/data
  *
- * Provides Commerce data validation, handling, and utility functions.
- * Consolidates product, category, and inventory data functionality.
- * Uses functional composition with pure functions and clear input/output contracts.
+ * This module consolidates commerce-specific data processing functionality.
+ * For product validation functions, see src/products/validate.js (single source of truth).
  */
 
-const { loadConfig } = require('../../config');
-
-/**
- * Gets product fields with parameter support
- * @param {Object} [params] - Action parameters
- * @returns {Array} Product fields array
- */
-function getProductFields(params = {}) {
-  const config = loadConfig(params);
-  return config.products.fields;
-}
-
-/**
- * Gets the list of fields to include in the response
- * @param {Object} params - Request parameters
- * @param {Array<string>} [params.fields] - Optional array of field names to include
- * @returns {Array<string>} Array of field names to include
- * @throws {Error} When invalid fields are requested
- */
-function getRequestedFields(params) {
-  const PRODUCT_FIELDS = getProductFields(params);
-
-  if (!Array.isArray(params.fields) || params.fields.length === 0) {
-    return PRODUCT_FIELDS;
-  }
-
-  // Validate that all requested fields are available
-  const invalidFields = params.fields.filter((field) => !PRODUCT_FIELDS.includes(field));
-  if (invalidFields.length > 0) {
-    throw new Error(
-      `Invalid fields requested: ${invalidFields.join(', ')}. Available fields are: ${PRODUCT_FIELDS.join(', ')}`
-    );
-  }
-
-  return params.fields;
-}
-
-/**
- * Validates product data against configuration rules
- * @param {Object} product - Product data to validate
- * @param {Object} [params] - Action parameters for configuration
- * @returns {Object} Validation result with any errors
- */
-function validateProduct(product, params = {}) {
-  const errors = [];
-  const config = loadConfig(params);
-  const VALIDATION_RULES = config.products.validation || {};
-
-  // Check required fields (sku and name are always required)
-  if (!product.sku) {
-    errors.push('Missing required field: sku');
-  }
-  if (!product.name) {
-    errors.push('Missing required field: name');
-  }
-
-  // Validate field values against rules
-  Object.entries(VALIDATION_RULES).forEach(([field, rules]) => {
-    if (product[field]) {
-      if (rules.pattern && !new RegExp(rules.pattern).test(product[field])) {
-        errors.push(`${field}: ${rules.message}`);
-      }
-      if (rules.minLength && product[field].length < rules.minLength) {
-        errors.push(`${field}: ${rules.message}`);
-      }
-      if (rules.maxLength && product[field].length > rules.maxLength) {
-        errors.push(`${field}: ${rules.message}`);
-      }
-      if (rules.min !== undefined && product[field] < rules.min) {
-        errors.push(`${field}: ${rules.message}`);
-      }
-    }
-  });
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
+const { getProductFields, getRequestedFields, validateProduct } = require('../products/validate');
+const { validateCategory } = require('./data/category');
+const { validateInventory } = require('./data/inventory');
 
 /**
  * Validates multiple products and returns aggregated results
  * @param {Array<Object>} products - Products to validate
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Object} Aggregated validation results
  */
-function validateProducts(products, params = {}) {
-  const results = products.map((product) => validateProduct(product, params));
+function validateProducts(products, config) {
+  const results = products.map((product) => validateProduct(product, config));
   const errors = results.filter((result) => !result.isValid);
 
   return {
@@ -169,51 +92,6 @@ function getCategoryIds(product) {
   }
 
   return [];
-}
-
-/**
- * Validates category data
- * @param {Object} category - Category data to validate
- * @returns {Object} Validation result
- */
-function validateCategory(category) {
-  const errors = [];
-
-  if (!category.id) {
-    errors.push('Missing required field: id');
-  }
-  if (!category.name) {
-    errors.push('Missing required field: name');
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Validates inventory data
- * @param {Object} inventory - Inventory data to validate
- * @returns {Object} Validation result
- */
-function validateInventory(inventory) {
-  const errors = [];
-
-  if (inventory.qty === undefined || inventory.qty === null) {
-    errors.push('Missing required field: qty');
-  }
-  if (typeof inventory.qty !== 'number' || inventory.qty < 0) {
-    errors.push('Invalid qty: must be a non-negative number');
-  }
-  if (typeof inventory.is_in_stock !== 'boolean') {
-    errors.push('Invalid is_in_stock: must be a boolean');
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
 }
 
 /**
@@ -324,6 +202,45 @@ function enrichProductWithInventory(product, inventoryData) {
 }
 
 /**
+ * Normalizes core product identification fields
+ * @param {Object} product - Product object
+ * @returns {Object} Normalized core fields
+ */
+function normalizeProductCore(product) {
+  return {
+    id: product.id || null,
+    sku: product.sku || '',
+    name: product.name || '',
+  };
+}
+
+/**
+ * Normalizes product pricing and inventory fields
+ * @param {Object} product - Product object
+ * @returns {Object} Normalized pricing and inventory fields
+ */
+function normalizeProductPricing(product) {
+  return {
+    price: product.price || 0,
+    qty: product.qty || 0,
+    is_in_stock: product.is_in_stock || false,
+  };
+}
+
+/**
+ * Normalizes product array fields
+ * @param {Object} product - Product object
+ * @returns {Object} Normalized array fields
+ */
+function normalizeProductArrays(product) {
+  return {
+    categories: product.categories || [],
+    media_gallery_entries: product.media_gallery_entries || [],
+    custom_attributes: product.custom_attributes || [],
+  };
+}
+
+/**
  * Normalizes product data to ensure consistent structure
  * @param {Object} product - Product object to normalize
  * @returns {Object} Normalized product object
@@ -334,15 +251,9 @@ function normalizeProduct(product) {
   }
 
   return {
-    id: product.id || null,
-    sku: product.sku || '',
-    name: product.name || '',
-    price: product.price || 0,
-    qty: product.qty || 0,
-    is_in_stock: product.is_in_stock || false,
-    categories: product.categories || [],
-    media_gallery_entries: product.media_gallery_entries || [],
-    custom_attributes: product.custom_attributes || [],
+    ...normalizeProductCore(product),
+    ...normalizeProductPricing(product),
+    ...normalizeProductArrays(product),
     ...product, // Preserve any additional fields
   };
 }

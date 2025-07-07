@@ -69,7 +69,8 @@ function filterProductFields(product, fields) {
  * @param {Object} [params] - Action parameters for configuration
  * @returns {Promise<Object>} Inventory data
  */
-async function getInventory(sku, token, baseUrl, params = {}) {
+async function getInventory(sku, apiContext) {
+  const { token, baseUrl, params = {} } = apiContext;
   const endpoint = commerceEndpoints.stockItem(sku, params);
   const url = buildCommerceUrl(baseUrl, endpoint);
   const response = await makeCachedRequest(
@@ -96,91 +97,152 @@ async function getInventory(sku, token, baseUrl, params = {}) {
 }
 
 /**
+ * Initializes pagination configuration and validates setup
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Request parameters
+ * @returns {Object} Pagination configuration and field settings
+ */
+function initializePaginationConfig(config, params) {
+  const commerceUrl = config.commerce.baseUrl;
+  if (!commerceUrl) {
+    throw new Error('Commerce URL not configured in environment');
+  }
+
+  const paginationConfig = {
+    pageSize: config.products.perPage,
+    maxPages: config.products.maxTotal / config.products.perPage,
+  };
+
+  // Get the fields to include with error handling
+  let fields;
+  try {
+    fields = getRequestedFields(params, config);
+  } catch (error) {
+    fields = config.products.fields;
+  }
+
+  // Ensure fields is always an array (defensive programming)
+  if (!Array.isArray(fields)) {
+    fields = config.products.fields;
+  }
+
+  return {
+    commerceUrl,
+    paginationConfig,
+    fieldsForProcessing: [...fields], // Create immutable copy
+  };
+}
+
+/**
+ * Fetches and validates a single page of products
+ * @param {Object} apiContext - API context
+ * @param {string} apiContext.token - Authentication token
+ * @param {string} apiContext.commerceUrl - Commerce base URL
+ * @param {Object} apiContext.params - Request parameters
+ * @param {Object} paginationData - Pagination data
+ * @param {number} paginationData.pageSize - Page size
+ * @param {number} paginationData.currentPage - Current page number
+ * @returns {Promise<Object>} Page response with products
+ */
+async function fetchProductPage(apiContext, paginationData) {
+  const { token, commerceUrl, params } = apiContext;
+  const { pageSize, currentPage } = paginationData;
+
+  const paginatedParams = {
+    ...params,
+    pageSize,
+    currentPage,
+  };
+
+  const endpoint = commerceEndpoints.products(paginatedParams, params);
+  const url = buildCommerceUrl(commerceUrl, endpoint);
+
+  const response = await makeCachedRequest(
+    url,
+    {
+      method: 'GET',
+      headers: buildHeaders(token),
+    },
+    params
+  );
+
+  if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
+    return null;
+  }
+
+  return response;
+}
+
+/**
+ * Enriches products with inventory data and applies field filtering
+ * @param {Array} products - Products to enrich
+ * @param {Object} apiContext - API context and configuration
+ * @param {string} apiContext.token - Authentication token
+ * @param {string} apiContext.commerceUrl - Commerce base URL
+ * @param {Object} apiContext.params - Request parameters
+ * @param {Array} fieldsForProcessing - Fields to include
+ * @returns {Promise<Array>} Enriched and filtered products
+ */
+async function enrichProductsWithInventoryData(products, apiContext, fieldsForProcessing) {
+  const { token, commerceUrl, params } = apiContext;
+
+  return await Promise.all(
+    products.map(async (product) => {
+      try {
+        const inventory = await getInventory(product.sku, { token, baseUrl: commerceUrl, params });
+        const enrichedProduct = {
+          ...product,
+          ...inventory,
+        };
+        return filterProductFields(enrichedProduct, fieldsForProcessing);
+      } catch (inventoryError) {
+        return filterProductFields(product, fieldsForProcessing);
+      }
+    })
+  );
+}
+
+/**
  * Fetches all products with pagination and enriches them with inventory data
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
  * @returns {Promise<Array>} Array of products
  */
 async function fetchAllProducts(token, params = {}) {
-  // Get Commerce URL from configuration
   const config = loadConfig(params);
-  const commerceUrl = config.commerce.baseUrl;
-
-  if (!commerceUrl) {
-    throw new Error('Commerce URL not configured in environment');
-  }
 
   try {
-    // Get pagination configuration
-    const { pageSize, maxPages } = {
-      pageSize: config.products.perPage,
-      maxPages: config.products.maxTotal / config.products.perPage,
-    };
+    const { commerceUrl, paginationConfig, fieldsForProcessing } = initializePaginationConfig(
+      config,
+      params
+    );
+    const { pageSize, maxPages } = paginationConfig;
 
     let allProducts = [];
     let currentPage = 1;
     let totalPages = 1;
 
-    // Get the fields to include (declare once outside the loop)
-    let fields;
-    try {
-      fields = getRequestedFields(params);
-    } catch (error) {
-      fields = config.products.fields;
-    }
-
-    // Ensure fields is always an array (defensive programming)
-    if (!Array.isArray(fields)) {
-      fields = config.products.fields;
-    }
-
-    // Create immutable copy to ensure proper closure capture
-    const fieldsForProcessing = [...fields];
+    // Create API context once for reuse
+    const apiContext = { token, commerceUrl, params };
 
     do {
-      const paginatedParams = {
-        ...params,
-        pageSize,
-        currentPage,
-      };
-
-      const endpoint = commerceEndpoints.products(paginatedParams, params);
-      const url = buildCommerceUrl(commerceUrl, endpoint);
-
-      const response = await makeCachedRequest(
-        url,
-        {
-          method: 'GET',
-          headers: buildHeaders(token),
-        },
-        params
-      );
-
-      if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
+      const paginationData = { pageSize, currentPage };
+      const response = await fetchProductPage(apiContext, paginationData);
+      if (!response) {
         break;
       }
 
       // Get total pages on first request
       if (currentPage === 1) {
         totalPages = Math.ceil(response.body.total_count / pageSize);
-        // Respect maxPages configuration
-        totalPages = Math.min(totalPages, maxPages);
+        totalPages = Math.min(totalPages, maxPages); // Respect maxPages configuration
       }
 
       // Enrich products with inventory data and filter fields
-      const enrichedProducts = await Promise.all(
-        response.body.items.map(async (product) => {
-          try {
-            const inventory = await getInventory(product.sku, token, commerceUrl, params);
-            const enrichedProduct = {
-              ...product,
-              ...inventory,
-            };
-            return filterProductFields(enrichedProduct, fieldsForProcessing);
-          } catch (inventoryError) {
-            return filterProductFields(product, fieldsForProcessing);
-          }
-        })
+      const enrichedProducts = await enrichProductsWithInventoryData(
+        response.body.items,
+        apiContext,
+        fieldsForProcessing
       );
 
       allProducts = allProducts.concat(enrichedProducts);

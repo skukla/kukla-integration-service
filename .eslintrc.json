@@ -18,6 +18,16 @@
     "no-debugger": "error",
     "no-duplicate-imports": "error",
 
+    // Function and code complexity
+    "max-lines-per-function": [
+      "error",
+      { "max": 60, "skipBlankLines": true, "skipComments": true }
+    ],
+    "max-lines": ["warn", { "max": 400, "skipBlankLines": true, "skipComments": true }],
+    "complexity": ["warn", { "max": 10 }],
+    "max-depth": ["error", { "max": 4 }],
+    "max-params": ["warn", { "max": 5 }],
+
     // Import rules
     "import/no-unused-modules": [1, { "unusedExports": true }],
     "import/no-unresolved": "error",
@@ -75,13 +85,22 @@
       "files": ["scripts/**/*.js", "**/test*.js", "**/*.test.js", "src/core/testing/**/*.js"],
       "rules": {
         "no-console": "off",
-        "import/no-unused-modules": "off"
+        "import/no-unused-modules": "off",
+        "max-lines-per-function": ["warn", { "max": 100 }],
+        "complexity": ["warn", { "max": 15 }]
       }
     },
     {
       "files": ["web-src/src/js/index.js", "web-src/src/js/htmx/setup.js"],
       "rules": {
         "import/no-unused-modules": "off"
+      }
+    },
+    {
+      "files": ["actions/**/*.js"],
+      "rules": {
+        "max-lines-per-function": ["warn", { "max": 80 }],
+        "max-params": ["warn", { "max": 3 }]
       }
     }
   ]

@@ -175,6 +175,31 @@ function buildProductObject(product, categoryMap = {}) {
 }
 
 /**
+ * Extracts primary category for CSV output
+ * @param {Array|undefined} categories - Product categories array
+ * @returns {string} Primary category ID or name
+ */
+function extractCsvCategoryId(categories) {
+  if (!Array.isArray(categories) || categories.length === 0) {
+    return '';
+  }
+
+  const firstCategory = categories[0];
+
+  // Handle string category IDs
+  if (typeof firstCategory === 'string') {
+    return firstCategory;
+  }
+
+  // Handle category objects with name property
+  if (firstCategory && firstCategory.name) {
+    return firstCategory.name;
+  }
+
+  return '';
+}
+
+/**
  * Maps a product object to a CSV row
  * Pure function that converts product data to CSV row format.
  *
@@ -185,13 +210,7 @@ function mapProductToCsvRow(product) {
   return {
     sku: product.sku || '',
     name: product.name || '',
-    category_id: Array.isArray(product.categories)
-      ? typeof product.categories[0] === 'string'
-        ? product.categories[0]
-        : product.categories[0] && product.categories[0].name
-          ? product.categories[0].name
-          : ''
-      : '',
+    category_id: extractCsvCategoryId(product.categories),
     message: product.description || '',
     thumbnail_url: getPrimaryImageUrl(product.images),
     value: product.price || '',

@@ -84,7 +84,7 @@ module.exports = {
   validateImage: transform.validateImage,
   validateImages: transform.validateImages,
   calculateProductMetrics: transform.calculateProductMetrics,
-  // Legacy compatibility - preserve existing structure
+  // Structured exports for organized access and backward compatibility
   api: {
     createClient: api.createClient,
     makeCommerceRequest: api.makeCommerceRequest,

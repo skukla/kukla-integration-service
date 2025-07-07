@@ -119,7 +119,6 @@ function createErrorLoggerMiddleware(logger) {
 
 module.exports = {
   ErrorTypes,
-  createErrorResponse,
   processError,
   createErrorLoggerMiddleware,
 };

@@ -6,7 +6,6 @@
  * Uses functional composition with pure functions and clear input/output contracts.
  */
 
-const { loadConfig } = require('../../config');
 const { buildCommerceUrl } = require('../shared');
 const { incrementApiCalls } = require('../shared');
 
@@ -51,7 +50,7 @@ function createOAuthHeader(params, method, url) {
   const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
   const queryParams = Object.fromEntries(urlObj.searchParams.entries());
 
-  // Combine OAuth params and query params for signature (key difference from our old implementation)
+  // Combine OAuth params and query params for signature (Postman-compatible approach)
   const allParams = { ...oauthParams, ...queryParams };
 
   // Create parameter string for signature
@@ -86,12 +85,12 @@ function createOAuthHeader(params, method, url) {
  * @param {Object} params - Parameters containing admin credentials
  * @param {string} params.COMMERCE_ADMIN_USERNAME - Admin username
  * @param {string} params.COMMERCE_ADMIN_PASSWORD - Admin password
+ * @param {Object} config - Configuration object
  * @param {Object} [trace] - Optional trace context for API call tracking
  * @returns {Promise<string>} Admin bearer token
  * @throws {Error} When admin credentials are missing or authentication fails
  */
-async function getAuthToken(params, trace = null) {
-  const config = loadConfig(params);
+async function getAuthToken(params, config, trace = null) {
   const username = params.COMMERCE_ADMIN_USERNAME;
   const password = params.COMMERCE_ADMIN_PASSWORD;
 
