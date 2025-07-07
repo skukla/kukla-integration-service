@@ -5,25 +5,20 @@
 
 const { Files: FilesLib } = require('@adobe/aio-sdk');
 
-const { loadConfig } = require('../../../../../config');
-
 /**
  * Stores a file in the configured storage location
  * @async
  * @param {string} content - File content to store
  * @param {string} [fileName] - Name of the file to store (optional, uses config default if not provided)
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object>} Storage result
  * @property {string} fileName - Name of the stored file
  * @property {string} location - Storage location
  * @property {string} downloadUrl - URL to download the file via the download-file action
  * @throws {Error} If file operation fails
  */
-async function storeFile(content, fileName = null, params = {}) {
+async function storeFile(content, fileName = null, config) {
   try {
-    // Load storage configuration
-    const config = loadConfig(params);
-
     // For now, we only support app-builder provider
     // This could be extended to support S3 in the future
     if (config.storage.provider !== 'app-builder') {
