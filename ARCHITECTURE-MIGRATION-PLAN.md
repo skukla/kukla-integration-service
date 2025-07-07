@@ -305,19 +305,7 @@ actions/
 
 3. **Test**: All actions should work with new architecture
 
-### Phase 7: Remove Old Structure (1 hour)
-**Goal**: Clean up old scattered utilities
-
-1. **Remove old directories**
-   ```bash
-   rm -rf actions/backend/get-products/lib/
-   rm -rf actions/backend/get-products/steps/
-   rm -rf src/core/ (except what's moved to shared)
-   ```
-
-2. **Test**: Full application functionality with new architecture
-
-### Phase 8: Configuration Simplification (1-2 hours)
+### Phase 7: Configuration Simplification (1-2 hours)
 **Goal**: Replace complex multi-environment configuration with simple, environment-variable-based system
 
 **IMPLEMENTATION DETAILS** (from preliminary work):
@@ -410,6 +398,21 @@ function loadConfig(params = {}) {
 - Scripts must work without environment detection
 - Deployment must work to both staging and production
 
+### Phase 8: Remove Old Structure (Final Cleanup) (1 hour)
+**Goal**: Clean up old scattered utilities after everything is working
+
+1. **Remove old directories**
+   ```bash
+   rm -rf actions/backend/get-products/lib/
+   rm -rf actions/backend/get-products/steps/
+   rm -rf src/core/ (except what's moved to shared)
+   ```
+
+2. **Final validation**: Complete application functionality test
+   - All actions work with new architecture
+   - Configuration simplification is stable
+   - No old code dependencies remain
+
 ## Testing Strategy
 
 **After each phase:**
@@ -439,7 +442,7 @@ function loadConfig(params = {}) {
 - **Phase 1-2**: 3-5 hours (Foundation + Products)
 - **Phase 3-4**: 3-5 hours (Files + Commerce)
 - **Phase 5-6**: 3-5 hours (Shared + Actions)
-- **Phase 7**: 1 hour (Cleanup)
-- **Phase 8**: 1-2 hours (Configuration Simplification)
+- **Phase 7**: 1-2 hours (Configuration Simplification)
+- **Phase 8**: 1 hour (Final Cleanup)
 
 **Total**: 11-18 hours over 2-3 development sessions 
