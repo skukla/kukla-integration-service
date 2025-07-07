@@ -305,7 +305,7 @@ kukla-integration-service/
 // Example action structure
 const { Core } = require('@adobe/aio-sdk');
 const { getCommerceProducts } = require('../../src/commerce/api');
-const { validateInput } = require('../../src/core/validation');
+const { validateInput } = require('../../src/shared/validation');
 const { createSuccessResponse } = require('../../src/core/responses');
 
 async function main(params) {

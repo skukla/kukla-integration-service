@@ -175,7 +175,7 @@ Schemas are available for:
 ### Parameter Validation
 
 ```javascript
-const { validateActionParams } = require('../src/core/validation');
+const { validateActionParams } = require('../src/shared/validation');
 
 // Non-strict validation (warns on failure)
 const isValid = validateActionParams('get-products', params);
@@ -191,7 +191,7 @@ try {
 ### Response Validation
 
 ```javascript
-const { validateActionResponse } = require('../src/core/validation');
+const { validateActionResponse } = require('../src/shared/validation');
 
 // Validate action response
 const isValid = validateActionResponse('get-products', response);
@@ -318,7 +318,7 @@ const {
   validateRequired,
   validateString,
   validateUrl,
-} = require('../src/core/validation');
+} = require('../src/shared/validation');
 
 // Check for missing parameters
 const error = checkMissingRequestInputs(params, ['username', 'password']);
@@ -369,7 +369,7 @@ This tests:
 
 ```javascript
 const { validateConfig, getActionSchema } = require('../config/schema');
-const { validateActionParams } = require('../src/core/validation');
+const { validateActionParams } = require('../src/shared/validation');
 
 // Test configuration
 const config = require('../config/environments/staging');
@@ -459,9 +459,9 @@ const { validateInput } = require('../src/core/data/validation');
 New pattern:
 
 ```javascript
-const { validateRequired } = require('../src/core/validation');
+const { validateRequired } = require('../src/shared/validation');
 // or
-const { validateActionParams } = require('../src/core/validation');
+const { validateActionParams } = require('../src/shared/validation');
 ```
 
 ## Best Practices

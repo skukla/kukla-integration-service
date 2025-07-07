@@ -130,6 +130,24 @@ async function listCsvFiles(params) {
  * Organized by functional area for easy discovery
  */
 module.exports = {
+  // === DIRECT ACCESS CONVENIENCE FUNCTIONS ===
+  // Most commonly used functions available directly
+  storeCsv: storeCsvFile,
+  initializeStorage,
+  extractCleanFilename,
+  deleteFile,
+  readFile,
+  writeFile,
+  listFiles,
+  getFileProperties,
+  isFileOperationError,
+  getFileErrorType: mapErrorCodeToType,
+  filterCsvFiles: (files) => files.filter((file) => file.name.endsWith('.csv')),
+  getStorageInfo: (storage) => ({
+    provider: storage.provider,
+    bucket: storage.bucket, // For S3
+    namespace: storage.namespace, // For App Builder (if applicable)
+  }),
   // === STORAGE PROVIDERS ===
   storage: {
     initializeStorage,

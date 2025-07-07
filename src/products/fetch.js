@@ -12,7 +12,7 @@
  * - actions/backend/get-products/lib/api/inventory.js
  */
 
-const { makeCommerceRequest } = require('../../commerce/api/integration');
+const { makeCommerceRequest } = require('../commerce').api;
 
 /**
  * Fetch products from Commerce API with OAuth authentication

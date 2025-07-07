@@ -8,8 +8,8 @@ const ora = require('ora');
 
 // Import URL building utilities
 const { loadConfig } = require('../config');
-const { detectEnvironment } = require('../src/core/environment');
-const { buildRuntimeUrl } = require('../src/core/routing');
+const { detectEnvironment } = require('../src/shared/environment');
+const { buildRuntimeUrl } = require('../src/shared/routing');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -323,7 +323,8 @@ async function main() {
   if (rawOutput) {
     // Raw mode: just output JSON
     try {
-      const actionUrl = buildRuntimeUrl(actionName, null, processedParams);
+      const config = loadConfig(processedParams);
+      const actionUrl = buildRuntimeUrl(actionName, null, config);
       const response = await testAction(actionUrl, processedParams, processedParams.NODE_ENV);
       console.log(JSON.stringify(response, null, 2));
     } catch (error) {
@@ -335,7 +336,8 @@ async function main() {
     const spinner = ora(`Testing action: ${actionName}`).start();
 
     try {
-      const actionUrl = buildRuntimeUrl(actionName, null, processedParams);
+      const config = loadConfig(processedParams);
+      const actionUrl = buildRuntimeUrl(actionName, null, config);
       const response = await testAction(actionUrl, processedParams, processedParams.NODE_ENV);
 
       spinner.succeed(`Action tested: ${actionName}`);

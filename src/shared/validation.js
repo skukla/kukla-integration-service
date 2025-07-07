@@ -1,6 +1,6 @@
 /**
- * Core validation utilities for data handling
- * @module core/data/validation
+ * Simple validation utilities
+ * @module shared/validation
  */
 
 /**
@@ -84,9 +84,24 @@ function validateUrl(value, fieldName) {
   }
 }
 
+/**
+ * Check for missing required parameters (simplified version)
+ * @param {Object} params - Parameters to check
+ * @param {Array<string>} requiredParams - Array of required parameter names
+ * @throws {Error} If any required parameter is missing
+ */
+function checkMissingParams(params, requiredParams) {
+  const missing = requiredParams.filter((param) => !params[param]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required parameters: ${missing.join(', ')}`);
+  }
+}
+
 module.exports = {
+  // Simple validation helpers
   checkMissingRequestInputs,
   validateRequired,
   validateString,
   validateUrl,
+  checkMissingParams,
 };

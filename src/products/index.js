@@ -32,6 +32,7 @@ module.exports = {
 
   // Validation operations
   validateInput: require('./validate').validateInput,
+  validateMeshInput: require('./validate').validateMeshInput,
   validateProduct: require('./validate').validateProduct,
   validateProductData: require('./validate').validateProductData,
   validateProductConfig: require('./validate').validateProductConfig,
