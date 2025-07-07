@@ -5,10 +5,10 @@
 
 const { Core } = require('@adobe/aio-sdk');
 
+// Use domain catalogs instead of scattered imports
 const { getDeleteModalHtml, getFileListHtml } = require('./templates');
 const { loadConfig } = require('../../../config');
-const { extractActionParams } = require('../../../src/core/http/client');
-const { initializeAppBuilderStorage, initializeS3Storage } = require('../../../src/core/storage');
+const { files, shared } = require('../../../src');
 const { createHtmxResponse } = require('../../../src/htmx/formatting');
 
 /**
@@ -58,20 +58,16 @@ async function handleGetRequest(params, actionParams, logger, storage) {
       return createHtmlResponse(getDeleteModalHtml(params.fileName, params.fullPath, actionParams));
     }
 
-    // Get file list with metadata using unified storage interface
+    // Get file list with metadata using files domain
     logger.info(`Listing files from storage (${storage.provider})`);
-    const allFiles = await storage.list();
+    const allFiles = await files.listFiles(storage);
 
-    // Filter for CSV files
-    const csvFiles = allFiles.filter((file) => file.name.endsWith('.csv'));
+    // Filter for CSV files using files domain
+    const csvFiles = files.filterCsvFiles(allFiles);
     logger.info(`Found ${csvFiles.length} CSV files`);
 
-    // Prepare storage information for the template
-    const storageInfo = {
-      provider: storage.provider,
-      bucket: storage.bucket, // For S3
-      namespace: storage.namespace, // For App Builder (if applicable)
-    };
+    // Prepare storage information for the template using files domain
+    const storageInfo = files.getStorageInfo(storage);
 
     // Return the file list HTML with storage information
     return createHtmlResponse(getFileListHtml(csvFiles, storageInfo));
@@ -96,7 +92,7 @@ async function handleDeleteRequest(params, logger, storage) {
     }
 
     logger.info(`Deleting file: ${fileName}`);
-    await storage.delete(fileName);
+    await files.deleteFile(storage, fileName);
     return createHtmlResponse('');
   } catch (error) {
     logger.error('Error in DELETE request:', error);
@@ -114,26 +110,13 @@ async function main(params) {
 
   try {
     // Extract action parameters for storage initialization
-    const actionParams = extractActionParams(params);
+    const actionParams = shared.extractActionParams(params);
 
     // Load configuration
     const config = loadConfig(actionParams);
 
-    // Initialize storage based on provider
-    let storage;
-    if (config.storage.provider === 'app-builder') {
-      storage = await initializeAppBuilderStorage(actionParams);
-    } else if (config.storage.provider === 's3') {
-      // Check for required AWS credentials
-      if (!actionParams.AWS_ACCESS_KEY_ID || !actionParams.AWS_SECRET_ACCESS_KEY) {
-        logger.error('Missing AWS credentials for S3 storage');
-        return createErrorResponse('Missing AWS credentials for S3 storage', 400);
-      }
-      storage = await initializeS3Storage(config, actionParams);
-    } else {
-      logger.error('Invalid storage provider:', config.storage.provider);
-      return createErrorResponse('Invalid storage provider configuration', 400);
-    }
+    // Initialize storage using files domain
+    const storage = await files.initializeStorage(actionParams, config);
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
     // Route request based on HTTP method

@@ -6,12 +6,8 @@
 
 const { Core } = require('@adobe/aio-sdk');
 
-const { checkMissingRequestInputs } = require('../../../src/core/data');
-const { FileErrorType } = require('../../../src/core/errors');
-const { extractActionParams } = require('../../../src/core/http/client');
-const { response } = require('../../../src/core/http/responses');
-const { initializeStorage } = require('../../../src/core/storage');
-const { extractCleanFilename } = require('../../../src/core/storage/path');
+// Use domain catalogs instead of scattered imports
+const { files, shared } = require('../../../src');
 
 /**
  * Main function that handles file download requests
@@ -33,7 +29,7 @@ const { extractCleanFilename } = require('../../../src/core/storage/path');
 async function main(params) {
   // Handle preflight requests first
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {});
+    return shared.success({}, 'Preflight success', {});
   }
 
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
@@ -41,37 +37,37 @@ async function main(params) {
   try {
     logger.info('Starting download request:', { fileName: params.fileName });
 
-    // Validate required parameters
-    const missingInputs = checkMissingRequestInputs(params, ['fileName']);
+    // Validate required parameters using shared utilities
+    const missingInputs = shared.checkMissingParams(params, ['fileName']);
     if (missingInputs) {
       logger.error('Missing required inputs:', { missingInputs });
-      return response.badRequest(missingInputs, {});
+      return shared.error(new Error(missingInputs), {});
     }
 
-    // Extract clean filename (remove public/ prefix if present)
-    const cleanFileName = extractCleanFilename(params.fileName);
+    // Extract clean filename using files domain
+    const cleanFileName = files.extractCleanFilename(params.fileName);
     logger.info('Clean filename extracted:', { original: params.fileName, clean: cleanFileName });
 
     // Extract action parameters for storage credentials
-    const actionParams = extractActionParams(params);
+    const actionParams = shared.extractActionParams(params);
 
-    // Initialize storage provider
+    // Initialize storage provider using files domain
     logger.info('Initializing storage provider');
-    const storage = await initializeStorage(actionParams);
+    const storage = await files.initializeStorage(actionParams);
     logger.info('Storage provider initialized:', { provider: storage.provider });
 
-    // Get file properties first to verify existence and get content type
+    // Get file properties using files domain
     logger.info(`Getting properties for file: ${cleanFileName}`);
-    const fileProps = await storage.getProperties(cleanFileName);
+    const fileProps = await files.getFileProperties(storage, cleanFileName);
     logger.info('File properties retrieved:', {
       name: fileProps.name,
       size: fileProps.size,
       contentType: fileProps.contentType,
     });
 
-    // Read file content
+    // Read file content using files domain
     logger.info(`Reading file content: ${cleanFileName}`);
-    const buffer = await storage.read(cleanFileName);
+    const buffer = await files.readFile(storage, cleanFileName);
     logger.info('File content read successfully', {
       contentLength: buffer.length,
       fileName: cleanFileName,
@@ -94,26 +90,27 @@ async function main(params) {
   } catch (error) {
     logger.error('Error in download-file action:', error);
 
-    // Handle specific file operation errors
-    if (error.isFileOperationError) {
-      switch (error.type) {
-        case FileErrorType.NOT_FOUND:
+    // Handle specific file operation errors using files domain
+    if (files.isFileOperationError(error)) {
+      const errorType = files.getFileErrorType(error);
+      switch (errorType) {
+        case 'NOT_FOUND':
           logger.warn('File not found:', { fileName: params.fileName });
-          return response.badRequest(`File not found: ${params.fileName}`, {});
-        case FileErrorType.INVALID_PATH:
+          return shared.error(new Error(`File not found: ${params.fileName}`), {});
+        case 'INVALID_PATH':
           logger.warn('Invalid file path:', { fileName: params.fileName });
-          return response.badRequest(error.message, {});
+          return shared.error(error, {});
         default:
           logger.error('File operation error:', {
-            type: error.type,
+            type: errorType,
             message: error.message,
           });
-          return response.error(error, {});
+          return shared.error(error, {});
       }
     }
 
     logger.error('Unexpected error:', error);
-    return response.error(error, {});
+    return shared.error(error, {});
   }
 }
 

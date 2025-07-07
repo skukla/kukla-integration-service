@@ -3,7 +3,7 @@
  * @module steps/validateInput
  */
 const { loadConfig } = require('../../../../config');
-const { checkMissingParams } = require('../../../../src/core/http/client');
+const { checkMissingParams } = require('../../../../src/shared/validation');
 
 /**
  * Validates the input parameters for the action

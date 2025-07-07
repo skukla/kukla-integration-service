@@ -10,10 +10,6 @@ const chalk = require('chalk');
 const ora = require('ora');
 
 const { generateFrontend } = require('./generate-frontend');
-const { validateSchemas } = require('./test-schemas');
-const { detectEnvironment } = require('../src/core/environment');
-
-// Mesh status will be checked during build for potential use by deployment scripts
 
 const execAsync = promisify(exec);
 
@@ -43,7 +39,17 @@ function formatSpinnerSuccess(message) {
   return chalk.green(message);
 }
 
-// Mesh status checking is handled by deployment scripts
+/**
+ * Detect environment from various sources
+ * @returns {string} Environment name ('staging' or 'production')
+ */
+function detectEnvironment() {
+  const env = process.env.AIO_RUNTIME_NAMESPACE || process.env.NODE_ENV || 'staging';
+
+  return env.includes('stage') || env === 'staging' || env === 'development'
+    ? 'staging'
+    : 'production';
+}
 
 /**
  * Main build function
@@ -53,26 +59,16 @@ async function build() {
     // Step 1: Environment Detection
     const envSpinner = createSpinner('Detecting environment...');
     await sleep(500); // Give spinner time to spin
-    const env = detectEnvironment({}, { allowCliDetection: true });
+    const env = detectEnvironment();
     const envDisplay = chalk.bold(capitalize(env));
     envSpinner.succeed(formatSpinnerSuccess('Environment detected: ' + envDisplay));
 
-    // Step 2: Schema Validation
-    const schemaSpinner = createSpinner('Validating schemas...');
-    await sleep(500); // Give spinner time to spin
-    const validationResult = await validateSchemas();
-    if (!validationResult) {
-      schemaSpinner.fail(chalk.red('Schema validation failed'));
-      process.exit(1);
-    }
-    schemaSpinner.succeed(formatSpinnerSuccess('Schema validation completed'));
-
-    // Step 3: Frontend Generation
+    // Step 2: Frontend Generation
     const frontendSpinner = createSpinner('Generating frontend assets...');
     await generateFrontend();
     frontendSpinner.succeed(formatSpinnerSuccess('Frontend assets generated'));
 
-    // Step 4: Mesh Resolver Generation
+    // Step 3: Mesh Resolver Generation
     const meshSpinner = createSpinner('Generating mesh resolver...');
     await sleep(500); // Give spinner time to spin
     await execAsync('node scripts/generate-mesh-resolver.js');

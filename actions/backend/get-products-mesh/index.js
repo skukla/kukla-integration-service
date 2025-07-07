@@ -2,15 +2,10 @@
  * Main action for exporting Adobe Commerce product data via API Mesh
  * @module get-products-mesh
  */
+
+// Use domain catalogs instead of scattered imports
 const { loadConfig } = require('../../../config');
-const { extractActionParams } = require('../../../src/core/http/client');
-const { response } = require('../../../src/core/http/responses');
-const { createTraceContext, traceStep } = require('../../../src/core/tracing');
-const { formatStepMessage } = require('../../../src/core/utils');
-// Import shared step functions for consistency
-const buildProducts = require('../get-products/steps/buildProducts');
-const createCsv = require('../get-products/steps/createCsv');
-const storeCsv = require('../get-products/steps/storeCsv');
+const { products, files, shared } = require('../../../src');
 
 /**
  * Make GraphQL request to mesh with retry logic
@@ -191,80 +186,80 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
  * @returns {Promise<Object>} Action response
  */
 async function main(params) {
-  const actionParams = extractActionParams(params);
-  const trace = createTraceContext('get-products-mesh', actionParams);
+  const actionParams = shared.extractActionParams(params);
+  const trace = shared.createTraceContext('get-products-mesh', actionParams);
 
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {});
+    return shared.success({}, 'Preflight success', {});
   }
 
   try {
+    // Initialize configuration
     const config = loadConfig(actionParams);
     const steps = [];
 
-    steps.push(formatStepMessage('validate-mesh', 'success'));
+    // Step 1: Validate mesh configuration using products domain
+    await shared.traceStep(trace, 'validate-mesh', async () => {
+      return await products.validateMeshInput(actionParams, config);
+    });
+    steps.push(shared.formatStepMessage('validate-mesh', 'success'));
 
-    const meshResponse = await traceStep(trace, 'fetch-mesh', async () => {
+    // Step 2: Fetch enriched products from mesh
+    const meshData = await shared.traceStep(trace, 'fetch-mesh', async () => {
       return await fetchEnrichedProductsFromMesh(config, actionParams);
     });
+    steps.push(shared.formatStepMessage('fetch-mesh', 'success', { count: meshData.total_count }));
 
-    const enrichedProducts = meshResponse.products || [];
-    steps.push(formatStepMessage('fetch-mesh', 'success', { count: enrichedProducts.length }));
+    // Sort products by SKU for consistent output
+    meshData.products.sort((a, b) => a.sku.localeCompare(b.sku));
 
-    enrichedProducts.sort((a, b) => a.sku.localeCompare(b.sku));
-
-    if (trace && meshResponse.performance) {
-      trace.meshPerformance = meshResponse.performance;
-    }
-
-    if (actionParams.format === 'json') {
-      // Use mesh performance data if available, otherwise use trace data
-      const meshPerformanceData = meshResponse.performance || {};
-      const performanceData = {
-        ...meshPerformanceData,
-        // Map totalApiCalls to apiCalls for UI consistency
-        apiCalls: meshPerformanceData.totalApiCalls || meshPerformanceData.apiCalls || 1,
-      };
-
-      return response.success({
-        products: enrichedProducts,
-        total_count: enrichedProducts.length,
-        message: `Successfully fetched ${enrichedProducts.length} products`,
-        status: 'success',
-        steps,
-        performance: performanceData,
-      });
-    }
-
-    const builtProducts = await traceStep(trace, 'build-products', async () => {
-      return await buildProducts(enrichedProducts, config);
+    // Step 3: Build product data using products domain
+    const builtProducts = await shared.traceStep(trace, 'build-products', async () => {
+      return await products.buildProducts(meshData.products, config);
     });
-    steps.push(formatStepMessage('build-products', 'success', { count: builtProducts.length }));
+    steps.push(
+      shared.formatStepMessage('build-products', 'success', { count: builtProducts.length })
+    );
 
-    const csvData = await traceStep(trace, 'create-csv', async () => {
-      return await createCsv(builtProducts);
-    });
-    steps.push(formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
+    // Check format parameter to determine response type
+    const format = actionParams.format || 'csv';
 
-    const storageResult = await traceStep(trace, 'store-csv', async () => {
-      return await storeCsv(csvData, actionParams, config);
-    });
-
-    if (!storageResult.stored) {
-      throw new Error(
-        `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`
+    if (format === 'json') {
+      // Return JSON format for API Mesh integration
+      return shared.success(
+        {
+          products: builtProducts,
+          total_count: builtProducts.length,
+          message: meshData.message,
+          status: meshData.status,
+          steps,
+          performance: meshData.performance,
+        },
+        'Product data retrieved successfully',
+        {}
       );
     }
-    steps.push(formatStepMessage('store-csv', 'success', { info: storageResult }));
+
+    // Default CSV format
+    // Step 4: Create CSV using products domain
+    const csvData = await shared.traceStep(trace, 'create-csv', async () => {
+      return await products.createCsv(builtProducts, config);
+    });
+    steps.push(
+      shared.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize })
+    );
+
+    // Step 5: Store CSV using files domain
+    const storageResult = await shared.traceStep(trace, 'store-csv', async () => {
+      return await files.storeCsv(csvData, actionParams, config);
+    });
+    steps.push(shared.formatStepMessage('store-csv', 'success', { info: storageResult }));
 
     // Calculate total duration
     const endTime = Date.now();
     const totalDuration = endTime - trace.startTime;
 
-    // Use mesh performance data if available, otherwise use calculated values
-    const meshPerformanceData = meshResponse.performance || {};
-
-    return response.success(
+    return shared.success(
       {
         message: 'Product export completed successfully',
         steps,
@@ -275,22 +270,23 @@ async function main(params) {
           properties: storageResult.properties,
         },
         performance: {
-          // Include all mesh performance data (same as JSON response)
-          ...meshPerformanceData,
-          // Override/add specific fields for CSV response
-          processedProducts: meshPerformanceData.processedProducts || builtProducts.length,
-          apiCalls: meshPerformanceData.totalApiCalls || meshPerformanceData.apiCalls || 1,
-          method: meshPerformanceData.method || 'API Mesh',
+          // Include mesh performance metrics
+          ...meshData.performance,
+          // Add total duration
           duration: totalDuration,
           durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
+          // Override method to ensure consistency
+          method: 'API Mesh',
         },
       },
       'Product export completed',
       {}
     );
   } catch (error) {
-    return response.error(error, {});
+    return shared.error(error, {});
   }
 }
 
-module.exports = { main };
+module.exports = {
+  main,
+};

@@ -5,12 +5,8 @@
 
 const { Core } = require('@adobe/aio-sdk');
 
-const { checkMissingRequestInputs } = require('../../../src/core/data');
-const { FileErrorType } = require('../../../src/core/errors');
-const { extractActionParams } = require('../../../src/core/http/client');
-const { response } = require('../../../src/core/http/responses');
-const { initializeStorage } = require('../../../src/core/storage');
-const { extractCleanFilename } = require('../../../src/core/storage/path');
+// Use domain catalogs instead of scattered imports
+const { files, shared } = require('../../../src');
 
 /**
  * Main function that handles file deletion
@@ -20,31 +16,30 @@ const { extractCleanFilename } = require('../../../src/core/storage/path');
 async function main(params) {
   // Handle preflight requests first
   if (params.__ow_method === 'options') {
-    return response.success({}, 'Preflight success', {});
+    return shared.success({}, 'Preflight success', {});
   }
 
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // Validate required parameters
-    const requiredParams = ['fileName'];
-    const missingParams = checkMissingRequestInputs(params, requiredParams);
+    // Validate required parameters using shared utilities
+    const missingParams = shared.checkMissingParams(params, ['fileName']);
     if (missingParams) {
-      return response.badRequest(missingParams, {});
+      return shared.error(new Error(missingParams), {});
     }
 
-    // Extract clean filename (remove public/ prefix if present)
-    const cleanFileName = extractCleanFilename(params.fileName);
+    // Extract clean filename using files domain
+    const cleanFileName = files.extractCleanFilename(params.fileName);
     logger.info('Delete operation starting:', { original: params.fileName, clean: cleanFileName });
 
     // Extract action parameters for storage credentials
-    const actionParams = extractActionParams(params);
+    const actionParams = shared.extractActionParams(params);
 
-    // Initialize storage provider
-    const storage = await initializeStorage(actionParams);
+    // Initialize storage provider using files domain
+    const storage = await files.initializeStorage(actionParams);
 
-    // Delete the file using unified storage interface with clean filename
-    await storage.delete(cleanFileName);
+    // Delete the file using files domain
+    await files.deleteFile(storage, cleanFileName);
     logger.info(`File deleted successfully: ${cleanFileName}`);
 
     // Get updated file list by calling browse-files action
@@ -63,19 +58,20 @@ async function main(params) {
   } catch (error) {
     logger.error('Error in delete-file action:', error);
 
-    // Handle specific file operation errors
-    if (error.isFileOperationError) {
-      switch (error.type) {
-        case FileErrorType.NOT_FOUND:
-          return response.badRequest(`File not found: ${params.fileName}`, {});
-        case FileErrorType.INVALID_PATH:
-          return response.badRequest(error.message, {});
+    // Handle specific file operation errors using files domain
+    if (files.isFileOperationError(error)) {
+      const errorType = files.getFileErrorType(error);
+      switch (errorType) {
+        case 'NOT_FOUND':
+          return shared.error(new Error(`File not found: ${params.fileName}`), {});
+        case 'INVALID_PATH':
+          return shared.error(error, {});
         default:
-          return response.error(error, {});
+          return shared.error(error, {});
       }
     }
 
-    return response.error(error, {});
+    return shared.error(error, {});
   }
 }
 

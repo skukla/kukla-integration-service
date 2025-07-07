@@ -3,7 +3,8 @@
  * @module browse-files/templates
  */
 
-const { buildRuntimeUrl } = require('../../../src/core/routing');
+const { loadConfig } = require('../../../config');
+const { buildRuntimeUrl } = require('../../../src/shared/routing');
 
 /**
  * Generates HTML for an empty state when no files are found
@@ -153,7 +154,8 @@ function getFileListHtml(files, storageInfo = null) {
  */
 function getDeleteModalHtml(fileName, fullPath, params = {}) {
   // Build runtime URL from environment configuration
-  const runtimeUrl = buildRuntimeUrl('delete-file', null, params);
+  const config = loadConfig(params);
+  const runtimeUrl = buildRuntimeUrl('delete-file', null, config);
   const deleteUrl = `${runtimeUrl}?fileName=${encodeURIComponent(fullPath)}`;
 
   return `

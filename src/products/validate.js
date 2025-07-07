@@ -10,8 +10,8 @@
  * - src/commerce/data/product.js
  */
 
-const { loadConfig } = require('../../../config');
-const { checkMissingParams } = require('../../core/http/client');
+const { loadConfig } = require('../../config');
+const { checkMissingParams } = require('../shared');
 
 /**
  * Product fields configuration
@@ -228,8 +228,42 @@ function validateProductConfig(config) {
   };
 }
 
+/**
+ * Validates the input parameters for mesh product actions
+ * Pure function that checks required OAuth and mesh configuration.
+ *
+ * @param {Object} params - Action parameters
+ * @param {Object} config - Configuration object
+ * @throws {Error} If required parameters are missing or invalid
+ */
+async function validateMeshInput(params, config) {
+  // First validate basic input requirements
+  await validateInput(params);
+
+  // Validate mesh-specific configuration
+  if (!config.mesh) {
+    throw new Error('Mesh configuration not found');
+  }
+
+  if (!config.mesh.endpoint) {
+    throw new Error('Mesh endpoint not configured');
+  }
+
+  if (!config.mesh.apiKey) {
+    throw new Error('Mesh API key not configured');
+  }
+
+  // Validate admin credentials for inventory (mesh-specific requirement)
+  if (!params.COMMERCE_ADMIN_USERNAME || !params.COMMERCE_ADMIN_PASSWORD) {
+    throw new Error(
+      'Admin credentials required for mesh inventory: COMMERCE_ADMIN_USERNAME, COMMERCE_ADMIN_PASSWORD'
+    );
+  }
+}
+
 module.exports = {
   validateInput,
+  validateMeshInput,
   validateProduct,
   validateProductData,
   validateProductConfig,

@@ -8,9 +8,7 @@ const {
     product: { mapProductToCsvRow },
   },
 } = require('../../../../src/commerce');
-const {
-  storage: { csv },
-} = require('../../../../src/core');
+const { csv } = require('../../../../src/files');
 
 /**
  * RECS header rows that must appear before the data

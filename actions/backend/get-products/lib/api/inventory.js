@@ -5,8 +5,8 @@
 
 const { loadConfig } = require('../../../../../config');
 const { getAuthToken } = require('../../../../../src/commerce/api/integration');
-const { buildCommerceUrl } = require('../../../../../src/core/routing');
-const { incrementApiCalls } = require('../../../../../src/core/tracing');
+const { buildCommerceUrl } = require('../../../../../src/shared/routing');
+const { incrementApiCalls } = require('../../../../../src/shared/tracing');
 
 /**
  * Get inventory data for a list of SKUs using simple Stock Items API

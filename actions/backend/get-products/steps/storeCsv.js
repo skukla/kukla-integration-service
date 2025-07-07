@@ -3,7 +3,7 @@
  * @module steps/storeCsv
  */
 const { loadConfig } = require('../../../../config');
-const { initializeStorage } = require('../../../../src/core/storage');
+const { initializeStorage } = require('../../../../src/files/storage');
 
 /**
  * Stores a CSV file using the configured storage provider

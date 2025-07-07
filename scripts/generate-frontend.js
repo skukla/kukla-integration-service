@@ -10,7 +10,7 @@ const chalk = require('chalk');
 const ora = require('ora');
 
 const { loadConfig } = require('../config');
-const { detectEnvironment } = require('../src/core/environment');
+const { detectEnvironment } = require('../src/shared/environment');
 
 // Helper to capitalize first letter
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);

@@ -11,9 +11,7 @@
  * - src/commerce/transform/product.js
  */
 
-const {
-  storage: { csv },
-} = require('../../core');
+const { generateCsv } = require('../files').csv;
 
 /**
  * RECS header rows that must appear before the data
@@ -252,7 +250,7 @@ async function createCsv(products) {
   try {
     // Try using the core CSV generation first
     try {
-      const result = await csv.generateCsv({
+      const result = await generateCsv({
         records: products,
         headers: CSV_HEADERS,
         rowMapper: mapProductToCsvRow,

@@ -168,7 +168,7 @@ All actions should follow this consistent structure.
  */
 const { Core } = require('@adobe/aio-sdk');
 const { getCommerceProducts } = require('../../src/commerce/api');
-const { validateInput } = require('../../src/core/validation');
+const { validateInput } = require('../../src/shared/validation');
 const { createSuccessResponse, createErrorResponse } = require('../../src/core/responses');
 
 async function main(params) {
@@ -202,7 +202,7 @@ Always check `src/core/` before creating new utilities.
 ```javascript
 // ✅ Use existing utilities
 const { httpGet, httpPost } = require('../../src/core/http');
-const { validateInput } = require('../../src/core/validation');
+const { validateInput } = require('../../src/shared/validation');
 const { cacheGet, cacheSet } = require('../../src/core/cache');
 
 // ✅ Create new utilities in appropriate locations
@@ -482,7 +482,7 @@ Organize imports consistently.
 const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
 const { getCommerceProducts } = require('../../src/commerce/api');
-const { validateInput } = require('../../src/core/validation');
+const { validateInput } = require('../../src/shared/validation');
 
 ## Documentation Standards
 
@@ -515,7 +515,7 @@ npm run test:action -- actions/backend/action-name --param param1=value
 ## Dependencies
 
 - src/commerce/api.js
-- src/core/validation.js
+- src/shared/validation.js
 
 ### **Code Comments**
 
