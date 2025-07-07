@@ -5,7 +5,6 @@
  * This version uses direct HTTP calls instead of makeCommerceRequest to avoid OpenWhisk conflicts
  */
 const endpoints = require('./commerce-endpoints');
-const { loadConfig } = require('../../../../../config');
 const { request, buildHeaders } = require('../../../../../src/shared/http/client');
 const { buildCommerceUrl } = require('../../../../../src/shared/routing');
 const { incrementApiCalls } = require('../../../../../src/shared/tracing');
@@ -17,11 +16,10 @@ const categoryCache = new Map();
  * Get cached category data
  * @private
  * @param {string} categoryId - Category ID
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Object|null} Cached category data or null
  */
-function getCachedCategory(categoryId, params = {}) {
-  const config = loadConfig(params);
+function getCachedCategory(categoryId, config) {
   const cached = categoryCache.get(categoryId);
   if (cached && Date.now() - cached.timestamp < config.categories.cacheTimeout * 1000) {
     return cached.data;
@@ -78,17 +76,17 @@ function getCategoryIds(product) {
 /**
  * Get category details by ID with retries
  * @param {string} categoryId - Category ID
- * @param {string} token - Authentication token
- * @param {Object} params - Request parameters
- * @param {Object} [trace] - Optional trace context for API call tracking
+ * @param {Object} apiContext - API context
+ * @param {string} apiContext.token - Authentication token
+ * @param {Object} apiContext.config - Configuration object
+ * @param {Object} [apiContext.trace] - Optional trace context for API call tracking
  * @returns {Promise<Object|null>} Category details or null if failed
  */
 async function getCategory(categoryId, apiContext) {
-  const { token, params, trace = null } = apiContext;
-  const config = loadConfig(params);
+  const { token, config, trace = null } = apiContext;
 
   // Check cache first
-  const cached = getCachedCategory(categoryId, params);
+  const cached = getCachedCategory(categoryId, config);
   if (cached) {
     return cached;
   }
@@ -96,7 +94,7 @@ async function getCategory(categoryId, apiContext) {
   let retryCount = 0;
   while (retryCount < config.categories.retries) {
     try {
-      const endpoint = endpoints.category(categoryId);
+      const endpoint = endpoints.category(categoryId, config);
       const url = buildCommerceUrl(config.commerce.baseUrl, endpoint);
 
       // Track API call if trace context is provided
@@ -139,14 +137,13 @@ async function getCategory(categoryId, apiContext) {
  * @param {Object[]} products - Array of product objects
  * @param {Object} apiContext - API context
  * @param {string} apiContext.token - Authentication token
- * @param {Object} apiContext.params - Request parameters
+ * @param {Object} apiContext.config - Configuration object
  * @param {Object} [apiContext.trace] - Optional trace context for API call tracking
  * @returns {Promise<Object[]>} Products enriched with category data
  */
 async function enrichProductsWithCategories(products, apiContext) {
-  const { token, params, trace = null } = apiContext;
+  const { token, config, trace = null } = apiContext;
   try {
-    const config = loadConfig(params);
     // Create a map to store category details
     const categoryMap = new Map();
 
@@ -173,7 +170,7 @@ async function enrichProductsWithCategories(products, apiContext) {
       const batch = categoryArray.slice(i, i + config.categories.batchSize);
       const batchPromises = batch.map(async (categoryId) => {
         try {
-          const category = await getCategory(categoryId, { token, params, trace });
+          const category = await getCategory(categoryId, { token, config, trace });
           if (category) {
             categoryMap.set(categoryId, category);
           }
@@ -222,11 +219,10 @@ async function enrichProductsWithCategories(products, apiContext) {
  * Builds a map of category IDs to category names with caching
  * @param {Array<Object>} products - Array of product objects
  * @param {string} token - Authentication token
- * @param {Object} params - Request parameters
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object>} Map of category IDs to names
  */
-async function buildCategoryMap(products, token, params) {
-  const config = loadConfig(params);
+async function buildCategoryMap(products, token, config) {
   const categoryMap = {};
 
   // Get unique category IDs from all products
@@ -242,7 +238,7 @@ async function buildCategoryMap(products, token, params) {
     const batch = categoryArray.slice(i, i + config.categories.batchSize);
     const batchPromises = batch.map(async (categoryId) => {
       try {
-        const category = await getCategory(categoryId, { token, params });
+        const category = await getCategory(categoryId, { token, config });
         if (category) {
           categoryMap[categoryId] = category.name;
         }
@@ -265,18 +261,17 @@ async function buildCategoryMap(products, token, params) {
 /**
  * Fetches all categories from Adobe Commerce
  * @param {string} token - Authentication token
- * @param {Object} params - Request parameters
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object[]>} Array of category objects
  */
-async function getCategories(token, params) {
-  const config = loadConfig(params);
+async function getCategories(token, config) {
   const commerceUrl = config.commerce.baseUrl;
 
   if (!commerceUrl) {
     throw new Error('Commerce URL not configured in environment');
   }
 
-  const endpoint = endpoints.categoryList();
+  const endpoint = endpoints.categoryList(config);
   const url = buildCommerceUrl(commerceUrl, endpoint);
   const response = await request(url, {
     method: 'GET',

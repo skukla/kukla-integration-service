@@ -2,15 +2,15 @@
  * Step to validate input parameters
  * @module steps/validateInput
  */
-const { loadConfig } = require('../../../../config');
 const { checkMissingParams } = require('../../../../src/shared/validation');
 
 /**
  * Validates the input parameters for the action
  * @param {import('../index.js').ActionParams} params
+ * @param {Object} config - Configuration object
  * @throws {Error} If required parameters are missing or invalid
  */
-async function validateInput(params) {
+async function validateInput(params, config) {
   // Validate OAuth 1.0 credentials as parameters
   const requiredParams = [
     'COMMERCE_CONSUMER_KEY',
@@ -27,7 +27,6 @@ async function validateInput(params) {
 
   // Validate Commerce URL from configuration
   try {
-    const config = loadConfig(params);
     const commerceUrl = config.commerce.baseUrl;
 
     if (!commerceUrl) {

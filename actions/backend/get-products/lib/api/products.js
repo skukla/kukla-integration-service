@@ -3,7 +3,6 @@
  * @module lib/api/products
  */
 const commerceEndpoints = require('./commerce-endpoints');
-const { loadConfig } = require('../../../../../config');
 const { getRequestedFields } = require('../../../../../src/commerce/data/product');
 const { MemoryCache } = require('../../../../../src/files/cache');
 const { request, buildHeaders } = require('../../../../../src/shared/http/client');
@@ -14,11 +13,10 @@ const { buildCommerceUrl } = require('../../../../../src/shared/routing');
  * @private
  * @param {string} url - Request URL
  * @param {Object} options - Request options
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object>} Response data
  */
-async function makeCachedRequest(url, options, params = {}) {
-  const config = loadConfig(params);
+async function makeCachedRequest(url, options, config) {
   const cacheKey = `commerce:request:${url}:${JSON.stringify(options)}`;
   const cached = MemoryCache.get(cacheKey, { ttl: config.commerce.caching.duration });
   if (cached) {
@@ -64,14 +62,15 @@ function filterProductFields(product, fields) {
 /**
  * Fetch inventory data for a product
  * @param {string} sku - Product SKU
- * @param {string} token - Authentication token
- * @param {string} baseUrl - Commerce base URL
- * @param {Object} [params] - Action parameters for configuration
+ * @param {Object} apiContext - API context
+ * @param {string} apiContext.token - Authentication token
+ * @param {string} apiContext.baseUrl - Commerce base URL
+ * @param {Object} apiContext.config - Configuration object
  * @returns {Promise<Object>} Inventory data
  */
 async function getInventory(sku, apiContext) {
-  const { token, baseUrl, params = {} } = apiContext;
-  const endpoint = commerceEndpoints.stockItem(sku, params);
+  const { token, baseUrl, config } = apiContext;
+  const endpoint = commerceEndpoints.stockItem(sku, config);
   const url = buildCommerceUrl(baseUrl, endpoint);
   const response = await makeCachedRequest(
     url,
@@ -79,7 +78,7 @@ async function getInventory(sku, apiContext) {
       method: 'GET',
       headers: buildHeaders(token),
     },
-    params
+    config
   );
 
   if (response.body && Array.isArray(response.body.items) && response.body.items.length > 0) {
@@ -145,7 +144,7 @@ function initializePaginationConfig(config, params) {
  * @returns {Promise<Object>} Page response with products
  */
 async function fetchProductPage(apiContext, paginationData) {
-  const { token, commerceUrl, params } = apiContext;
+  const { token, commerceUrl, params, config } = apiContext;
   const { pageSize, currentPage } = paginationData;
 
   const paginatedParams = {
@@ -154,7 +153,7 @@ async function fetchProductPage(apiContext, paginationData) {
     currentPage,
   };
 
-  const endpoint = commerceEndpoints.products(paginatedParams, params);
+  const endpoint = commerceEndpoints.products(paginatedParams, config);
   const url = buildCommerceUrl(commerceUrl, endpoint);
 
   const response = await makeCachedRequest(
@@ -163,7 +162,7 @@ async function fetchProductPage(apiContext, paginationData) {
       method: 'GET',
       headers: buildHeaders(token),
     },
-    params
+    config
   );
 
   if (!response.body || !response.body.items || !Array.isArray(response.body.items)) {
@@ -184,12 +183,16 @@ async function fetchProductPage(apiContext, paginationData) {
  * @returns {Promise<Array>} Enriched and filtered products
  */
 async function enrichProductsWithInventoryData(products, apiContext, fieldsForProcessing) {
-  const { token, commerceUrl, params } = apiContext;
+  const { token, commerceUrl, config } = apiContext;
 
   return await Promise.all(
     products.map(async (product) => {
       try {
-        const inventory = await getInventory(product.sku, { token, baseUrl: commerceUrl, params });
+        const inventory = await getInventory(product.sku, {
+          token,
+          baseUrl: commerceUrl,
+          config,
+        });
         const enrichedProduct = {
           ...product,
           ...inventory,
@@ -206,11 +209,10 @@ async function enrichProductsWithInventoryData(products, apiContext, fieldsForPr
  * Fetches all products with pagination and enriches them with inventory data
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
+ * @param {Object} config - Configuration object
  * @returns {Promise<Array>} Array of products
  */
-async function fetchAllProducts(token, params = {}) {
-  const config = loadConfig(params);
-
+async function fetchAllProducts(token, params = {}, config) {
   try {
     const { commerceUrl, paginationConfig, fieldsForProcessing } = initializePaginationConfig(
       config,
@@ -223,7 +225,7 @@ async function fetchAllProducts(token, params = {}) {
     let totalPages = 1;
 
     // Create API context once for reuse
-    const apiContext = { token, commerceUrl, params };
+    const apiContext = { token, commerceUrl, params, config };
 
     do {
       const paginationData = { pageSize, currentPage };
@@ -265,10 +267,11 @@ async function fetchAllProducts(token, params = {}) {
  * Get products from Adobe Commerce
  * @param {string} token - Authentication token
  * @param {Object} params - Request parameters
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object[]>} Array of product objects
  */
-async function getProducts(token, params) {
-  return fetchAllProducts(token, params);
+async function getProducts(token, params, config) {
+  return fetchAllProducts(token, params, config);
 }
 
 module.exports = {

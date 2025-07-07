@@ -2,22 +2,21 @@
  * CSV storage step for product export - Multi-Provider Implementation
  * @module steps/storeCsv
  */
-const { loadConfig } = require('../../../../config');
 const { initializeStorage } = require('../../../../src/files/storage');
 
 /**
  * Stores a CSV file using the configured storage provider
  * @param {Object|string} csvResult - CSV generation result or simple string content
  * @param {Object} params - Action parameters containing credentials
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object>} Storage result with file information
  */
-async function storeCsv(csvResult, params = {}) {
+async function storeCsv(csvResult, params = {}, config) {
   // Handle both complex CSV result object and simple string content
   const content = typeof csvResult === 'string' ? csvResult : csvResult.content;
   const stats = typeof csvResult === 'object' && csvResult.stats ? csvResult.stats : null;
 
-  // Load configuration with params for proper environment detection
-  const config = loadConfig(params);
+  // Get filename from configuration
   const fileName = config.storage.csv.filename;
   const timestamp = new Date().toISOString();
 

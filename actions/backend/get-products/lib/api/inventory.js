@@ -3,7 +3,6 @@
  * @module lib/api/inventory
  */
 
-const { loadConfig } = require('../../../../../config');
 const { getAuthToken } = require('../../../../../src/commerce/api/integration');
 const { buildCommerceUrl } = require('../../../../../src/shared/routing');
 const { incrementApiCalls } = require('../../../../../src/shared/tracing');
@@ -11,12 +10,14 @@ const { incrementApiCalls } = require('../../../../../src/shared/tracing');
 /**
  * Get inventory data for a list of SKUs using simple Stock Items API
  * @param {string[]} skus - List of product SKUs
- * @param {Object} params - Request parameters
- * @param {Object} [trace] - Optional trace context for API call tracking
+ * @param {Object} context - API context
+ * @param {Object} context.params - Request parameters
+ * @param {Object} context.config - Configuration object
+ * @param {Object} [context.trace] - Optional trace context for API call tracking
  * @returns {Promise<Object>} Inventory data keyed by SKU
  */
-async function getInventory(skus, params, trace = null) {
-  const config = loadConfig(params);
+async function getInventory(skus, context) {
+  const { params, config, trace = null } = context;
   const token = await getAuthToken(params);
   const url = buildCommerceUrl(config.commerce.baseUrl, config.commerce.paths.stockItem);
 

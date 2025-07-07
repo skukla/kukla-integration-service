@@ -62,7 +62,7 @@ async function enrichProductsData(products, context) {
   const token = await getAuthToken(config, params, trace);
   const enrichedProducts = await enrichProductsWithCategories(products, { token, params, trace });
   const skus = products.map((product) => product.sku);
-  const inventoryMap = await getInventory(skus, params, trace);
+  const inventoryMap = await getInventory(skus, { params, config, trace });
 
   return enrichedProducts.map((product) => ({
     ...product,

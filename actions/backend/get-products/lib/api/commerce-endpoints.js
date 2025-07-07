@@ -3,21 +3,13 @@
  * @module lib/api/commerce-endpoints
  */
 
-const { loadConfig } = require('../../../../../config');
-
-/**
- * Lazy configuration getter for Commerce endpoint paths
- * @type {Function}
- */
-
 /**
  * Builds product endpoint URL with query parameters
  * @param {Object} params - Query parameters
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Product endpoint URL
  */
-function products(params = {}, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function products(params = {}, config) {
   const queryParams = new URLSearchParams();
 
   // Add pagination criteria
@@ -43,11 +35,10 @@ function products(params = {}, actionParams = {}) {
 /**
  * Builds stock item endpoint URL
  * @param {string} sku - Product SKU
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Stock item endpoint URL
  */
-function stockItem(sku, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function stockItem(sku, config) {
   const queryParams = new URLSearchParams();
   queryParams.append('searchCriteria[filter_groups][0][filters][0][field]', 'sku');
   queryParams.append('searchCriteria[filter_groups][0][filters][0][value]', sku);
@@ -58,21 +49,19 @@ function stockItem(sku, actionParams = {}) {
 /**
  * Builds category endpoint URL
  * @param {string} id - Category ID
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Category endpoint URL
  */
-function category(id, actionParams = {}) {
-  const config = loadConfig(actionParams);
+function category(id, config) {
   return config.commerce.paths.category.replace(':id', id);
 }
 
 /**
  * Gets category list endpoint URL
- * @param {Object} [actionParams] - Action parameters for configuration
+ * @param {Object} config - Configuration object
  * @returns {string} Category list endpoint URL
  */
-function categoryList(actionParams = {}) {
-  const config = loadConfig(actionParams);
+function categoryList(config) {
   return config.commerce.paths.categoryList;
 }
 
