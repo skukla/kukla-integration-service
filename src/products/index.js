@@ -17,10 +17,24 @@
  */
 
 module.exports = {
-  // Will be populated in Phase 2:
-  // fetchProducts: require('./fetch').fetchProducts,
-  // enrichWithCategories: require('./fetch').enrichWithCategories,
-  // buildProductCsv: require('./transform').buildProductCsv,
-  // formatProductData: require('./transform').formatProductData,
-  // validateProductData: require('./validate').validateProductData,
+  // Fetch operations
+  fetchProducts: require('./fetch').fetchProducts,
+  enrichWithCategories: require('./fetch').enrichWithCategories,
+  enrichWithInventory: require('./fetch').enrichWithInventory,
+  fetchAndEnrichProducts: require('./fetch').fetchAndEnrichProducts,
+
+  // Transform operations
+  buildProductObject: require('./transform').buildProductObject,
+  mapProductToCsvRow: require('./transform').mapProductToCsvRow,
+  buildProducts: require('./transform').buildProducts,
+  createCsv: require('./transform').createCsv,
+  buildProductCsv: require('./transform').buildProductCsv,
+
+  // Validation operations
+  validateInput: require('./validate').validateInput,
+  validateProduct: require('./validate').validateProduct,
+  validateProductData: require('./validate').validateProductData,
+  validateProductConfig: require('./validate').validateProductConfig,
+  getProductFields: require('./validate').getProductFields,
+  getRequestedFields: require('./validate').getRequestedFields,
 };
