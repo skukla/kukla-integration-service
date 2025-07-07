@@ -2,10 +2,11 @@
  * URL Management
  *
  * Provides consistent URL building across backend and frontend contexts
- * @module core/url
+ * @module shared/routing
  */
 
-const { loadConfig } = require('../../../config');
+// Remove config import to fix circular dependency
+// const { loadConfig } = require('../../config');  // REMOVED
 
 /**
  * Core URL builder - works in both Node.js and browser environments
@@ -78,11 +79,13 @@ function buildCommerceUrl(baseUrl, path, pathParams = {}) {
  * Build a runtime action URL for backend use
  * @param {string} action - Action name
  * @param {string} [customBaseUrl] - Optional custom base URL (for testing)
- * @param {Object} [params] - Action parameters for configuration loading
+ * @param {Object} config - Configuration object (now required parameter)
  * @returns {string} Complete runtime URL
  */
-function buildRuntimeUrl(action, customBaseUrl = null, params = {}) {
-  const config = loadConfig(params);
+function buildRuntimeUrl(action, customBaseUrl = null, config) {
+  if (!config) {
+    throw new Error('Configuration is required for buildRuntimeUrl');
+  }
 
   const options = {
     absolute: true,

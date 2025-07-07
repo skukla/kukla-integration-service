@@ -106,6 +106,65 @@ function createError(message, code = 'UNKNOWN_ERROR', details = {}) {
 }
 
 /**
+ * Format date in human-readable format
+ * @param {string|Date} date - Date to format
+ * @returns {string} Formatted date string
+ */
+function formatDate(date) {
+  if (!date) return '';
+
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(dateObj.getTime())) return '';
+
+  return dateObj.toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+/**
+ * Transform an object based on field mappings and requested fields
+ * @param {Object} input - Input object to transform
+ * @param {Object} fieldMappings - Map of field names to transformation functions
+ * @param {Array<string>} requestedFields - Array of field names to include
+ * @returns {Object} Transformed object with only requested fields
+ */
+function transformObject(input, fieldMappings, requestedFields) {
+  if (!input || typeof input !== 'object') {
+    return {};
+  }
+
+  const result = {};
+
+  // If no requested fields specified, include all available mappings
+  const fields =
+    Array.isArray(requestedFields) && requestedFields.length > 0
+      ? requestedFields
+      : Object.keys(fieldMappings);
+
+  fields.forEach((field) => {
+    if (fieldMappings[field] && typeof fieldMappings[field] === 'function') {
+      try {
+        result[field] = fieldMappings[field]();
+      } catch (error) {
+        // If transformation fails, set to null and log warning
+        console.warn(`Failed to transform field '${field}':`, error.message);
+        result[field] = null;
+      }
+    } else if (input[field] !== undefined) {
+      // If no mapping function, use the original value
+      result[field] = input[field];
+    }
+  });
+
+  return result;
+}
+
+/**
  * Sleep for a specified number of milliseconds
  * @param {number} ms - Milliseconds to sleep
  * @returns {Promise} Promise that resolves after the specified time
@@ -117,6 +176,8 @@ function sleep(ms) {
 module.exports = {
   formatStepMessage,
   formatFileSize,
+  formatDate,
+  transformObject,
   createError,
   sleep,
 };

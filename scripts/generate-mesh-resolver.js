@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { loadConfig } = require('../config');
+const { detectEnvironment } = require('../src/shared/environment');
 
 /**
  * Parse command line arguments
@@ -95,7 +96,6 @@ try {
   const resolverPath = path.join(__dirname, '..', 'mesh-resolvers.js');
 
   // Load configuration for the current environment with CLI detection
-  const { detectEnvironment } = require('../src/core/environment');
   const env = detectEnvironment({}, { allowCliDetection: true });
   const config = loadConfig({ NODE_ENV: env });
 

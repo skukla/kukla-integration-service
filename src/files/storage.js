@@ -14,15 +14,16 @@ const {
 } = require('@aws-sdk/client-s3');
 
 const { loadConfig } = require('../../config');
-const { formatFileSize, formatDate } = require('../core/data/transformation');
-const { buildRuntimeUrl } = require('../core/routing');
+const { formatFileSize, formatDate } = require('../shared').utils;
+const { buildRuntimeUrl } = require('../shared').routing;
 
 /**
  * Initialize Adobe I/O Files (App Builder) storage
+ * @param {Object} config - Configuration object
  * @param {Object} [params] - Action parameters for URL building
  * @returns {Promise<Object>} Storage client wrapper
  */
-async function initializeAppBuilderStorage(params = {}) {
+async function initializeAppBuilderStorage(config, params = {}) {
   const owApiKey = process.env.__OW_API_KEY;
   const owNamespace = process.env.__OW_NAMESPACE;
 
@@ -67,7 +68,7 @@ async function initializeAppBuilderStorage(params = {}) {
 
       // Generate action-based download URL for consistent interface across providers
       const actionUrl =
-        buildRuntimeUrl('download-file', null, params) +
+        buildRuntimeUrl('download-file', null, config) +
         `?fileName=${encodeURIComponent(fileName)}`;
 
       return {
@@ -194,7 +195,7 @@ async function initializeS3Storage(config, params = {}) {
       // Generate action-based download URL instead of direct S3 URL
       // This allows secure access without requiring public S3 bucket policy
       const actionUrl =
-        buildRuntimeUrl('download-file', null, params) +
+        buildRuntimeUrl('download-file', null, config) +
         `?fileName=${encodeURIComponent(fileName)}`;
 
       // Also construct the direct S3 URL for debugging and raw output
@@ -314,7 +315,7 @@ async function initializeStorage(params = {}) {
   switch (provider) {
     case 'app-builder':
       try {
-        const storage = await initializeAppBuilderStorage(params);
+        const storage = await initializeAppBuilderStorage(config, params);
         return storage;
       } catch (error) {
         throw new Error(`Adobe I/O Files storage initialization failed: ${error.message}`);

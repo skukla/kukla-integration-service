@@ -9,7 +9,7 @@ const { Transform } = require('stream');
 const csvWriter = require('csv-writer');
 
 const { loadConfig } = require('../../config');
-const { compression } = require('../core/http');
+const { compression } = require('../shared').http;
 
 /**
  * Gets CSV configuration from the main config

@@ -6,9 +6,9 @@
  */
 const endpoints = require('./commerce-endpoints');
 const { loadConfig } = require('../../../../../config');
-const { request, buildHeaders } = require('../../../../../src/core/http/client');
-const { buildCommerceUrl } = require('../../../../../src/core/routing');
-const { incrementApiCalls } = require('../../../../../src/core/tracing');
+const { request, buildHeaders } = require('../../../../../src/shared/http/client');
+const { buildCommerceUrl } = require('../../../../../src/shared/routing');
+const { incrementApiCalls } = require('../../../../../src/shared/tracing');
 
 // In-memory cache for category data
 const categoryCache = new Map();

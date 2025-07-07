@@ -10,7 +10,7 @@ const chalk = require('chalk');
 const ora = require('ora');
 
 const { updateMeshWithRetry } = require('./lib/mesh-utils');
-const { detectEnvironment } = require('../src/core/environment');
+const { detectEnvironment } = require('../src/shared/environment');
 
 const execAsync = promisify(exec);
 

@@ -1,10 +1,10 @@
 /**
  * API tracing utilities
- * @module core/tracing
+ * @module shared/tracing
  */
 const crypto = require('crypto');
 
-const { loadConfig } = require('../../../config');
+const { loadConfig } = require('../../config');
 
 /**
  * Gets tracing configuration dynamically
@@ -189,4 +189,5 @@ module.exports = {
   traceStep,
   formatTrace,
   incrementApiCalls,
+  getTracingConfig,
 };

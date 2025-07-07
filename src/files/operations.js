@@ -4,10 +4,10 @@
  * @description Pure functions for file operations and error handling
  */
 
-const { formatFileSize, formatDate } = require('../core/data/transformation');
+const { formatFileSize, formatDate } = require('../shared').utils;
 const {
   storage: { FileErrorType },
-} = require('../core/errors');
+} = require('../shared').errors;
 
 /**
  * Creates a file operation error object
