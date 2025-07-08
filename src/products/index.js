@@ -1,41 +1,112 @@
 /**
  * Products Domain Catalog
  *
- * This catalog will export all product-related functionality including:
- * - Product fetching and enrichment
- * - Data transformation and CSV generation
- * - Product validation
- *
- * Following functional composition principles - each function will be pure
- * with clear input/output contracts.
- *
- * To be populated in Phase 2 with functions moved from:
- * - actions/backend/get-products/steps/
- * - actions/backend/get-products/lib/api/
- * - src/commerce/transform/product.js
- * - src/commerce/data/product.js
+ * Hierarchical organization of products domain functionality.
+ * Provides discoverability at multiple abstraction levels.
  */
 
+// High-level workflows (what users actually want to do)
+// Mid-level operations (how the domain works)
+const {
+  fetchProducts,
+  enrichWithCategories,
+  enrichWithInventory,
+  fetchAndEnrichProducts,
+} = require('./operations/enrichment');
+const {
+  buildProducts,
+  buildProductObject,
+  mapProductToCsvRow,
+  PRODUCT_FIELDS,
+} = require('./operations/transformation');
+const { validateInput, validateMeshInput } = require('./operations/validation');
+// Low-level utilities (implementation details)
+const { extractCategoryIds, extractProductSkus } = require('./utils/category');
+const {
+  createCsv,
+  validateCsvHeaders,
+  formatCsvWithRecsHeaders,
+  RECS_HEADERS,
+  CSV_HEADERS,
+} = require('./utils/csv');
+const {
+  getCategoryIds,
+  extractCsvCategoryId,
+  extractProductMessage,
+  normalizeProductValue,
+  normalizeProductInventory,
+} = require('./utils/data');
+const { transformImageEntry, getPrimaryImageUrl } = require('./utils/image');
+const {
+  validateProduct,
+  validateProductData,
+  validateProductConfig,
+  getProductFields,
+  getRequestedFields,
+} = require('./utils/validation');
+const {
+  exportProducts,
+  exportProductsWithStorage,
+  buildProductCsv,
+} = require('./workflows/export-products');
+
+// Main exports - flat access for compatibility
 module.exports = {
-  // Fetch operations
-  fetchProducts: require('./fetch').fetchProducts,
-  enrichWithCategories: require('./fetch').enrichWithCategories,
-  enrichWithInventory: require('./fetch').enrichWithInventory,
-  fetchAndEnrichProducts: require('./fetch').fetchAndEnrichProducts,
+  // High-level workflows
+  exportProducts,
+  exportProductsWithStorage,
+  buildProductCsv,
+  // Core operations
+  fetchProducts,
+  enrichWithCategories,
+  enrichWithInventory,
+  fetchAndEnrichProducts,
+  buildProducts,
+  buildProductObject,
+  mapProductToCsvRow,
+  // CSV operations
+  createCsv,
+  validateCsvHeaders,
+  formatCsvWithRecsHeaders,
+  // Validation
+  validateInput,
+  validateMeshInput,
+  validateProduct,
+  validateProductData,
+  validateProductConfig,
+  getProductFields,
+  getRequestedFields,
+  // Utility functions
+  transformImageEntry,
+  getPrimaryImageUrl,
+  getCategoryIds,
+  extractCsvCategoryId,
+  extractProductMessage,
+  normalizeProductValue,
+  normalizeProductInventory,
+  extractCategoryIds,
+  extractProductSkus,
+  // Constants
+  PRODUCT_FIELDS,
+  RECS_HEADERS,
+  CSV_HEADERS,
 
-  // Transform operations
-  buildProductObject: require('./transform').buildProductObject,
-  mapProductToCsvRow: require('./transform').mapProductToCsvRow,
-  buildProducts: require('./transform').buildProducts,
-  createCsv: require('./transform').createCsv,
-  buildProductCsv: require('./transform').buildProductCsv,
+  // Structured access for organized usage
+  workflows: {
+    export: require('./workflows/export-products'),
+  },
 
-  // Validation operations
-  validateInput: require('./validate').validateInput,
-  validateMeshInput: require('./validate').validateMeshInput,
-  validateProduct: require('./validate').validateProduct,
-  validateProductData: require('./validate').validateProductData,
-  validateProductConfig: require('./validate').validateProductConfig,
-  getProductFields: require('./validate').getProductFields,
-  getRequestedFields: require('./validate').getRequestedFields,
+  operations: {
+    enrichment: require('./operations/enrichment'),
+    transformation: require('./operations/transformation'),
+    validation: require('./operations/validation'),
+  },
+
+  utils: {
+    csv: require('./utils/csv'),
+    image: require('./utils/image'),
+    data: require('./utils/data'),
+    category: require('./utils/category'),
+    validation: require('./utils/validation'),
+  },
 };
