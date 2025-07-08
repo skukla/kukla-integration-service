@@ -1,14 +1,17 @@
 /**
- * Commerce Data Module
- * @module commerce/data
+ * Commerce Data Validation Utilities
  *
- * This module consolidates commerce-specific data processing functionality.
- * For product validation functions, see src/products/validate.js (single source of truth).
+ * Low-level pure functions for validating and normalizing Commerce data.
+ * Contains validation logic for products, categories, and inventory data.
  */
 
-const { getProductFields, getRequestedFields, validateProduct } = require('../products/validate');
-const { validateCategory } = require('./data/category');
-const { validateInventory } = require('./data/inventory');
+const {
+  getProductFields,
+  getRequestedFields,
+  validateProduct,
+} = require('../../products/utils/validation');
+// Category and inventory validation should be handled by the products domain
+// validateCategory and validateInventory functions moved to products/utils/validation.js
 
 /**
  * Validates multiple products and returns aggregated results
@@ -95,113 +98,6 @@ function getCategoryIds(product) {
 }
 
 /**
- * Processes inventory data from Commerce API response
- * @param {Object} inventoryResponse - API response containing inventory data
- * @returns {Object} Processed inventory data
- */
-function processInventoryResponse(inventoryResponse) {
-  if (!inventoryResponse || !inventoryResponse.items || !Array.isArray(inventoryResponse.items)) {
-    return {
-      qty: 0,
-      is_in_stock: false,
-    };
-  }
-
-  const totalQty = inventoryResponse.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  const isInStock = inventoryResponse.items.some((item) => item.status === 1);
-
-  return {
-    qty: totalQty,
-    is_in_stock: isInStock,
-  };
-}
-
-/**
- * Processes category data from Commerce API response
- * @param {Object} categoryResponse - API response containing category data
- * @returns {Object} Processed category data
- */
-function processCategoryResponse(categoryResponse) {
-  if (!categoryResponse || !categoryResponse.id) {
-    return null;
-  }
-
-  return {
-    id: String(categoryResponse.id),
-    name: categoryResponse.name || '',
-    path: categoryResponse.path || '',
-    level: categoryResponse.level || 0,
-    parent_id: categoryResponse.parent_id || null,
-    children: categoryResponse.children || [],
-  };
-}
-
-/**
- * Creates a category map from array of categories
- * @param {Array<Object>} categories - Array of category objects
- * @returns {Object} Map of category ID to category name
- */
-function createCategoryMap(categories) {
-  const categoryMap = {};
-
-  if (!Array.isArray(categories)) {
-    return categoryMap;
-  }
-
-  categories.forEach((category) => {
-    if (category && category.id && category.name) {
-      categoryMap[String(category.id)] = category.name;
-    }
-  });
-
-  return categoryMap;
-}
-
-/**
- * Enriches product data with category information
- * @param {Object} product - Product object
- * @param {Object} categoryMap - Map of category IDs to names
- * @returns {Object} Product with enriched category data
- */
-function enrichProductWithCategories(product, categoryMap) {
-  if (!product || !categoryMap) {
-    return product;
-  }
-
-  const categoryIds = getCategoryIds(product);
-  const categories = categoryIds
-    .map((id) => ({
-      id: String(id),
-      name: categoryMap[String(id)] || `Category ${id}`,
-    }))
-    .filter((category) => category.name !== `Category ${category.id}`);
-
-  return {
-    ...product,
-    categories,
-  };
-}
-
-/**
- * Enriches product data with inventory information
- * @param {Object} product - Product object
- * @param {Object} inventoryData - Inventory data object
- * @returns {Object} Product with enriched inventory data
- */
-function enrichProductWithInventory(product, inventoryData) {
-  if (!product || !inventoryData) {
-    return product;
-  }
-
-  return {
-    ...product,
-    qty: inventoryData.qty || 0,
-    is_in_stock: inventoryData.is_in_stock || false,
-    inventory: inventoryData,
-  };
-}
-
-/**
  * Normalizes core product identification fields
  * @param {Object} product - Product object
  * @returns {Object} Normalized core fields
@@ -258,19 +154,137 @@ function normalizeProduct(product) {
   };
 }
 
+/**
+ * Validates that a product has required fields
+ * @param {Object} product - Product object
+ * @param {Array<string>} requiredFields - Required field names
+ * @returns {Object} Validation result
+ */
+function validateRequiredFields(product, requiredFields = ['sku', 'name']) {
+  const errors = [];
+
+  if (!product || typeof product !== 'object') {
+    return {
+      isValid: false,
+      errors: ['Product must be an object'],
+    };
+  }
+
+  requiredFields.forEach((field) => {
+    if (!product[field] || (typeof product[field] === 'string' && product[field].trim() === '')) {
+      errors.push(`Missing required field: ${field}`);
+    }
+  });
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validates product pricing data
+ * @param {Object} product - Product object
+ * @returns {Object} Validation result
+ */
+function validateProductPricing(product) {
+  const errors = [];
+
+  if (product.price !== undefined && (typeof product.price !== 'number' || product.price < 0)) {
+    errors.push('Price must be a non-negative number');
+  }
+
+  if (product.qty !== undefined && (typeof product.qty !== 'number' || product.qty < 0)) {
+    errors.push('Quantity must be a non-negative number');
+  }
+
+  if (product.is_in_stock !== undefined && typeof product.is_in_stock !== 'boolean') {
+    errors.push('is_in_stock must be a boolean');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validates product array fields
+ * @param {Object} product - Product object
+ * @returns {Object} Validation result
+ */
+function validateProductArrays(product) {
+  const errors = [];
+
+  if (product.categories !== undefined && !Array.isArray(product.categories)) {
+    errors.push('Categories must be an array');
+  }
+
+  if (
+    product.media_gallery_entries !== undefined &&
+    !Array.isArray(product.media_gallery_entries)
+  ) {
+    errors.push('Media gallery entries must be an array');
+  }
+
+  if (product.custom_attributes !== undefined && !Array.isArray(product.custom_attributes)) {
+    errors.push('Custom attributes must be an array');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validates complete product structure
+ * @param {Object} product - Product object
+ * @param {Object} [options] - Validation options
+ * @param {Array<string>} [options.requiredFields] - Required field names
+ * @returns {Object} Complete validation result
+ */
+function validateProductStructure(product, options = {}) {
+  const { requiredFields = ['sku', 'name'] } = options;
+
+  const requiredValidation = validateRequiredFields(product, requiredFields);
+  const pricingValidation = validateProductPricing(product);
+  const arrayValidation = validateProductArrays(product);
+
+  const allErrors = [
+    ...requiredValidation.errors,
+    ...pricingValidation.errors,
+    ...arrayValidation.errors,
+  ];
+
+  return {
+    isValid: allErrors.length === 0,
+    errors: allErrors,
+    fieldValidation: {
+      required: requiredValidation,
+      pricing: pricingValidation,
+      arrays: arrayValidation,
+    },
+  };
+}
+
 module.exports = {
+  // Re-export from products domain
   getProductFields,
   getRequestedFields,
   validateProduct,
+  // Commerce-specific validation functions
   validateProducts,
   filterProductFields,
   getCategoryIds,
-  validateCategory,
-  validateInventory,
-  processInventoryResponse,
-  processCategoryResponse,
-  createCategoryMap,
-  enrichProductWithCategories,
-  enrichProductWithInventory,
+  // Normalization functions
+  normalizeProductCore,
+  normalizeProductPricing,
+  normalizeProductArrays,
   normalizeProduct,
+  // Structure validation functions
+  validateRequiredFields,
+  validateProductPricing,
+  validateProductArrays,
+  validateProductStructure,
 };
