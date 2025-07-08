@@ -1,9 +1,8 @@
 /**
- * Commerce API Endpoints Module
- * @module commerce/endpoints
+ * Commerce Endpoint Builder Utilities
  *
- * Provides Commerce API endpoint building and URL construction functionality.
- * Uses functional composition with pure functions and clear input/output contracts.
+ * Low-level pure functions for building Commerce API endpoint URLs.
+ * Contains URL construction logic with query parameter handling.
  */
 
 /**
@@ -190,15 +189,6 @@ function buildGenericEndpoint(basePath, params = {}) {
 }
 
 /**
- * Gets all configured Commerce API endpoint paths
- * @param {Object} config - Configuration object
- * @returns {Object} Object containing all endpoint paths
- */
-function getEndpointPaths(config) {
-  return { ...config.commerce.paths };
-}
-
-/**
  * Validates an endpoint URL format
  * @param {string} endpoint - Endpoint URL to validate
  * @returns {boolean} True if endpoint format is valid
@@ -244,7 +234,6 @@ module.exports = {
   buildOrderEndpoint,
   buildSearchEndpoint,
   buildGenericEndpoint,
-  getEndpointPaths,
   validateEndpoint,
   normalizeEndpoint,
 };
