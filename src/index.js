@@ -5,17 +5,17 @@
  * following the Discoverability First principle from our refactoring standards.
  *
  * Usage:
- *   const { products, files, commerce, shared } = require('./src');
+ *   const { products, files, commerce, core } = require('./src');
  *
  *   // Domain-organized access
  *   const productData = await products.fetchProducts(config);
  *   const storageResult = await files.storeFile(csvData, config);
+ *   const actionParams = core.extractActionParams(params);
  */
 
 module.exports = {
   products: require('./products'),
   files: require('./files'),
   commerce: require('./commerce'),
-  shared: require('./core'),
   core: require('./core'),
 };

@@ -3,12 +3,13 @@
  * @module core
  *
  * This catalog exports all core infrastructure used across multiple domains:
+ * - Action framework and initialization utilities
  * - HTTP client and response handling
  * - Tracing and performance monitoring
  * - Error handling and monitoring
  * - Environment detection and configuration
  * - URL building and routing
- * - Validation utilities
+ * - Validation utilities (including product validation)
  * - Common utility functions
  * - CLI utilities
  *
@@ -19,6 +20,7 @@
  */
 
 // Import all core infrastructure modules
+const action = require('./action');
 const cli = require('./cli');
 const environment = require('./environment');
 const errors = require('./errors');
@@ -30,6 +32,11 @@ const utils = require('./utils');
 const validation = require('./validation');
 
 module.exports = {
+  // Action framework utilities
+  initializeAction: action.initializeAction,
+  wrapAction: action.wrapAction,
+  createAction: action.createAction,
+  executeStep: action.executeStep,
   // HTTP utilities
   request: http.client.request,
   buildHeaders: http.client.buildHeaders,
@@ -65,6 +72,11 @@ module.exports = {
   validateString: validation.validateString,
   validateUrl: validation.validateUrl,
   checkMissingParams: validation.checkMissingParams,
+  // Product validation utilities (extracted from products domain)
+  getProductFields: validation.getProductFields,
+  validateProduct: validation.validateProduct,
+  getRequestedFields: validation.getRequestedFields,
+  validateProductConfig: validation.validateProductConfig,
   // Common utilities
   formatStepMessage: utils.formatStepMessage,
   formatFileSize: utils.formatFileSize,
@@ -75,6 +87,13 @@ module.exports = {
   parseArgs: cli.args.parseArgs,
 
   // Structured exports for organized access
+  action: {
+    initializeAction: action.initializeAction,
+    wrapAction: action.wrapAction,
+    createAction: action.createAction,
+    executeStep: action.executeStep,
+  },
+
   http: {
     request: http.client.request,
     buildHeaders: http.client.buildHeaders,
@@ -127,6 +146,11 @@ module.exports = {
     validateString: validation.validateString,
     validateUrl: validation.validateUrl,
     checkMissingParams: validation.checkMissingParams,
+    // Product validation (extracted from products domain)
+    getProductFields: validation.getProductFields,
+    validateProduct: validation.validateProduct,
+    getRequestedFields: validation.getRequestedFields,
+    validateProductConfig: validation.validateProductConfig,
   },
 
   utils: {
