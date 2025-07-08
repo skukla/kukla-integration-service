@@ -3,56 +3,58 @@
  * @module browse-files
  */
 
-const { Core } = require('@adobe/aio-sdk');
-
-// Use domain catalogs instead of scattered imports
-const { handleGetRequest, handleDeleteRequest } = require('./lib/request-handlers');
-const { loadConfig } = require('../../../config');
-const { files, shared } = require('../../../src');
-
-// Import local modules
+// Use action framework to eliminate duplication
+const { routeRequest } = require('./lib/handlers');
+const { createAction } = require('../../../src/core');
+// Import action-specific helpers
 
 /**
- * Main action handler for browse-files
- * @param {Object} params - Action parameters from OpenWhisk
+ * Business logic for browse-files action
+ * @param {Object} context - Initialized action context
  * @returns {Promise<Object>} Action response
  */
-async function main(params) {
-  const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
+async function browseFilesBusinessLogic(context) {
+  const { files, config, params, logger } = context;
 
+  // Step 1: Initialize storage provider
+  const storage = await files.initializeStorage(config, params);
+  logger.info('Storage provider initialized:', { provider: storage.provider });
+
+  // Step 2: Route request based on HTTP method and handle response
+  const enhancedContext = { ...context, storage };
+  return await routeRequest(enhancedContext);
+}
+
+/**
+ * Enhanced error handler for browse-files operations
+ */
+function handleBrowseFilesError(error, context) {
+  const { core, logger } = context;
+
+  logger.error('Error in browse-files:', error);
+
+  const errorObj = new Error(error.message);
+  errorObj.status = error.status || 500;
+  return core.error(errorObj);
+}
+
+/**
+ * Business logic with error handling
+ */
+async function browseFilesWithErrorHandling(context) {
   try {
-    // Extract action parameters for storage initialization
-    const actionParams = shared.extractActionParams(params);
-
-    // Load configuration
-    const config = loadConfig(actionParams);
-
-    // Initialize storage using files domain
-    const storage = await files.initializeStorage(config, actionParams);
-    logger.info('Storage provider initialized:', { provider: storage.provider });
-
-    // Route request based on HTTP method
-    switch (params.__ow_method) {
-      case 'get': {
-        const requestContext = { params, actionParams, logger, storage };
-        return handleGetRequest(requestContext);
-      }
-      case 'delete':
-        return handleDeleteRequest(params, logger, storage);
-      default: {
-        const methodError = new Error('Method not allowed');
-        methodError.status = 400;
-        return shared.error(methodError);
-      }
-    }
+    return await browseFilesBusinessLogic(context);
   } catch (error) {
-    logger.error('Error in main:', error);
-    const errorObj = new Error(error.message);
-    errorObj.status = 500;
-    return shared.error(errorObj);
+    return handleBrowseFilesError(error, context);
   }
 }
 
-module.exports = {
-  main,
-};
+// Create action with framework - clean orchestrator pattern!
+module.exports = createAction(browseFilesWithErrorHandling, {
+  actionName: 'browse-files',
+  domains: ['files'],
+  withTracing: false,
+  withLogger: true,
+  logLevel: 'info',
+  description: 'Browse and manage product export files with HTMX interface',
+});
