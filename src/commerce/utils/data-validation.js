@@ -9,9 +9,12 @@ const {
   getProductFields,
   getRequestedFields,
   validateProduct,
-} = require('../../products/utils/validation');
+} = require('../../core/validation/operations/product');
 // Category and inventory validation should be handled by the products domain
 // validateCategory and validateInventory functions moved to products/utils/validation.js
+
+// ✅ BOUNDARY VIOLATION FIXED: Now importing from core domain instead of products domain
+// This eliminates the circular dependency between commerce and products domains
 
 /**
  * Validates multiple products and returns aggregated results
