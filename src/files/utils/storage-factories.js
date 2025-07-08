@@ -12,8 +12,8 @@ const {
   ListObjectsV2Command,
 } = require('@aws-sdk/client-s3');
 
-const { buildRuntimeUrl } = require('../../shared/routing');
-const { formatFileSize, formatDate } = require('../../shared/utils');
+const { buildRuntimeUrl } = require('../../core/routing');
+const { formatFileSize, formatDate } = require('../../core/utils');
 
 /**
  * Creates the write method for App Builder storage

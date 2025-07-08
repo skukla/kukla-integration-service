@@ -9,8 +9,8 @@ const chalk = require('chalk');
 const ora = require('ora');
 
 const { parseArgs } = require('../src/core/cli/args');
-const { testScenario } = require('../src/core/testing/performance');
-const scenarios = require('../src/core/testing/performance/scenarios');
+const { testScenario } = require('../tools/testing/performance');
+const scenarios = require('../tools/testing/performance/scenarios');
 
 /**
  * Formats performance results for display

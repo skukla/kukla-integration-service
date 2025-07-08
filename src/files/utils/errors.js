@@ -7,7 +7,7 @@
 
 const {
   storage: { FileErrorType },
-} = require('../../shared').errors;
+} = require('../../core').errors;
 
 /**
  * Creates a file operation error object

@@ -8,8 +8,8 @@ const ora = require('ora');
 
 // Import URL building utilities
 const { loadConfig } = require('../config');
-const { detectEnvironment } = require('../src/shared/environment');
-const { buildRuntimeUrl } = require('../src/shared/routing');
+const { detectEnvironment } = require('../src/core/environment');
+const { buildRuntimeUrl } = require('../src/core/routing');
 
 // Parse command line arguments
 const args = process.argv.slice(2);
