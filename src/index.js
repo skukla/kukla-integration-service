@@ -16,5 +16,6 @@ module.exports = {
   products: require('./products'),
   files: require('./files'),
   commerce: require('./commerce'),
-  shared: require('./shared'),
+  shared: require('./core'),
+  core: require('./core'),
 };
