@@ -21,12 +21,12 @@ async function main(params) {
     const steps = [];
 
     // Step 1: Validate input
-    steps.push(shared.formatStepMessage('validate', 'success'));
+    steps.push(shared.formatStepMessage('validate-input', 'success'));
 
     // Step 2: Fetch and enrich products using domain functions
     const productData = await products.fetchAndEnrichProducts(actionParams, config);
     steps.push(
-      shared.formatStepMessage('fetch-products', 'success', { count: productData.length })
+      shared.formatStepMessage('fetch-and-enrich', 'success', { count: productData.length })
     );
 
     // Step 3: Build products with proper transformation
@@ -42,21 +42,23 @@ async function main(params) {
     );
 
     // Step 5: Store CSV using files domain
-    const storageResult = await files.storeFile(csvData, config, actionParams);
+    const storageResult = await files.storeCsv(csvData.content, config, actionParams);
     steps.push(shared.formatStepMessage('store-csv', 'success', { info: storageResult }));
 
     // Return success response using shared utilities
-    return shared.success({
-      steps,
-      storage: storageResult,
-      downloadUrl: storageResult.downloadUrl,
-    });
+    return shared.success(
+      {
+        steps,
+        storage: storageResult,
+        downloadUrl: storageResult.downloadUrl,
+      },
+      'Product export completed successfully',
+      {}
+    );
   } catch (error) {
     console.error('Error:', error);
     // Use shared error handling
-    const errorObj = new Error(error.message);
-    errorObj.status = 500;
-    return shared.error(errorObj);
+    return shared.error(error, {});
   }
 }
 
