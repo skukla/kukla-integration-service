@@ -5,7 +5,7 @@
  * Contains admin credential validation and token generation utilities.
  */
 
-const { buildCommerceUrl } = require('../../shared');
+const { buildCommerceUrl } = require('../../core');
 
 /**
  * Generate admin token using username/password authentication

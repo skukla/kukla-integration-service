@@ -4,9 +4,9 @@
  */
 const commerceEndpoints = require('./commerce-endpoints');
 const { getRequestedFields } = require('../../../../../src/commerce/data/product');
+const { request, buildHeaders } = require('../../../../../src/core/http/client');
+const { buildCommerceUrl } = require('../../../../../src/core/routing');
 const { MemoryCache } = require('../../../../../src/files/cache');
-const { request, buildHeaders } = require('../../../../../src/shared/http/client');
-const { buildCommerceUrl } = require('../../../../../src/shared/routing');
 
 /**
  * Make a cached request

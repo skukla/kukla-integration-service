@@ -5,7 +5,7 @@
  * Contains action-level validation that coordinates multiple validation utilities.
  */
 
-const { checkMissingParams } = require('../../shared');
+const { checkMissingParams } = require('../../core');
 
 /**
  * Validates the input parameters for product actions

@@ -6,7 +6,7 @@
  */
 
 const { createAuthenticationContext } = require('./authentication');
-const { buildCommerceUrl } = require('../../shared');
+const { buildCommerceUrl } = require('../../core');
 const {
   createRequestFunction,
   createBatchRequestFunction,
