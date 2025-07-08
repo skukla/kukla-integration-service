@@ -36,6 +36,190 @@ This document defines the standards for refactoring the Adobe App Builder Commer
 - Use catalog pattern with clear domain organization
 - **Test**: Can developers find this functionality in under 30 seconds?
 
+## Action Framework Standards
+
+### CRITICAL: Always Use Action Framework
+
+**ALL actions must use the action framework**. Never create actions that bypass `createAction()`:
+
+```javascript
+// ✅ CORRECT: Use action framework
+const { createAction } = require('../../../src/core');
+
+async function actionBusinessLogic(context) {
+  // Pure business logic only
+}
+
+module.exports = createAction(actionBusinessLogic, {
+  actionName: 'action-name',
+  domains: ['domain1', 'domain2'],
+  withLogger: true,
+  description: 'Action description'
+});
+
+// ❌ WRONG: Manual action creation
+async function main(params) {
+  // Manual parameter extraction, error handling, etc.
+}
+
+module.exports = { main };
+```
+
+### Clean Orchestrator Pattern (MANDATORY)
+
+**Every action `index.js` MUST follow this exact pattern:**
+
+```javascript
+/**
+ * Business logic for action-name
+ * @param {Object} context - Initialized action context
+ * @returns {Promise<Object>} Response object
+ */
+async function actionBusinessLogic(context) {
+  const { domain1, domain2, core, config, params } = context;
+  const steps = [];
+
+  // Step 1: Clear business operation
+  const result1 = await domain1.operation(params, config);
+  steps.push(core.formatStepMessage('step-name', 'success', { data: result1 }));
+
+  // Step 2: Domain operation  
+  const result2 = await domain2.operation(result1, config);
+  steps.push(core.formatStepMessage('step-name', 'success', { data: result2 }));
+
+  // Step 3: Domain operation
+  const result3 = await domain1.finalOperation(result2, config);
+  steps.push(core.formatStepMessage('step-name', 'success', { data: result3 }));
+
+  return core.success(result3, 'Operation completed successfully', {});
+}
+```
+
+**Required Elements:**
+
+- ✅ **Step-based workflow** with `steps` array
+- ✅ **Consistent messaging** with `core.formatStepMessage()`
+- ✅ **Domain function calls** only (no business logic implementation)
+- ✅ **Single return point** with `core.success()`
+- ✅ **Clean destructuring** from context
+
+### Action Length Guidelines
+
+- **Target**: 40-60 lines for action `index.js` files
+- **Maximum**: 80 lines before extracting to `lib/`
+- **Split Required**: When action has multiple distinct responsibilities
+
+**✅ Good Example (get-products pattern):**
+
+```javascript
+async function getProductsBusinessLogic(context) {
+  const { products, files, core, config, params } = context;
+  const steps = [];
+
+  // Step 1: Validate input
+  steps.push(core.formatStepMessage('validate-input', 'success'));
+
+  // Step 2: Fetch and enrich products
+  const productData = await products.fetchAndEnrichProducts(params, config);
+  steps.push(core.formatStepMessage('fetch-and-enrich', 'success', { count: productData.length }));
+
+  // Step 3: Build products with transformation
+  const builtProducts = await products.buildProducts(productData, config);
+  steps.push(core.formatStepMessage('build-products', 'success', { count: builtProducts.length }));
+
+  // Step 4: Create CSV
+  const csvData = await products.createCsv(builtProducts, config);
+  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
+
+  // Step 5: Store CSV
+  const storageResult = await files.storeCsv(csvData.content, config, params);
+  steps.push(core.formatStepMessage('store-csv', 'success', { info: storageResult }));
+
+  return core.success({
+    steps,
+    storage: storageResult,
+    downloadUrl: storageResult.downloadUrl,
+  }, 'Product export completed successfully', {});
+}
+```
+
+**❌ Bad Example:**
+
+```javascript
+async function processProductExport(context) {
+  // 120 lines that mix validation, fetching, transformation, storage, and error handling
+}
+```
+
+### Complex Logic Organization
+
+When actions exceed 60-80 lines, extract complex logic to `lib/`:
+
+```text
+actions/
+  backend/
+    action-name/
+      index.js              # ALWAYS clean orchestrator (40-60 lines)
+      lib/                  # Action-specific helpers (when needed)
+        steps.js            # Complex step orchestration
+        operations.js       # Data operations
+        formatters.js       # Response formatting
+        handlers.js         # Request routing
+        error-handling.js   # Specialized error handling
+```
+
+**✅ Extraction Example:**
+
+```javascript
+// actions/backend/get-products-mesh/lib/steps.js
+async function executeMeshDataSteps(context) {
+  const { products, core, config, params, trace } = context;
+  const steps = [];
+
+  // Step 1: Validate mesh configuration
+  await core.traceStep(trace, 'validate-mesh', async () => {
+    return await products.validateMeshInput(params, config);
+  });
+  steps.push(core.formatStepMessage('validate-mesh', 'success'));
+
+  // Complex logic continues...
+  return { steps, meshData, builtProducts };
+}
+
+// actions/backend/get-products-mesh/index.js  
+async function getProductsMeshBusinessLogic(context) {
+  const { steps, csvData } = require('./lib/steps');
+  
+  // Simple orchestration
+  const { steps: dataSteps, builtProducts } = await steps.executeMeshDataSteps(context);
+  const { storageResult, steps: csvSteps } = await steps.executeCsvSteps(builtProducts, { ...context, steps: dataSteps });
+  
+  return core.success(result, message, {});
+}
+```
+
+### Domain Function Requirements
+
+**Actions MUST call domain functions, never implement business logic:**
+
+```javascript
+// ✅ CORRECT: Call domain functions
+async function actionBusinessLogic(context) {
+  const { products, files } = context;
+  
+  const data = await products.fetchAndEnrichProducts(params, config);
+  const csv = await products.createCsv(data, config);
+  const storage = await files.storeCsv(csv, config, params);
+}
+
+// ❌ WRONG: Implement business logic in action
+async function actionBusinessLogic(context) {
+  // 50 lines of product fetching logic
+  // 30 lines of transformation logic
+  // 20 lines of CSV generation logic
+}
+```
+
 ## Function Standards
 
 ### Length Guidelines
@@ -43,6 +227,12 @@ This document defines the standards for refactoring the Adobe App Builder Commer
 - **Target**: 10-40 lines for most functions
 - **Acceptable**: Up to 60 lines if genuinely single responsibility
 - **Split Required**: When function handles multiple distinct concerns
+
+### Single Responsibility Rule
+
+- Each function should do ONE thing well
+- Function name should clearly indicate its purpose
+- **Test**: Can you explain what this function does in one sentence?
 
 **✅ Good Example:**
 
@@ -65,32 +255,6 @@ function validateCommerceCredentials(credentials) {
 ```javascript
 function processProductExport(params) {
   // 80 lines that validate, fetch, transform, and store
-}
-```
-
-### Single Responsibility Rule
-
-- Each function should do ONE thing well
-- Function name should clearly indicate its purpose
-- **Test**: Can you explain what this function does in one sentence?
-
-**✅ Good Example:**
-
-```javascript
-function fetchProductsFromCommerce(credentials, pageSize) {
-  // Only fetches products, nothing else
-}
-
-function enrichProductsWithCategories(products, categories) {
-  // Only adds category data, nothing else
-}
-```
-
-**❌ Bad Example:**
-
-```javascript
-function fetchAndEnrichProducts(params) {
-  // Fetches products AND enriches them AND validates them
 }
 ```
 
@@ -118,6 +282,30 @@ function buildProductCsv(params) {
 
 ## Error Handling Standards
 
+### Framework Error Handling
+
+**NEVER implement custom error handling in actions**. The framework handles all errors:
+
+```javascript
+// ✅ CORRECT: Let framework handle errors
+async function actionBusinessLogic(context) {
+  // Business logic that may throw
+  const result = await domain.operation(params);
+  return core.success(result, message, {});
+}
+
+// ❌ WRONG: Custom error handling
+async function actionBusinessLogic(context) {
+  try {
+    const result = await domain.operation(params);
+    return core.success(result, message, {});
+  } catch (error) {
+    // Custom error handling - framework already does this!
+    return core.error(error, {});
+  }
+}
+```
+
 ### Meaningful Error Messages
 
 - Errors should explain what went wrong AND what the user should do
@@ -140,13 +328,23 @@ if (!credentials.username) {
 }
 ```
 
-### Error Handling Consistency
-
-- Use same error handling pattern throughout application
-- Consistent error types and structure
-- **Test**: Does this error handling match the pattern used elsewhere?
-
 ## Code Organization Standards
+
+### Domain Organization Requirements
+
+**Use domain catalogs for ALL shared functionality:**
+
+```javascript
+// ✅ CORRECT: Call through domain catalog
+const { products, files, commerce } = require('../../src');
+
+const data = await products.fetchAndEnrichProducts(params, config);
+const csv = await files.storeCsv(csvData, config, params);
+
+// ❌ WRONG: Direct utility imports
+const { fetchProducts } = require('../../src/commerce/api/products');
+const { storeFile } = require('../../src/core/storage/operations');
+```
 
 ### Helper Function Extraction
 
@@ -174,15 +372,20 @@ function validateProductData(product) {
 
 ### Import Organization
 
-- Group imports logically (core, commerce, utilities)
+- Group imports logically (framework, domains, utilities)
 - Use clear, descriptive import names
 - **Test**: Are imports organized and easy to understand?
 
-### File Structure
+**✅ Good Organization:**
 
-- Keep related functions together
-- Use descriptive file names
-- **Test**: Would a new developer know where to find this function?
+```javascript
+// Action framework
+const { createAction } = require('../../../src/core');
+
+// Domain imports (if needed for complex actions)
+const { executeMeshDataSteps } = require('./lib/steps');
+const { formatMeshResponse } = require('./lib/formatters');
+```
 
 ## Testing Standards
 
@@ -193,668 +396,91 @@ function validateProductData(product) {
 - **Test failures are expensive** - broken functionality might not be caught until after deployment
 - **Rollback planning** - ensure changes are easily reversible
 
+### Framework Testing
+
+**Always test action framework integration:**
+
+```bash
+# Test individual actions
+npm run test:action get-products
+npm run test:action get-products-mesh
+
+# Test framework doesn't break existing functionality
+npm run deploy
+```
+
 ### Functionality Preservation
 
 - **CRITICAL**: No existing functionality can be broken
 - All refactored functions must maintain exact same behavior
-- **Test**: Does `npm run test:action get-products` still work after deployment?
+- **Test**: Does `npm run test:action` still work after changes?
 
-### Incremental Changes
+## Action Framework Benefits
 
-- Make one logical change at a time
-- Deploy and test after each change
-- **Test**: Can you describe exactly what this change does?
-- **Size limit**: Changes should be small enough to test and rollback quickly
+### Code Quality Metrics
 
-### Testing Workflow
+- **Zero duplication** across actions (216 lines eliminated)
+- **Consistent patterns** (100% compliance)
+- **Average action size**: 46 lines (down from 123 lines)
+- **Boilerplate eliminated**: 15-25 lines per action
 
-1. **Make small, focused change**
-2. **Deploy**: `npm run deploy`
-3. **Test**: `npm run test:action get-products` (and other affected actions)
-4. **Verify**: Check that functionality is preserved
-5. **Commit**: Only commit if tests pass
-6. **Rollback**: If tests fail, revert immediately
+### Development Standards
 
-### Pre-Deployment Checklist
+- **Predictable structure** in every action
+- **Self-documenting** business logic flows
+- **Easy maintenance** through consistent patterns
+- **Fast development** with framework templates
 
-Before deploying any change:
+## Compliance Checklist
 
-- [ ] Change is small and focused (single logical improvement)
-- [ ] I can easily explain what changed and why
-- [ ] I have a rollback plan if this breaks
-- [ ] I know exactly which actions to test after deployment
-- [ ] I've checked for syntax errors and obvious issues locally
+Before approving any action changes, verify:
 
-## Refactoring Decision Rubric
+- [ ] **Uses action framework** (`createAction()` wrapper)
+- [ ] **Clean orchestrator pattern** (step-based workflow)
+- [ ] **Domain function calls** (no business logic implementation)
+- [ ] **Consistent messaging** (`core.formatStepMessage()`)
+- [ ] **Single return point** (`core.success()`)
+- [ ] **Proper extraction** (complex logic in `lib/` when needed)
+- [ ] **Framework testing** (action still works after changes)
+- [ ] **No custom error handling** (framework handles all errors)
 
-Before making ANY change, answer these questions:
+## Migration Guide
 
-### 1. **Is this change necessary?**
+### Converting Existing Actions
 
-- [ ] Does the current code have a genuine problem?
-- [ ] Will this change make the code significantly easier to work with?
-- [ ] Or am I just changing it because it's different from my preferred style?
+1. **Start with get-products pattern**:
 
-### 2. **Does this change improve clarity?**
+   ```bash
+   # Use get-products as template
+   cp actions/backend/get-products/index.js actions/backend/new-action/index.js
+   ```
 
-- [ ] Will someone unfamiliar with this code understand it faster?
-- [ ] Are the function's responsibilities clearer?
-- [ ] Are the parameters and return values more obvious?
+2. **Follow framework pattern**:
+   - Import `createAction` from core
+   - Create `businessLogic` function with context parameter
+   - Use step-based workflow with domain calls
+   - Return `core.success()` with proper structure
 
-### 3. **Is this change consistent?**
+3. **Extract complex logic**:
+   - Create `lib/` directory when action exceeds 60 lines
+   - Move complex logic to appropriate lib files
+   - Keep action `index.js` as clean orchestrator
 
-- [ ] Could this same pattern be applied to similar functions?
-- [ ] Does this match the established patterns in the codebase?
-- [ ] Am I creating a one-off solution?
-- [ ] Have I checked if this functionality already exists?
-- [ ] If similar functionality exists, am I consolidating rather than duplicating?
+4. **Test integration**:
+   - Deploy and test action functionality
+   - Verify framework patterns work correctly
+   - Confirm no existing functionality is broken
 
-### 4. **Is this change practical?**
+### Creating New Actions
 
-- [ ] Does this solve a real problem developers face?
-- [ ] Will this make future modifications easier?
-- [ ] Or am I just following a theoretical principle?
+1. **Always start with framework template**
+2. **Follow clean orchestrator pattern from get-products**
+3. **Use domain catalogs for shared functionality**
+4. **Extract complex logic to lib/ when needed**
+5. **Test thoroughly with deployment**
 
-### 5. **Is this change safe?**
+## Conclusion
 
-- [ ] Have I tested that functionality is preserved?
-- [ ] Are the changes small enough to easily review?
-- [ ] Can I easily revert if there's a problem?
-- [ ] Is this change small enough to test efficiently with deployment?
-- [ ] Do I have a clear plan for testing this change?
+The action framework eliminates duplication while ensuring consistent, maintainable patterns across all Adobe App Builder actions. Every action must follow the clean orchestrator pattern, with framework handling all infrastructure concerns and business logic clearly separated into domain functions.
 
-### 6. **Does this follow functional composition principles?**
-
-- [ ] Is this function pure (same inputs = same outputs, no side effects)?
-- [ ] Does this function compose well with other functions?
-- [ ] Am I avoiding class hierarchies and inheritance?
-- [ ] Are the input/output contracts clear?
-
-### 7. **Does this improve discoverability?**
-
-- [ ] Will developers find this function quickly using the catalog pattern?
-- [ ] Is this organized by domain (products, files, commerce, shared)?
-- [ ] Does this reduce the time to find existing functionality?
-- [ ] Is the purpose obvious from the location and name?
-
-## Approval Criteria
-
-**Every change must score YES on ALL questions:**
-
-1. **Clarity**: Is the code easier to understand?
-2. **Necessity**: Is this change solving a real problem?
-3. **Consistency**: Does this follow established patterns?
-4. **Safety**: Is functionality preserved?
-5. **Practicality**: Will this make future work easier?
-6. **Uniqueness**: Does this avoid creating duplicate ways to do the same thing?
-7. **Functional**: Does this follow functional composition principles?
-8. **Discoverable**: Does this improve discoverability and organization?
-
-**If ANY answer is NO, the change should not be made.**
-
-## Functional Composition & Discoverability Architecture
-
-### Catalog Pattern Standards
-
-**All functionality must be organized in a discoverable catalog structure:**
-
-```javascript
-// src/index.js - Single entry point for all functionality
-module.exports = {
-  products: require('./products'),    // Product operations
-  files: require('./files'),          // File operations  
-  commerce: require('./commerce'),     // Commerce integration
-  shared: require('./shared'),         // Truly shared utilities
-};
-
-// Domain index pattern - each domain exports its functions
-// src/products/index.js
-module.exports = {
-  fetchProducts: require('./fetch').fetchProducts,
-  enrichWithCategories: require('./fetch').enrichWithCategories,
-  buildProductCsv: require('./transform').buildProductCsv,
-  validateProductData: require('./validate').validateProductData,
-};
-```
-
-### Domain Organization
-
-**Functions must be organized by domain, not by technical layer:**
-
-**✅ Good Domain Organization:**
-
-```text
-src/
-├── products/        # Everything product-related
-│   ├── fetch.js    # fetchProducts(), enrichWithCategories()
-│   ├── transform.js # buildProductCsv(), formatProductData()
-│   └── validate.js # validateProductData()
-├── files/          # Everything file-related
-│   ├── storage.js  # storeFile(), deleteFile()
-│   └── browser.js  # listFiles(), generateBrowserHtml()
-```
-
-**❌ Bad Technical Layer Organization:**
-
-```text
-src/
-├── controllers/    # All controllers together
-├── services/       # All services together  
-├── repositories/   # All repositories together
-└── utils/          # All utilities together
-```
-
-### Functional Composition Standards
-
-**All functions should follow pure functional principles:**
-
-**✅ Pure Function Example:**
-
-```javascript
-// Clear input/output contract, no side effects
-function enrichWithCategories(products, categoryData) {
-  return products.map(product => ({
-    ...product,
-    categories: categoryData.filter(cat => 
-      product.category_ids.includes(cat.id)
-    )
-  }));
-}
-```
-
-**❌ Impure Function Example:**
-
-```javascript
-// Hidden dependencies, side effects
-function enrichWithCategories(products) {
-  // Depends on global state
-  const categoryData = globalCategoryCache.get();
-  
-  // Modifies input
-  products.forEach(product => {
-    product.categories = fetchCategoriesFromAPI(product.id);
-  });
-  
-  return products;
-}
-```
-
-### Action Controller Pattern
-
-**Actions should be thin orchestrators that compose domain functions:**
-
-**✅ Thin Action Controller:**
-
-```javascript
-// actions/get-products.js
-const { products, files, shared } = require('../src');
-
-async function main(params) {
-  const config = shared.loadConfig(params);
-  
-  // Just orchestrate domain functions
-  const productData = await products.fetchProducts(config);
-  const enrichedData = await products.enrichWithCategories(productData, config);
-  const csvData = products.buildProductCsv(enrichedData);
-  const storageResult = await files.storeFile(csvData, config);
-  
-  return shared.createSuccessResponse(storageResult);
-}
-```
-
-**❌ Fat Action Controller:**
-
-```javascript
-// Business logic mixed into action
-async function main(params) {
-  // Validation logic
-  if (!params.commerceUrl) throw new Error('Missing URL');
-  
-  // API calls
-  const response = await fetch(params.commerceUrl + '/products');
-  
-  // Data transformation
-  const products = response.data.map(p => ({
-    sku: p.sku,
-    name: p.name.trim(),
-    // ... 50 lines of transformation logic
-  }));
-  
-  // File operations
-  const csv = products.map(p => `${p.sku},${p.name}`).join('\n');
-  // ... storage logic
-}
-```
-
-## Domain Organization Standards
-
-### Functional Composition Approach
-
-**As domains grow, organize by functional responsibility rather than technical layers:**
-
-```text
-src/domain/
-├── index.js                    (public catalog)
-├── workflows/                  (high-level compositions)
-│   ├── export-products.js      (complete business flows)
-│   └── import-products.js      (orchestrate multiple operations)
-├── operations/                 (mid-level business logic)
-│   ├── enrichment.js          (domain-specific operations)
-│   ├── transformation.js      (business rule implementations)
-│   └── validation.js          (domain validation logic)
-└── utils/                      (low-level pure functions)
-    ├── category.js            (data transformation utilities)
-    ├── image.js               (format/parse utilities)
-    └── data.js                (computation utilities)
-```
-
-### Function Hierarchy Guidelines
-
-**Split files when they exceed 300-400 lines, organizing by abstraction level:**
-
-#### 1. **Workflows** (High-Level Orchestration)
-
-```javascript
-// src/products/workflows/export-products.js
-async function exportProducts(params, config, trace = null) {
-  // Orchestrates complete business process
-  const products = await fetchAndEnrichProducts(params, config, trace);
-  const built = await buildProducts(products, config);
-  const csv = await createCsv(built);
-  const storage = await storeCsvFile(csv, config, params);
-  
-  return { productCount: products.length, storage };
-}
-```
-
-#### 2. **Operations** (Mid-Level Business Logic)
-
-```javascript
-// src/products/operations/enrichment.js
-async function enrichWithCategories(products, config, params, trace = null) {
-  // Specific domain operation
-  const categoryIds = extractCategoryIds(products);
-  const categoryMap = await fetchCategoryData(categoryIds, config, params, trace);
-  return enrichProductsWithCategories(products, categoryMap);
-}
-```
-
-#### 3. **Utils** (Low-Level Pure Functions)
-
-```javascript
-// src/products/utils/category.js
-function extractCategoryIds(products) {
-  // Pure data transformation
-  return products.flatMap(p => p.categories?.map(c => c.id) || []);
-}
-```
-
-### Domain Catalog Pattern
-
-**Each domain must maintain a hierarchical catalog for discoverability:**
-
-```javascript
-// src/products/index.js
-module.exports = {
-  // High-level workflows (what users actually want to do)
-  exportProducts: require('./workflows/export-products').exportProducts,
-  importProducts: require('./workflows/import-products').importProducts,
-  
-  // Mid-level operations (how the domain works)
-  fetchAndEnrichProducts: require('./operations/enrichment').fetchAndEnrichProducts,
-  buildProducts: require('./operations/transformation').buildProducts,
-  
-  // Low-level utilities (implementation details)
-  extractCategoryIds: require('./utils/category').extractCategoryIds,
-  
-  // Structured access for organized usage
-  workflows: {
-    export: require('./workflows/export-products'),
-    import: require('./workflows/import-products'),
-  },
-  operations: {
-    enrichment: require('./operations/enrichment'),
-    transformation: require('./operations/transformation'),
-    validation: require('./operations/validation'),
-  },
-  utils: {
-    category: require('./utils/category'),
-    image: require('./utils/image'),
-    data: require('./utils/data'),
-  },
-};
-```
-
-### When to Split Domain Files
-
-**Split when:**
-
-- File exceeds 300-400 lines
-- Contains functions at very different abstraction levels
-- Multiple developers working on same file
-- Becoming difficult to navigate or understand
-
-**Keep together when:**
-
-- Functions are tightly coupled and share significant state
-- Total file size is manageable (< 300 lines)
-- Functions are at similar abstraction levels
-- Split would create more complexity than it solves
-
-### Migration Strategy
-
-**Phase 1: Identify Large Files**
-
-```bash
-# Find files that need splitting
-find src/ -name "*.js" -exec wc -l {} \; | sort -n | tail -10
-```
-
-**Phase 2: Analyze Function Abstraction Levels**
-
-```javascript
-// Example analysis for src/products/transform.js
-// HIGH-LEVEL: buildProducts() - orchestrates transformation
-// MID-LEVEL: buildProductObject() - business logic
-// LOW-LEVEL: transformImageEntry() - data utility
-
-// Split plan:
-// → workflows/build-products.js (buildProducts)
-// → operations/transformation.js (buildProductObject)  
-// → utils/image.js (transformImageEntry)
-```
-
-**Phase 3: Split Gradually**
-
-1. Create new directory structure
-2. Move functions to appropriate levels
-3. Update imports
-4. Update domain catalog
-5. Test that functionality is preserved
-
-### Benefits of This Approach
-
-**For Adobe App Builder:**
-
-- **workflows/** perfect for action entry points
-- **operations/** ideal for step functions
-- **utils/** great for shared utilities
-
-**For Commerce Integration:**
-
-- Clear separation of API orchestration vs business logic
-- Easier to find and modify specific Commerce operations
-- Better testing boundaries (workflows end-to-end, operations isolated, utils pure)
-
-**For Team Development:**
-
-- Developers can work on different abstraction levels without conflicts
-- Clear ownership boundaries (workflows = features, operations = domain logic, utils = shared)
-- Easier code reviews (changes stay within appropriate abstraction level)
-
-## Consistency & Anti-Spaghetti Standards
-
-### Single Source of Truth Rule
-
-- **Each concept should have ONE authoritative implementation**
-- **Before creating new functionality, check if it already exists**
-- **Consolidate duplicate implementations, don't add more**
-
-### Pattern Consistency Checklist
-
-Before implementing any solution, ask:
-
-1. **Does this already exist?**
-   - Search codebase for similar functionality
-   - Check existing utilities and helpers
-   - Look for patterns that solve the same problem
-
-2. **Can I use the existing approach?**
-   - Is there already a way to do this?
-   - Can I extend the existing implementation?
-   - Would using the existing pattern be clearer?
-
-3. **If I must create something new:**
-   - Can I replace the old implementation with the new one?
-   - Can I merge the approaches into a single, better solution?
-   - Document WHY this needs to be different
-
-### Examples of What to Avoid
-
-**❌ Multiple Ways to Do the Same Thing:**
-
-```javascript
-// File A
-function formatFileSize(bytes) { /* implementation A */ }
-
-// File B  
-function getFileSizeDisplay(bytes) { /* implementation B */ }
-
-// File C
-function bytesToHuman(bytes) { /* implementation C */ }
-```
-
-**✅ Single, Consistent Implementation:**
-
-```javascript
-// src/core/utils/fileSize.js
-function formatFileSize(bytes) { /* one implementation */ }
-
-// Used everywhere consistently
-const displaySize = formatFileSize(fileSizeInBytes);
-```
-
-**❌ Inconsistent Error Handling:**
-
-```javascript
-// Some places
-throw new Error('Invalid input');
-
-// Other places  
-return { error: 'Invalid input' };
-
-// Still other places
-console.error('Invalid input'); return null;
-```
-
-**✅ Consistent Error Handling:**
-
-```javascript
-// Always use the same pattern
-throw new Error('Invalid input: Please provide a valid product SKU');
-```
-
-### Implementation Standards
-
-**Before adding ANY new function:**
-
-1. **Search existing codebase** for similar functionality
-2. **Check if existing utilities** can be extended
-3. **Consider if this creates a new pattern** vs. using existing patterns
-4. **Document the decision** if creating something new
-
-**If you find duplicate implementations:**
-
-1. **Consolidate immediately** - don't add a third way
-2. **Choose the clearest implementation** as the standard
-3. **Update all usages** to use the single implementation
-4. **Remove the duplicate implementations**
-
-### How to Check for Existing Implementations
-
-**Search Commands to Use:**
-
-```bash
-# Search for function names
-grep -r "functionName" src/ actions/
-
-# Search for concepts (e.g., "validate", "format", "build")
-grep -r "validateProduct" src/ actions/
-grep -r "formatDate" src/ actions/
-grep -r "buildUrl" src/ actions/
-
-# Search for imports to see what's already available
-grep -r "require.*utils" src/ actions/
-grep -r "import.*utils" src/ actions/
-```
-
-**Places to Check:**
-
-- `src/core/` - Core utilities
-- `src/commerce/` - Commerce-specific utilities  
-- `actions/*/lib/` - Action-specific helpers
-- `actions/*/steps/` - Step functions
-- Look for `utils.js`, `helpers.js`, `index.js` files
-
-**Questions to Ask:**
-
-- Is there already a utility that does this?
-- Can I extend an existing function instead of creating a new one?
-- Are there similar patterns I should follow?
-- Would consolidating improve the codebase?
-
-## Red Flags - Stop and Reconsider
-
-🚩 **Creating more lines of code than you're improving**
-🚩 **Making simple operations more complex**
-🚩 **Breaking working functionality**
-🚩 **Creating patterns that can't be applied elsewhere**
-🚩 **Abstracting code that's only used in one place**
-🚩 **Making code that requires deep knowledge to understand**
-🚩 **Creating a new way to do something that already exists**
-🚩 **Ignoring existing patterns and creating your own**
-🚩 **Adding functionality without checking for duplicates**
-🚩 **Making changes too large to easily test and rollback**
-🚩 **Changing multiple concerns in a single commit**
-🚩 **Skipping deployment testing because "it should work"**
-
-## Success Metrics
-
-After refactoring, the codebase should be:
-
-- **Easier to onboard new developers**
-- **Faster to make common modifications**
-- **More consistent in patterns and style**
-- **Clearer about what each function does**
-- **Equally or more reliable than before**
-
-## Review Process
-
-1. **Self-Review**: Apply the decision rubric
-2. **Test**: Verify functionality is preserved
-3. **Document**: Clear commit message explaining the benefit
-4. **Consistency Check**: Ensure change follows established patterns
-
-## Recent Successful Patterns
-
-### Configuration Simplification ✅
-
-**Problem**: Complex multi-environment configuration with 8+ files, environment detection, and merging logic.
-
-**Solution**: Single `config/index.js` file with direct environment variable access.
-
-**Results**:
-
-- 300+ lines → 170 lines (43% reduction)
-- 8+ files → 1 file (87% reduction)
-- No environment detection complexity
-- Direct `process.env` access instead of complex overrides
-- Backward compatible with existing actions
-
-**Pattern**: When configuration becomes complex, question whether environment separation is necessary at the application level (vs infrastructure level). Adobe I/O workspaces already handle environment separation.
-
-**Approval Criteria Met**:
-
-- ✅ **Clarity**: Much easier to understand (one file vs 8+)
-- ✅ **Necessity**: Solved real pain point (finding configuration)
-- ✅ **Consistency**: Follows direct environment variable patterns
-- ✅ **Safety**: Backward compatible with existing actions
-- ✅ **Practicality**: Makes future configuration changes much easier
-- ✅ **Uniqueness**: Eliminates multiple ways to configure same thing
-- ✅ **Functional**: Pure configuration object with simple loading
-- ✅ **Discoverable**: One place to find all configuration
-
-### Core Domain Architecture ✅
-
-**Problem**: Core infrastructure scattered across `src/shared/` and misplaced application-specific code in `src/core/`.
-
-**Solution**: Reorganize to true Core domain containing universal infrastructure, move development tools to separate area.
-
-**Results**:
-
-- Core Performance Testing: 435 → 111 lines (74% reduction)
-- Baseline Manager: 356 → 116 lines (67% reduction)
-- Clear separation: Infrastructure (core) vs Tooling (tools) vs Business Logic (domains)
-- Universal infrastructure properly organized in core/
-- Development utilities moved to appropriate tools/ area
-
-**Architecture Decisions**:
-
-**Core Domain = Universal Infrastructure Only**:
-
-```text
-src/core/
-├── http/           # Request/response handling (from shared/http/)
-├── monitoring/     # Performance tracking (from shared/monitoring/)
-├── environment/    # Runtime environment detection (from shared/environment.js)
-├── validation/     # Input validation (from shared/validation.js)
-├── utils/          # Generic utilities (from shared/utils.js)
-├── tracing/        # Logging and debugging (from shared/tracing.js)
-├── routing/        # URL building (from shared/routing.js)
-├── errors/         # Error handling (from shared/errors.js)
-└── cli/            # Command line utilities (keep existing)
-```
-
-**Tools Organization = Development Utilities**:
-
-```text
-tools/
-├── testing/        # Testing frameworks and utilities
-│   ├── performance/   # Performance testing framework (from core/testing/performance/)
-│   └── integration/   # Integration testing utilities
-├── deployment/     # Deployment utilities
-├── analysis/       # Code analysis tools
-└── generators/     # Code generation tools
-```
-
-**Code Sharing Strategy = Domain Ownership**:
-
-- ✅ **Eliminate shared/ dumping ground** - No more "everything goes in shared"
-- ✅ **Core = Universal infrastructure** - HTTP, monitoring, environment, validation
-- ✅ **Domain ownership** - Each domain owns its specific utilities
-- ✅ **Intentional sharing** - Import from domain that owns the logic
-- ✅ **Clear dependencies** - Core → Domains (never circular)
-
-**Import Patterns**:
-
-```javascript
-// Universal infrastructure from core
-const { request } = require('../core/http/client');
-const { detectEnvironment } = require('../core/environment');
-
-// Domain-specific utilities from owning domain
-const { transformProductData } = require('../products/utils/transformation');
-const { buildCommerceUrl } = require('../commerce/utils/urls');
-```
-
-**Tools Organization Strategy**:
-
-Unlike domains, tools use **functional organization** rather than hierarchical composition:
-
-- ✅ **By purpose** - testing, deployment, analysis, generators
-- ✅ **Complete utilities** - Self-contained tools and frameworks
-- ✅ **Development-time only** - Not runtime dependencies
-- ✅ **Traditional structure** - No utils/operations/workflows needed
-
-**Pattern**: True core infrastructure is what ALL domains depend on. Application-specific tooling belongs in tools/. Business logic utilities belong in their respective domains.
-
-**Approval Criteria Met**:
-
-- ✅ **Clarity**: Clear separation between infrastructure, tooling, and business logic
-- ✅ **Necessity**: Fixed architectural confusion and scattered infrastructure
-- ✅ **Consistency**: Follows established functional composition patterns
-- ✅ **Safety**: Maintains backward compatibility through re-exports
-- ✅ **Practicality**: Makes infrastructure easier to find and maintain
-- ✅ **Uniqueness**: Eliminates duplicate ways to organize shared code
-- ✅ **Functional**: Proper abstraction hierarchy with clear responsibilities
-- ✅ **Discoverable**: Know where to find infrastructure vs domain logic
+This architecture enables rapid development while maintaining high code quality and consistency throughout the application.
