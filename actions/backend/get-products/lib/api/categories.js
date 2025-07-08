@@ -5,9 +5,9 @@
  * This version uses direct HTTP calls instead of makeCommerceRequest to avoid OpenWhisk conflicts
  */
 const endpoints = require('./commerce-endpoints');
-const { request, buildHeaders } = require('../../../../../src/shared/http/client');
-const { buildCommerceUrl } = require('../../../../../src/shared/routing');
-const { incrementApiCalls } = require('../../../../../src/shared/tracing');
+const { request, buildHeaders } = require('../../../../../src/core/http/client');
+const { buildCommerceUrl } = require('../../../../../src/core/routing');
+const { incrementApiCalls } = require('../../../../../src/core/tracing');
 
 // In-memory cache for category data
 const categoryCache = new Map();

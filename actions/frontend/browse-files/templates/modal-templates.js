@@ -4,7 +4,7 @@
  */
 
 const { loadConfig } = require('../../../../config');
-const { buildRuntimeUrl } = require('../../../../src/shared/routing');
+const { buildRuntimeUrl } = require('../../../../src/core/routing');
 
 /**
  * Generates HTML for the delete confirmation modal

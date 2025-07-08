@@ -6,8 +6,8 @@
  */
 
 const { createOAuthHeader } = require('./oauth');
-const { http } = require('../../shared');
-const { buildCommerceUrl } = require('../../shared');
+const { http } = require('../../core');
+const { buildCommerceUrl } = require('../../core');
 
 /**
  * Creates a Commerce API client configuration

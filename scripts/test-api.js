@@ -8,7 +8,7 @@ const ora = require('ora');
 
 const { loadConfig } = require('../config');
 const { makeCommerceRequest } = require('../src/commerce/api/integration');
-const { extractActionParams } = require('../src/shared/http/client');
+const { extractActionParams } = require('../src/core/http/client');
 
 require('dotenv').config();
 

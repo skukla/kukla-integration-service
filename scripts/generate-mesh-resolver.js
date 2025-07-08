@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { loadConfig } = require('../config');
-const { detectEnvironment } = require('../src/shared/environment');
+const { detectEnvironment } = require('../src/core/environment');
 
 /**
  * Parse command line arguments

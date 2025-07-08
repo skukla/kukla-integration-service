@@ -773,3 +773,88 @@ After refactoring, the codebase should be:
 - ✅ **Uniqueness**: Eliminates multiple ways to configure same thing
 - ✅ **Functional**: Pure configuration object with simple loading
 - ✅ **Discoverable**: One place to find all configuration
+
+### Core Domain Architecture ✅
+
+**Problem**: Core infrastructure scattered across `src/shared/` and misplaced application-specific code in `src/core/`.
+
+**Solution**: Reorganize to true Core domain containing universal infrastructure, move development tools to separate area.
+
+**Results**:
+
+- Core Performance Testing: 435 → 111 lines (74% reduction)
+- Baseline Manager: 356 → 116 lines (67% reduction)
+- Clear separation: Infrastructure (core) vs Tooling (tools) vs Business Logic (domains)
+- Universal infrastructure properly organized in core/
+- Development utilities moved to appropriate tools/ area
+
+**Architecture Decisions**:
+
+**Core Domain = Universal Infrastructure Only**:
+
+```text
+src/core/
+├── http/           # Request/response handling (from shared/http/)
+├── monitoring/     # Performance tracking (from shared/monitoring/)
+├── environment/    # Runtime environment detection (from shared/environment.js)
+├── validation/     # Input validation (from shared/validation.js)
+├── utils/          # Generic utilities (from shared/utils.js)
+├── tracing/        # Logging and debugging (from shared/tracing.js)
+├── routing/        # URL building (from shared/routing.js)
+├── errors/         # Error handling (from shared/errors.js)
+└── cli/            # Command line utilities (keep existing)
+```
+
+**Tools Organization = Development Utilities**:
+
+```text
+tools/
+├── testing/        # Testing frameworks and utilities
+│   ├── performance/   # Performance testing framework (from core/testing/performance/)
+│   └── integration/   # Integration testing utilities
+├── deployment/     # Deployment utilities
+├── analysis/       # Code analysis tools
+└── generators/     # Code generation tools
+```
+
+**Code Sharing Strategy = Domain Ownership**:
+
+- ✅ **Eliminate shared/ dumping ground** - No more "everything goes in shared"
+- ✅ **Core = Universal infrastructure** - HTTP, monitoring, environment, validation
+- ✅ **Domain ownership** - Each domain owns its specific utilities
+- ✅ **Intentional sharing** - Import from domain that owns the logic
+- ✅ **Clear dependencies** - Core → Domains (never circular)
+
+**Import Patterns**:
+
+```javascript
+// Universal infrastructure from core
+const { request } = require('../core/http/client');
+const { detectEnvironment } = require('../core/environment');
+
+// Domain-specific utilities from owning domain
+const { transformProductData } = require('../products/utils/transformation');
+const { buildCommerceUrl } = require('../commerce/utils/urls');
+```
+
+**Tools Organization Strategy**:
+
+Unlike domains, tools use **functional organization** rather than hierarchical composition:
+
+- ✅ **By purpose** - testing, deployment, analysis, generators
+- ✅ **Complete utilities** - Self-contained tools and frameworks
+- ✅ **Development-time only** - Not runtime dependencies
+- ✅ **Traditional structure** - No utils/operations/workflows needed
+
+**Pattern**: True core infrastructure is what ALL domains depend on. Application-specific tooling belongs in tools/. Business logic utilities belong in their respective domains.
+
+**Approval Criteria Met**:
+
+- ✅ **Clarity**: Clear separation between infrastructure, tooling, and business logic
+- ✅ **Necessity**: Fixed architectural confusion and scattered infrastructure
+- ✅ **Consistency**: Follows established functional composition patterns
+- ✅ **Safety**: Maintains backward compatibility through re-exports
+- ✅ **Practicality**: Makes infrastructure easier to find and maintain
+- ✅ **Uniqueness**: Eliminates duplicate ways to organize shared code
+- ✅ **Functional**: Proper abstraction hierarchy with clear responsibilities
+- ✅ **Discoverable**: Know where to find infrastructure vs domain logic
