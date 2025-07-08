@@ -3,83 +3,66 @@
  * @module delete-file
  */
 
-const { Core } = require('@adobe/aio-sdk');
-
-// Load configuration
-const { loadConfig } = require('../../../config');
-// Use domain catalogs for thin orchestrator pattern
-const { files, shared } = require('../../../src');
+// Use action framework to eliminate duplication
+const { createAction } = require('../../../src/core');
 
 /**
- * Main function that handles file deletion
- * @param {Object} params - Action parameters
+ * Business logic for delete-file action
+ * @param {Object} context - Initialized action context with logger
  * @returns {Promise<Object>} Action response
  */
-async function main(params) {
-  // Handle preflight requests first
-  if (params.__ow_method === 'options') {
-    return shared.success({}, 'Preflight success', {});
+async function deleteFileBusinessLogic(context) {
+  const { files, core, config, params, originalParams, logger } = context;
+  const steps = [];
+
+  // Merge parameters to handle query parameters properly
+  const allParams = { ...originalParams, ...params };
+
+  // Step 1: Validate required parameters
+  const missingParams = core.checkMissingParams(allParams, ['fileName']);
+  if (missingParams) {
+    throw new Error(missingParams);
   }
+  steps.push(core.formatStepMessage('validate-parameters', 'success'));
 
-  const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
+  // Step 2: Delete file from storage
+  const cleanFileName = files.extractCleanFilename(allParams.fileName);
+  logger.info('Delete operation starting:', {
+    original: allParams.fileName,
+    clean: cleanFileName,
+  });
 
-  try {
-    // Validate required parameters using shared utilities
-    const missingParams = shared.checkMissingParams(params, ['fileName']);
-    if (missingParams) {
-      return shared.error(new Error(missingParams), {});
-    }
+  const storage = await files.initializeStorage(config, params);
+  await files.deleteFile(storage, cleanFileName);
+  steps.push(core.formatStepMessage('delete-file', 'success', { fileName: cleanFileName }));
 
-    // Extract clean filename using files domain
-    const cleanFileName = files.extractCleanFilename(params.fileName);
-    logger.info('Delete operation starting:', { original: params.fileName, clean: cleanFileName });
+  // Step 3: Get updated file list using browse-files action
+  const { main: browseFilesMain } = require('../../frontend/browse-files/index');
+  const fileListResponse = await browseFilesMain({
+    ...allParams,
+    __ow_method: 'get',
+    modal: null, // Ensure we don't return modal content
+  });
+  steps.push(core.formatStepMessage('refresh-file-list', 'success'));
 
-    // Extract action parameters for storage credentials
-    const actionParams = shared.extractActionParams(params);
-
-    // Load configuration
-    const config = loadConfig(actionParams);
-
-    // Initialize storage provider using files domain
-    const storage = await files.initializeStorage(config, actionParams);
-
-    // Delete the file using files domain
-    await files.deleteFile(storage, cleanFileName);
-    logger.info(`File deleted successfully: ${cleanFileName}`);
-
-    // Get updated file list by calling browse-files action
-    const { main: browseFilesMain } = require('../../frontend/browse-files/index');
-
-    // Call browse-files with GET method to get the updated file list
-    const fileListResponse = await browseFilesMain({
-      ...params,
-      __ow_method: 'get',
-      modal: null, // Ensure we don't return modal content
-    });
-
-    // Return the updated file list response
-    logger.info('Delete operation completed successfully');
-    return fileListResponse;
-  } catch (error) {
-    logger.error('Error in delete-file action:', error);
-
-    // Handle specific file operation errors using files domain
-    if (files.isFileOperationError(error)) {
-      const errorType = files.getFileErrorType(error);
-      switch (errorType) {
-        case 'NOT_FOUND':
-          return shared.error(new Error(`File not found: ${params.fileName}`), {});
-        case 'INVALID_PATH':
-          return shared.error(error, {});
-        default:
-          return shared.error(error, {});
-      }
-    }
-
-    return shared.error(error, {});
-  }
+  // Return success response with steps (following get-products pattern)
+  return core.success(
+    {
+      steps,
+      fileList: fileListResponse,
+      deletedFile: cleanFileName,
+    },
+    'File deleted successfully',
+    {}
+  );
 }
 
-module.exports = {
-  main,
-};
+// Create action with framework - clean orchestrator pattern!
+module.exports = createAction(deleteFileBusinessLogic, {
+  actionName: 'delete-file',
+  domains: ['files'],
+  withTracing: false,
+  withLogger: true,
+  logLevel: 'info',
+  description: 'Delete files from storage and return updated file list',
+});

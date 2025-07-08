@@ -1,20 +1,18 @@
 /**
- * Response creation functions for API Mesh operations
- * @module lib/responses
+ * Response formatters for get-products-mesh action
+ * @module get-products-mesh/lib/formatters
  */
-
-// Import domain catalogs
-const { shared } = require('../../../../src');
 
 /**
  * Creates JSON response for API Mesh integration
  * @param {Object} builtProducts - Built product data
  * @param {Object} meshData - Mesh response data
  * @param {Array} steps - Processing steps
+ * @param {Object} core - Core utilities
  * @returns {Object} JSON response
  */
-function createJsonResponse(builtProducts, meshData, steps) {
-  return shared.success(
+function createJsonResponse(builtProducts, meshData, steps, core) {
+  return core.success(
     {
       products: builtProducts,
       total_count: builtProducts.length,
@@ -29,20 +27,17 @@ function createJsonResponse(builtProducts, meshData, steps) {
 }
 
 /**
- * Creates CSV export success response
+ * Creates CSV export success response with performance metrics
  * @param {Object} exportData - Export data and context
- * @param {Array} exportData.steps - Processing steps
- * @param {Object} exportData.storageResult - Storage operation result
- * @param {Object} exportData.meshData - Mesh response data
- * @param {Object} exportData.trace - Trace context
+ * @param {Object} core - Core utilities
  * @returns {Object} CSV export response
  */
-function createCsvExportResponse(exportData) {
+function createCsvExportResponse(exportData, core) {
   const { steps, storageResult, meshData, trace } = exportData;
   const endTime = Date.now();
   const totalDuration = endTime - trace.startTime;
 
-  return shared.success(
+  return core.success(
     {
       message: 'Product export completed successfully',
       steps,
