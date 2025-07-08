@@ -14,6 +14,14 @@ const {
   fetchAndEnrichProducts,
 } = require('./operations/enrichment');
 const {
+  makeMeshRequestWithRetry,
+  createMeshQuery,
+  createMeshRequestConfig,
+  validateMeshConfiguration,
+  validateMeshResponse,
+  fetchEnrichedProductsFromMesh,
+} = require('./operations/mesh-integration');
+const {
   buildProducts,
   buildProductObject,
   mapProductToCsvRow,
@@ -76,6 +84,13 @@ module.exports = {
   validateProductConfig,
   getProductFields,
   getRequestedFields,
+  // Mesh API functions
+  makeMeshRequestWithRetry,
+  createMeshQuery,
+  createMeshRequestConfig,
+  validateMeshConfiguration,
+  validateMeshResponse,
+  fetchEnrichedProductsFromMesh,
   // Utility functions
   transformImageEntry,
   getPrimaryImageUrl,
@@ -98,6 +113,7 @@ module.exports = {
 
   operations: {
     enrichment: require('./operations/enrichment'),
+    'mesh-integration': require('./operations/mesh-integration'),
     transformation: require('./operations/transformation'),
     validation: require('./operations/validation'),
   },
