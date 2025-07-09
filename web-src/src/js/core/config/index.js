@@ -29,15 +29,6 @@ export function getConfig() {
 }
 
 /**
- * Get Commerce configuration
- * @returns {Object} Commerce settings
- */
-export function getCommerceConfig() {
-  const config = loadConfig();
-  return config.commerce;
-}
-
-/**
  * Get Runtime configuration
  * @returns {Object} Runtime settings and action mappings
  */
@@ -53,24 +44,6 @@ export function getRuntimeConfig() {
 export function getPerformanceConfig() {
   const config = loadConfig();
   return config.performance;
-}
-
-/**
- * Get Storage configuration
- * @returns {Object} Storage settings
- */
-export function getStorageConfig() {
-  const config = loadConfig();
-  return config.storage;
-}
-
-/**
- * Get Tracing configuration
- * @returns {Object} Tracing settings
- */
-export function getTracingConfig() {
-  const config = loadConfig();
-  return config.performance.tracing;
 }
 
 /**
@@ -116,4 +89,13 @@ export function isProduction() {
 export function getActions() {
   const runtime = getRuntimeConfig();
   return runtime.actions;
+}
+
+/**
+ * Get runtime URL
+ * @returns {string} Runtime URL
+ */
+export function getRuntimeUrl() {
+  const runtime = getRuntimeConfig();
+  return runtime.url;
 }
