@@ -3,14 +3,22 @@
  * @module config/domains/ui
  *
  * 🎯 Used by: Frontend components, user interface behavior
- * ⚙️ Key settings: Notifications, modals, timing, file browser UI
+ * ⚙️ Key settings: Notifications, modals, timing, file browser UI, technical UI configuration
  */
 
 /**
  * Build UI configuration
+ * @param {Object} [params] - Action parameters (unused - kept for interface consistency)
+ * @param {Object} [mainConfig] - Shared main configuration (for future shared settings)
  * @returns {Object} UI configuration
  */
-function buildUiConfig() {
+function buildUiConfig(params = {}, mainConfig = {}) {
+  // Note: both parameters available for future shared settings
+  // eslint-disable-next-line no-unused-vars
+  params;
+  // eslint-disable-next-line no-unused-vars
+  mainConfig;
+
   return {
     notifications: {
       default: 5000,
