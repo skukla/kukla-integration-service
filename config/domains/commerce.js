@@ -2,7 +2,7 @@
  * Commerce Domain Configuration
  * @module config/domains/commerce
  *
- * 🎯 Used by: All Commerce API integration actions
+ * Used by: All Commerce API integration actions
  * ⚙️ Key settings: Commerce URL, API paths, OAuth settings, batching configuration
  *
  * 📋 Environment settings: Requires COMMERCE_BASE_URL from environment

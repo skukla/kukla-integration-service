@@ -2,7 +2,7 @@
  * Products Domain Configuration
  * @module config/domains/products
  *
- * 🎯 Used by: Product Export processing, Commerce API integration
+ * Used by: Product Export processing, Commerce API integration
  * ⚙️ Key settings: Product fields, pagination, batch sizes, validation rules
  */
 

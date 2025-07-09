@@ -64,7 +64,7 @@ function validateRequiredConfig(config, domain) {
  * @returns {Object} Complete configuration
  */
 function loadConfig(params = {}) {
-  // 🎯 MAIN CONFIG: Shared business settings only
+  // MAIN CONFIG: Shared business settings only
   const mainConfig = buildMainConfig();
 
   // 🏗️ BUILD DOMAINS: Only pass mainConfig to domains that need shared business settings
@@ -78,7 +78,7 @@ function loadConfig(params = {}) {
   const uiConfig = buildUiConfig();
 
   return {
-    // 🎯 SHARED CORE: Business settings only
+    // SHARED CORE: Business settings only
     main: mainConfig,
 
     // 🏗️ BUSINESS DOMAINS

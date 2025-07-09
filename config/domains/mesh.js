@@ -2,7 +2,7 @@
  * Mesh Domain Configuration
  * @module config/domains/mesh
  *
- * 🎯 Used by: API Mesh GraphQL endpoint integration
+ * Used by: API Mesh GraphQL endpoint integration
  * ⚙️ Key settings: Mesh endpoint, authentication, connection configuration
  *
  * 📋 Environment settings: Requires API_MESH_ENDPOINT and MESH_API_KEY from environment
