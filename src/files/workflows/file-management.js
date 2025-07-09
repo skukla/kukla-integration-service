@@ -6,8 +6,7 @@
  * These are the functions users actually want to call.
  */
 
-const { initializeAppBuilderStorage } = require('../operations/app-builder');
-const { initializeS3Storage } = require('../operations/s3-storage');
+const { selectStorageStrategy } = require('../strategies/storage-strategies');
 const { extractCleanFilename } = require('../utils/paths');
 
 /**
@@ -21,23 +20,7 @@ const { extractCleanFilename } = require('../utils/paths');
  */
 async function initializeStorage(config, params = {}) {
   const provider = config.storage.provider;
-
-  switch (provider) {
-    case 'app-builder':
-      try {
-        return await initializeAppBuilderStorage(config, params);
-      } catch (error) {
-        throw new Error(`Adobe I/O Files storage initialization failed: ${error.message}`);
-      }
-    case 's3':
-      try {
-        return await initializeS3Storage(config, params);
-      } catch (error) {
-        throw new Error(`S3 storage initialization failed: ${error.message}`);
-      }
-    default:
-      throw new Error(`Unknown storage provider: ${provider}`);
-  }
+  return await selectStorageStrategy(provider, config, params);
 }
 
 /**
