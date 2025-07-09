@@ -4,7 +4,7 @@
  */
 
 // Use action framework to eliminate duplication
-const { createAction } = require('../../../src/core');
+const { createAction } = require('../../src/core');
 
 /**
  * Business logic for get-products action

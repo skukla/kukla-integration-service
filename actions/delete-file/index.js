@@ -3,9 +3,9 @@
  * @module delete-file
  */
 
-const { createAction } = require('../../../src/core');
-const { deleteStoredFile } = require('../../../src/files/workflows/file-management');
-const { generateFileDeletionResponse } = require('../../../src/htmx/workflows/file-browser');
+const { createAction } = require('../../src/core');
+const { deleteStoredFile } = require('../../src/files/workflows/file-management');
+const { generateFileDeletionResponse } = require('../../src/htmx/workflows/file-browser');
 
 /**
  * Business logic for delete-file action
