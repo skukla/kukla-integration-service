@@ -19,4 +19,5 @@ module.exports = {
   commerce: require('./commerce'),
   core: require('./core'),
   htmx: require('./htmx'),
+  testing: require('./testing'),
 };

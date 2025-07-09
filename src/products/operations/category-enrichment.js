@@ -32,10 +32,9 @@ async function fetchCategoryData(categoryIds, config, params, trace = null) {
     return categoryMap;
   }
 
-  // Use configurable batch settings for performance optimization
-  const batchSize = config.mesh.batching.categories || 20;
-  const requestDelay = config.mesh.batching.requestDelay || 75;
-  const maxConcurrent = config.mesh.batching.maxConcurrent || 15;
+  const batchSize = config.mesh.batching.categories;
+  const requestDelay = config.mesh.batching.requestDelay;
+  const maxConcurrent = config.mesh.batching.maxConcurrent;
 
   const categoryArray = Array.from(categoryIds);
 
