@@ -11,6 +11,7 @@ const dotenv = require('dotenv');
 // Domain configuration builders
 const { buildCommerceConfig } = require('./domains/commerce');
 const { buildFilesConfig } = require('./domains/files');
+const { buildMainConfig } = require('./domains/main');
 const { buildMeshConfig } = require('./domains/mesh');
 const { buildPerformanceConfig } = require('./domains/performance');
 const { buildProductsConfig } = require('./domains/products');
@@ -63,36 +64,45 @@ function validateRequiredConfig(config, domain) {
  * @returns {Object} Complete configuration
  */
 function loadConfig(params = {}) {
-  const commerceConfig = buildCommerceConfig(params);
-  const productsConfig = buildProductsConfig(params);
-  const filesConfig = buildFilesConfig(params);
-  const runtimeConfig = buildRuntimeConfig(params);
-  const meshConfig = buildMeshConfig(params);
-  const performanceConfig = buildPerformanceConfig(params);
-  const testingConfig = buildTestingConfig(params);
-  const uiConfig = buildUiConfig(params);
+  // 🎯 MAIN CONFIG: Shared source of truth for business defaults
+  const mainConfig = buildMainConfig();
+
+  // 🏗️ BUILD OTHER DOMAINS: Pass main config as shared resource
+  const commerceConfig = buildCommerceConfig(params, mainConfig);
+  const productsConfig = buildProductsConfig(params, mainConfig);
+  const filesConfig = buildFilesConfig(params, mainConfig);
+  const runtimeConfig = buildRuntimeConfig(params, mainConfig);
+  const meshConfig = buildMeshConfig(params, mainConfig);
+  const performanceConfig = buildPerformanceConfig(mainConfig);
+  const testingConfig = buildTestingConfig(params, mainConfig);
+  const uiConfig = buildUiConfig(params, mainConfig);
 
   return {
-    // Business domains
+    // 🎯 SHARED CORE: Most commonly changed settings
+    main: mainConfig,
+
+    // 🏗️ BUSINESS DOMAINS (with shared references)
     commerce: commerceConfig,
     products: productsConfig,
 
-    // Files domain includes storage settings
-    storage: filesConfig.storage,
+    // 📁 STORAGE CONFIGURATION (combined from main and files domains)
+    storage: {
+      provider: mainConfig.storage.provider, // From main domain
+      ...filesConfig.storage, // File-specific storage settings
+    },
     files: {
       extensions: filesConfig.extensions,
       contentTypes: filesConfig.contentTypes,
       processing: filesConfig.processing,
-      caching: filesConfig.caching,
     },
 
-    // Infrastructure domains
+    // 🔧 INFRASTRUCTURE DOMAINS (with shared references)
     runtime: runtimeConfig,
     mesh: meshConfig,
     performance: performanceConfig,
     testing: testingConfig,
 
-    // Frontend domain
+    // 🎨 FRONTEND DOMAIN
     ui: uiConfig,
   };
 }
