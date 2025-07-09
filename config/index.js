@@ -15,9 +15,47 @@ const { buildMeshConfig } = require('./domains/mesh');
 const { buildPerformanceConfig } = require('./domains/performance');
 const { buildProductsConfig } = require('./domains/products');
 const { buildRuntimeConfig } = require('./domains/runtime');
+const { buildTestingConfig } = require('./domains/testing');
 const { buildUiConfig } = require('./domains/ui');
 
 dotenv.config();
+
+/**
+ * Validate configuration for required values
+ * @param {Object} config - Configuration object to validate
+ * @param {string} domain - Domain name for error context
+ * @throws {Error} If required configuration is missing
+ */
+function validateRequiredConfig(config, domain) {
+  const requiredErrors = [];
+
+  function checkObject(obj, path = '') {
+    for (const [key, value] of Object.entries(obj)) {
+      const currentPath = path ? `${path}.${key}` : key;
+
+      if (typeof value === 'string' && value.startsWith('REQUIRED:')) {
+        const envVar = value.replace('REQUIRED:', '');
+        requiredErrors.push({
+          path: currentPath,
+          envVar,
+          message: `${envVar} is required but not set`,
+        });
+      } else if (typeof value === 'object' && value !== null) {
+        checkObject(value, currentPath);
+      }
+    }
+  }
+
+  checkObject(config);
+
+  if (requiredErrors.length > 0) {
+    const errorMessages = requiredErrors
+      .map((err) => `• ${err.message} (configure via ${err.envVar} environment variable)`)
+      .join('\n');
+
+    throw new Error(`Missing required ${domain} configuration:\n${errorMessages}`);
+  }
+}
 
 /**
  * Load configuration from all domains
@@ -26,12 +64,13 @@ dotenv.config();
  */
 function loadConfig(params = {}) {
   const commerceConfig = buildCommerceConfig(params);
-  const productsConfig = buildProductsConfig();
+  const productsConfig = buildProductsConfig(params);
   const filesConfig = buildFilesConfig(params);
   const runtimeConfig = buildRuntimeConfig(params);
   const meshConfig = buildMeshConfig(params);
-  const performanceConfig = buildPerformanceConfig();
-  const uiConfig = buildUiConfig();
+  const performanceConfig = buildPerformanceConfig(params);
+  const testingConfig = buildTestingConfig(params);
+  const uiConfig = buildUiConfig(params);
 
   return {
     // Business domains
@@ -51,6 +90,7 @@ function loadConfig(params = {}) {
     runtime: runtimeConfig,
     mesh: meshConfig,
     performance: performanceConfig,
+    testing: testingConfig,
 
     // Frontend domain
     ui: uiConfig,
@@ -58,15 +98,19 @@ function loadConfig(params = {}) {
 }
 
 /**
- * Load configuration with basic validation
+ * Load configuration with validation for required values
+ * @param {Object} params - Action parameters (optional)
+ * @returns {Object} Complete configuration object
+ * @throws {Error} If required configuration is missing
  */
 function loadValidatedConfig(params = {}) {
   const config = loadConfig(params);
 
-  // Just check that critical URLs exist
-  if (!config.commerce.baseUrl) {
-    console.warn('Missing commerce.baseUrl');
-  }
+  // Validate each domain for required configuration
+  validateRequiredConfig(config.commerce, 'commerce');
+  validateRequiredConfig(config.mesh, 'mesh');
+  validateRequiredConfig(config.files, 'files');
+  validateRequiredConfig(config.runtime, 'runtime');
 
   return config;
 }

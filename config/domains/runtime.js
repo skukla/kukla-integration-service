@@ -12,10 +12,11 @@
  * @returns {Object} Runtime configuration
  */
 function buildRuntimeConfig(params = {}) {
-  const runtimeUrl = params.RUNTIME_URL || process.env.RUNTIME_URL;
+  // Get required values with clear descriptive fallbacks
+  const url = params.RUNTIME_URL || process.env.RUNTIME_URL || 'REQUIRED:RUNTIME_URL';
 
   return {
-    url: runtimeUrl,
+    url,
     package: 'kukla-integration-service',
     version: 'v1',
     paths: {
@@ -41,7 +42,7 @@ function buildRuntimeConfig(params = {}) {
         allowCliDetection: true,
       },
       testing: {
-        timeout: 10000, // Jest timeout
+        timeout: 10000,
       },
     },
   };

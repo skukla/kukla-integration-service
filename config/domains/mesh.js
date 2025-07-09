@@ -12,35 +12,34 @@
  * @returns {Object} Mesh configuration
  */
 function buildMeshConfig(params = {}) {
-  const meshEndpoint = params.API_MESH_ENDPOINT || process.env.API_MESH_ENDPOINT || null;
-  const meshApiKey = params.MESH_API_KEY || process.env.MESH_API_KEY || null;
+  // Get required values with clear descriptive fallbacks
+  const endpoint =
+    params.API_MESH_ENDPOINT || process.env.API_MESH_ENDPOINT || 'REQUIRED:API_MESH_ENDPOINT';
+  const apiKey = params.MESH_API_KEY || process.env.MESH_API_KEY || 'REQUIRED:MESH_API_KEY';
 
   return {
-    endpoint: meshEndpoint,
-    apiKey: meshApiKey,
+    endpoint,
+    apiKey,
     timeout: 30000,
     retries: 3,
     pagination: {
-      defaultPageSize: 150,
+      defaultPageSize: 100,
       maxPages: 25,
-      smallBatchSize: 100,
-      largeBatchSize: 200,
-      extraLargeBatchSize: 300,
     },
     batching: {
-      categories: 20,
-      inventory: 25,
-      maxConcurrent: 15,
-      requestDelay: 75,
+      categories: 20, // categories batch size
+      inventory: 25, // inventory batch size
+      requestDelay: 75, // delay between batches in ms
+      maxConcurrent: 15, // max concurrent requests
     },
     caching: {
-      categoryTtl: 300000, // 5 minutes (currently hardcoded in mesh resolvers)
+      categoryTtl: 300000, // 5 minutes in ms
       enableInMemoryCache: true,
     },
     performance: {
-      bulkInventoryThreshold: 25, // Switch to bulk API when more than this many SKUs
-      parallelProcessing: true,
-      preAllocateArrays: true,
+      bulkInventoryThreshold: 25, // SKUs per bulk request
+      parallelProcessing: true, // enable parallel processing
+      preAllocateArrays: true, // performance optimization
     },
   };
 }

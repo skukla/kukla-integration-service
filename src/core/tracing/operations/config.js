@@ -10,15 +10,15 @@
  */
 function getTracingConfig(config) {
   const tracingConfig = config.performance.tracing;
-  const performanceConfig = tracingConfig.performance || {};
+  const performanceConfig = tracingConfig.performance;
 
   return {
-    enabled: tracingConfig.enabled !== false,
-    errorVerbosity: tracingConfig.errorVerbosity || 'summary',
+    enabled: tracingConfig.enabled,
+    errorVerbosity: tracingConfig.errorVerbosity,
     performance: {
-      enabled: performanceConfig.enabled !== false,
-      includeMemory: performanceConfig.includeMemory || false,
-      includeTimings: performanceConfig.includeTimings !== false,
+      enabled: performanceConfig.enabled,
+      includeMemory: performanceConfig.includeMemory,
+      includeTimings: performanceConfig.includeTimings,
     },
   };
 }

@@ -21,18 +21,20 @@ function parseCliWorkspaceInfo(info) {
 
 /**
  * Attempts to detect environment using Adobe CLI workspace information
+ * @param {Object} [config] - Configuration object (optional dependency injection)
  * @returns {string|null} Environment name or null if not detected
  */
-function detectCliEnvironment() {
+function detectCliEnvironment(config = null) {
   try {
     const { execSync } = require('child_process');
-    const { loadConfig } = require('../../../config');
-    const config = loadConfig();
+
+    // Use config timeout if available, otherwise use sensible default
+    const timeout = config?.runtime?.environment?.cli?.timeout || 5000;
 
     const aioInfo = execSync('aio app info --json', {
       encoding: 'utf8',
       stdio: 'pipe',
-      timeout: config.runtime.environment.cli.timeout,
+      timeout,
     });
     const info = JSON.parse(aioInfo);
 
