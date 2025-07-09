@@ -146,7 +146,6 @@ module.exports = {
     validateString: validation.validateString,
     validateUrl: validation.validateUrl,
     checkMissingParams: validation.checkMissingParams,
-    // Product validation (extracted from products domain)
     getProductFields: validation.getProductFields,
     validateProduct: validation.validateProduct,
     getRequestedFields: validation.getRequestedFields,
