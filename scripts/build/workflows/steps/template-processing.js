@@ -38,8 +38,8 @@ function templateProcessingStep(params) {
   // Replace template variables
   const variables = {
     COMMERCE_BASE_URL: config.commerce.baseUrl,
-    MESH_CACHE_TTL: config.performance.caching.categoryTtl.toString(),
-    COMMERCE_PRODUCT_FIELDS: formatProductFieldsForUrl(config.commerce.product.fields),
+          MESH_CACHE_TTL: config.performance.caching.categories.meshTtl.toString(),
+          COMMERCE_PRODUCT_FIELDS: formatProductFieldsForUrl(config.products.fields.export),
   };
 
   let resolverContent = templateContent;

@@ -35,10 +35,7 @@ function buildFilesConfig(params = {}) {
     processing: {
       minCompressionSize: 1024, // 1KB
       binaryThreshold: 1024,
-    },
-    caching: {
-      categoryTimeout: 1800, // 30 minutes
-      fileListTimeout: 300, // 5 minutes
+      fileListTimeout: 300, // 5 minutes (file-specific caching)
     },
   };
 }

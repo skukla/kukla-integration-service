@@ -3,7 +3,7 @@
  * @module config/domains/performance
  *
  * 🎯 Used by: All actions for monitoring and optimization
- * ⚙️ Key settings: Execution limits, tracing, performance monitoring, batching, caching
+ * ⚙️ Key settings: Execution limits, tracing, performance monitoring, batching, caching, timeouts
  */
 
 /**
@@ -14,10 +14,18 @@ function buildPerformanceConfig() {
   return {
     maxExecutionTime: 30000,
     timeouts: {
-      cli: 5000,
-      action: 30000,
-      mesh: 30000,
-      testing: 10000, // Jest timeout
+      // API timeouts
+      api: {
+        commerce: 30000, // Commerce API timeout
+        mesh: 30000, // Mesh GraphQL timeout
+        testing: 10000, // Testing API timeout
+      },
+      // Runtime timeouts
+      runtime: {
+        cli: 5000, // CLI detection timeout
+        action: 30000, // Action execution timeout
+        testing: 10000, // Jest/testing timeout
+      },
     },
     memory: {
       maxUsage: 50000000, // 50MB in bytes
@@ -29,8 +37,10 @@ function buildPerformanceConfig() {
       bulkInventoryThreshold: 25, // SKUs per bulk request
     },
     caching: {
-      categoryTtl: 300000, // 5 minutes in ms
-      enableInMemoryCache: true,
+      categories: {
+        meshTtl: 300000, // 5 minutes in ms (for mesh operations)
+        fileTimeout: 1800, // 30 minutes (for file operations)
+      },
     },
     optimization: {
       parallelProcessing: true, // enable parallel processing

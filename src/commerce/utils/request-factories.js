@@ -23,7 +23,7 @@ function createClientConfig(config, options = {}) {
   return {
     baseUrl: options.baseUrl || config.commerce.baseUrl,
     version: options.version || config.commerce.version,
-    timeout: options.timeout || config.commerce.timeout,
+    timeout: options.timeout || config.performance.timeouts.api.commerce,
     retry: {
       attempts: options.retry ? options.retry.attempts : config.commerce.retries,
       delay: options.retry ? options.retry.delay : config.commerce.retryDelay,

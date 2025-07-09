@@ -25,8 +25,8 @@ function validateProductFetchConfig(config) {
  */
 function getPaginationConfig(config) {
   return {
-    pageSize: config.commerce.product.pagination.pageSize,
-    maxPages: config.commerce.product.pagination.maxPages,
+    pageSize: config.products.pagination.pageSize,
+    maxPages: config.products.pagination.maxPages,
   };
 }
 
@@ -42,7 +42,7 @@ function buildProductsApiUrl(pageSize, currentPage, config) {
     {
       pageSize,
       currentPage,
-      fields: config.commerce.product.fields,
+      fields: config.products.fields.export,
     },
     config
   );
