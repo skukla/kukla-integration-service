@@ -118,10 +118,84 @@ async function listCsvFiles(config, params) {
   return allFiles.filter((file) => file.name.endsWith('.csv'));
 }
 
+/**
+ * Complete CSV export workflow with storage and metadata
+ * High-level workflow that combines CSV generation and storage with proper metadata.
+ *
+ * @param {string} csvData - CSV content to store
+ * @param {Object} config - Configuration object with storage settings
+ * @param {Object} params - Action parameters containing credentials
+ * @param {string} [fileName='products.csv'] - Name of the file to store
+ * @returns {Promise<Object>} Storage result with comprehensive metadata
+ */
+async function exportCsvWithStorage(csvData, config, params, fileName = 'products.csv') {
+  const storageResult = await storeCsvFile(csvData, config, params, fileName);
+
+  if (!storageResult.stored) {
+    throw new Error(
+      `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`
+    );
+  }
+
+  return {
+    downloadUrl: storageResult.downloadUrl,
+    storage: {
+      provider: storageResult.provider,
+      location: storageResult.fileName,
+      properties: storageResult.properties,
+    },
+    storageResult,
+  };
+}
+
+/**
+ * File download workflow with error handling and content type detection
+ * Complete workflow for file downloads with proper headers and error handling.
+ *
+ * @param {string} fileName - Name of the file to download
+ * @param {Object} config - Configuration object with storage settings
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Promise<Object>} Download response with proper headers
+ */
+async function downloadFileWorkflow(fileName, config, params) {
+  try {
+    const fileContent = await readStoredFile(fileName, config, params);
+    const cleanFileName = extractCleanFilename(fileName);
+
+    // Determine content type based on file extension
+    const contentType = fileName.endsWith('.csv') ? 'text/csv' : 'application/octet-stream';
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${cleanFileName}"`,
+        'Cache-Control': 'no-cache',
+      },
+      body: fileContent.toString('base64'),
+      isBase64Encoded: true,
+    };
+  } catch (error) {
+    if (error.message.includes('not found') || error.code === 'NoSuchKey') {
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: false,
+          error: `File not found: ${fileName}`,
+        }),
+      };
+    }
+    throw error;
+  }
+}
+
 module.exports = {
   initializeStorage,
   storeCsvFile,
   readStoredFile,
   deleteStoredFile,
   listCsvFiles,
+  exportCsvWithStorage,
+  downloadFileWorkflow,
 };

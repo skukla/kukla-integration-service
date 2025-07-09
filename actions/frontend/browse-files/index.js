@@ -3,10 +3,12 @@
  * @module browse-files
  */
 
-// Use action framework to eliminate duplication
-const { routeRequest } = require('./lib/handlers');
 const { createAction } = require('../../../src/core');
-// Import action-specific helpers
+const {
+  generateFileBrowserUI,
+  generateDeleteModal,
+  generateErrorResponse,
+} = require('../../../src/htmx/workflows/file-browser');
 
 /**
  * Business logic for browse-files action
@@ -14,28 +16,33 @@ const { createAction } = require('../../../src/core');
  * @returns {Promise<Object>} Action response
  */
 async function browseFilesBusinessLogic(context) {
-  const { files, config, params, logger } = context;
+  const { config, extractedParams, webActionParams, logger } = context;
 
-  // Step 1: Initialize storage provider
-  const storage = await files.initializeStorage(config, params);
-  logger.info('Storage provider initialized:', { provider: storage.provider });
+  // Merge parameters for proper handling
+  const allActionParams = { ...webActionParams, ...extractedParams };
 
-  // Step 2: Route request based on HTTP method and handle response
-  const enhancedContext = { ...context, storage };
-  return await routeRequest(enhancedContext);
-}
+  logger.info('Browse files request:', {
+    method: allActionParams.__ow_method,
+    modal: allActionParams.modal,
+    fileName: allActionParams.fileName,
+  });
 
-/**
- * Enhanced error handler for browse-files operations
- */
-function handleBrowseFilesError(error, context) {
-  const { core, logger } = context;
+  // Route based on HTTP method
+  switch (allActionParams.__ow_method) {
+    case 'get':
+      // Handle modal requests
+      if (allActionParams.modal === 'delete' && allActionParams.fileName) {
+        // Use HTMX workflow for delete modal
+        return generateDeleteModal(allActionParams.fileName);
+      }
 
-  logger.error('Error in browse-files:', error);
+      // Generate file browser UI using domain workflow
+      return await generateFileBrowserUI(config, extractedParams);
 
-  const errorObj = new Error(error.message);
-  errorObj.status = error.status || 500;
-  return core.error(errorObj);
+    default:
+      logger.error('Method not allowed:', { method: allActionParams.__ow_method });
+      return generateErrorResponse('Method not allowed', 'Request routing');
+  }
 }
 
 /**
@@ -45,16 +52,18 @@ async function browseFilesWithErrorHandling(context) {
   try {
     return await browseFilesBusinessLogic(context);
   } catch (error) {
-    return handleBrowseFilesError(error, context);
+    const { logger } = context;
+    logger.error('Error in browse-files:', error);
+    return generateErrorResponse(error.message, 'File browsing');
   }
 }
 
-// Create action with framework - clean orchestrator pattern!
+// Create action with framework - clean orchestrator pattern using domain workflows!
 module.exports = createAction(browseFilesWithErrorHandling, {
   actionName: 'browse-files',
-  domains: ['files'],
+  domains: ['files', 'htmx'],
   withTracing: false,
   withLogger: true,
   logLevel: 'info',
-  description: 'Browse and manage product export files with HTMX interface',
+  description: 'Browse and manage files with HTMX interface using domain workflows',
 });

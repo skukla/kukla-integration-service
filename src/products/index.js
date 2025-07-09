@@ -56,7 +56,7 @@ const {
   exportProducts,
   exportProductsWithStorage,
   buildProductCsv,
-} = require('./workflows/export-products');
+} = require('./workflows/rest-export');
 
 // Main exports - flat access for compatibility
 module.exports = {
@@ -108,7 +108,8 @@ module.exports = {
 
   // Structured access for organized usage
   workflows: {
-    export: require('./workflows/export-products'),
+    restExport: require('./workflows/rest-export'),
+    meshExport: require('./workflows/mesh-export'),
   },
 
   operations: {
