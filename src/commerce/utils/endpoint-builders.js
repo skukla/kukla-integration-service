@@ -6,6 +6,17 @@
  */
 
 /**
+ * Format product fields array for Commerce API URL
+ * @param {Array<string>} fields - Product fields array
+ * @returns {string} Formatted fields string for URL
+ */
+function formatProductFieldsForUrl(fields) {
+  // Convert array to Commerce API URL format
+  const itemFields = fields.join(',');
+  return `items[${itemFields}],total_count`;
+}
+
+/**
  * Builds product endpoint URL with query parameters
  * @param {Object} params - Query parameters
  * @param {number} [params.pageSize] - Number of items per page
@@ -37,11 +48,10 @@ function buildProductsEndpoint(params = {}, config) {
     queryParams.append('searchCriteria[filter_groups][0][filters][0][condition_type]', 'like');
   }
 
-  // Add fields to include media gallery entries for images and total_count for pagination
-  // Explicitly request url field in media_gallery_entries to get AEM asset URLs when available
+  // Add fields using utility function to eliminate duplication
   const defaultFields =
     'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries[file,url,position,types],custom_attributes],total_count';
-  const fields = params.fields ? `items[${params.fields.join(',')}],total_count` : defaultFields;
+  const fields = params.fields ? formatProductFieldsForUrl(params.fields) : defaultFields;
   queryParams.append('fields', fields);
 
   const query = queryParams.toString();
@@ -225,6 +235,7 @@ function normalizeEndpoint(endpoint) {
 }
 
 module.exports = {
+  formatProductFieldsForUrl,
   buildProductsEndpoint,
   buildStockItemEndpoint,
   buildCategoryEndpoint,

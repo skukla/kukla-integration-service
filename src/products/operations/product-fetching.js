@@ -5,7 +5,7 @@
  * Contains operations for paginated product retrieval with OAuth authentication.
  */
 
-const { executeCommerceRequest } = require('../../commerce');
+const { executeCommerceRequest, buildProductsEndpoint } = require('../../commerce');
 
 /**
  * Validates Commerce configuration for product fetching
@@ -25,21 +25,27 @@ function validateProductFetchConfig(config) {
  */
 function getPaginationConfig(config) {
   return {
-    pageSize: config.mesh.pagination.defaultPageSize || config.products.batchSize || 50,
-    maxPages: config.mesh.pagination.maxPages || 25,
+    pageSize: config.mesh.pagination.defaultPageSize,
+    maxPages: config.mesh.pagination.maxPages,
   };
 }
 
 /**
- * Builds the products API endpoint URL with required fields
+ * Builds the products API endpoint URL using configuration
  * @param {number} pageSize - Number of items per page
  * @param {number} currentPage - Current page number
+ * @param {Object} config - Configuration object
  * @returns {string} Complete API endpoint URL
  */
-function buildProductsApiUrl(pageSize, currentPage) {
-  const fields =
-    'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries[file,url,position,types],custom_attributes],total_count';
-  return `/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}&fields=${fields}`;
+function buildProductsApiUrl(pageSize, currentPage, config) {
+  return buildProductsEndpoint(
+    {
+      pageSize,
+      currentPage,
+      fields: config.commerce.product.fields,
+    },
+    config
+  );
 }
 
 /**
@@ -84,7 +90,7 @@ async function fetchProducts(params, config, trace = null) {
     let currentPage = 1;
 
     do {
-      const apiUrl = buildProductsApiUrl(pageSize, currentPage);
+      const apiUrl = buildProductsApiUrl(pageSize, currentPage, config);
       const response = await executeCommerceRequest(
         apiUrl,
         { method: 'GET' },
