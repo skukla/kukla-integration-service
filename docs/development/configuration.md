@@ -45,7 +45,8 @@ Main configuration contains **only truly shared business settings**:
   
   // 🏗️ BUSINESS DEPLOYMENT CHOICE
   storage: {
-    provider: 's3',                 // Storage provider choice
+    provider: 's3',                 // Storage provider choice: 's3' or 'app-builder'
+    directory: 'public/',           // Directory for file organization (used by both providers)
   },
 }
 ```
@@ -111,7 +112,10 @@ All other domains are **completely self-contained**.
 expectedProductCount: 150,        // Update expected catalog size
 csvFilename: 'my-products.csv',   // Change export filename
 exportFields: ['sku', 'name'],    // Customize export fields
-storage: { provider: 'app-builder' }, // Switch storage
+storage: { 
+  provider: 'app-builder',        // Switch storage provider
+  directory: 'exports/',          // Change storage directory
+},
 ```
 
 ### Technical Settings
@@ -182,6 +186,7 @@ config.main.expectedProductCount
 config.main.csvFilename
 config.main.exportFields
 config.main.storage.provider
+config.main.storage.directory
 
 // ✅ DOMAINS: Self-contained technical settings
 config.performance.timeouts.api.commerce

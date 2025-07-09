@@ -25,17 +25,18 @@ const { formatFileSize, formatDate } = require('../../core/utils');
  */
 function createAppBuilderWriteMethod(files, config) {
   return async function write(fileName, content) {
-    // Store files in public directory for organization and accessibility
-    const publicFileName = `public/${fileName}`;
-    await files.write(publicFileName, content);
-    const properties = await files.getProperties(publicFileName);
+    // Store files in configured directory for organization and accessibility
+    const storageDirectory = config.storage?.directory || 'public/';
+    const fullFileName = `${storageDirectory}${fileName}`;
+    await files.write(fullFileName, content);
+    const properties = await files.getProperties(fullFileName);
 
     // Generate action-based download URL for consistent interface across providers
     const actionUrl =
       buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fileName)}`;
 
     return {
-      fileName: publicFileName, // Return the full path for consistency
+      fileName: fullFileName, // Return the full path for consistency
       url: actionUrl, // Use action URL instead of direct file URL
       downloadUrl: actionUrl, // Use action URL for downloads
       properties: {
@@ -56,11 +57,13 @@ function createAppBuilderWriteMethod(files, config) {
  * @param {Object} files - Files client instance
  * @returns {Function} List method implementation
  */
-function createAppBuilderListMethod(files) {
-  return async function list(directory = 'public/') {
-    // Both app-builder and S3 now use public/ prefix for unified organization
+function createAppBuilderListMethod(files, config) {
+  return async function list(directory = null) {
+    const storageDirectory = config?.storage?.directory || 'public/';
+    const listDirectory = directory || storageDirectory;
+    // Both app-builder and S3 now use configured directory prefix for unified organization
     const fileList = await files.list();
-    const filteredFiles = fileList.filter((file) => file.name.startsWith(directory));
+    const filteredFiles = fileList.filter((file) => file.name.startsWith(listDirectory));
 
     // Get metadata for each file
     const filesWithMetadata = await Promise.all(
@@ -69,7 +72,7 @@ function createAppBuilderListMethod(files) {
           const properties = await files.getProperties(file.name);
           const content = await files.read(file.name);
           return {
-            name: file.name.replace(/^public\//, ''), // Remove public prefix for display
+            name: file.name.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''), // Remove directory prefix for display
             fullPath: file.name,
             size: formatFileSize(content.length),
             lastModified: formatDate(properties.lastModified),
@@ -78,7 +81,7 @@ function createAppBuilderListMethod(files) {
         } catch (error) {
           // If we can't read file metadata, include basic info
           return {
-            name: file.name.replace(/^public\//, ''),
+            name: file.name.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''),
             fullPath: file.name,
             size: 'Unknown',
             lastModified: 'Unknown',
@@ -101,6 +104,8 @@ function createAppBuilderListMethod(files) {
  * @returns {Object} Storage wrapper with methods
  */
 function createAppBuilderStorageWrapper(files, config) {
+  const storageDirectory = config.storage?.directory || 'public/';
+
   return {
     provider: 'app-builder',
     client: files,
@@ -109,24 +114,30 @@ function createAppBuilderStorageWrapper(files, config) {
 
     async read(fileName) {
       // Handle both full path and filename-only
-      const fullPath = fileName.startsWith('public/') ? fileName : `public/${fileName}`;
+      const fullPath = fileName.startsWith(storageDirectory)
+        ? fileName
+        : `${storageDirectory}${fileName}`;
       return await files.read(fullPath);
     },
 
     async delete(fileName) {
       // Handle both full path and filename-only
-      const fullPath = fileName.startsWith('public/') ? fileName : `public/${fileName}`;
+      const fullPath = fileName.startsWith(storageDirectory)
+        ? fileName
+        : `${storageDirectory}${fileName}`;
       await files.delete(fullPath);
     },
 
-    list: createAppBuilderListMethod(files),
+    list: createAppBuilderListMethod(files, config),
 
     async getProperties(fileName) {
       // Handle both full path and filename-only
-      const fullPath = fileName.startsWith('public/') ? fileName : `public/${fileName}`;
+      const fullPath = fileName.startsWith(storageDirectory)
+        ? fileName
+        : `${storageDirectory}${fileName}`;
       const properties = await files.getProperties(fullPath);
       return {
-        name: fileName.replace(/^public\//, ''), // Return clean name
+        name: fileName.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''), // Return clean name
         size: properties.size,
         lastModified: properties.lastModified,
         contentType: properties.contentType || 'application/octet-stream',

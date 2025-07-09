@@ -5,27 +5,30 @@
  */
 
 /**
- * Extract clean filename from path (remove public/ prefix if present)
+ * Extract clean filename from path (remove storage directory prefix if present)
  * @param {string} fileName - File name or path
- * @returns {string} Clean filename without prefix
- * @description This handles the common case where storage systems use a public/ prefix
- * for organization, but file operations need the clean filename
+ * @param {string} [storageDirectory='public/'] - Storage directory prefix to remove
+ * @returns {string} Clean filename without directory prefix
+ * @description This handles the common case where storage systems use a directory prefix
  */
-function extractCleanFilename(fileName) {
+function removePublicPrefix(fileName, storageDirectory = 'public/') {
   if (!fileName) return fileName;
-  // Remove public/ prefix if present
-  return fileName.replace(/^public\//, '');
+
+  // Remove storage directory prefix if present
+  return fileName.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), '');
 }
 
 /**
- * Add public prefix to filename if not already present
+ * Add storage directory prefix to filename if not already present
  * @param {string} fileName - File name
- * @returns {string} Filename with public/ prefix
+ * @param {string} [storageDirectory='public/'] - Storage directory prefix to add
+ * @returns {string} Filename with storage directory prefix
  */
-function addPublicPrefix(fileName) {
+function addPublicPrefix(fileName, storageDirectory = 'public/') {
   if (!fileName) return fileName;
-  if (fileName.startsWith('public/')) return fileName;
-  return `public/${fileName}`;
+
+  if (fileName.startsWith(storageDirectory)) return fileName;
+  return `${storageDirectory}${fileName}`;
 }
 
 /**
@@ -135,7 +138,7 @@ function changeExtension(path, newExtension) {
 }
 
 module.exports = {
-  extractCleanFilename,
+  removePublicPrefix,
   addPublicPrefix,
   normalizePath,
   isPathSafe,
