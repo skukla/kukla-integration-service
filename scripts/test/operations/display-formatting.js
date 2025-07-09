@@ -69,10 +69,69 @@ function displayPerformance(performance) {
   }
 }
 
+/**
+ * Display environment information
+ * @param {string} actionUrl - Action URL
+ * @param {string} environment - Environment name
+ */
+function displayEnvironmentInfo(actionUrl, environment) {
+  console.log(basicFormatters.muted(`🌐 Environment: ${environment}`));
+  console.log(basicFormatters.muted(`🔗 URL: ${actionUrl}`));
+}
+
+/**
+ * Display execution steps
+ * @param {Array} steps - Array of execution steps
+ */
+function displayExecutionSteps(steps) {
+  if (steps && Array.isArray(steps)) {
+    console.log(basicFormatters.info('📋 Execution Steps:'));
+    steps.forEach((step, index) => {
+      console.log(basicFormatters.muted(`  ${index + 1}. ${step}`));
+    });
+  }
+}
+
+/**
+ * Display performance metrics (alias for backward compatibility)
+ * @param {Object} performance - Performance data
+ */
+function displayPerformanceMetrics(performance) {
+  return displayPerformance(performance);
+}
+
+/**
+ * Display message
+ * @param {string} message - Message to display
+ */
+function displayMessage(message) {
+  if (message) {
+    console.log(basicFormatters.info(`💬 ${message}`));
+  }
+}
+
+/**
+ * Display error details
+ * @param {Object} error - Error object
+ */
+function displayErrorDetails(error) {
+  if (error) {
+    console.log(basicFormatters.error(`❌ Error: ${error.message || error}`));
+    if (error.stack) {
+      console.log(basicFormatters.muted(error.stack));
+    }
+  }
+}
+
 module.exports = {
   displayActionStatus,
   displayStorageInfo,
   displayDownloadInfo,
   displaySteps,
   displayPerformance,
+  displayEnvironmentInfo,
+  displayExecutionSteps,
+  displayPerformanceMetrics,
+  displayMessage,
+  displayErrorDetails,
 };
