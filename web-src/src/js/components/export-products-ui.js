@@ -98,8 +98,6 @@ export function initializeExportProductsUI() {
   });
 }
 
-// handleExportSuccess removed - no longer needed since we removed success toasts
-
 /**
  * Handle export error
  * @param {string} message - Error message
@@ -110,6 +108,78 @@ function handleExportError(message, methodName) {
     type: 'error',
     duration: 8000,
   });
+}
+
+/**
+ * Create API Mesh metrics HTML
+ * @returns {string} HTML for API Mesh metrics
+ */
+function createApiMeshMetrics() {
+  return `
+    <div class="notification-metrics-grid">
+      <div class="notification-metric">
+        <span class="metric-value">1</span>
+        <span class="metric-label">Client API Calls</span>
+      </div>
+      <div class="notification-metric highlight">
+        <span class="metric-value">1</span>
+        <span class="metric-label">API Endpoints</span>
+      </div>
+    </div>
+    <div class="notification-endpoints">
+      <button class="endpoints-toggle">
+        <span class="toggle-icon">▼</span>
+        <span class="toggle-text">API Calls Made</span>
+      </button>
+      <div class="endpoints-list">
+        <div class="endpoint-item">
+          <span class="endpoint-method">GraphQL</span>
+          <span class="endpoint-url">Single unified endpoint</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Create REST API metrics HTML
+ * @param {number} apiCalls - Number of API calls made
+ * @param {number} dataSources - Number of data sources unified
+ * @returns {string} HTML for REST API metrics
+ */
+function createRestApiMetrics(apiCalls, dataSources) {
+  return `
+    <div class="notification-metrics-grid">
+      <div class="notification-metric">
+        <span class="metric-value">${apiCalls}</span>
+        <span class="metric-label">Client API Calls</span>
+      </div>
+      <div class="notification-metric">
+        <span class="metric-value">${dataSources}</span>
+        <span class="metric-label">API Endpoints</span>
+      </div>
+    </div>
+    <div class="notification-endpoints">
+      <button class="endpoints-toggle">
+        <span class="toggle-icon">▼</span>
+        <span class="toggle-text">API Calls Made</span>
+      </button>
+      <div class="endpoints-list">
+        <div class="endpoint-item">
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">Products API (${Math.ceil(apiCalls * 0.3)} calls)</span>
+        </div>
+        <div class="endpoint-item">
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">Categories API (${Math.ceil(apiCalls * 0.4)} calls)</span>
+        </div>
+        <div class="endpoint-item">
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">Inventory API (${Math.floor(apiCalls * 0.3)} calls)</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -125,71 +195,9 @@ function createSuccessNotificationContent(response) {
   const isApiMesh = method === 'API Mesh';
 
   // Build metrics HTML based on method type
-  let metricsHTML = '';
-
-  if (isApiMesh) {
-    // API Mesh: Show client experience and architectural benefits
-    metricsHTML = `
-      <div class="notification-metrics-grid">
-        <div class="notification-metric">
-          <span class="metric-value">1</span>
-          <span class="metric-label">Client API Calls</span>
-        </div>
-        <div class="notification-metric highlight">
-          <span class="metric-value">1</span>
-          <span class="metric-label">API Endpoints</span>
-        </div>
-      </div>
-      <div class="notification-endpoints">
-        <button class="endpoints-toggle">
-          <span class="toggle-icon">▼</span>
-          <span class="toggle-text">API Calls Made</span>
-        </button>
-        <div class="endpoints-list">
-          <div class="endpoint-item">
-            <span class="endpoint-method">GraphQL</span>
-            <span class="endpoint-url">Single unified endpoint</span>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    // REST API: Show what client would need to do vs what mesh provides
-    const dataSources = performance.dataSourcesUnified || 3;
-
-    metricsHTML = `
-      <div class="notification-metrics-grid">
-        <div class="notification-metric">
-          <span class="metric-value">${apiCalls}</span>
-          <span class="metric-label">Client API Calls</span>
-        </div>
-        <div class="notification-metric">
-          <span class="metric-value">${dataSources}</span>
-          <span class="metric-label">API Endpoints</span>
-        </div>
-      </div>
-      <div class="notification-endpoints">
-        <button class="endpoints-toggle">
-          <span class="toggle-icon">▼</span>
-          <span class="toggle-text">API Calls Made</span>
-        </button>
-        <div class="endpoints-list">
-          <div class="endpoint-item">
-            <span class="endpoint-method">GET</span>
-            <span class="endpoint-url">Products API (${Math.ceil(apiCalls * 0.3)} calls)</span>
-          </div>
-          <div class="endpoint-item">
-            <span class="endpoint-method">GET</span>
-            <span class="endpoint-url">Categories API (${Math.ceil(apiCalls * 0.4)} calls)</span>
-          </div>
-          <div class="endpoint-item">
-            <span class="endpoint-method">GET</span>
-            <span class="endpoint-url">Inventory API (${Math.floor(apiCalls * 0.3)} calls)</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+  const metricsHTML = isApiMesh
+    ? createApiMeshMetrics()
+    : createRestApiMetrics(apiCalls, performance.dataSourcesUnified || 3);
 
   return `
     <div class="notification-metrics">
@@ -203,5 +211,3 @@ function createSuccessNotificationContent(response) {
     </div>
   `;
 }
-
-// All styles now properly organized in CSS files using design system tokens

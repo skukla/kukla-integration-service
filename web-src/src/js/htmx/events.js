@@ -65,33 +65,68 @@ function handleBeforeRequest(event) {
 }
 
 /**
- * Handle successful request completion
+ * Handle delete button specific logic after request
+ * @param {Event} event - HTMX event
+ * @param {HTMLElement} target - Target element
+ * @param {string} loadingClass - Loading class name
+ * @returns {boolean} True if delete button was handled
+ */
+function handleDeleteButtonAfterRequest(event, target, loadingClass) {
+  if (!target.classList.contains('delete-confirm-button')) {
+    return false;
+  }
+
+  if (event.detail.successful) {
+    const successMessage = target.getAttribute('data-success-message');
+    if (successMessage) {
+      // Show success notification immediately
+      showNotification(successMessage, 'success');
+      // Close the modal
+      hideModal();
+    }
+  } else {
+    // If the request failed, remove loading state immediately
+    target.classList.remove(loadingClass);
+
+    // Restore original text
+    if (target.dataset.originalText) {
+      target.innerText = target.dataset.originalText;
+      delete target.dataset.originalText;
+    }
+  }
+  return true; // Handled
+}
+
+/**
+ * Handle success message for standard buttons
+ * @param {Event} event - HTMX event
+ * @param {HTMLElement} target - Target element
+ */
+function handleSuccessMessage(event, target) {
+  // Handle success message - but skip buttons with special handling
+  if (
+    event.detail.successful &&
+    !target.classList.contains('download-button') &&
+    !target.classList.contains('delete-confirm-button') &&
+    !target.hasAttribute('data-export-method')
+  ) {
+    const successMessage = target.getAttribute('data-success-message');
+    if (successMessage) {
+      showNotification(successMessage, 'success');
+    }
+  }
+}
+
+/**
+ * Handle actions after HTMX request
  * @param {Event} event - HTMX event
  */
 function handleAfterRequest(event) {
   const target = event.detail.elt;
   const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
 
-  // For delete buttons, show success notification immediately and close modal
-  if (target.classList.contains('delete-confirm-button')) {
-    if (event.detail.successful) {
-      const successMessage = target.getAttribute('data-success-message');
-      if (successMessage) {
-        // Show success notification immediately
-        showNotification(successMessage, 'success');
-        // Close the modal
-        hideModal();
-      }
-    } else {
-      // If the request failed, remove loading state immediately
-      target.classList.remove(loadingClass);
-
-      // Restore original text
-      if (target.dataset.originalText) {
-        target.innerText = target.dataset.originalText;
-        delete target.dataset.originalText;
-      }
-    }
+  // Handle delete buttons with special logic
+  if (handleDeleteButtonAfterRequest(event, target, loadingClass)) {
     return; // Don't process further for delete buttons
   }
 
@@ -104,18 +139,8 @@ function handleAfterRequest(event) {
     delete target.dataset.originalText;
   }
 
-  // Handle success message - but skip download buttons, delete buttons, and export buttons as they have special handling
-  if (
-    event.detail.successful &&
-    !target.classList.contains('download-button') &&
-    !target.classList.contains('delete-confirm-button') &&
-    !target.hasAttribute('data-export-method')
-  ) {
-    const successMessage = target.getAttribute('data-success-message');
-    if (successMessage) {
-      showNotification(successMessage, 'success');
-    }
-  }
+  // Handle success messages for standard buttons
+  handleSuccessMessage(event, target);
 
   // Set up modal close handlers for dynamically loaded content
   if (event.detail.target && event.detail.target.id === 'modal-container') {
@@ -210,6 +235,74 @@ function handleBeforeSwap(event) {
 }
 
 /**
+ * Clean up delete button loading state
+ * @param {HTMLElement} target - Delete button target
+ */
+function cleanupDeleteButtonState(target) {
+  const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
+
+  target.classList.remove(loadingClass);
+
+  // Restore original text
+  if (target.dataset.originalText) {
+    target.innerText = target.dataset.originalText;
+    delete target.dataset.originalText;
+  }
+}
+
+/**
+ * Handle delete modal cleanup after table content update
+ * @param {HTMLElement} modalContainer - Modal container element
+ */
+function handleDeleteModalCleanup(modalContainer) {
+  const isDeleteModal = modalContainer && modalContainer.querySelector('.delete-confirm-button');
+
+  if (isDeleteModal) {
+    // Clean up the delete button loading state
+    if (window._deleteButtonTarget) {
+      cleanupDeleteButtonState(window._deleteButtonTarget);
+      // Clean up the reference
+      delete window._deleteButtonTarget;
+    }
+
+    // Close the modal immediately for a smooth transition
+    hideModal();
+
+    // Show the success message immediately
+    if (window._deleteSuccessMessage) {
+      showNotification(window._deleteSuccessMessage, 'success');
+      delete window._deleteSuccessMessage;
+    }
+  }
+}
+
+/**
+ * Handle file list updates after delete operation
+ * @param {Event} event - HTMX event
+ */
+function handleFileListUpdate(event) {
+  if (!event.detail.target.classList.contains('table-content')) {
+    return;
+  }
+
+  // Check if the modal is currently open with delete content
+  const modalContainer = document.getElementById('modal-container');
+  handleDeleteModalCleanup(modalContainer);
+}
+
+/**
+ * Handle orphaned delete success messages
+ */
+function handleOrphanedDeleteMessages() {
+  // Check for orphaned delete success messages on ANY table content update
+  // This handles race conditions where the message gets stuck between operations
+  if (window._deleteSuccessMessage && !document.querySelector('.delete-confirm-button')) {
+    showNotification(window._deleteSuccessMessage, 'success');
+    delete window._deleteSuccessMessage;
+  }
+}
+
+/**
  * Handle actions after content swap
  * @param {Event} event - HTMX event
  */
@@ -225,47 +318,10 @@ function handleAfterSwap(event) {
   }
 
   // Handle file list updates after delete operation
-  if (event.detail.target.classList.contains('table-content')) {
-    // Check if the modal is currently open with delete content
-    const modalContainer = document.getElementById('modal-container');
-    const isDeleteModal = modalContainer && modalContainer.querySelector('.delete-confirm-button');
+  handleFileListUpdate(event);
 
-    if (isDeleteModal) {
-      // Clean up the delete button loading state
-      if (window._deleteButtonTarget) {
-        const target = window._deleteButtonTarget;
-        const loadingClass =
-          target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
-
-        target.classList.remove(loadingClass);
-
-        // Restore original text
-        if (target.dataset.originalText) {
-          target.innerText = target.dataset.originalText;
-          delete target.dataset.originalText;
-        }
-
-        // Clean up the reference
-        delete window._deleteButtonTarget;
-      }
-
-      // Close the modal immediately for a smooth transition
-      hideModal();
-
-      // Show the success message immediately
-      if (window._deleteSuccessMessage) {
-        showNotification(window._deleteSuccessMessage, 'success');
-        delete window._deleteSuccessMessage;
-      }
-    }
-  }
-
-  // IMPORTANT: Check for orphaned delete success messages on ANY table content update
-  // This handles race conditions where the message gets stuck between operations
-  if (window._deleteSuccessMessage && !document.querySelector('.delete-confirm-button')) {
-    showNotification(window._deleteSuccessMessage, 'success');
-    delete window._deleteSuccessMessage;
-  }
+  // Handle orphaned delete success messages
+  handleOrphanedDeleteMessages();
 
   // Handle any custom swap triggers
   const swapTrigger = event.detail.target.getAttribute('data-swap-trigger');

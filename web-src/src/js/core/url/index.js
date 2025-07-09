@@ -51,6 +51,15 @@ export function getDownloadUrl(fileName, path = '') {
 }
 
 /**
+ * Get delete URL for file deletion
+ * @param {string} fileName - File name to delete
+ * @returns {string} Delete URL
+ */
+export function getDeleteUrl(fileName) {
+  return getActionUrl('delete-file', { fileName });
+}
+
+/**
  * Build download URL with encoded file path
  * @param {string} filePath - Full file path
  * @returns {string} Download URL

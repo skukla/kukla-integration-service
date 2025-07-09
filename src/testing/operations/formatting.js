@@ -13,6 +13,7 @@
  */
 function handleRawOutput(rawOutput, result, command, target) {
   if (rawOutput && result.rawResponse) {
+    // eslint-disable-next-line no-console
     console.log(JSON.stringify(result.rawResponse, null, 2));
     return {
       success: true,
