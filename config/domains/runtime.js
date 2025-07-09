@@ -2,7 +2,7 @@
  * Runtime Domain Configuration
  * @module config/domains/runtime
  *
- * 🎯 Used by: All Adobe I/O Runtime actions
+ * Used by: All Adobe I/O Runtime actions
  * ⚙️ Key settings: Action URLs, package names, routing, logging configuration
  *
  * 📋 Environment settings: Requires RUNTIME_URL from environment
@@ -16,9 +16,12 @@
 function buildRuntimeConfig(params = {}) {
   // Get required values with clear descriptive fallbacks
   const url = params.RUNTIME_URL || process.env.RUNTIME_URL || 'REQUIRED:RUNTIME_URL';
+  const namespace =
+    params.RUNTIME_NAMESPACE || process.env.RUNTIME_NAMESPACE || 'REQUIRED:RUNTIME_NAMESPACE';
 
   return {
     url,
+    namespace,
     package: 'kukla-integration-service',
     version: 'v1',
     paths: {

@@ -2,7 +2,7 @@
  * Testing Domain Configuration
  * @module config/domains/testing
  *
- * 🎯 Used by: Test execution, API testing, performance testing, action testing
+ * Used by: Test execution, API testing, performance testing, action testing
  * ⚙️ Key settings: Test environments, endpoints, thresholds, technical testing configuration
  *
  * 📋 Shared settings: Uses main configuration for expected product counts
