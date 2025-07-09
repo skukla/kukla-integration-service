@@ -3,10 +3,10 @@
  * @module get-products-mesh
  */
 
-const { createAction } = require('../../../src/core');
-const { exportCsvWithStorage } = require('../../../src/files/workflows/file-management');
-const { createCsv } = require('../../../src/products/utils/csv');
-const { exportProductsViaMesh } = require('../../../src/products/workflows/mesh-export');
+const { createAction } = require('../../src/core');
+const { exportCsvWithStorage } = require('../../src/files/workflows/file-management');
+const { createCsv } = require('../../src/products/utils/csv');
+const { exportProductsViaMesh } = require('../../src/products/workflows/mesh-export');
 
 /**
  * Business logic for get-products-mesh action
