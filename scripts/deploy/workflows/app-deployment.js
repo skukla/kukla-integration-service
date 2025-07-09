@@ -1,77 +1,70 @@
 /**
  * App Deployment Workflow
- * Extracted from scripts/deploy.js for domain organization
- * Orchestrates complete application deployment with mesh updates
+ * High-level orchestration for application deployment processes
  */
 
-const chalk = require('chalk');
-
-const steps = require('./steps');
+const { basicFormatters } = require('../../core/utils');
+const { outputTemplates } = require('../operations');
 
 /**
- * Main application deployment workflow
+ * Application deployment workflow
  * @param {Object} options - Deployment options
- * @param {boolean} options.isProd - Deploy to production
- * @param {boolean} options.skipBuild - Skip build process
- * @param {boolean} options.skipMesh - Skip mesh updates
- * @param {boolean} options.meshOnly - Only update mesh (skip app deployment)
+ * @param {string} options.environment - Target environment
+ * @param {boolean} options.verbose - Enable verbose output
  * @returns {Promise<Object>} Deployment result
  */
 async function appDeploymentWorkflow(options = {}) {
-  const { isProd = false, skipBuild = false, skipMesh = false, meshOnly = false } = options;
-  const environment = isProd ? 'production' : 'staging';
+  const { environment = 'staging', verbose = false } = options;
 
   try {
-    // Handle mesh-only deployment
-    if (meshOnly) {
-      return await steps.meshOnlyDeployment.meshOnlyDeploymentStep({
-        isProd,
-        environment,
-      });
+    console.log(outputTemplates.deploymentStart(environment));
+
+    // Import step modules
+    const { environmentDetection } = require('./steps');
+    const { buildProcess } = require('./steps');
+    const { appDeployment } = require('./steps');
+    const { meshUpdate } = require('./steps');
+
+    // Step 1: Environment detection
+    const envResult = await environmentDetection.detectAndValidateEnvironment(environment);
+    if (!envResult.success) {
+      throw new Error(envResult.error);
     }
 
-    console.log(chalk.bold.cyan(`\n🚀 Starting deployment to ${environment}...\n`));
+    // Step 2: Build process
+    if (verbose) console.log(basicFormatters.info('Starting build process...'));
+    const buildResult = await buildProcess.executeBuildProcess({ verbose });
+    if (!buildResult.success) {
+      throw new Error(buildResult.error);
+    }
 
-    // Step 1: Environment Detection
-    const envResult = await steps.environmentDetection.environmentDetectionStep();
+    // Step 3: App deployment
+    if (verbose) console.log(basicFormatters.info('Starting app deployment...'));
+    const deployResult = await appDeployment.executeAppDeployment({ environment, verbose });
+    if (!deployResult.success) {
+      throw new Error(deployResult.error);
+    }
 
-    // Step 2: Clean build artifacts
-    const cleanResult = await steps.buildCleaning.buildCleaningStep();
+    // Step 4: Mesh update
+    if (verbose) console.log(basicFormatters.info('Starting mesh update...'));
+    const meshResult = await meshUpdate.executeMeshUpdate({ environment, verbose });
+    if (!meshResult.success) {
+      throw new Error(meshResult.error);
+    }
 
-    // Step 3: Run build process (if not skipped)
-    const buildResult = await steps.buildProcess.buildProcessStep({ skipBuild, skipMesh });
-
-    // Step 4: Check mesh resolver status
-    const meshStatusResult = await steps.meshStatusCheck.meshStatusCheckStep();
-
-    // Step 5: Deploy App Builder actions
-    const deployResult = await steps.appDeployment.appDeploymentStep({ isProd });
-
-    // Step 6: Update mesh if needed and not skipped
-    const meshUpdateResult = await steps.meshUpdate.meshUpdateStep({
-      isProd,
-      skipMesh,
-      meshStatus: meshStatusResult.meshStatus,
-    });
-
-    console.log(chalk.bold.green(`\n🎉 Deployment to ${environment} completed successfully!\n`));
+    console.log(outputTemplates.deploymentComplete(environment));
 
     return {
       success: true,
       environment,
-      isProd,
-      meshUpdated: !skipMesh && meshStatusResult.meshStatus.wasRegenerated,
-      steps: [
-        envResult.step,
-        cleanResult.step,
-        buildResult.step,
-        deployResult.step,
-        meshUpdateResult.step,
-      ],
+      steps: ['Environment detection', 'Build process', 'App deployment', 'Mesh update'],
     };
   } catch (error) {
-    console.log(chalk.red(`Deployment to ${environment} failed: ${error.message}`));
-    throw error;
+    console.error(basicFormatters.error(`App deployment failed: ${error.message}`));
+    return {
+      success: false,
+      error: error.message,
+    };
   }
 }
 
