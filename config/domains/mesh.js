@@ -2,8 +2,8 @@
  * Mesh Domain Configuration
  * @module config/domains/mesh
  *
- * 🎯 Used by: API Mesh product export (consolidates 200+ calls to 1)
- * ⚙️ Key settings: GraphQL endpoints, pagination, batching optimization, caching
+ * 🎯 Used by: API Mesh GraphQL endpoint integration
+ * ⚙️ Key settings: Mesh endpoint, authentication, connection configuration
  */
 
 /**
@@ -20,27 +20,8 @@ function buildMeshConfig(params = {}) {
   return {
     endpoint,
     apiKey,
-    timeout: 30000,
-    retries: 3,
-    pagination: {
-      defaultPageSize: 100,
-      maxPages: 25,
-    },
-    batching: {
-      categories: 20, // categories batch size
-      inventory: 25, // inventory batch size
-      requestDelay: 75, // delay between batches in ms
-      maxConcurrent: 15, // max concurrent requests
-    },
-    caching: {
-      categoryTtl: 300000, // 5 minutes in ms
-      enableInMemoryCache: true,
-    },
-    performance: {
-      bulkInventoryThreshold: 25, // SKUs per bulk request
-      parallelProcessing: true, // enable parallel processing
-      preAllocateArrays: true, // performance optimization
-    },
+    timeout: 30000, // Mesh GraphQL request timeout
+    retries: 3, // Mesh connection retries
   };
 }
 

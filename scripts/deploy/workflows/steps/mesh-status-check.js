@@ -26,14 +26,14 @@ async function meshStatusCheckStep() {
     const meshConfig = {
       commerceBaseUrl: config.commerce.baseUrl,
       pagination: {
-        defaultPageSize: config.mesh.pagination.defaultPageSize,
-        maxPages: config.mesh.pagination.maxPages,
+        defaultPageSize: config.commerce.product.pagination.pageSize,
+        maxPages: config.commerce.product.pagination.maxPages,
       },
       batching: {
-        categories: config.mesh.batching.categories,
-        inventory: config.mesh.batching.inventory,
-        maxConcurrent: config.mesh.batching.maxConcurrent,
-        requestDelay: config.mesh.batching.requestDelay,
+        categories: config.commerce.batching.categories,
+        inventory: config.commerce.batching.inventory,
+        maxConcurrent: config.performance.batching.maxConcurrent,
+        requestDelay: config.performance.batching.requestDelay,
       },
       timeout: config.mesh.timeout,
       retries: config.mesh.retries,

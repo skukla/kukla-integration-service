@@ -21,9 +21,9 @@ const { extractProductSkus } = require('../utils/category');
 async function fetchInventoryData(skus, config, params, trace = null) {
   const inventoryMap = {};
 
-  const batchSize = config.mesh.batching.inventory;
-  const requestDelay = config.mesh.batching.requestDelay;
-  const maxConcurrent = config.mesh.batching.maxConcurrent;
+  const batchSize = config.commerce.batching.inventory;
+  const requestDelay = config.performance.batching.requestDelay;
+  const maxConcurrent = config.performance.batching.maxConcurrent;
 
   // Process in batches with configurable concurrency
   for (let i = 0; i < skus.length; i += batchSize) {

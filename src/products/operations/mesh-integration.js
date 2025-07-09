@@ -124,7 +124,7 @@ function createMeshRequestConfig(config, credentials) {
   const { oauth: oauthCredentials, admin: adminCredentials, meshApiKey } = credentials;
   const query = createMeshQuery();
   const variables = {
-    pageSize: config.mesh.pagination.defaultPageSize,
+    pageSize: config.commerce.product.pagination.pageSize,
     adminUsername: adminCredentials.adminUsername,
     adminPassword: adminCredentials.adminPassword,
   };

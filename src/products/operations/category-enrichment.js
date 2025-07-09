@@ -32,9 +32,9 @@ async function fetchCategoryData(categoryIds, config, params, trace = null) {
     return categoryMap;
   }
 
-  const batchSize = config.mesh.batching.categories;
-  const requestDelay = config.mesh.batching.requestDelay;
-  const maxConcurrent = config.mesh.batching.maxConcurrent;
+  const batchSize = config.commerce.batching.categories;
+  const requestDelay = config.performance.batching.requestDelay;
+  const maxConcurrent = config.performance.batching.maxConcurrent;
 
   const categoryArray = Array.from(categoryIds);
 
