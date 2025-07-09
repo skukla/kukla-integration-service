@@ -451,7 +451,7 @@ applyConfigOverrides(config, params, configOverrides);
 ### Usage Pattern
 
 ```javascript
-// In actions/backend/your-action/index.js
+// In actions/your-action/index.js
 const { loadConfig } = require('../../../config');
 
 async function main(params) {

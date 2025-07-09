@@ -37,17 +37,16 @@ Adobe App Builder is a complete framework for building cloud-native applications
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
 │   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # True Mesh Pattern resolvers (auto-generated)
-├── ⚙️ actions/                    # Adobe I/O Runtime actions
-│   ├── backend/                   # API endpoints (data processing)
-│   │   ├── get-products/          # Product export via REST API (200+ calls)
-│   │   ├── get-products-mesh/     # Product export via API Mesh (1 call)
-│   │   ├── download-file/         # File download operations
-│   │   └── delete-file/           # File deletion operations
-│   └── frontend/                  # UI response handlers
-│       ├── browse-files/          # File browser HTMX responses
-│       └── upload-file/           # File upload HTMX responses
-├── 🛠️ src/                        # Shared utilities
+│   └── mesh-resolvers.js          # Custom GraphQL resolvers (True Mesh)
+│
+├── ⚙️ Actions (Adobe I/O Runtime)
+│   ├── get-products/              # REST API product export
+│   ├── get-products-mesh/         # API Mesh product export  
+│   ├── download-file/             # File download operations
+│   ├── delete-file/               # File deletion operations
+│   └── browse-files/              # HTMX file browser interface
+│
+├── 🛠️ Source Code
 │   ├── core/                      # Platform utilities (config, URL, storage, tracing)
 │   │   ├── config/                # Environment-aware configuration system
 │   │   ├── http/                  # HTTP client with retry logic
@@ -82,12 +81,12 @@ kukla-integration-service/
 
 ### **Action Patterns**
 
-#### **Backend Actions** (`actions/backend/`)
+#### **Backend Actions** (`actions/`)
 
 Handle data processing, API integration, and business logic.
 
 ```javascript
-// Example: actions/backend/get-products/index.js
+// Example: actions/get-products/index.js
 const { Core } = require('@adobe/aio-sdk');
 
 async function main(params) {
@@ -124,12 +123,12 @@ async function main(params) {
 exports.main = main;
 ```
 
-#### **Frontend Actions** (`actions/frontend/`)
+#### **Frontend Actions** (`actions/`)
 
 Generate HTML responses for HTMX dynamic updates.
 
 ```javascript
-// Example: actions/frontend/browse-files/index.js
+// Example: actions/browse-files/index.js
 const { createHTMXResponse } = require('../../src/htmx/responses');
 
 async function main(params) {
@@ -171,7 +170,7 @@ application:
         actions:
           # Backend actions
           get-products:
-            function: actions/backend/get-products/index.js
+            function: actions/get-products/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -182,7 +181,7 @@ application:
 
           # Frontend actions
           browse-files:
-            function: actions/frontend/browse-files/index.js
+            function: actions/browse-files/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -276,13 +275,13 @@ npm run deploy:prod
 
 ```bash
 # Test individual actions
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 
 # Test with parameters
-npm run test:action -- actions/backend/get-products --param category=electronics
+npm run test:action -- actions/get-products --param category=electronics
 
 # Performance testing
-npm run perf:test -- actions/backend/get-products
+npm run perf:test -- actions/get-products
 ```
 
 ## Platform Services Integration

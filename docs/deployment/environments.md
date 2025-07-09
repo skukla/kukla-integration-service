@@ -93,7 +93,7 @@ application:
         license: Apache-2.0
         actions:
           get-products:
-            function: actions/backend/get-products/index.js
+            function: actions/get-products/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -157,8 +157,8 @@ Before deploying:
 
    ```bash
    # Test critical actions
-   npm run test:action -- actions/backend/get-products
-   npm run test:action -- actions/frontend/browse-files
+   npm run test:action -- actions/get-products
+   npm run test:action -- actions/browse-files
    ```
 
 2. **Run Performance Tests**
@@ -235,7 +235,7 @@ npm run deploy:prod
 npm run deploy
 
 # Test in staging
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 ```
 
 ### **Production Environment**
@@ -271,7 +271,7 @@ After each deployment, verify:
 
    ```bash
    # Test key endpoints
-   npm run test:action -- actions/backend/get-products --param '{"categoryId":"test"}'
+   npm run test:action -- actions/get-products --param '{"categoryId":"test"}'
 
    # Check logs for errors
    aio runtime:log:get
@@ -346,7 +346,7 @@ jobs:
 
       - name: Run tests
         run: |
-          npm run test:action -- actions/backend/get-products
+          npm run test:action -- actions/get-products
           npm run test:perf
         env:
           COMMERCE_BASE_URL: ${{ secrets.COMMERCE_BASE_URL }}

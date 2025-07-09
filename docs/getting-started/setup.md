@@ -136,7 +136,7 @@ const configOverrides = {
 ```yaml
 actions:
   backend:
-    function: actions/backend/index.js
+    function: actions/index.js
     web: 'yes'
     runtime: nodejs:18
     inputs:
@@ -270,14 +270,11 @@ kukla-integration-service/
 │   ├── mesh.json                  # API Mesh configuration
 │   └── mesh-resolvers.js          # True Mesh Pattern resolvers
 ├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
-│   ├── backend/                   # API endpoints - your main backend logic
-│   │   ├── get-products/          # REST API product export
-│   │   ├── get-products-mesh/     # API Mesh product export (True Mesh)
-│   │   ├── download-file/
-│   │   └── delete-file/
-│   └── frontend/                  # HTMX response handlers
-│       ├── browse-files/
-│       └── upload-file/
+│   ├── get-products/              # REST API product export
+│   ├── get-products-mesh/         # API Mesh product export
+│   ├── download-file/             # File download operations
+│   ├── delete-file/               # File deletion operations
+│   └── browse-files/              # HTMX file browser interface
 ├── 🛠️ src/                        # Shared utilities - check here first!
 │   ├── core/                      # Configuration, HTTP, storage, tracing
 │   ├── htmx/                      # HTMX helpers and response utilities
@@ -396,7 +393,7 @@ logger.error('Operation failed', error);
 
 ```bash
 # Test action performance
-npm run perf:test -- actions/backend/get-products
+npm run perf:test -- actions/get-products
 
 # Load testing
 npm run perf:load-test

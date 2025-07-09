@@ -384,7 +384,7 @@ module.exports = new ConfigManager();
 ### **Usage in Actions**
 
 ```javascript
-// actions/backend/get-products/index.js
+// actions/get-products/index.js
 const config = require('../../../config/app-config');
 
 async function main(params) {

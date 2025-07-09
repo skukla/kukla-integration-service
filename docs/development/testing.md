@@ -12,13 +12,13 @@ This guide covers testing approaches for the Adobe App Builder application, incl
 
 ```bash
 # Test individual actions
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 
 # Test with parameters
-npm run test:action -- actions/backend/get-products --param categoryId=123
+npm run test:action -- actions/get-products --param categoryId=123
 
 # Test frontend actions
-npm run test:action -- actions/frontend/browse-files
+npm run test:action -- actions/browse-files
 ```
 
 ### **Performance Testing**
@@ -42,26 +42,26 @@ The `test:action` script allows you to test individual Adobe I/O Runtime actions
 npm run test:action -- <action-path>
 
 # Examples
-npm run test:action -- actions/backend/get-products
-npm run test:action -- actions/frontend/browse-files
-npm run test:action -- actions/backend/download-file
-npm run test:action -- actions/backend/delete-file
+npm run test:action -- actions/get-products
+npm run test:action -- actions/browse-files
+npm run test:action -- actions/download-file
+npm run test:action -- actions/delete-file
 ```
 
 ### **Testing with Parameters**
 
 ```bash
 # Single parameter
-npm run test:action -- actions/backend/get-products --param categoryId=123
+npm run test:action -- actions/get-products --param categoryId=123
 
 # Multiple parameters
-npm run test:action -- actions/backend/get-products \
+npm run test:action -- actions/get-products \
   --param categoryId=123 \
   --param limit=50 \
   --param format=json
 
 # Complex parameters (JSON)
-npm run test:action -- actions/backend/get-products \
+npm run test:action -- actions/get-products \
   --param '{"categoryId": "123", "limit": 50, "format": "json"}'
 ```
 
@@ -69,16 +69,16 @@ npm run test:action -- actions/backend/get-products \
 
 ```bash
 # Test in staging (default)
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 
 # Test with specific environment variables
-LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
+LOG_LEVEL=debug npm run test:action -- actions/get-products
 
 # Test with Commerce credentials
 COMMERCE_BASE_URL=https://your-instance.com \
 COMMERCE_ADMIN_USERNAME=admin \
 COMMERCE_ADMIN_PASSWORD=password123 \
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 ```
 
 ## Performance Testing
@@ -159,7 +159,7 @@ Example test structure for backend actions:
 
 ```javascript
 // Using the test:action script
-npm run test:action -- actions/backend/get-products --param '{
+npm run test:action -- actions/get-products --param '{
   "categoryId": "electronics",
   "limit": 10,
   "format": "json",
@@ -186,7 +186,7 @@ Example test for HTMX frontend actions:
 
 ```javascript
 // Test HTMX response action
-npm run test:action -- actions/frontend/browse-files --param '{
+npm run test:action -- actions/browse-files --param '{
   "path": "/uploads",
   "limit": 20,
   "LOG_LEVEL": "debug"
@@ -209,13 +209,13 @@ Testing error scenarios:
 
 ```bash
 # Test validation errors
-npm run test:action -- actions/backend/get-products --param '{
+npm run test:action -- actions/get-products --param '{
   "categoryId": "invalid-category",
   "limit": -1
 }'
 
 # Test authentication errors
-npm run test:action -- actions/backend/get-products --param '{
+npm run test:action -- actions/get-products --param '{
   "categoryId": "123"
 }' --no-auth
 
@@ -223,7 +223,7 @@ npm run test:action -- actions/backend/get-products --param '{
 COMMERCE_BASE_URL=https://invalid-url.com \
 COMMERCE_ADMIN_USERNAME=admin \
 COMMERCE_ADMIN_PASSWORD=password123 \
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 ```
 
 ## Integration Testing
@@ -235,8 +235,8 @@ npm run test:action -- actions/backend/get-products
 npm run deploy
 
 # 2. Test individual actions
-npm run test:action -- actions/backend/get-products
-npm run test:action -- actions/frontend/browse-files
+npm run test:action -- actions/get-products
+npm run test:action -- actions/browse-files
 
 # 3. Run performance tests
 npm run test:perf
@@ -249,7 +249,7 @@ open https://your-staging-url.adobeio-static.net
 
 ```bash
 # Test Commerce connection
-npm run test:action -- actions/backend/get-products --param '{
+npm run test:action -- actions/get-products --param '{
   "categoryId": "test-category",
   "limit": 1,
   "LOG_LEVEL": "debug"
@@ -266,14 +266,14 @@ npm run test:action -- actions/backend/get-products --param '{
 
 ```bash
 # Test file upload (via frontend action)
-npm run test:action -- actions/frontend/upload-file --param '{
+npm run test:action -- actions/upload-file --param '{
   "fileName": "test.txt",
   "fileContent": "base64-content-here",
   "LOG_LEVEL": "debug"
 }'
 
 # Test file deletion
-npm run test:action -- actions/backend/delete-file --param '{
+npm run test:action -- actions/delete-file --param '{
   "fileId": "test-file-id",
   "LOG_LEVEL": "debug"
 }'
@@ -295,14 +295,14 @@ npm run test:action -- actions/backend/delete-file --param '{
 cp config/environments/.env.example config/environments/.env.testing
 
 # Set appropriate log levels for testing
-LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
+LOG_LEVEL=debug npm run test:action -- actions/get-products
 ```
 
 ### **3. Error Validation**
 
 ```bash
 # Test expected error scenarios
-npm run test:action -- actions/backend/get-products --param '{
+npm run test:action -- actions/get-products --param '{
   "categoryId": "",
   "limit": 0
 }' --expect-error
@@ -336,7 +336,7 @@ npm run test:perf -- --compare-baseline
 
 ```bash
 # Enable detailed logging
-LOG_LEVEL=debug npm run test:action -- actions/backend/get-products
+LOG_LEVEL=debug npm run test:action -- actions/get-products
 
 # Check Adobe I/O Runtime logs
 aio runtime:log:get
@@ -354,24 +354,24 @@ aio runtime:log:get --action get-products
    echo $COMMERCE_ADMIN_PASSWORD
 
    # Test authentication separately
-   npm run test:action -- actions/backend/auth-test
+   npm run test:action -- actions/auth-test
    ```
 
 2. **Timeout Issues**
 
    ```bash
    # Increase timeout for long-running operations
-   TIMEOUT=60000 npm run test:action -- actions/backend/get-products
+   TIMEOUT=60000 npm run test:action -- actions/get-products
    ```
 
 3. **Environment Variables**
 
    ```bash
    # Verify environment setup
-   npm run test:action -- actions/backend/health-check
+   npm run test:action -- actions/health-check
 
    # Check configuration
-   npm run test:action -- actions/backend/config-check
+   npm run test:action -- actions/config-check
    ```
 
 ## Continuous Testing
@@ -380,8 +380,8 @@ aio runtime:log:get --action get-products
 
 ```bash
 # Run before deployment
-npm run test:action -- actions/backend/get-products
-npm run test:action -- actions/frontend/browse-files
+npm run test:action -- actions/get-products
+npm run test:action -- actions/browse-files
 npm run test:perf
 
 # All tests pass? Safe to deploy
@@ -392,7 +392,7 @@ npm run deploy
 
 ```bash
 # After deployment, verify with production-like data
-npm run test:action -- actions/backend/get-products --param '{
+npm run test:action -- actions/get-products --param '{
   "categoryId": "production-category",
   "limit": 5
 }'
@@ -406,8 +406,8 @@ The testing scripts integrate with CI/CD pipelines:
 # GitHub Actions example
 - name: Test Actions
   run: |
-    npm run test:action -- actions/backend/get-products
-    npm run test:action -- actions/frontend/browse-files
+    npm run test:action -- actions/get-products
+    npm run test:action -- actions/browse-files
 
 - name: Performance Tests
   run: npm run test:perf

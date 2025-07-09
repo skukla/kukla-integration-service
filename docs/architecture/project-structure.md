@@ -36,8 +36,11 @@ kukla-integration-service/
 │   └── mesh-resolvers.js          # Custom GraphQL resolvers (True Mesh)
 │
 ├── ⚙️ Actions (Adobe I/O Runtime)
-│   ├── backend/                   # Backend serverless functions
-│   └── frontend/                  # Frontend HTMX response handlers
+│   ├── get-products/              # REST API product export
+│   ├── get-products-mesh/         # API Mesh product export
+│   ├── download-file/             # File download operations
+│   ├── delete-file/               # File deletion operations
+│   └── browse-files/              # HTMX file browser interface
 │
 ├── 🛠️ Source Code
 │   └── src/                       # Shared utilities and core logic
@@ -62,43 +65,37 @@ kukla-integration-service/
 
 ## Actions Directory (`actions/`)
 
-Adobe I/O Runtime serverless functions following the DRY principle and step function patterns.
+Adobe I/O Runtime serverless functions following the Domain-Driven Design pattern with hierarchical workflows.
 
 ```text
 actions/
-├── backend/                       # API endpoints and data processing
-│   ├── get-products/             # Product export via REST API
-│   │   ├── index.js              # Main action function
-│   │   └── steps/                # Reusable step functions
-│   │       ├── buildProducts.js  # Product data transformation
-│   │       ├── createCsv.js      # CSV generation
-│   │       ├── fetchAndEnrichProducts.js  # Data fetching
-│   │       ├── storeCsv.js       # File storage
-│   │       └── validateInput.js  # Input validation
-│   │
-│   ├── get-products-mesh/        # Product export via API Mesh (True Mesh)
-│   │   ├── index.js              # Main action (reuses get-products steps)
-│   │   └── steps/                # Mesh-specific steps
-│   │       └── fetchProductsFromMesh.js  # GraphQL mesh query
-│   │
-│   ├── download-file/            # File download functionality
-│   │   └── index.js              # Download action
-│   │
-│   └── delete-file/              # File deletion functionality
-│       └── index.js              # Delete action
+├── get-products/                 # Product export via REST API
+│   ├── index.js                  # Main action function
+│   └── steps/                    # Reusable step functions
+│       ├── buildProducts.js      # Product data transformation
+│       ├── createCsv.js          # CSV generation
+│       ├── fetchAndEnrichProducts.js  # Data fetching
+│       ├── storeCsv.js           # File storage
+│       └── validateInput.js      # Input validation
 │
-└── frontend/                     # HTMX response handlers
-    ├── browse-files/             # File browser UI
-    │   └── index.js              # File listing with HTMX responses
-    │
-    └── upload-file/              # File upload UI
-        └── index.js              # Upload handling with progress
+├── get-products-mesh/            # Product export via API Mesh (True Mesh)
+│   └── index.js                  # Main action (uses domain workflows from src/)
+│
+├── download-file/                # File download functionality
+│   └── index.js                  # Download action (uses domain workflows)
+│
+├── delete-file/                  # File deletion functionality
+│   └── index.js                  # Delete action (uses domain workflows)
+│
+└── browse-files/                 # File browser UI with HTMX responses
+    └── index.js                  # File listing action (uses domain workflows)
 ```
 
 ### Action Architecture Patterns
 
-- **Step Functions**: Reusable functions in `/steps/` directories
-- **DRY Principle**: Shared steps between similar actions (`buildProducts`, `createCsv`, `storeCsv`)
+- **Domain-Driven Design**: Actions use hierarchical domain workflows from `src/`
+- **Step Functions**: Reusable functions in `/steps/` directories (legacy pattern)
+- **Workflow Integration**: Modern actions use domain workflows (products/, files/, htmx/)
 - **True Mesh**: API Mesh actions use embedded resolvers to consolidate Commerce APIs
 - **Response Structure**: Consistent response format with steps, storage, and download URLs
 
