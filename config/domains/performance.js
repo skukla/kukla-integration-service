@@ -2,7 +2,7 @@
  * Performance Domain Configuration
  * @module config/domains/performance
  *
- * 🎯 Used by: All actions for monitoring and optimization
+ * Used by: All actions for monitoring and optimization
  * ⚙️ Key settings: Timeouts, memory limits, retries, batching, caching, monitoring
  */
 

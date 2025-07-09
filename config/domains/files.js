@@ -2,7 +2,7 @@
  * Files Domain Configuration
  * @module config/domains/files
  *
- * 🎯 Used by: File operations (browse, download, delete), CSV export
+ * Used by: File operations (browse, download, delete), CSV export
  * ⚙️ Key settings: File processing, extensions, content types, technical file handling
  */
 

@@ -2,7 +2,7 @@
  * UI Domain Configuration
  * @module config/domains/ui
  *
- * 🎯 Used by: Frontend components, user interface behavior
+ * Used by: Frontend components, user interface behavior
  * ⚙️ Key settings: Notifications, modals, timing, file browser UI configuration
  */
 

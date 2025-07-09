@@ -2,7 +2,7 @@
  * Main Configuration Domain
  * @module config/domains/main
  *
- * 🎯 SHARED BUSINESS CONFIGURATION
+ * SHARED BUSINESS CONFIGURATION
  *
  * Contains only the core business settings that are truly shared across domains.
  * Each domain handles its own technical configuration.
