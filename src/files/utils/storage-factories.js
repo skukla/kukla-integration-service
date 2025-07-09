@@ -26,7 +26,7 @@ const { formatFileSize, formatDate } = require('../../core/utils');
 function createAppBuilderWriteMethod(files, config) {
   return async function write(fileName, content) {
     // Store files in configured directory for organization and accessibility
-    const storageDirectory = config.storage?.directory || 'public/';
+    const storageDirectory = config.storage.directory;
     const fullFileName = `${storageDirectory}${fileName}`;
     await files.write(fullFileName, content);
     const properties = await files.getProperties(fullFileName);
@@ -55,11 +55,12 @@ function createAppBuilderWriteMethod(files, config) {
  * Pure function factory that creates list method implementation.
  *
  * @param {Object} files - Files client instance
+ * @param {Object} config - Configuration object
  * @returns {Function} List method implementation
  */
 function createAppBuilderListMethod(files, config) {
   return async function list(directory = null) {
-    const storageDirectory = config?.storage?.directory || 'public/';
+    const storageDirectory = config.storage.directory;
     const listDirectory = directory || storageDirectory;
     // Both app-builder and S3 now use configured directory prefix for unified organization
     const fileList = await files.list();
@@ -104,7 +105,7 @@ function createAppBuilderListMethod(files, config) {
  * @returns {Object} Storage wrapper with methods
  */
 function createAppBuilderStorageWrapper(files, config) {
-  const storageDirectory = config.storage?.directory || 'public/';
+  const storageDirectory = config.storage.directory;
 
   return {
     provider: 'app-builder',

@@ -27,7 +27,7 @@ function processActionParameters(actionName, params) {
   if (actionName === 'delete-file' && processedParams.fileName) {
     try {
       const config = loadConfig(processedParams);
-      const storageDirectory = config.storage?.directory || 'public/';
+      const storageDirectory = config.storage.directory;
       if (!processedParams.fileName.startsWith(storageDirectory)) {
         processedParams.fileName = `${storageDirectory}${processedParams.fileName}`;
       }

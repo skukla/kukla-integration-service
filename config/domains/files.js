@@ -19,12 +19,12 @@ function buildFilesConfig(params = {}, mainConfig = {}) {
   return {
     storage: {
       csv: {
-        filename: mainConfig.csvFilename || 'products.csv', // Shared from main (business setting)
+        filename: mainConfig.csvFilename, // Shared from main
         chunkSize: 8192, // Technical setting
         compressionLevel: 6, // Technical setting
         streamBufferSize: 16384, // Technical setting
       },
-      directory: mainConfig.storage?.directory || 'public/', // Shared from main (business setting)
+      directory: mainConfig.storage.directory, // Shared from main (business setting)
     },
 
     extensions: {
