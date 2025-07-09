@@ -1,8 +1,8 @@
 /**
- * Products Export Workflow
+ * REST API Export Workflow
  *
- * High-level orchestration for the complete product export process.
- * This workflow composes multiple business operations into a cohesive flow.
+ * High-level orchestration for REST API-based product export process.
+ * This workflow composes multiple business operations for REST API data sources.
  */
 
 const { storeCsvFile } = require('../../files');

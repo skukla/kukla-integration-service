@@ -3,8 +3,9 @@
  * @module delete-file
  */
 
-// Use action framework to eliminate duplication
 const { createAction } = require('../../../src/core');
+const { deleteStoredFile } = require('../../../src/files/workflows/file-management');
+const { generateFileDeletionResponse } = require('../../../src/htmx/workflows/file-browser');
 
 /**
  * Business logic for delete-file action
@@ -12,57 +13,50 @@ const { createAction } = require('../../../src/core');
  * @returns {Promise<Object>} Action response
  */
 async function deleteFileBusinessLogic(context) {
-  const { files, core, config, extractedParams, webActionParams, logger } = context;
-  const steps = [];
+  const { core, config, extractedParams, webActionParams, logger } = context;
 
   // Merge raw web action params with processed extracted params
   const allActionParams = { ...webActionParams, ...extractedParams };
 
-  // Step 1: Validate required parameters
+  // Validate required parameters
   const missingParams = core.checkMissingParams(allActionParams, ['fileName']);
   if (missingParams) {
     throw new Error(missingParams);
   }
-  steps.push(core.formatStepMessage('validate-parameters', 'success'));
 
-  // Step 2: Delete file from storage
-  const cleanFileName = files.extractCleanFilename(allActionParams.fileName);
-  logger.info('Delete operation starting:', {
-    original: allActionParams.fileName,
-    clean: cleanFileName,
-  });
+  logger.info('Delete operation starting:', { fileName: allActionParams.fileName });
 
-  const storage = await files.initializeStorage(config, extractedParams);
-  await files.deleteFile(storage, cleanFileName);
-  steps.push(core.formatStepMessage('delete-file', 'success', { fileName: cleanFileName }));
+  // Use domain workflow to delete file
+  await deleteStoredFile(allActionParams.fileName, config, extractedParams);
 
-  // Step 3: Get updated file list using browse-files action
-  const { main: browseFilesMain } = require('../../frontend/browse-files/index');
-  const fileListResponse = await browseFilesMain({
-    ...allActionParams,
-    __ow_method: 'get',
-    modal: null, // Ensure we don't return modal content
-  });
-  steps.push(core.formatStepMessage('refresh-file-list', 'success'));
+  logger.info('Delete operation completed:', { fileName: allActionParams.fileName });
 
-  // Return success response with steps (following get-products pattern)
-  return core.success(
+  // Check if this is an HTMX request (expects HTML response)
+  const isHtmxRequest =
+    allActionParams['__ow_headers'] && allActionParams['__ow_headers']['hx-request'] === 'true';
+
+  if (isHtmxRequest) {
+    // Return HTMX response with updated file browser UI
+    return await generateFileDeletionResponse(allActionParams.fileName, config, extractedParams);
+  }
+
+  // Return JSON response for API consumers
+  return core.response.success(
     {
-      steps,
-      fileList: fileListResponse,
-      deletedFile: cleanFileName,
+      deletedFile: allActionParams.fileName,
+      message: 'File deleted successfully',
     },
     'File deleted successfully',
     {}
   );
 }
 
-// Create action with framework - clean orchestrator pattern!
+// Create action with framework - clean orchestrator pattern using domain workflows!
 module.exports = createAction(deleteFileBusinessLogic, {
   actionName: 'delete-file',
-  domains: ['files'],
+  domains: ['files', 'htmx'],
   withTracing: false,
   withLogger: true,
   logLevel: 'info',
-  description: 'Delete files from storage and return updated file list',
+  description: 'Delete files from storage using domain workflows with HTMX support',
 });
