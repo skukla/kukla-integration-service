@@ -23,10 +23,19 @@ const core = require('../../core');
 function processActionParameters(actionName, params) {
   const processedParams = { ...params };
 
-  // For delete-file action, automatically prepend 'public/' to fileName if not already present
+  // For delete-file action, automatically prepend storage directory to fileName if not already present
   if (actionName === 'delete-file' && processedParams.fileName) {
-    if (!processedParams.fileName.startsWith('public/')) {
-      processedParams.fileName = `public/${processedParams.fileName}`;
+    try {
+      const config = loadConfig(processedParams);
+      const storageDirectory = config.storage?.directory || 'public/';
+      if (!processedParams.fileName.startsWith(storageDirectory)) {
+        processedParams.fileName = `${storageDirectory}${processedParams.fileName}`;
+      }
+    } catch (error) {
+      // Fallback to default if config loading fails
+      if (!processedParams.fileName.startsWith('public/')) {
+        processedParams.fileName = `public/${processedParams.fileName}`;
+      }
     }
   }
 
