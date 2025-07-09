@@ -22,7 +22,7 @@ Options:
     return;
   }
 
-  const actionName = args._[0];
+  const actionName = args._[1]; // Second argument after 'action'
   if (!actionName) {
     console.error(core.formatting.error('Action name is required'));
     console.log('Usage: npm run test:action <action>');
@@ -32,8 +32,8 @@ Options:
   console.log(core.formatting.scriptStart(`Starting test for ${actionName}`));
 
   try {
-    const { actionTestingWorkflow } = require('./test/workflows');
-    await actionTestingWorkflow(actionName, {
+    const { actionTesting } = require('./test/workflows');
+    await actionTesting.actionTestingWorkflow(actionName, {
       rawOutput: args.raw,
       verbose: args.verbose,
     });
