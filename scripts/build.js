@@ -1,84 +1,62 @@
-/**
- * Main build script that coordinates validation and generation
- * Provides independent spinners for each build step
- */
-
-const { exec } = require('child_process');
-const { promisify } = require('util');
-
-const chalk = require('chalk');
-const ora = require('ora');
-
-const { generateFrontend } = require('./generate-frontend');
-
-const execAsync = promisify(exec);
-
-// Helper to capitalize first letter
-const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+#!/usr/bin/env node
 
 /**
- * Sleep helper for smoother animations
+ * Build Script - Clean Orchestrator Pattern
+ * Focuses on WHAT to build, not HOW to parse CLI arguments
  */
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const { scriptFramework } = require('./core/operations');
 
 /**
- * Create a spinner for a specific step
+ * Clean business logic for build operations
+ * @param {Object} context - Script context with domains and args
+ * @returns {Promise<Object>} Build result
  */
-function createSpinner(text) {
-  return ora({
-    text,
-    spinner: 'dots',
-    color: 'blue',
-  }).start();
+async function buildBusinessLogic(context) {
+  const { build, args } = context;
+
+  // Step 1: Execute app build workflow with parsed options
+  const buildResult = await build.appBuild.appBuildWorkflow({
+    includeAioAppBuild: args.includeAioAppBuild,
+    skipMesh: args.skipMesh,
+  });
+
+  // Step 2: Return result with environment info
+  return scriptFramework.success(
+    {
+      environment: buildResult.environment,
+      completed: buildResult.success,
+    },
+    `Build completed for ${buildResult.environment} environment`
+  );
 }
 
-/**
- * Format spinner success message (no checkmark since ora adds one)
- */
-function formatSpinnerSuccess(message) {
-  return chalk.green(message);
+// Create script with framework - all CLI parsing handled automatically!
+const buildScript = scriptFramework.createScript(buildBusinessLogic, {
+  scriptName: 'build',
+  domains: ['build'],
+  description: 'Build Adobe App Builder application for deployment',
+  cliOptions: {
+    includeAioAppBuild: {
+      flags: ['--aio', '--with-aio'],
+      description: 'Include Adobe I/O App build step',
+    },
+    skipMesh: {
+      flags: ['--skip-mesh'],
+      description: 'Skip mesh resolver generation',
+    },
+  },
+  examples: [
+    'npm run build                    # Standard build',
+    'npm run build -- --aio           # Build with Adobe I/O App',
+    'npm run build -- --skip-mesh     # Build without mesh generation',
+  ],
+});
+
+// Export main function for npm scripts
+module.exports = buildScript;
+
+// Run if called directly
+if (require.main === module) {
+  buildScript.main();
 }
-
-/**
- * Detect environment from various sources
- * @returns {string} Environment name ('staging' or 'production')
- */
-function detectEnvironment() {
-  const env = process.env.AIO_RUNTIME_NAMESPACE || process.env.NODE_ENV || 'staging';
-
-  return env.includes('stage') || env === 'staging' || env === 'development'
-    ? 'staging'
-    : 'production';
-}
-
-/**
- * Main build function
- */
-async function build() {
-  try {
-    // Step 1: Environment Detection
-    const envSpinner = createSpinner('Detecting environment...');
-    await sleep(500); // Give spinner time to spin
-    const env = detectEnvironment();
-    const envDisplay = chalk.bold(capitalize(env));
-    envSpinner.succeed(formatSpinnerSuccess('Environment detected: ' + envDisplay));
-
-    // Step 2: Frontend Generation
-    const frontendSpinner = createSpinner('Generating frontend assets...');
-    await generateFrontend();
-    frontendSpinner.succeed(formatSpinnerSuccess('Frontend assets generated'));
-
-    // Step 3: Mesh Resolver Generation
-    const meshSpinner = createSpinner('Generating mesh resolver...');
-    await sleep(500); // Give spinner time to spin
-    await execAsync('node scripts/generate-mesh-resolver.js');
-    meshSpinner.succeed(formatSpinnerSuccess('Mesh resolver generated'));
-  } catch (error) {
-    // If any spinner is still active, stop it with failure
-    ora().fail(chalk.red('Build failed: ' + error.message));
-    process.exit(1);
-  }
-}
-
-// Run the build
-build();
