@@ -124,7 +124,7 @@ function createMeshRequestConfig(config, credentials) {
   const { oauth: oauthCredentials, admin: adminCredentials, meshApiKey } = credentials;
   const query = createMeshQuery();
   const variables = {
-    pageSize: config.commerce.product.pagination.pageSize,
+    pageSize: config.products.pagination.pageSize,
     adminUsername: adminCredentials.adminUsername,
     adminPassword: adminCredentials.adminPassword,
   };
@@ -227,7 +227,7 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
   const result = await makeMeshRequestWithRetry(requestConfig, {
     retries: config.mesh.retries,
     retryDelay: config.commerce.api.retryDelay,
-    timeout: config.mesh.timeout,
+    timeout: config.performance.timeouts.api.mesh,
   });
 
   return validateMeshResponse(result);

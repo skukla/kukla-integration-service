@@ -8,17 +8,11 @@
 
 /**
  * Build testing configuration
- * @param {Object} params - Action parameters
  * @returns {Object} Testing configuration
  */
-function buildTestingConfig(params = {}) {
-  // Get required values with clear descriptive fallbacks
-  const baseUrl = params.RUNTIME_URL || process.env.RUNTIME_URL || 'REQUIRED:RUNTIME_URL';
-
+function buildTestingConfig() {
   return {
     api: {
-      baseUrl,
-      timeout: 10000,
       retries: 3,
     },
     endpoints: {
@@ -26,19 +20,13 @@ function buildTestingConfig(params = {}) {
       'products-mesh': '/api/v1/web/kukla-integration-service-default/get-products-mesh',
       files: '/api/v1/web/kukla-integration-service-default/browse-files',
     },
-    performance: {
-      maxExecutionTime: 5000,
-      expectedProducts: 119,
+    expectations: {
+      maxExecutionTime: 5000, // Expected max execution time for tests
+      expectedProducts: 119, // Expected product count for validation
       baseline: {
         maxAgeDays: 30, // max age for baseline comparisons
       },
       thresholds: {
-        executionTime: 5000, // max execution time in ms
-        maxMemory: 50000000, // max memory usage in bytes
-        memory: 100, // memory threshold for warnings
-        products: 1000, // max products to process
-        categories: 100, // max categories to process
-        compression: 50, // compression ratio threshold
         responseTime: {
           p95: 2000, // 95th percentile response time
           p99: 5000, // 99th percentile response time

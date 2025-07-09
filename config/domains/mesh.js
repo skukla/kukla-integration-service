@@ -20,7 +20,6 @@ function buildMeshConfig(params = {}) {
   return {
     endpoint,
     apiKey,
-    timeout: 30000, // Mesh GraphQL request timeout
     retries: 3, // Mesh connection retries
   };
 }
