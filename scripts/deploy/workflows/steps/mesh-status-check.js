@@ -26,8 +26,8 @@ async function meshStatusCheckStep() {
     const meshConfig = {
       commerceBaseUrl: config.commerce.baseUrl,
       pagination: {
-        defaultPageSize: config.commerce.product.pagination.pageSize,
-        maxPages: config.commerce.product.pagination.maxPages,
+        defaultPageSize: config.products.pagination.pageSize,
+        maxPages: config.products.pagination.maxPages,
       },
       batching: {
         categories: config.commerce.batching.categories,
@@ -35,7 +35,7 @@ async function meshStatusCheckStep() {
         maxConcurrent: config.performance.batching.maxConcurrent,
         requestDelay: config.performance.batching.requestDelay,
       },
-      timeout: config.mesh.timeout,
+      timeout: config.performance.timeouts.api.mesh,
       retries: config.mesh.retries,
     };
 

@@ -38,11 +38,7 @@ function buildRuntimeConfig(params = {}) {
     },
     environment: {
       cli: {
-        timeout: 5000,
         allowCliDetection: true,
-      },
-      testing: {
-        timeout: 10000,
       },
     },
   };
