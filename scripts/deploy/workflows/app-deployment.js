@@ -39,7 +39,7 @@ async function appDeploymentWorkflow(options = {}) {
     const cleanResult = await steps.buildCleaning.buildCleaningStep();
 
     // Step 3: Run build process (if not skipped)
-    const buildResult = await steps.buildProcess.buildProcessStep({ skipBuild });
+    const buildResult = await steps.buildProcess.buildProcessStep({ skipBuild, skipMesh });
 
     // Step 4: Check mesh resolver status
     const meshStatusResult = await steps.meshStatusCheck.meshStatusCheckStep();

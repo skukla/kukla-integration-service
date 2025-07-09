@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 
+const { formatProductFieldsForUrl } = require('../../../../src/commerce/utils/endpoint-builders');
 const { hash } = require('../../../core');
 
 /**
@@ -38,6 +39,7 @@ function templateProcessingStep(params) {
   const variables = {
     COMMERCE_BASE_URL: config.commerce.baseUrl,
     MESH_CACHE_TTL: config.mesh.caching.categoryTtl.toString(),
+    COMMERCE_PRODUCT_FIELDS: formatProductFieldsForUrl(config.commerce.product.fields),
   };
 
   let resolverContent = templateContent;
