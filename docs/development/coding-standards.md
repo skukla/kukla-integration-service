@@ -399,13 +399,13 @@ Use the provided test scripts for development.
 
 ```bash
 # ✅ Test individual actions during development
-npm run test:action -- actions/backend/get-products
+npm run test:action -- actions/get-products
 
 # ✅ Test with specific parameters
-npm run test:action -- actions/backend/get-products --param categoryId=123
+npm run test:action -- actions/get-products --param categoryId=123
 
 # ✅ Performance testing
-npm run perf:test -- actions/backend/get-products
+npm run perf:test -- actions/get-products
 
 ## Code Quality Tools
 
@@ -466,7 +466,7 @@ git config --get core.hooksPath  # Should show .husky/_
 Follow the established project structure.
 
 ```text
-actions/backend/action-name/
+actions/action-name/
 ├── index.js              # Main action function
 ├── schema.js             # Input validation schema
 ├── __tests__/            # Action-specific tests
@@ -509,7 +509,7 @@ Description of response format with examples.
 ## Examples
 
 ```bash
-npm run test:action -- actions/backend/action-name --param param1=value
+npm run test:action -- actions/action-name --param param1=value
 ````
 
 ## Dependencies

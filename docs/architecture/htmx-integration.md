@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 ### **File Browser Action**
 
-Location: `actions/frontend/browse-files/index.js`
+Location: `actions/browse-files/index.js`
 
 ```javascript
 const { Core } = require('@adobe/aio-sdk');
