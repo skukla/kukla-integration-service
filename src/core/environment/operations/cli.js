@@ -26,10 +26,13 @@ function parseCliWorkspaceInfo(info) {
 function detectCliEnvironment() {
   try {
     const { execSync } = require('child_process');
+    const { loadConfig } = require('../../../config');
+    const config = loadConfig();
+
     const aioInfo = execSync('aio app info --json', {
       encoding: 'utf8',
       stdio: 'pipe',
-      timeout: 5000,
+      timeout: config.runtime.environment.cli.timeout,
     });
     const info = JSON.parse(aioInfo);
 

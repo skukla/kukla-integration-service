@@ -47,13 +47,14 @@ async function initializeStorage(config, params = {}) {
  * @param {string} csvData - CSV content to store
  * @param {Object} config - Configuration object with storage settings
  * @param {Object} params - Action parameters containing credentials
- * @param {string} [fileName='products.csv'] - Name of the file to store
- * @returns {Promise<Object>} Storage result with metadata
+ * @param {string} [fileName] - Name of the file to store
+ * @returns {Promise<Object>} Storage result with download URL and metadata
  */
-async function storeCsvFile(csvData, config, params, fileName = 'products.csv') {
+async function storeCsvFile(csvData, config, params, fileName) {
+  const finalFileName = fileName || config.storage.csv.filename;
   try {
     const storage = await initializeStorage(config, params);
-    const result = await storage.write(fileName, csvData);
+    const result = await storage.write(finalFileName, csvData);
 
     return {
       stored: true,
@@ -115,7 +116,7 @@ async function deleteStoredFile(fileName, config, params) {
 async function listCsvFiles(config, params) {
   const storage = await initializeStorage(config, params);
   const allFiles = await storage.list();
-  return allFiles.filter((file) => file.name.endsWith('.csv'));
+  return allFiles.filter((file) => file.name.endsWith(config.files.extensions.csv));
 }
 
 /**
@@ -128,8 +129,9 @@ async function listCsvFiles(config, params) {
  * @param {string} [fileName='products.csv'] - Name of the file to store
  * @returns {Promise<Object>} Storage result with comprehensive metadata
  */
-async function exportCsvWithStorage(csvData, config, params, fileName = 'products.csv') {
-  const storageResult = await storeCsvFile(csvData, config, params, fileName);
+async function exportCsvWithStorage(csvData, config, params, fileName) {
+  const finalFileName = fileName || config.storage.csv.filename;
+  const storageResult = await storeCsvFile(csvData, config, params, finalFileName);
 
   if (!storageResult.stored) {
     throw new Error(
@@ -162,8 +164,10 @@ async function downloadFileWorkflow(fileName, config, params) {
     const fileContent = await readStoredFile(fileName, config, params);
     const cleanFileName = extractCleanFilename(fileName);
 
-    // Determine content type based on file extension
-    const contentType = fileName.endsWith('.csv') ? 'text/csv' : 'application/octet-stream';
+    // Set proper content type
+    const contentType = fileName.endsWith(config.files.extensions.csv)
+      ? config.files.contentTypes.csv
+      : config.files.contentTypes.binary;
 
     return {
       statusCode: 200,
@@ -190,6 +194,18 @@ async function downloadFileWorkflow(fileName, config, params) {
   }
 }
 
+/**
+ * Get all CSV files from storage - uses configuration for file extensions
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters
+ * @returns {Promise<Array>} Array of CSV files
+ */
+async function getCsvFiles(config, params) {
+  const storage = await initializeStorage(config, params);
+  const allFiles = await storage.list();
+  return allFiles.filter((file) => file.name.endsWith(config.files.extensions.csv));
+}
+
 module.exports = {
   initializeStorage,
   storeCsvFile,
@@ -198,4 +214,5 @@ module.exports = {
   listCsvFiles,
   exportCsvWithStorage,
   downloadFileWorkflow,
+  getCsvFiles,
 };

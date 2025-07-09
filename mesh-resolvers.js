@@ -1,4 +1,4 @@
-/* GENERATION_METADATA: {"templateHash":"f52b0c91fbdbede24145f40ec745e26afa433b314f15f8fdc1ebb291cc810f36","configHash":"06a6f650ad570ca1cbaa810a6aed40ddc930f9e34cfb878309976d3e4a7e2c00","generatedAt":"2025-07-02T02:00:59.468Z","version":"1.0.0"} */
+/* GENERATION_METADATA: {"templateHash":"914a89f75af74206680a89bfcecf37c098fd3941c47ccdee17ce99a483b82e5a","configHash":"06a6f650ad570ca1cbaa810a6aed40ddc930f9e34cfb878309976d3e4a7e2c00","generatedAt":"2025-07-09T02:29:15.089Z","version":"1.0.0"} */
 /* eslint-disable */
 /**
  * API Mesh Resolvers - True Mesh Pattern with Performance Analysis
@@ -29,7 +29,7 @@ const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
 
 // Add category caching for efficiency (like REST API has)
 const categoryCache = new Map();
-const CACHE_TTL = 300000; // 5 minutes cache TTL
+const CACHE_TTL = 300000; // Cache TTL from configuration
 
 /**
  * Get cached category data

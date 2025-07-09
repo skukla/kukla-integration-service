@@ -226,8 +226,8 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
   const requestConfig = { endpoint: meshEndpoint, requestBody, headers };
   const result = await makeMeshRequestWithRetry(requestConfig, {
     retries: config.mesh.retries || 3,
-    retryDelay: 1000,
-    timeout: config.mesh.timeout || 30000,
+    retryDelay: config.commerce.api.retryDelay,
+    timeout: config.mesh.timeout,
   });
 
   return validateMeshResponse(result);

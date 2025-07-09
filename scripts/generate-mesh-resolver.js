@@ -154,6 +154,10 @@ try {
   const commerceBaseUrl = config.commerce.baseUrl;
   finalResolver = finalResolver.replace(/\{\{\{COMMERCE_BASE_URL\}\}\}/g, commerceBaseUrl);
 
+  // Replace Mesh cache TTL template variables
+  const meshCacheTtl = config.mesh.caching.categoryTtl;
+  finalResolver = finalResolver.replace(/\{\{\{MESH_CACHE_TTL\}\}\}/g, meshCacheTtl);
+
   // Remove any existing generation metadata comments
   finalResolver = finalResolver.replace(/\/\* GENERATION_METADATA: .* \*\/\n?/g, '');
 

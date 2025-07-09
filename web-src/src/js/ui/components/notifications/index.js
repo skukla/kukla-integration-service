@@ -3,10 +3,23 @@
  * @module ui/components/notifications
  */
 
+import { getConfig } from '../../../core/config/index.js';
+
+const NotificationDefaults = {
+  DEFAULT_DURATION: (() => {
+    try {
+      const config = getConfig();
+      return config.ui.notifications.default;
+    } catch (error) {
+      return 5000; // Fallback if config fails
+    }
+  })(),
+};
+
 // Notification configuration
 const NOTIFICATION_CONFIG = {
   CONTAINER_ID: 'notification-container',
-  DEFAULT_DURATION: 5000,
+  DEFAULT_DURATION: NotificationDefaults.DEFAULT_DURATION,
   ANIMATION_DURATION: 300,
   TYPES: {
     success: {

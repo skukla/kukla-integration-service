@@ -3,7 +3,7 @@
  * @module config/domains/files
  *
  * 🎯 Used by: File operations (browse, download, delete), CSV export
- * ⚙️ Key settings: Storage providers, file naming, caching
+ * ⚙️ Key settings: Storage providers, file naming, caching, processing
  */
 
 /**
@@ -19,10 +19,28 @@ function buildFilesConfig(params = {}) {
       provider: storageProvider,
       csv: {
         filename: 'products.csv',
+        chunkSize: 8192,
+        compressionLevel: 6,
+        streamBufferSize: 16384,
       },
     },
-    categories: {
-      cacheTimeout: 1800, // 30 minutes
+    extensions: {
+      csv: '.csv',
+      json: '.json',
+      log: '.log',
+    },
+    contentTypes: {
+      csv: 'text/csv',
+      json: 'application/json',
+      binary: 'application/octet-stream',
+    },
+    processing: {
+      minCompressionSize: 1024, // 1KB
+      binaryThreshold: 1024,
+    },
+    caching: {
+      categoryTimeout: 1800, // 30 minutes
+      fileListTimeout: 300, // 5 minutes
     },
   };
 }
