@@ -2,8 +2,8 @@
  * Commerce Domain Configuration
  * @module config/domains/commerce
  *
- * 🎯 Used by: Product Export (REST & Mesh methods)
- * ⚙️ Key settings: API timeouts, endpoints, caching, retry logic, batching
+ * 🎯 Used by: All Commerce API integration actions
+ * ⚙️ Key settings: Commerce URL, API paths, timeouts, OAuth settings
  */
 
 /**
@@ -12,36 +12,52 @@
  * @returns {Object} Commerce configuration
  */
 function buildCommerceConfig(params = {}) {
-  const commerceBaseUrl = params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL;
+  // Get required values with clear descriptive fallbacks
+  const baseUrl =
+    params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL || 'REQUIRED:COMMERCE_BASE_URL';
 
   return {
-    baseUrl: commerceBaseUrl,
+    baseUrl,
+    timeout: 30000, // API timeout in ms
     api: {
-      timeout: 30000,
-      retries: 3,
-      retryDelay: 1000,
-      concurrency: 3,
-    },
-    pagination: {
-      defaultPageSize: 20,
-      maxPageSize: 200,
+      version: 'V1',
+      retryDelay: 1000, // delay between retries
     },
     batching: {
-      inventory: 50,
-      products: 100,
+      inventory: 50, // inventory batch size
     },
     paths: {
       products: '/products',
-      stockItem: '/inventory/source-items',
-      category: '/categories/:id',
-      categoryList: '/categories',
+      categories: '/categories',
+      customers: '/customers',
+      orders: '/orders',
+      adminToken: '/integration/admin/token',
+      search: '/search',
+      stockItems: '/stockItems', // inventory endpoint
+      stockItem: '/stockItems', // alias for single item
+      category: '/categories/:id', // single category endpoint
+      categoryList: '/categories', // category list endpoint
     },
-    authentication: {
-      maxRetries: 2,
-      retryDelay: 1000,
-    },
-    caching: {
-      duration: 1800, // 30 minutes
+    product: {
+      fields: [
+        'id',
+        'sku',
+        'name',
+        'price',
+        'status',
+        'type_id',
+        'attribute_set_id',
+        'created_at',
+        'updated_at',
+        'weight',
+        'categories',
+        'media_gallery_entries',
+        'custom_attributes',
+      ],
+      pagination: {
+        pageSize: 100,
+        maxPages: 25,
+      },
     },
   };
 }

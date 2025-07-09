@@ -12,11 +12,9 @@
  * @returns {Object} Files configuration
  */
 function buildFilesConfig(params = {}) {
-  const storageProvider = params.STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || 's3';
-
   return {
     storage: {
-      provider: storageProvider,
+      provider: params.STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || 's3', // Environment default in config
       csv: {
         filename: 'products.csv',
         chunkSize: 8192,
