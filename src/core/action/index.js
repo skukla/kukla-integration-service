@@ -46,9 +46,9 @@ async function initializeAction(params, options = {}) {
 
   // Initialize context
   const context = {
-    params: actionParams,
+    extractedParams: actionParams, // Processed OAuth credentials & normalized names
     config,
-    originalParams: params,
+    webActionParams: params, // Raw Adobe I/O Runtime parameters (includes __ow_* metadata)
   };
 
   // Set up logger if requested

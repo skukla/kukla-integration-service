@@ -22,12 +22,14 @@ function createHtmlResponse(html, status = 200) {
  * @returns {Promise<Object>} HTMX HTML response
  */
 async function handleGetRequest(context) {
-  const { files, params, originalParams, logger, storage } = context;
-  const allParams = { ...originalParams, ...params };
+  const { files, extractedParams, webActionParams, logger, storage } = context;
+  const allActionParams = { ...webActionParams, ...extractedParams };
 
   // Handle modal requests
-  if (allParams.modal === 'delete' && allParams.fileName) {
-    return createHtmlResponse(getDeleteModalHtml(allParams.fileName, allParams.fullPath, params));
+  if (allActionParams.modal === 'delete' && allActionParams.fileName) {
+    return createHtmlResponse(
+      getDeleteModalHtml(allActionParams.fileName, allActionParams.fullPath, extractedParams)
+    );
   }
 
   // Get file list with metadata
@@ -51,10 +53,10 @@ async function handleGetRequest(context) {
  * @returns {Promise<Object>} HTMX HTML response
  */
 async function handleDeleteRequest(context) {
-  const { files, params, originalParams, logger, storage } = context;
-  const allParams = { ...originalParams, ...params };
+  const { files, extractedParams, webActionParams, logger, storage } = context;
+  const allActionParams = { ...webActionParams, ...extractedParams };
 
-  const fileName = allParams.fileName;
+  const fileName = allActionParams.fileName;
   if (!fileName) {
     const errorObj = new Error('File name is required');
     errorObj.status = 400;
@@ -72,10 +74,10 @@ async function handleDeleteRequest(context) {
  * @returns {Promise<Object>} Routed response
  */
 async function routeRequest(context) {
-  const { originalParams, params } = context;
-  const allParams = { ...originalParams, ...params };
+  const { webActionParams, extractedParams } = context;
+  const allActionParams = { ...webActionParams, ...extractedParams };
 
-  switch (allParams.__ow_method) {
+  switch (allActionParams.__ow_method) {
     case 'get':
       return await handleGetRequest(context);
     case 'delete':

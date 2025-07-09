@@ -12,14 +12,14 @@ const { createAction } = require('../../../src/core');
  * @returns {Promise<Object>} Response object
  */
 async function getProductsBusinessLogic(context) {
-  const { products, files, core, config, params } = context;
+  const { products, files, core, config, extractedParams } = context;
   const steps = [];
 
   // Step 1: Validate input
   steps.push(core.formatStepMessage('validate-input', 'success'));
 
   // Step 2: Fetch and enrich products using domain functions
-  const productData = await products.fetchAndEnrichProducts(params, config);
+  const productData = await products.fetchAndEnrichProducts(extractedParams, config);
   steps.push(core.formatStepMessage('fetch-and-enrich', 'success', { count: productData.length }));
 
   // Step 3: Build products with proper transformation
@@ -31,7 +31,7 @@ async function getProductsBusinessLogic(context) {
   steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
 
   // Step 5: Store CSV using files domain
-  const storageResult = await files.storeCsv(csvData.content, config, params);
+  const storageResult = await files.storeCsv(csvData.content, config, extractedParams);
   steps.push(core.formatStepMessage('store-csv', 'success', { info: storageResult }));
 
   // Return success response using core utilities
