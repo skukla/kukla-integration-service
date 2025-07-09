@@ -1,6 +1,9 @@
 /**
  * Performance Domain Configuration
  * @module config/domains/performance
+ *
+ * 🎯 Used by: All actions for monitoring and optimization
+ * ⚙️ Key settings: Execution limits, tracing, performance monitoring
  */
 
 /**

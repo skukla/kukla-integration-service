@@ -1,6 +1,9 @@
 /**
  * Runtime Domain Configuration
  * @module config/domains/runtime
+ *
+ * 🎯 Used by: All Adobe I/O Runtime actions
+ * ⚙️ Key settings: Action URLs, package names, routing
  */
 
 /**

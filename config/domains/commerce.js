@@ -1,6 +1,9 @@
 /**
  * Commerce Domain Configuration
  * @module config/domains/commerce
+ *
+ * 🎯 Used by: Product Export (REST & Mesh methods)
+ * ⚙️ Key settings: API timeouts, endpoints, caching
  */
 
 /**
