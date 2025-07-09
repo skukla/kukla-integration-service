@@ -1,65 +1,54 @@
 /**
  * Mesh Deployment Workflow
- * Extracted from scripts/update-mesh.js for domain organization
- * Handles standalone API Mesh updates
+ * High-level orchestration for mesh-only deployment processes
  */
 
-const chalk = require('chalk');
-
-const { operations } = require('../../');
-const { build } = require('../../');
+const { meshTemplates } = require('../../core/operations');
+const { basicFormatters } = require('../../core/utils');
 
 /**
  * Mesh deployment workflow
  * @param {Object} options - Deployment options
- * @param {boolean} options.isProd - Deploy to production
- * @param {boolean} options.skipBuild - Skip build configuration
+ * @param {string} options.environment - Target environment
+ * @param {boolean} options.verbose - Enable verbose output
  * @returns {Promise<Object>} Deployment result
  */
 async function meshDeploymentWorkflow(options = {}) {
-  const { isProd = false, skipBuild = false } = options;
-  const environment = isProd ? 'production' : 'staging';
+  const { environment = 'staging', verbose = false } = options;
 
   try {
-    console.log(
-      chalk.bold.cyan(`\n🚀 Starting API Mesh update for ${environment} environment...\n`)
-    );
+    console.log(meshTemplates.meshStartEmphasis(environment));
 
-    // Step 1: Build mesh configuration (if not skipped)
-    if (!skipBuild) {
-      const buildSpinner = operations.spinner.createSpinner('Building mesh configuration...');
-      await build.workflows.frontendGeneration.generateFrontendConfig();
-      buildSpinner.succeed(operations.spinner.formatSpinnerSuccess('Mesh configuration built'));
+    // Import step modules
+    const { environmentDetection } = require('./steps');
+    const { meshUpdate } = require('./steps');
+
+    // Step 1: Environment detection
+    const envResult = await environmentDetection.detectAndValidateEnvironment(environment);
+    if (!envResult.success) {
+      throw new Error(envResult.error);
     }
 
-    // Step 2: Update mesh
-    const success = await operations.mesh.updateMeshWithRetry({
-      isProd,
-      waitTimeSeconds: isProd ? 90 : 30,
-      maxStatusChecks: isProd ? 10 : 2,
-    });
-
-    if (success) {
-      console.log(chalk.bold.green('🎉 Mesh update completed successfully!\n'));
-      return {
-        success: true,
-        environment,
-        isProd,
-        steps: [skipBuild ? 'Build skipped' : 'Configuration built', 'Mesh updated successfully'],
-      };
-    } else {
-      console.log(chalk.bold.red('❌ Mesh update failed. Please check the output above.\n'));
-      return {
-        success: false,
-        environment,
-        isProd,
-        error: 'Mesh update failed',
-      };
+    // Step 2: Mesh update
+    if (verbose) console.log(basicFormatters.info('Starting mesh update...'));
+    const meshResult = await meshUpdate.executeMeshUpdate({ environment, verbose });
+    if (!meshResult.success) {
+      throw new Error(meshResult.error);
     }
+
+    console.log(meshTemplates.meshCompleteEmphasis(environment));
+
+    return {
+      success: true,
+      environment,
+      steps: ['Environment detection', 'Mesh update'],
+    };
   } catch (error) {
-    console.error(chalk.red('\nMesh deployment failed. Please see the error messages above.'));
-    console.error(chalk.red(error.message));
-    throw error;
+    console.error(basicFormatters.error(`Mesh deployment failed: ${error.message}`));
+    return {
+      success: false,
+      error: error.message,
+    };
   }
 }
 
