@@ -58,5 +58,4 @@ jobs:
         uses: adobe/aio-apps-action@3.3.0
         with:
           os: ${{ matrix.os }}
-          command: deploy
-          noPublish: true
+          command: deploy --no-publish
