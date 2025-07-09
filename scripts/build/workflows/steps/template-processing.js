@@ -38,7 +38,7 @@ function templateProcessingStep(params) {
   // Replace template variables
   const variables = {
     COMMERCE_BASE_URL: config.commerce.baseUrl,
-    MESH_CACHE_TTL: config.mesh.caching.categoryTtl.toString(),
+    MESH_CACHE_TTL: config.performance.caching.categoryTtl.toString(),
     COMMERCE_PRODUCT_FIELDS: formatProductFieldsForUrl(config.commerce.product.fields),
   };
 

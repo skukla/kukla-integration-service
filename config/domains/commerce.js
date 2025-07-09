@@ -25,6 +25,7 @@ function buildCommerceConfig(params = {}) {
     },
     batching: {
       inventory: 50, // inventory batch size
+      categories: 20, // categories batch size
     },
     paths: {
       products: '/products',
