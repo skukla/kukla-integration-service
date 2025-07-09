@@ -971,6 +971,111 @@ async function actionBusinessLogic(context) {
 }
 ```
 
+## Configuration Standards
+
+### CRITICAL: Centralized Configuration Defaults
+
+**NEVER use inline default values with || operator pattern**. All defaults belong in the configuration system:
+
+```javascript
+// ❌ WRONG: Inline defaults scattered throughout code
+const baseUrl = process.env.API_BASE_URL || 'https://285361-namespace-stage.adobeioruntime.net';
+const provider = params.STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || 's3';
+const timeout = config.api?.timeout || 30000;
+
+// ✅ CORRECT: Defaults defined in configuration structure
+// config/domains/runtime.js
+function buildRuntimeConfig(params = {}) {
+  return {
+    url: params.RUNTIME_URL || process.env.RUNTIME_URL || 'https://285361-namespace-stage.adobeioruntime.net',
+    package: 'kukla-integration-service', // Static default
+    timeout: 30000, // Static default
+    // Environment override applied by loadConfig()
+  };
+}
+```
+
+### Configuration Default Rules
+
+**1. Static Defaults in Configuration Structure:**
+```javascript
+// ✅ CORRECT: Static defaults in config structure
+function buildDomainConfig() {
+  return {
+    timeout: 30000,           // Static default - never changes
+    retries: 3,               // Static default - never changes
+    batchSize: 100,           // Static default - never changes
+  };
+}
+```
+
+**2. Environment Defaults in Domain Builders:**
+```javascript
+// ✅ CORRECT: Environment defaults in domain config builders only
+function buildDomainConfig(params = {}) {
+  return {
+    baseUrl: params.API_BASE_URL || process.env.API_BASE_URL || 'https://default-url.com',
+    apiKey: params.API_KEY || process.env.API_KEY || null,
+    // Single place for environment defaults
+  };
+}
+```
+
+**3. No Fallbacks in Business Logic:**
+```javascript
+// ✅ CORRECT: Trust configuration system
+async function businessFunction(params, config) {
+  const timeout = config.api.timeout;     // No fallback needed
+  const baseUrl = config.api.baseUrl;     // No fallback needed
+  const batchSize = config.batch.size;    // No fallback needed
+}
+
+// ❌ WRONG: Defensive fallbacks in business logic
+async function businessFunction(params, config) {
+  const timeout = config.api?.timeout || 30000;     // Violates trust in config
+  const baseUrl = config.api?.baseUrl || 'https://default.com'; // Scattered defaults
+}
+```
+
+### Configuration Override Pattern
+
+**Use clean object access for configuration:**
+
+```javascript
+// ✅ CORRECT: Clean and readable
+const config = loadConfig(params);
+const timeout = config.commerce.api.timeout;
+const { pageSize, maxPages } = config.commerce.product.pagination;
+const fields = config.commerce.product.fields;
+
+// ❌ WRONG: Verbose with defensive fallbacks
+const timeout = config.commerce?.api?.timeout || 30000;
+const pageSize = config.commerce?.product?.pagination?.pageSize || 100;
+```
+
+### Configuration Testing and Overrides
+
+**Test configuration should override defaults cleanly:**
+
+```javascript
+// ✅ CORRECT: Override in test setup
+const testConfig = loadConfig({
+  API_BASE_URL: 'https://test-api.com',
+  STORAGE_PROVIDER: 'app-builder'
+});
+
+// ❌ WRONG: Override in business logic
+const baseUrl = config.api.baseUrl || (process.env.NODE_ENV === 'test' ? 'test-url' : 'prod-url');
+```
+
+**Configuration Standards Rules:**
+
+- ✅ **Defaults in config structure** - All defaults defined in domain config builders
+- ✅ **Single source of truth** - One place to find and change defaults
+- ✅ **Trust configuration system** - No defensive fallbacks in business logic  
+- ✅ **Environment separation** - Environment-specific defaults only in config builders
+- ✅ **Clean access patterns** - Direct object access, no optional chaining with fallbacks
+
 ---
 
 This refactoring standard ensures all actions follow the clean orchestrator pattern with domain-driven workflows, eliminating duplication while maintaining high code quality and consistency.
