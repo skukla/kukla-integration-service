@@ -1,6 +1,9 @@
 /**
  * Files Domain Configuration
  * @module config/domains/files
+ *
+ * 🎯 Used by: File operations (browse, download, delete), CSV export
+ * ⚙️ Key settings: Storage providers, file naming, caching
  */
 
 /**
