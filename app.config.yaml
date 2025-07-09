@@ -7,7 +7,7 @@ application:
         license: Apache-2.0
         actions:
           get-products:
-            function: actions/backend/get-products/index.js
+            function: actions/get-products/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -47,7 +47,7 @@ application:
               require-adobe-auth: false
               final: true
           download-file:
-            function: actions/backend/download-file/index.js
+            function: actions/download-file/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -61,7 +61,7 @@ application:
               require-adobe-auth: false
               final: true
           browse-files:
-            function: actions/frontend/browse-files/index.js
+            function: actions/browse-files/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -75,7 +75,7 @@ application:
               require-adobe-auth: false
               final: true
           delete-file:
-            function: actions/backend/delete-file/index.js
+            function: actions/delete-file/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -89,7 +89,7 @@ application:
               require-adobe-auth: false
               final: true
           get-products-mesh:
-            function: actions/backend/get-products-mesh/index.js
+            function: actions/get-products-mesh/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
