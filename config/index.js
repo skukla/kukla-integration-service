@@ -15,6 +15,7 @@ const { buildMeshConfig } = require('./domains/mesh');
 const { buildPerformanceConfig } = require('./domains/performance');
 const { buildProductsConfig } = require('./domains/products');
 const { buildRuntimeConfig } = require('./domains/runtime');
+const { buildUiConfig } = require('./domains/ui');
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ function loadConfig(params = {}) {
   const runtimeConfig = buildRuntimeConfig(params);
   const meshConfig = buildMeshConfig(params);
   const performanceConfig = buildPerformanceConfig();
+  const uiConfig = buildUiConfig();
 
   return {
     // Business domains
@@ -38,12 +40,20 @@ function loadConfig(params = {}) {
 
     // Files domain includes storage settings
     storage: filesConfig.storage,
-    categories: filesConfig.categories,
+    files: {
+      extensions: filesConfig.extensions,
+      contentTypes: filesConfig.contentTypes,
+      processing: filesConfig.processing,
+      caching: filesConfig.caching,
+    },
 
     // Infrastructure domains
     runtime: runtimeConfig,
     mesh: meshConfig,
     performance: performanceConfig,
+
+    // Frontend domain
+    ui: uiConfig,
   };
 }
 

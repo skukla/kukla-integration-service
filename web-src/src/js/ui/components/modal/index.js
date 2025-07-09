@@ -3,6 +3,8 @@
  * @module ui/components/modal
  */
 
+import { getConfig } from '../../../core/config/index.js';
+
 // Modal configuration
 const MODAL_CONFIG = {
   CONTAINER_ID: 'modal-container',
@@ -10,7 +12,14 @@ const MODAL_CONFIG = {
   MODAL_CLASS: 'modal',
   ACTIVE_CLASS: 'active',
   ANIMATION_DURATION: 300,
-  Z_INDEX: 1000,
+  Z_INDEX: (() => {
+    try {
+      const config = getConfig();
+      return config.ui.modal.zIndex;
+    } catch (error) {
+      return 1000; // Fallback if config fails
+    }
+  })(),
 };
 
 let activeModal = null;

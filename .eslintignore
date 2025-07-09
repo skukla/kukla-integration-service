@@ -1,0 +1,13 @@
+# Template files with template syntax
+mesh-resolvers.template.js
+
+# Generated files  
+mesh-resolvers.js
+web-src/src/config/generated/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.parcel-cache/ 

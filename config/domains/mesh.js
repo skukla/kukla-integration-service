@@ -3,7 +3,7 @@
  * @module config/domains/mesh
  *
  * 🎯 Used by: API Mesh product export (consolidates 200+ calls to 1)
- * ⚙️ Key settings: GraphQL endpoints, pagination, batching optimization
+ * ⚙️ Key settings: GraphQL endpoints, pagination, batching optimization, caching
  */
 
 /**
@@ -23,12 +23,24 @@ function buildMeshConfig(params = {}) {
     pagination: {
       defaultPageSize: 150,
       maxPages: 25,
+      smallBatchSize: 100,
+      largeBatchSize: 200,
+      extraLargeBatchSize: 300,
     },
     batching: {
       categories: 20,
       inventory: 25,
       maxConcurrent: 15,
       requestDelay: 75,
+    },
+    caching: {
+      categoryTtl: 300000, // 5 minutes (currently hardcoded in mesh resolvers)
+      enableInMemoryCache: true,
+    },
+    performance: {
+      bulkInventoryThreshold: 25, // Switch to bulk API when more than this many SKUs
+      parallelProcessing: true,
+      preAllocateArrays: true,
     },
   };
 }

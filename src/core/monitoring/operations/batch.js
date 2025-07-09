@@ -22,7 +22,12 @@ const { startMeasurement, endMeasurement } = require('./measurement');
 async function processBatch(measurements, batchData, config) {
   const { items, processor, options: batchOptions } = batchData;
   const { perfConfig, options } = config;
-  const { batchSize = 100, onProgress = null, operationName = 'batch_processing' } = batchOptions;
+  const defaultBatchSize = config.products?.processing?.concurrency?.monitoring || 100;
+  const {
+    batchSize = defaultBatchSize,
+    onProgress = null,
+    operationName = 'batch_processing',
+  } = batchOptions;
 
   startMeasurement(measurements, operationName, MetricTypes.RESPONSE_TIME, perfConfig, options);
   const results = [];

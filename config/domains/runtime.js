@@ -3,7 +3,7 @@
  * @module config/domains/runtime
  *
  * 🎯 Used by: All Adobe I/O Runtime actions
- * ⚙️ Key settings: Action URLs, package names, routing
+ * ⚙️ Key settings: Action URLs, package names, routing, logging
  */
 
 /**
@@ -28,6 +28,21 @@ function buildRuntimeConfig(params = {}) {
       'download-file': 'download-file',
       'delete-file': 'delete-file',
       'get-products-mesh': 'get-products-mesh',
+    },
+    logging: {
+      defaultLevel: 'info',
+      validLevels: ['debug', 'info', 'warn', 'error', 'trace'],
+      debugLevels: ['debug', 'trace'],
+      actionLoggerName: 'action',
+    },
+    environment: {
+      cli: {
+        timeout: 5000,
+        allowCliDetection: true,
+      },
+      testing: {
+        timeout: 10000, // Jest timeout
+      },
     },
   };
 }
