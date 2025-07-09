@@ -400,11 +400,11 @@ const { formatMeshResponse } = require('./lib/formatters');
 **Always test action framework integration:**
 
 ```bash
-# Test individual actions
+## Test individual actions
 npm run test:action get-products
 npm run test:action get-products-mesh
 
-# Test framework doesn't break existing functionality
+## Test framework doesn't break existing functionality
 npm run deploy
 ```
 
@@ -484,7 +484,7 @@ The action framework eliminates duplication while ensuring consistent, maintaina
 
 This architecture enables rapid development while maintaining high code quality and consistency throughout the application.
 
-# Adobe App Builder - Refactoring Standards
+## Adobe App Builder - Refactoring Standards
 
 This document provides guidelines for maintaining consistent, high-quality code across Adobe App Builder actions and shared utilities.
 
@@ -887,7 +887,7 @@ module.exports = createAction(browseFilesBusinessLogic, {
 ### 1. Start with Template
 
 ```bash
-# Copy existing action as template
+## Copy existing action as template
 cp -r actions/get-products actions/new-action
 ```
 
