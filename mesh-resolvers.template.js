@@ -382,7 +382,7 @@ async function fetchAllProductsFromSource(context, pageSize, maxPages, performan
         pageSize +
         '&searchCriteria[currentPage]=' +
         currentPage +
-        '&fields=items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries[file,url,position,types],custom_attributes],total_count';
+        '&fields={{{COMMERCE_PRODUCT_FIELDS}}}';
 
       const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
 
