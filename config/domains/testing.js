@@ -10,14 +10,13 @@
 
 /**
  * Build testing configuration
- * @param {Object} [params] - Action parameters (unused - kept for interface consistency)
- * @param {Object} [mainConfig] - Shared main configuration
+ * @param {Object} [params] - Action parameters (unused)
+ * @param {Object} [mainConfig] - Shared main configuration (for expected product count only)
  * @returns {Object} Testing configuration
  */
 function buildTestingConfig(params = {}, mainConfig = {}) {
-  // Note: params parameter kept for consistent interface but not used
   // eslint-disable-next-line no-unused-vars
-  params;
+  params; // Keep for interface consistency
 
   return {
     endpoints: {
@@ -27,26 +26,24 @@ function buildTestingConfig(params = {}, mainConfig = {}) {
     },
 
     expectations: {
-      maxExecutionTime: 5000, // Technical: expected max execution time for tests
-
-      // 🔗 SHARED: Expected values from main configuration
-      expectedProductCount: mainConfig.expectedProductCount || 119, // Shared from main
+      maxExecutionTime: 5000, // Technical setting
+      expectedProductCount: mainConfig.expectedProductCount || 119, // Shared from main (business setting)
 
       baseline: {
-        maxAgeDays: 30, // Technical: max age for baseline comparisons
+        maxAgeDays: 30, // Technical setting
       },
       thresholds: {
         responseTime: {
-          p95: 2000, // Technical: 95th percentile response time
-          p99: 5000, // Technical: 99th percentile response time
+          p95: 2000, // Technical setting
+          p99: 5000, // Technical setting
         },
-        errorRate: 0.05, // Technical: max error rate (5%)
+        errorRate: 0.05, // Technical setting
       },
     },
 
     scenarios: {
       batching: {
-        smallBatch: { pageSize: 100, expectedTime: 3500 }, // Technical: test scenarios
+        smallBatch: { pageSize: 100, expectedTime: 3500 }, // Technical settings
         optimal: { pageSize: 150, expectedTime: 2500 },
         large: { pageSize: 200, expectedTime: 3000 },
         extraLarge: { pageSize: 300, expectedTime: 4000 },
@@ -54,8 +51,8 @@ function buildTestingConfig(params = {}, mainConfig = {}) {
     },
 
     options: {
-      defaultEnvironment: 'local', // Technical: default test environment
-      defaultIterations: 1, // Technical: default test iterations
+      defaultEnvironment: 'local', // Technical setting
+      defaultIterations: 1, // Technical setting
       environment: 'local',
       iterations: 1,
     },
