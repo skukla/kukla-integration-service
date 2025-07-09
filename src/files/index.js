@@ -134,6 +134,10 @@ module.exports = {
     fileOperations: require('./operations/file-operations'),
   },
 
+  strategies: {
+    storage: require('./strategies/storage-strategies'),
+  },
+
   utils: {
     paths: require('./utils/paths'),
     csv: require('./utils/csv'),
