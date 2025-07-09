@@ -25,8 +25,8 @@ function validateProductFetchConfig(config) {
  */
 function getPaginationConfig(config) {
   return {
-    pageSize: config.mesh.pagination.defaultPageSize,
-    maxPages: config.mesh.pagination.maxPages,
+    pageSize: config.commerce.product.pagination.pageSize,
+    maxPages: config.commerce.product.pagination.maxPages,
   };
 }
 
