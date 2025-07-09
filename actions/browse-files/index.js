@@ -3,12 +3,12 @@
  * @module browse-files
  */
 
-const { createAction } = require('../../../src/core');
+const { createAction } = require('../../src/core');
 const {
   generateFileBrowserUI,
   generateDeleteModal,
   generateErrorResponse,
-} = require('../../../src/htmx/workflows/file-browser');
+} = require('../../src/htmx/workflows/file-browser');
 
 /**
  * Business logic for browse-files action
