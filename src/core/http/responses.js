@@ -60,6 +60,63 @@ const response = {
       body,
     };
   },
+
+  /**
+   * Export success response with performance and storage metadata
+   * @param {Object} data - Response data
+   * @param {string} message - Success message
+   * @param {Object} metadata - Export metadata
+   * @param {Object} metadata.performance - Performance metrics
+   * @param {Object} metadata.storage - Storage information
+   * @param {Array} metadata.steps - Processing steps
+   * @returns {Object} Formatted export response
+   */
+  exportSuccess: (data = {}, message = 'Export completed', metadata = {}) => {
+    const { performance, storage, steps } = metadata;
+
+    const body = JSON.stringify({
+      success: true,
+      message,
+      ...data,
+      ...(performance && { performance }),
+      ...(storage && { storage }),
+      ...(steps && { steps }),
+    });
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
+      body,
+    };
+  },
+
+  /**
+   * JSON data response for API integrations
+   * @param {Object} data - Response data with products/items
+   * @param {string} message - Success message
+   * @param {Object} metadata - Additional metadata
+   * @returns {Object} Formatted JSON response
+   */
+  jsonData: (data = {}, message = 'Data retrieved successfully', metadata = {}) => {
+    const body = JSON.stringify({
+      success: true,
+      message,
+      ...data,
+      ...metadata,
+    });
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
+      body,
+    };
+  },
 };
 
 module.exports = {
