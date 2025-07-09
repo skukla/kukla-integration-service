@@ -956,7 +956,7 @@ This design system provides a consistent visual language for the Adobe App Build
 
   <table
     class="data-table"
-    hx-get="/api/v1/web/kukla-integration-service/frontend/browse-files"
+    hx-get="/api/v1/web/kukla-integration-service/browse-files"
     hx-trigger="load"
   >
     <thead>

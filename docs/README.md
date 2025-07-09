@@ -63,7 +63,7 @@ docs/
 | Task                  | Documentation                                                        | Key Files                               |
 | --------------------- | -------------------------------------------------------------------- | --------------------------------------- |
 | Understand structure  | [Project Structure](architecture/project-structure.md)              | All directories and files               |
-| Add new action        | [Adobe App Builder Guide](architecture/adobe-app-builder.md)        | `actions/backend/`, `actions/frontend/` |
+| Add new action        | [Adobe App Builder Guide](architecture/adobe-app-builder.md)        | `actions/`, `actions/` |
 | Update UI             | [Frontend Development](development/frontend.md)                      | `web-src/`, `src/htmx/`                 |
 | Style components      | [Design System](development/design-system.md)                        | `web-src/src/css/`                      |
 | Commerce API work     | [Commerce Integration](architecture/commerce-integration.md)         | `src/commerce/`                         |

@@ -189,7 +189,7 @@ module.exports = {
 **Added JSON format support for bridge compatibility:**
 
 ```javascript
-// In actions/backend/get-products/index.js
+// In actions/get-products/index.js
 async function main(params) {
   // ... existing logic ...
   
@@ -222,7 +222,7 @@ async function main(params) {
 **Optimized for HTTP Bridge pattern:**
 
 ```javascript
-// actions/backend/get-products-mesh/index.js
+// actions/get-products-mesh/index.js
 async function main(params) {
   // ... validation and setup ...
 
@@ -277,7 +277,7 @@ mesh: {
 
 ```yaml
 get-products-mesh:
-  function: actions/backend/get-products-mesh/index.js
+  function: actions/get-products-mesh/index.js
   web: 'yes'
   runtime: nodejs:18
   inputs:

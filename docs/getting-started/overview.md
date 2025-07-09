@@ -138,8 +138,11 @@ kukla-integration-service/
 │   ├── mesh.json                  # API Mesh configuration
 │   └── mesh-resolvers.js          # True Mesh Pattern resolvers
 ├── ⚙️ actions/                    # Adobe I/O Runtime actions
-│   ├── backend/                   # API endpoints with step functions
-│   └── frontend/                  # HTMX response handlers
+│   ├── get-products/              # REST API product export
+│   ├── get-products-mesh/         # API Mesh product export  
+│   ├── download-file/             # File download operations
+│   ├── delete-file/               # File deletion operations
+│   └── browse-files/              # HTMX file browser interface
 ├── 🛠️ src/                        # Shared utilities and core logic
 │   ├── core/                      # Configuration, HTTP, storage, tracing
 │   ├── commerce/                  # Adobe Commerce integration
