@@ -56,8 +56,8 @@ async function generateFrontendConfig(options = {}) {
         actions: config.runtime.actions,
       },
       performance: {
-        timeout: config.commerce.timeout || 30000,
-        maxExecutionTime: config.performance.maxExecutionTime || 30000,
+        timeout: config.commerce.timeout,
+        maxExecutionTime: config.performance.maxExecutionTime,
       },
     };
 

@@ -11,12 +11,12 @@ const { operations } = require('../../../');
  */
 async function environmentDetectionStep() {
   const envSpinner = operations.spinner.createSpinner('Detecting environment...');
-  await operations.command.sleep(800);
+  await operations.sleep(800);
 
   const env = operations.environment.detectScriptEnvironment({}, { allowCliDetection: true });
 
   envSpinner.succeed(operations.spinner.formatSpinnerSuccess(`Environment detected: ${env}`));
-  await operations.command.sleep(300);
+  await operations.sleep(300);
 
   return {
     success: true,
