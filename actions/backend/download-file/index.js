@@ -5,6 +5,8 @@
  */
 
 // Use action framework to eliminate duplication
+
+// Import action-specific helpers
 const { handleDownloadError } = require('./lib/error-handling');
 const {
   validateAndPrepareDownload,
@@ -12,7 +14,6 @@ const {
   readFileAndCreateResponse,
 } = require('./lib/operations');
 const { createAction } = require('../../../src/core');
-// Import action-specific helpers
 
 /**
  * Business logic for download-file action
@@ -20,20 +21,20 @@ const { createAction } = require('../../../src/core');
  * @returns {Promise<Object>} Download response
  */
 async function downloadFileBusinessLogic(context) {
-  const { files, core, config, params, originalParams, logger } = context;
+  const { files, core, config, extractedParams, webActionParams, logger } = context;
 
-  // Merge originalParams and params to handle query parameters properly
-  const allParams = { ...originalParams, ...params };
+  // Merge raw web action params with processed extracted params for file operations
+  const allActionParams = { ...webActionParams, ...extractedParams };
 
   try {
     // Step 1: Validate parameters and prepare filename
-    const cleanFileName = validateAndPrepareDownload(allParams, logger, core, files);
+    const cleanFileName = validateAndPrepareDownload(allActionParams, logger, core, files);
 
     // Step 2: Initialize storage and get file metadata
     const { storage, fileProps } = await initializeStorageAndGetFile(cleanFileName, {
       files,
       config,
-      params,
+      extractedParams,
       logger,
     });
 

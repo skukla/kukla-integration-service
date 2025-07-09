@@ -4,10 +4,11 @@
  */
 
 // Use action framework to eliminate duplication
+
+// Import action-specific helpers
 const { createJsonResponse, createCsvExportResponse } = require('./lib/formatters');
 const { executeMeshDataSteps, executeCsvSteps } = require('./lib/steps');
 const { createAction } = require('../../../src/core');
-// Import action-specific helpers
 
 /**
  * Business logic for get-products-mesh action
@@ -15,11 +16,11 @@ const { createAction } = require('../../../src/core');
  * @returns {Promise<Object>} Action response
  */
 async function getProductsMeshBusinessLogic(context) {
-  const { core, params, originalParams } = context;
+  const { core, extractedParams, webActionParams } = context;
 
   // Check format parameter to determine response type
-  const allParams = { ...originalParams, ...params };
-  const format = allParams.format || 'csv';
+  const allActionParams = { ...webActionParams, ...extractedParams };
+  const format = allActionParams.format || 'csv';
 
   // Step 1-3: Execute mesh data processing
   const { steps, meshData, builtProducts } = await executeMeshDataSteps(context);

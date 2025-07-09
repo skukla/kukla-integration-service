@@ -12,34 +12,34 @@ const { createAction } = require('../../../src/core');
  * @returns {Promise<Object>} Action response
  */
 async function deleteFileBusinessLogic(context) {
-  const { files, core, config, params, originalParams, logger } = context;
+  const { files, core, config, extractedParams, webActionParams, logger } = context;
   const steps = [];
 
-  // Merge parameters to handle query parameters properly
-  const allParams = { ...originalParams, ...params };
+  // Merge raw web action params with processed extracted params
+  const allActionParams = { ...webActionParams, ...extractedParams };
 
   // Step 1: Validate required parameters
-  const missingParams = core.checkMissingParams(allParams, ['fileName']);
+  const missingParams = core.checkMissingParams(allActionParams, ['fileName']);
   if (missingParams) {
     throw new Error(missingParams);
   }
   steps.push(core.formatStepMessage('validate-parameters', 'success'));
 
   // Step 2: Delete file from storage
-  const cleanFileName = files.extractCleanFilename(allParams.fileName);
+  const cleanFileName = files.extractCleanFilename(allActionParams.fileName);
   logger.info('Delete operation starting:', {
-    original: allParams.fileName,
+    original: allActionParams.fileName,
     clean: cleanFileName,
   });
 
-  const storage = await files.initializeStorage(config, params);
+  const storage = await files.initializeStorage(config, extractedParams);
   await files.deleteFile(storage, cleanFileName);
   steps.push(core.formatStepMessage('delete-file', 'success', { fileName: cleanFileName }));
 
   // Step 3: Get updated file list using browse-files action
   const { main: browseFilesMain } = require('../../frontend/browse-files/index');
   const fileListResponse = await browseFilesMain({
-    ...allParams,
+    ...allActionParams,
     __ow_method: 'get',
     modal: null, // Ensure we don't return modal content
   });
