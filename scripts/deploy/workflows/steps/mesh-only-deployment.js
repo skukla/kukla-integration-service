@@ -1,11 +1,11 @@
 /**
- * Mesh-Only Deployment Step
- * Handles standalone mesh updates without app deployment
+ * Mesh Only Deployment Step
+ * Handles mesh-only deployment workflow
  */
 
-const chalk = require('chalk');
-
-const { operations } = require('../../../');
+// Direct imports to avoid scripts index import issues
+const { updateMeshWithRetry } = require('../../../core/operations/mesh');
+const { FORMATTERS, COLORS } = require('../../../core/operations/output-standards');
 
 /**
  * Execute mesh-only deployment
@@ -17,16 +17,16 @@ const { operations } = require('../../../');
 async function meshOnlyDeploymentStep(options = {}) {
   const { isProd = false, environment = 'staging' } = options;
 
-  console.log(chalk.bold.cyan(`\n🔄 Updating API Mesh for ${environment}...\n`));
+  console.log(COLORS.header(`\nUpdating API Mesh for ${environment}...\n`));
 
-  const meshUpdateSuccess = await operations.mesh.updateMeshWithRetry({
+  const meshUpdateSuccess = await updateMeshWithRetry({
     isProd,
-    waitTimeSeconds: isProd ? 90 : 30,
-    maxStatusChecks: isProd ? 10 : 2,
+    waitTimeSeconds: isProd ? 60 : 45,
+    maxStatusChecks: isProd ? 3 : 3,
   });
 
   if (meshUpdateSuccess) {
-    console.log(chalk.bold.green(`\n✅ Mesh update to ${environment} completed successfully!\n`));
+    console.log(FORMATTERS.success(`Mesh update to ${environment} completed successfully`));
 
     return {
       success: true,

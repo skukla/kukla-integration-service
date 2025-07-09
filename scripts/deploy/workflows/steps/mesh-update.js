@@ -1,11 +1,11 @@
 /**
  * Mesh Update Step
- * Handles API Mesh updates when needed
+ * Handles updating the API Mesh when needed
  */
 
-const chalk = require('chalk');
-
-const { operations } = require('../../../');
+// Direct imports to avoid scripts index import issues
+const { updateMeshWithRetry } = require('../../../core/operations/mesh');
+const { FORMATTERS } = require('../../../core/operations/output-standards');
 
 /**
  * Update API Mesh if needed
@@ -34,17 +34,18 @@ async function meshUpdateStep(options = {}) {
     };
   }
 
-  console.log(chalk.blue('\n🔄 Updating API Mesh...\n'));
-
-  const meshUpdateSuccess = await operations.mesh.updateMeshWithRetry({
+  // Update mesh with adjusted timing for 90s deployment window
+  const meshUpdateSuccess = await updateMeshWithRetry({
     isProd,
-    waitTimeSeconds: isProd ? 90 : 30,
-    maxStatusChecks: isProd ? 10 : 2,
+    waitTimeSeconds: isProd ? 60 : 45, // Production: 60s intervals, Staging: 45s intervals
+    maxStatusChecks: isProd ? 3 : 3, // Both: 3 checks (allows for ~180s total for prod, ~135s for staging)
   });
 
   if (!meshUpdateSuccess) {
-    console.log(chalk.yellow('⚠️ Mesh update failed, but deployment completed successfully.'));
-    console.log(chalk.yellow(`You may need to run: npm run deploy:mesh${isProd ? ':prod' : ''}`));
+    console.log(FORMATTERS.warning('Mesh update failed, but deployment completed successfully.'));
+    console.log(
+      FORMATTERS.info(`You may need to run: npm run deploy:mesh${isProd ? ':prod' : ''}`)
+    );
 
     return {
       success: true,

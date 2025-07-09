@@ -23,58 +23,6 @@
  * duplication across build, deploy, and test domains.
  */
 
-const { spawn } = require('child_process');
-
-const chalk = require('chalk');
-
-/**
- * Update API Mesh with retry logic
- * @param {Object} options - Update options
- * @param {boolean} options.isProd - Whether in production
- * @returns {Promise<boolean>} Success status
- */
-async function updateMeshWithRetry(options = {}) {
-  const { isProd = false } = options;
-
-  try {
-    console.log(chalk.blue('🔄 Updating API Mesh...'));
-
-    // Execute mesh update command
-    const updateCommand = isProd
-      ? 'aio api-mesh update mesh.json --workspace=Production'
-      : 'aio api-mesh update mesh.json';
-
-    const [cmd, ...args] = updateCommand.split(' ');
-
-    const updateProcess = spawn(cmd, args, {
-      stdio: 'inherit',
-      shell: true,
-    });
-
-    await new Promise((resolve, reject) => {
-      updateProcess.on('close', (code) => {
-        if (code !== 0) {
-          console.log(chalk.yellow(`⚠️ Mesh update command exited with code ${code}`));
-          reject(new Error(`Mesh update failed with exit code ${code}`));
-        } else {
-          console.log(chalk.green('✅ Mesh update command completed'));
-          resolve();
-        }
-      });
-
-      updateProcess.on('error', (err) => {
-        console.log(chalk.red('❌ Failed to start mesh update command'));
-        reject(err);
-      });
-    });
-
-    return true;
-  } catch (error) {
-    console.log(chalk.red(`❌ Mesh update failed: ${error.message}`));
-    return false;
-  }
-}
-
 module.exports = {
   // Core infrastructure shared across all domains
   core: require('./core'),
@@ -85,9 +33,7 @@ module.exports = {
     spinner: require('./core/operations/spinner'),
     hash: require('./core/operations/hash'),
     sleep: require('./core/utils').sleep,
-    mesh: {
-      updateMeshWithRetry,
-    },
+    mesh: require('./core/operations/mesh'),
   },
 
   // Domain-specific exports

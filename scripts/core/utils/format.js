@@ -6,48 +6,66 @@
 const chalk = require('chalk');
 
 /**
- * Format success message
+ * Format success message with Unicode symbol
  * @param {string} message - Success message
  * @returns {string} Formatted message
  */
-function formatSuccess(message) {
-  return chalk.green('✅ ' + message);
+function success(message) {
+  return chalk.green('✔ ' + message);
 }
 
 /**
- * Format error message
+ * Format error message with Unicode symbol
  * @param {string} message - Error message
  * @returns {string} Formatted message
  */
-function formatError(message) {
-  return chalk.red('❌ ' + message);
+function error(message) {
+  return chalk.red('✖ ' + message);
 }
 
 /**
- * Format warning message
+ * Format warning message with Unicode symbol
  * @param {string} message - Warning message
  * @returns {string} Formatted message
  */
-function formatWarning(message) {
-  return chalk.yellow('⚠️ ' + message);
+function warning(message) {
+  return chalk.yellow('⚠ ' + message);
 }
 
 /**
- * Format info message
+ * Format info message with Unicode symbol
  * @param {string} message - Info message
  * @returns {string} Formatted message
  */
-function formatInfo(message) {
-  return chalk.blue('ℹ️ ' + message);
+function info(message) {
+  return chalk.blue('ℹ ' + message);
 }
 
 /**
- * Format bold text
- * @param {string} text - Text to make bold
- * @returns {string} Formatted text
+ * Format header with consistent styling
+ * @param {string} message - Header message
+ * @returns {string} Formatted header
  */
-function formatBold(text) {
-  return chalk.bold(text);
+function header(message) {
+  return chalk.bold.cyan('\n' + message + '\n');
+}
+
+/**
+ * Format subheader with consistent styling
+ * @param {string} message - Subheader message
+ * @returns {string} Formatted subheader
+ */
+function subheader(message) {
+  return chalk.cyan(message);
+}
+
+/**
+ * Format muted text
+ * @param {string} message - Muted message
+ * @returns {string} Formatted message
+ */
+function muted(message) {
+  return chalk.gray(message);
 }
 
 /**
@@ -66,10 +84,12 @@ function formatFileSize(bytes) {
 }
 
 module.exports = {
-  formatSuccess,
-  formatError,
-  formatWarning,
-  formatInfo,
-  formatBold,
+  success,
+  error,
+  warning,
+  info,
+  header,
+  subheader,
+  muted,
   formatFileSize,
 };

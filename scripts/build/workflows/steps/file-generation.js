@@ -16,13 +16,8 @@ const fs = require('fs');
 function fileGenerationStep(params) {
   const { resolverPath, resolverContent, reason } = params;
 
-  console.log('🔄 Generating mesh resolver...');
-  console.log(`   Reason: ${reason}`);
-
-  // Write the resolver file
+  // Write the resolver file (no console output - parent workflow handles spinner)
   fs.writeFileSync(resolverPath, resolverContent);
-
-  console.log('✅ Mesh resolver generated successfully');
 
   return {
     success: true,

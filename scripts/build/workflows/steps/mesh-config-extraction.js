@@ -5,8 +5,9 @@
 
 const path = require('path');
 
-const { operations } = require('../../../');
+// Direct imports to avoid scripts index import issues
 const { loadConfig } = require('../../../../config');
+const { detectScriptEnvironment } = require('../../../core/operations/environment');
 
 /**
  * Extract mesh configuration for resolver generation
@@ -18,7 +19,7 @@ async function meshConfigExtractionStep() {
   const resolverPath = path.join(__dirname, '../../../../mesh-resolvers.js');
 
   // Load configuration for the current environment with CLI detection
-  const env = operations.environment.detectScriptEnvironment({}, { allowCliDetection: true });
+  const env = detectScriptEnvironment({}, { allowCliDetection: true });
   const config = loadConfig({ NODE_ENV: env });
 
   // Extract mesh configuration properties for injection into resolver
@@ -35,7 +36,7 @@ async function meshConfigExtractionStep() {
       requestDelay: config.performance.batching.requestDelay,
     },
     timeout: config.performance.timeouts.api.mesh,
-    retries: config.mesh.retries,
+    retries: config.performance.retries.api.mesh,
   };
 
   return {
