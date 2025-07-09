@@ -23,11 +23,11 @@ function createComparisonHelpers() {
   function getStatus(val, base, threshold) {
     const percentDiff = (val - base) / base;
     if (percentDiff <= threshold && percentDiff >= -threshold) {
-      return { icon: '✅', color: chalk.green };
+      return { icon: '✔', color: chalk.green };
     } else if (Math.abs(percentDiff) <= threshold * 2) {
-      return { icon: '⚠️', color: chalk.yellow };
+      return { icon: '⚠', color: chalk.yellow };
     } else {
-      return { icon: '❌', color: chalk.red };
+      return { icon: '✖', color: chalk.red };
     }
   }
 
@@ -187,22 +187,22 @@ function executeComparisons(comparisons, helpers, spinner) {
  * @returns {Object} Overall verdict result
  */
 function calculateOverallVerdict(verdicts, comparisons, spinner) {
-  let overall = '✅';
+  let overall = '✔';
   let overallColor = chalk.green;
-  if (verdicts.includes('❌')) {
-    overall = '❌';
+  if (verdicts.includes('✖')) {
+    overall = '✖';
     overallColor = chalk.red;
-  } else if (verdicts.includes('⚠️')) {
-    overall = '⚠️';
+  } else if (verdicts.includes('⚠')) {
+    overall = '⚠';
     overallColor = chalk.yellow;
   }
 
   spinner.info(
     overallColor(
       `Overall: ${overall} Performance is ${
-        overall === '✅'
+        overall === '✔'
           ? 'within acceptable limits.'
-          : overall === '⚠️'
+          : overall === '⚠'
             ? 'showing some warnings.'
             : 'degraded!'
       }`
