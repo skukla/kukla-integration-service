@@ -1,16 +1,22 @@
 /**
  * Scripts Core Operations
- * Business operations that provide shared infrastructure
+ * Mid-level operations shared across all script domains
  */
 
 const environment = require('./environment');
+const formatting = require('./formatting');
 const hash = require('./hash');
+const mesh = require('./mesh');
+const meshTemplates = require('./mesh-templates');
 const scriptFramework = require('./script-framework');
 const spinner = require('./spinner');
 
 module.exports = {
   environment,
-  spinner,
   hash,
+  mesh,
   scriptFramework,
+  spinner,
+  formatting,
+  meshTemplates,
 };

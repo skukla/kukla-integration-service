@@ -1,24 +1,28 @@
 /**
- * Scripts Core Utils
- * Pure utility functions shared across all script domains
+ * Scripts Core Utilities
+ * Low-level pure functions and constants
  */
 
+const basicFormatters = require('./basic-formatters');
 const file = require('./file');
 const format = require('./format');
+const outputConstants = require('./output-constants');
 const string = require('./string');
 
 /**
- * Sleep for a specified number of milliseconds
+ * Sleep utility function
  * @param {number} ms - Milliseconds to sleep
- * @returns {Promise} Promise that resolves after the specified time
+ * @returns {Promise} Promise that resolves after delay
  */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 module.exports = {
+  file,
   format,
   string,
-  file,
+  outputConstants,
+  basicFormatters,
   sleep,
 };

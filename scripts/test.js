@@ -1,70 +1,53 @@
 #!/usr/bin/env node
 
 /**
- * Test Script - Clean Orchestrator Pattern
- * Focuses on WHAT to test, not HOW to parse complex CLI arguments
+ * Main Test Script
+ * Entry point for testing operations
  */
 
-const { scriptFramework } = require('./core/operations');
+const core = require('./core');
 
-/**
- * Clean business logic for test operations
- * @param {Object} context - Script context with domains and args
- * @returns {Promise<Object>} Test result
- */
-async function testBusinessLogic(context) {
-  const { test, args } = context;
+async function main() {
+  const args = core.parseArgs(process.argv.slice(2));
 
-  // Step 1: Execute test orchestration workflow with parsed options
-  const testResult = await test.orchestrate.testOrchestrationWorkflow({
-    args: args.args,
-    rawOutput: args.rawOutput,
-    verbose: args.verbose,
-  });
+  if (args.help) {
+    console.log(`
+Usage: npm run test:action <action> [options]
 
-  // Step 2: Return result based on success/failure
-  if (testResult.success) {
-    return scriptFramework.success(
-      {
-        command: testResult.command,
-        target: testResult.target,
-        environment: testResult.environment,
-        completed: testResult.success,
-      },
-      testResult.message || 'Test completed successfully'
-    );
-  } else {
-    return scriptFramework.error(testResult.message || 'Test failed');
+Options:
+  --help        Show this help message
+  --raw         Output raw JSON response only
+  --verbose     Enable verbose output
+    `);
+    return;
+  }
+
+  const actionName = args._[0];
+  if (!actionName) {
+    console.error(core.formatting.error('Action name is required'));
+    console.log('Usage: npm run test:action <action>');
+    process.exit(1);
+  }
+
+  console.log(core.formatting.scriptStart(`Starting test for ${actionName}`));
+
+  try {
+    const { actionTestingWorkflow } = require('./test/workflows');
+    await actionTestingWorkflow(actionName, {
+      rawOutput: args.raw,
+      verbose: args.verbose,
+    });
+
+    console.log(core.formatting.scriptEnd(`Test for ${actionName} completed successfully`));
+  } catch (error) {
+    console.error(core.formatting.error(`Test failed: ${error.message}`));
+    process.exit(1);
   }
 }
 
-// Create script with framework - clean and simple like build.js and deploy.js!
-const testScript = scriptFramework.createScript(testBusinessLogic, {
-  scriptName: 'test',
-  domains: ['test'],
-  description: 'Test Adobe App Builder actions, APIs, and performance',
-  cliOptions: {
-    rawOutput: {
-      flags: ['--raw'],
-      description: 'Output raw JSON response only',
-    },
-    verbose: {
-      flags: ['--verbose'],
-      description: 'Show detailed output',
-    },
-  },
-  examples: [
-    'npm run test action get-products',
-    'npm run test action delete-file fileName=products.csv',
-    'npm run test api',
-    'npm run test performance rest-vs-mesh',
-  ],
-});
-
-// Export main function for npm scripts
-module.exports = testScript;
-
-// Run if called directly
 if (require.main === module) {
-  testScript.main();
+  main().catch((error) => {
+    console.error(core.formatting.error(`Script execution failed: ${error.message}`));
+    process.exit(1);
+  });
 }

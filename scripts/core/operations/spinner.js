@@ -1,39 +1,64 @@
 /**
  * Scripts Core Spinner Operations
- * Shared spinner functionality used by all script domains
+ * Shared spinner operations used across all script domains
  */
 
 const ora = require('ora');
 
-const { format } = require('../utils');
+const { basicFormatters } = require('../utils');
 
 /**
- * Create a spinner with consistent styling
+ * Create and start a spinner with consistent styling
  * @param {string} text - Spinner text
- * @param {Object} options - Spinner options
- * @param {string} options.color - Spinner color (default: 'cyan')
  * @returns {Object} Ora spinner instance
  */
-function createSpinner(text, options = {}) {
-  const { color = 'cyan' } = options;
-
+function createSpinner(text) {
   return ora({
-    text,
-    color,
+    text: basicFormatters.muted(text),
     spinner: 'dots',
-  });
+  }).start();
 }
 
 /**
- * Format spinner success message
- * @param {string} message - Success message
- * @returns {string} Formatted message
+ * Update spinner text
+ * @param {Object} spinner - Ora spinner instance
+ * @param {string} text - New text
  */
-function formatSpinnerSuccess(message) {
-  return format.formatSuccess(message);
+function updateSpinner(spinner, text) {
+  spinner.text = basicFormatters.muted(text);
+}
+
+/**
+ * Stop spinner with success
+ * @param {Object} spinner - Ora spinner instance
+ * @param {string} text - Success text
+ */
+function succeedSpinner(spinner, text) {
+  spinner.succeed(basicFormatters.success(text));
+}
+
+/**
+ * Stop spinner with failure
+ * @param {Object} spinner - Ora spinner instance
+ * @param {string} text - Failure text
+ */
+function failSpinner(spinner, text) {
+  spinner.fail(basicFormatters.error(text));
+}
+
+/**
+ * Stop spinner with warning
+ * @param {Object} spinner - Ora spinner instance
+ * @param {string} text - Warning text
+ */
+function warnSpinner(spinner, text) {
+  spinner.warn(basicFormatters.warning(text));
 }
 
 module.exports = {
   createSpinner,
-  formatSpinnerSuccess,
+  updateSpinner,
+  succeedSpinner,
+  failSpinner,
+  warnSpinner,
 };

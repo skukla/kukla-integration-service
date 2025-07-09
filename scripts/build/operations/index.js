@@ -9,7 +9,12 @@
 // Currently no build-specific operations
 // Use require('../core') for shared operations
 
+const configGeneration = require('./config-generation');
+const outputTemplates = require('./output-templates');
+
 module.exports = {
+  configGeneration,
+  outputTemplates,
   // No build-specific operations yet
   // All operations are available via core domain
 }; 

@@ -1,30 +1,54 @@
 /**
  * Environment Detection Step
- * Handles environment detection with user feedback
+ * Detects and validates deployment environment
  */
 
-const { operations } = require('../../../');
+const core = require('../../../core');
+const { basicFormatters } = require('../../../core/utils');
 
 /**
- * Detect and display environment information
+ * Detect and validate environment step
+ * @param {string} environment - Target environment
  * @returns {Promise<Object>} Environment detection result
  */
-async function environmentDetectionStep() {
-  const envSpinner = operations.spinner.createSpinner('Detecting environment...');
-  await operations.sleep(800);
+async function detectAndValidateEnvironment(environment) {
+  try {
+    console.log(basicFormatters.info(`Detecting environment: ${environment}`));
 
-  const env = operations.environment.detectScriptEnvironment({}, { allowCliDetection: true });
+    // Validate environment
+    if (!['staging', 'production'].includes(environment)) {
+      throw new Error(`Invalid environment: ${environment}. Must be 'staging' or 'production'`);
+    }
 
-  envSpinner.succeed(operations.spinner.formatSpinnerSuccess(`Environment detected: ${env}`));
-  await operations.sleep(300);
+    // Detect current workspace
+    const detectedEnv = core.detectEnvironment();
 
-  return {
-    success: true,
-    environment: env,
-    step: 'Environment detected',
-  };
+    if (detectedEnv !== environment) {
+      console.log(
+        basicFormatters.warning(
+          `Environment mismatch: detected ${detectedEnv}, requested ${environment}`
+        )
+      );
+    }
+
+    console.log(basicFormatters.success(`Environment validated: ${environment}`));
+
+    return {
+      success: true,
+      environment,
+      detected: detectedEnv,
+      step: `Environment detection completed for ${environment}`,
+    };
+  } catch (error) {
+    console.error(basicFormatters.error(`Environment detection failed: ${error.message}`));
+    return {
+      success: false,
+      error: error.message,
+      step: 'Environment detection failed',
+    };
+  }
 }
 
 module.exports = {
-  environmentDetectionStep,
+  detectAndValidateEnvironment,
 };
