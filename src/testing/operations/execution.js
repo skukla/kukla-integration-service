@@ -23,10 +23,12 @@ async function executeApiTest(endpoint, params, rawOutput) {
 
   const fullUrl = testConfig.api.baseUrl + endpointPath;
 
-  console.log('  Authenticating...');
-  console.log('  Fetching products...');
-
   try {
+    // eslint-disable-next-line no-console
+    console.log('  Authenticating...');
+    // eslint-disable-next-line no-console
+    console.log('  Fetching products...');
+
     const response = await fetch(fullUrl, {
       method: 'GET',
       timeout: testConfig.api.timeout,
@@ -80,9 +82,13 @@ async function executePerformanceTest(scenarioName, scenario, options) {
   };
 
   if (!rawOutput) {
+    // eslint-disable-next-line no-console
     console.log(`\n🚀 Running performance test: ${scenario.name}`);
+    // eslint-disable-next-line no-console
     console.log(`📋 Description: ${scenario.description}`);
+    // eslint-disable-next-line no-console
     console.log(`🌍 Environment: ${environment}`);
+    // eslint-disable-next-line no-console
     console.log(`🔄 Iterations: ${iterations}\n`);
   }
 

@@ -57,11 +57,10 @@ function buildDownloadUrl(fileName) {
 }
 
 /**
- * Initialize HTMX download handlers
+ * Handle download button clicks to set up proper URLs
  * @param {Object} htmx - HTMX instance
  */
-export function initializeDownloadHandlers(htmx) {
-  // Set up download URLs on click
+function setupDownloadClickHandler(htmx) {
   document.addEventListener(
     'click',
     (event) => {
@@ -80,8 +79,78 @@ export function initializeDownloadHandlers(htmx) {
     },
     true
   ); // Use capture to run before HTMX's click handler
+}
 
-  // After request - Process download
+/**
+ * Process download response content
+ * @param {string} responseContent - Response content
+ * @param {string} fileName - File name
+ * @param {string} contentType - Content type
+ */
+function processDownloadResponse(responseContent, fileName, contentType) {
+  // Detect if content is base64 or plain text
+  const isBase64 =
+    /^[A-Za-z0-9+/]*={0,2}$/.test(responseContent) && responseContent.length % 4 === 0;
+
+  if (isBase64) {
+    processDownload(responseContent, fileName, contentType);
+  } else {
+    // Convert plain text to blob and download directly
+    const blob = new Blob([responseContent], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+
+    // Clean up
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Handle successful download responses
+ * @param {Event} event - HTMX after request event
+ */
+function handleDownloadSuccess(event) {
+  const button = event.detail.elt;
+  const fileName = button.dataset.fileName;
+
+  try {
+    // Get content type from response headers (use standard Content-Type header)
+    let contentType = 'application/octet-stream'; // Default fallback
+
+    try {
+      // Try to get Content-Type header (browsers allow access to standard headers)
+      contentType = event.detail.xhr.getResponseHeader('Content-Type') || contentType;
+    } catch (headerError) {
+      // If we can't access headers, use default content type
+      console.warn('Could not access Content-Type header, using default:', headerError.message);
+    }
+
+    // Check if response is already base64 or plain text
+    let responseContent = event.detail.xhr.response;
+
+    // If the response doesn't look like base64, it might be raw content
+    if (!responseContent || typeof responseContent !== 'string') {
+      throw new Error('Invalid response format');
+    }
+
+    processDownloadResponse(responseContent, fileName, contentType);
+    showNotification(`${fileName} downloaded successfully`, 'success');
+  } catch (error) {
+    showNotification(`Failed to process download for ${fileName}: ${error.message}`, 'error');
+  }
+}
+
+/**
+ * Handle download request completion
+ * @param {Object} htmx - HTMX instance
+ */
+function setupDownloadResponseHandler(htmx) {
   htmx.on('htmx:afterRequest', (event) => {
     const button = event.detail.elt;
     if (!button.classList.contains('download-button')) return;
@@ -89,59 +158,20 @@ export function initializeDownloadHandlers(htmx) {
     const fileName = button.dataset.fileName;
 
     if (event.detail.successful) {
-      try {
-        // Get content type from response headers (use standard Content-Type header)
-        let contentType = 'application/octet-stream'; // Default fallback
-
-        try {
-          // Try to get Content-Type header (browsers allow access to standard headers)
-          contentType = event.detail.xhr.getResponseHeader('Content-Type') || contentType;
-        } catch (headerError) {
-          // If we can't access headers, use default content type
-          console.warn('Could not access Content-Type header, using default:', headerError.message);
-        }
-
-        // Check if response is already base64 or plain text
-        let responseContent = event.detail.xhr.response;
-
-        // If the response doesn't look like base64, it might be raw content
-        if (!responseContent || typeof responseContent !== 'string') {
-          throw new Error('Invalid response format');
-        }
-
-        // Detect if content is base64 or plain text
-        const isBase64 =
-          /^[A-Za-z0-9+/]*={0,2}$/.test(responseContent) && responseContent.length % 4 === 0;
-
-        if (isBase64) {
-          processDownload(responseContent, fileName, contentType);
-        } else {
-          // Convert plain text to blob and download directly
-          const blob = new Blob([responseContent], { type: contentType });
-          const url = window.URL.createObjectURL(blob);
-
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-
-          // Clean up
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        }
-        showNotification(`${fileName} downloaded successfully`, 'success');
-      } catch (error) {
-        showNotification(`Failed to process download for ${fileName}: ${error.message}`, 'error');
-      }
+      handleDownloadSuccess(event);
     } else {
       const status = event.detail.xhr.status;
       const statusText = event.detail.xhr.statusText;
       showNotification(`Failed to download ${fileName} (${status}: ${statusText})`, 'error');
     }
   });
+}
 
-  // Error handling
+/**
+ * Handle download errors
+ * @param {Object} htmx - HTMX instance
+ */
+function setupDownloadErrorHandler(htmx) {
   htmx.on('htmx:error', (event) => {
     const button = event.detail.elt;
     if (button.classList.contains('download-button')) {
@@ -151,4 +181,14 @@ export function initializeDownloadHandlers(htmx) {
       );
     }
   });
+}
+
+/**
+ * Initialize HTMX download handlers
+ * @param {Object} htmx - HTMX instance
+ */
+export function initializeDownloadHandlers(htmx) {
+  setupDownloadClickHandler(htmx);
+  setupDownloadResponseHandler(htmx);
+  setupDownloadErrorHandler(htmx);
 }
