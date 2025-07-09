@@ -113,7 +113,7 @@ async function orchestrateInventoryRequests(skus, config, params, trace = null) 
   const { buildStockItemEndpoint } = require('../utils/endpoint-builders');
 
   // Split SKUs into batches for multiple requests
-  const batchSize = config.commerce.batching.inventory || 50;
+  const batchSize = config.commerce.batching.inventory;
   const batches = [];
 
   for (let i = 0; i < skus.length; i += batchSize) {
