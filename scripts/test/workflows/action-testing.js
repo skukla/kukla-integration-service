@@ -1,18 +1,15 @@
 /**
- * Action Testing Workflow
- * Extracted from scripts/test-action.js for domain organization
- * Handles testing of individual Adobe I/O Runtime actions
+ * Test Workflows
+ * High-level orchestration for testing operations
  */
 
 const fs = require('fs');
 const path = require('path');
 
 const yaml = require('js-yaml');
-const fetch = require('node-fetch');
 
 const { loadConfig } = require('../../../config');
-const { buildRuntimeUrl } = require('../../../src/core/routing');
-const core = require('../../core');
+const { displayFormatting, testExecution } = require('../operations');
 
 /**
  * Process parameters for specific actions to provide better UX
@@ -81,28 +78,35 @@ function processActionParameters(actionName, params) {
 }
 
 /**
- * Test an action by calling its runtime URL
- * @param {string} actionUrl - Full action URL
- * @param {Object} params - Action parameters
- * @returns {Promise<Object>} Test result
+ * Display rich action test results with detailed information
+ * @param {Object} response - Action response
+ * @param {string} actionName - Name of the action
+ * @param {string} actionUrl - Action URL
+ * @param {string} environment - Environment name
  */
-async function testAction(actionUrl, params) {
-  const response = await fetch(actionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(params),
-  });
+function displayActionResults(response, actionName, actionUrl, environment) {
+  const { status, statusText, body } = response;
 
-  const responseBody = await response.json();
+  // Add spacing before results
+  console.log('');
 
-  return {
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries()),
-    body: responseBody,
-  };
+  // Display status and environment info
+  displayFormatting.displayActionStatus(status, statusText, actionName);
+  displayFormatting.displayEnvironmentInfo(actionUrl, environment);
+
+  // Display response details if successful
+  if (status === 200 && body) {
+    displayFormatting.displayExecutionSteps(body.steps);
+    displayFormatting.displayStorageInfo(body.storage);
+    displayFormatting.displayDownloadInfo(body.downloadUrl);
+    displayFormatting.displayPerformanceMetrics(body.performance);
+    displayFormatting.displayMessage(body.message);
+  } else if (body && body.error) {
+    displayFormatting.displayErrorDetails(body.error);
+  }
+
+  // Add spacing after results
+  console.log('');
 }
 
 /**
@@ -120,57 +124,19 @@ async function actionTestingWorkflow(actionName, options = {}) {
     // Process parameters for the specific action
     const processedParams = processActionParameters(actionName, params);
 
-    // Use shared environment detection if not explicitly set
-    if (!processedParams.NODE_ENV && !process.env.NODE_ENV) {
-      if (!rawOutput) {
-        const envSpinner = core.createSpinner('Detecting workspace environment...');
-        try {
-          processedParams.NODE_ENV = core.detectScriptEnvironment(processedParams, {
-            allowCliDetection: true,
-          });
-          const capitalizedEnv = core.capitalize(processedParams.NODE_ENV);
-          envSpinner.succeed(`Environment detected: ${capitalizedEnv}`);
-        } catch (error) {
-          envSpinner.fail('Environment detection failed, defaulting to production');
-          processedParams.NODE_ENV = 'production';
-        }
-      } else {
-        processedParams.NODE_ENV = core.detectScriptEnvironment(processedParams, {
-          allowCliDetection: true,
-        });
-      }
-    }
+    // Handle environment detection
+    testExecution.handleEnvironmentDetection(processedParams, rawOutput);
 
     if (rawOutput) {
       // Raw mode: just return response data
-      const config = loadConfig(processedParams);
-      const actionUrl = buildRuntimeUrl(actionName, null, config);
-      const response = await testAction(actionUrl, processedParams);
-
-      return {
-        success: true,
-        rawResponse: response,
-        actionUrl,
-      };
+      return await testExecution.executeRawTest(actionName, processedParams);
     } else {
-      // Enhanced mode: user-friendly output with spinners
-      const testSpinner = core.createSpinner(`Testing action: ${actionName}`);
-
-      const config = loadConfig(processedParams);
-      const actionUrl = buildRuntimeUrl(actionName, null, config);
-      const response = await testAction(actionUrl, processedParams);
-
-      testSpinner.succeed(`Action tested: ${actionName}`);
-
-      return {
-        success: true,
+      // Enhanced mode: user-friendly output with rich display
+      return await testExecution.executeEnhancedTest(
         actionName,
-        actionUrl,
-        response,
-        environment: processedParams.NODE_ENV,
-        status: response.status,
-        statusText: response.statusText,
-      };
+        processedParams,
+        displayActionResults
+      );
     }
   } catch (error) {
     throw new Error(`Action test failed: ${error.message}`);

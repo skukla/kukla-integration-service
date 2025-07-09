@@ -4,20 +4,9 @@
  * Handles frontend configuration and asset generation
  */
 
-const fs = require('fs');
 const path = require('path');
 
-const { loadConfig } = require('../../../config');
-const core = require('../../core');
-
-/**
- * Write generated file with proper formatting
- * @param {string} filePath - Path to write file
- * @param {string} content - File content
- */
-async function writeGeneratedFile(filePath, content) {
-  fs.writeFileSync(filePath, content);
-}
+const { configGeneration } = require('../operations');
 
 /**
  * Generate frontend configuration
@@ -31,60 +20,30 @@ async function generateFrontendConfig(options = {}) {
   try {
     // Create the output directory if it doesn't exist
     const outputDir = path.join('web-src', 'src', 'config', 'generated');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
+    configGeneration.ensureOutputDirectory(outputDir);
 
     // Load configuration with proper environment detection
-    const configSpinner = useSpinners ? core.createSpinner('Loading configuration...') : null;
-    const env = core.detectScriptEnvironment({}, { allowCliDetection: true });
-    const config = loadConfig({ NODE_ENV: env });
-    
-    if (configSpinner) {
-      configSpinner.succeed(core.formatSpinnerSuccess('Configuration loaded'));
-    }
+    const { config, env } = await configGeneration.loadConfigWithEnvironment(useSpinners);
 
-    // Generate frontend configuration
-    const frontendSpinner = useSpinners ? core.createSpinner('Generating frontend config...') : null;
-    const frontendConfig = {
-      environment: env,
-      runtime: {
-        package: config.runtime.package,
-        version: config.runtime.version,
-        url: config.runtime.url,
-        paths: config.runtime.paths,
-        actions: config.runtime.actions,
-      },
-      performance: {
-        timeout: config.performance.timeouts.api.commerce,
-        maxExecutionTime: config.performance.maxExecutionTime,
-      },
-    };
+    // Generate and write frontend configuration
+    const frontendConfig = configGeneration.buildFrontendConfig(config, env);
+    await configGeneration.writeConfigFile(
+      path.join(outputDir, 'config.js'),
+      frontendConfig,
+      'Generating frontend config...',
+      'Frontend config generated',
+      useSpinners
+    );
 
-    // Write frontend configuration
-    const configContent = `/* eslint-disable */\nexport default ${JSON.stringify(frontendConfig, null, 2)};\n`;
-    await writeGeneratedFile(path.join(outputDir, 'config.js'), configContent);
-    
-    if (frontendSpinner) {
-      frontendSpinner.succeed(core.formatSpinnerSuccess('Frontend config generated'));
-    }
-
-    // Generate frontend URLs
-    const urlSpinner = useSpinners ? core.createSpinner('Generating URL configuration...') : null;
-    const urlConfig = {
-      actions: config.runtime.actions,
-      runtime: {
-        url: config.runtime.url,
-        namespace: config.runtime.namespace,
-      },
-    };
-
-    const urlContent = `/* eslint-disable */\nexport default ${JSON.stringify(urlConfig, null, 2)};\n`;
-    await writeGeneratedFile(path.join(outputDir, 'urls.js'), urlContent);
-    
-    if (urlSpinner) {
-      urlSpinner.succeed(core.formatSpinnerSuccess('URL configuration generated'));
-    }
+    // Generate and write URL configuration
+    const urlConfig = configGeneration.buildUrlConfig(config);
+    await configGeneration.writeConfigFile(
+      path.join(outputDir, 'urls.js'),
+      urlConfig,
+      'Generating URL configuration...',
+      'URL configuration generated',
+      useSpinners
+    );
 
     return {
       success: true,
