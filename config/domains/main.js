@@ -24,6 +24,7 @@ function buildMainConfig() {
 
     storage: {
       provider: 's3', // Storage provider choice: 's3' or 'app-builder'
+      directory: 'public/', // Directory for file organization (used by both providers)
     },
   };
 }

@@ -9,7 +9,7 @@
 /**
  * Build files and storage configuration
  * @param {Object} [params] - Action parameters (unused)
- * @param {Object} [mainConfig] - Shared main configuration (for CSV filename only)
+ * @param {Object} [mainConfig] - Shared main configuration (for CSV filename and storage directory)
  * @returns {Object} Files configuration
  */
 function buildFilesConfig(params = {}, mainConfig = {}) {
@@ -24,6 +24,7 @@ function buildFilesConfig(params = {}, mainConfig = {}) {
         compressionLevel: 6, // Technical setting
         streamBufferSize: 16384, // Technical setting
       },
+      directory: mainConfig.storage?.directory || 'public/', // Shared from main (business setting)
     },
 
     extensions: {

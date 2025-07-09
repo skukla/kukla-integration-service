@@ -78,7 +78,7 @@ function loadConfig(params = {}) {
   const uiConfig = buildUiConfig();
 
   return {
-    // 🎯 MAIN CONFIG: Business settings only
+    // 🎯 SHARED CORE: Business settings only
     main: mainConfig,
 
     // 🏗️ BUSINESS DOMAINS
@@ -88,6 +88,7 @@ function loadConfig(params = {}) {
     // 📁 STORAGE CONFIGURATION (combined from main and files domains)
     storage: {
       provider: mainConfig.storage.provider, // From main domain
+      directory: mainConfig.storage.directory, // From main domain
       ...filesConfig.storage, // File-specific storage settings
     },
     files: {
