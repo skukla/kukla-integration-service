@@ -42,7 +42,7 @@ function buildProductsApiUrl(pageSize, currentPage, config) {
     {
       pageSize,
       currentPage,
-      fields: config.products.fields.export,
+      fields: config.main.exportFields,
     },
     config
   );

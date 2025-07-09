@@ -3,7 +3,7 @@
  * @module config/domains/runtime
  *
  * 🎯 Used by: All Adobe I/O Runtime actions
- * ⚙️ Key settings: Action URLs, package names, routing, logging, technical runtime configuration
+ * ⚙️ Key settings: Action URLs, package names, routing, logging configuration
  *
  * 📋 Environment settings: Requires RUNTIME_URL from environment
  */
@@ -11,14 +11,9 @@
 /**
  * Build runtime configuration
  * @param {Object} [params] - Action parameters for environment values
- * @param {Object} [mainConfig] - Shared main configuration (for future shared settings)
  * @returns {Object} Runtime configuration
  */
-function buildRuntimeConfig(params = {}, mainConfig = {}) {
-  // Note: mainConfig available for future shared settings
-  // eslint-disable-next-line no-unused-vars
-  mainConfig;
-
+function buildRuntimeConfig(params = {}) {
   // Get required values with clear descriptive fallbacks
   const url = params.RUNTIME_URL || process.env.RUNTIME_URL || 'REQUIRED:RUNTIME_URL';
 

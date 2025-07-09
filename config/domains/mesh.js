@@ -11,14 +11,9 @@
 /**
  * Build mesh configuration
  * @param {Object} [params] - Action parameters for environment values
- * @param {Object} [mainConfig] - Shared main configuration (for future shared settings)
  * @returns {Object} Mesh configuration
  */
-function buildMeshConfig(params = {}, mainConfig = {}) {
-  // Note: mainConfig available for future shared settings
-  // eslint-disable-next-line no-unused-vars
-  mainConfig;
-
+function buildMeshConfig(params = {}) {
   // Get required values with clear descriptive fallbacks
   const endpoint =
     params.API_MESH_ENDPOINT || process.env.API_MESH_ENDPOINT || 'REQUIRED:API_MESH_ENDPOINT';

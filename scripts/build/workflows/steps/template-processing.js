@@ -39,7 +39,7 @@ function templateProcessingStep(params) {
   const variables = {
     COMMERCE_BASE_URL: config.commerce.baseUrl,
           MESH_CACHE_TTL: config.performance.caching.categories.meshTtl.toString(),
-          COMMERCE_PRODUCT_FIELDS: formatProductFieldsForUrl(config.products.fields.export),
+          COMMERCE_PRODUCT_FIELDS: formatProductFieldsForUrl(config.main.exportFields),
   };
 
   let resolverContent = templateContent;

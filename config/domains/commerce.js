@@ -3,7 +3,7 @@
  * @module config/domains/commerce
  *
  * 🎯 Used by: All Commerce API integration actions
- * ⚙️ Key settings: Commerce URL, API paths, OAuth settings, technical Commerce configuration
+ * ⚙️ Key settings: Commerce URL, API paths, OAuth settings, batching configuration
  *
  * 📋 Environment settings: Requires COMMERCE_BASE_URL from environment
  */
@@ -11,14 +11,9 @@
 /**
  * Build commerce configuration
  * @param {Object} [params] - Action parameters for environment values
- * @param {Object} [mainConfig] - Shared main configuration (for future shared settings)
  * @returns {Object} Commerce configuration
  */
-function buildCommerceConfig(params = {}, mainConfig = {}) {
-  // Note: mainConfig available for future shared settings
-  // eslint-disable-next-line no-unused-vars
-  mainConfig;
-
+function buildCommerceConfig(params = {}) {
   // Get required values with clear descriptive fallbacks
   const baseUrl =
     params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL || 'REQUIRED:COMMERCE_BASE_URL';

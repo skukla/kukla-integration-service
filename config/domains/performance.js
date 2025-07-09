@@ -3,80 +3,67 @@
  * @module config/domains/performance
  *
  * 🎯 Used by: All actions for monitoring and optimization
- * ⚙️ Key settings: Technical monitoring, optimization flags, advanced performance settings
- *
- * 📋 Shared settings: Uses main configuration for timeouts, memory, retries, batching, caching
+ * ⚙️ Key settings: Timeouts, memory limits, retries, batching, caching, monitoring
  */
 
 /**
  * Build performance configuration
- * @param {Object} [mainConfig] - Shared main configuration
  * @returns {Object} Performance configuration
  */
-function buildPerformanceConfig(mainConfig = {}) {
+function buildPerformanceConfig() {
   return {
-    // 🔗 SHARED VALUES: Reference main configuration for business defaults
-    maxExecutionTime: mainConfig.timeouts?.actionExecution || 30000,
+    maxExecutionTime: 30000,
 
     timeouts: {
-      // 🔗 SHARED: Business API timeouts from main
       api: {
-        commerce: mainConfig.timeouts?.commerceApi || 30000,
-        mesh: mainConfig.timeouts?.meshApi || 30000,
-        testing: 10000, // Technical setting specific to performance testing
+        commerce: 30000, // Commerce API timeout
+        mesh: 30000, // Mesh GraphQL timeout
+        testing: 10000, // Testing API timeout
       },
-      // 🔧 TECHNICAL: Performance-specific runtime timeouts
       runtime: {
         cli: 5000, // CLI detection timeout
-        action: mainConfig.timeouts?.actionExecution || 30000, // Shared from main
+        action: 30000, // Action execution timeout
         testing: 10000, // Jest/testing timeout
       },
     },
 
-    // 🔗 SHARED: Memory configuration from main
     memory: {
-      maxUsage: mainConfig.memory?.maxUsage || 50000000,
-      conversionUnit: 1024, // Technical setting for byte conversions
+      maxUsage: 50000000, // 50MB in bytes
+      conversionUnit: 1024, // For byte conversions
     },
 
-    // 🔗 SHARED: Retry configuration from main
     retries: {
-      attempts: mainConfig.retries?.attempts || 3,
-      delay: mainConfig.retries?.delay || 1000,
+      attempts: 3, // Default retry attempts
+      delay: 1000, // Default delay between retries in ms
       api: {
-        commerce: {
-          attempts: mainConfig.retries?.attempts || 3,
-          delay: mainConfig.retries?.delay || 1000,
-        },
-        mesh: {
-          attempts: mainConfig.retries?.attempts || 3,
-          delay: mainConfig.retries?.delay || 1000,
-        },
+        commerce: { attempts: 3, delay: 1000 },
+        mesh: { attempts: 3, delay: 1000 },
       },
     },
 
-    // 🔧 TECHNICAL: Performance-specific batching settings
     batching: {
-      requestDelay: 75, // Technical: delay between batches
-      maxConcurrent: mainConfig.batching?.maxConcurrent || 15, // Shared from main
-      bulkInventoryThreshold: 25, // Technical: SKUs per bulk request
+      requestDelay: 75, // Delay between batches in ms
+      maxConcurrent: 15, // Max concurrent requests
+      bulkInventoryThreshold: 25, // SKUs per bulk request
+      productPageSize: 100, // Products per page from Commerce API
+      maxPages: 25, // Maximum pages to process
+      inventoryBatchSize: 50, // SKUs per inventory batch
+      categoryBatchSize: 20, // Categories per batch
     },
 
-    // 🔗 SHARED: Cache configuration from main
     caching: {
       categories: {
-        meshTtl: mainConfig.cache?.categoriesTtl || 300000, // 5 minutes (mesh operations)
-        fileTimeout: mainConfig.cache?.categoriesFileTimeout || 1800, // 30 minutes (file operations)
+        meshTtl: 300000, // 5 minutes (mesh operations)
+        fileTimeout: 1800, // 30 minutes (file operations)
       },
+      fileListTimeout: 300, // 5 minutes (file browser)
     },
 
-    // 🔧 TECHNICAL: Performance optimization flags
     optimization: {
-      parallelProcessing: true, // Technical: enable parallel processing
-      preAllocateArrays: true, // Technical: performance optimization
+      parallelProcessing: true, // Enable parallel processing
+      preAllocateArrays: true, // Performance optimization
     },
 
-    // 🔧 TECHNICAL: Tracing and monitoring settings
     tracing: {
       enabled: true,
       errorVerbosity: 'summary', // summary, detailed, minimal
@@ -85,7 +72,7 @@ function buildPerformanceConfig(mainConfig = {}) {
         includeMemory: true,
         includeTimings: true,
       },
-      timestampPrecision: 1000, // Technical: For timestamp calculations
+      timestampPrecision: 1000, // For timestamp calculations
     },
   };
 }

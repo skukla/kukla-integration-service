@@ -25,8 +25,10 @@ function createClientConfig(config, options = {}) {
     version: options.version || config.commerce.version,
     timeout: options.timeout || config.performance.timeouts.api.commerce,
     retry: {
-      attempts: options.retry ? options.retry.attempts : config.commerce.retries,
-      delay: options.retry ? options.retry.delay : config.commerce.retryDelay,
+      attempts: options.retry
+        ? options.retry.attempts
+        : config.performance.retries.api.commerce.attempts,
+      delay: options.retry ? options.retry.delay : config.performance.retries.api.commerce.delay,
     },
   };
 }

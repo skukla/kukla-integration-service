@@ -2,12 +2,12 @@
  * Main Configuration Domain
  * @module config/domains/main
  *
- * 🎯 SHARED CORE CONFIGURATION - Business logic defaults
+ * 🎯 SHARED BUSINESS CONFIGURATION
  *
- * Contains commonly changed business settings with clean defaults.
- * Environment-specific settings come from .env file.
+ * Contains only the core business settings that are truly shared across domains.
+ * Each domain handles its own technical configuration.
  *
- * ⚙️ Business settings: Product counts, timeouts, batch sizes, defaults
+ * ⚙️ Shared business settings: Product catalog, export configuration, storage choice
  */
 
 /**
@@ -16,42 +16,14 @@
  */
 function buildMainConfig() {
   return {
-    // 📊 BUSINESS SETTINGS
-    expectedProductCount: 119, // Expected catalog size (affects testing, baselines)
-    csvFilename: 'products.csv', // Default export filename
+    expectedProductCount: 119, // Expected catalog size (used by testing)
+    csvFilename: 'products.csv', // Default export filename (used by files)
+
+    // Default export fields
     exportFields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
 
-    // 📁 STORAGE SETTINGS
     storage: {
-      provider: 's3', // Storage provider: 's3' or 'app-builder'
-    },
-
-    // ⚡ PERFORMANCE SETTINGS (business logic defaults)
-    timeouts: {
-      commerceApi: 30000, // Commerce API timeout (30s)
-      meshApi: 30000, // Mesh GraphQL timeout (30s)
-      actionExecution: 30000, // Action execution timeout (30s)
-    },
-    batching: {
-      productPageSize: 100, // Products per page from Commerce API
-      maxPages: 25, // Maximum pages to process
-      inventoryBatchSize: 50, // SKUs per inventory batch
-      categoryBatchSize: 20, // Categories per batch
-      maxConcurrent: 15, // Max concurrent requests
-    },
-    memory: {
-      maxUsage: 50000000, // 50MB memory limit
-    },
-    retries: {
-      attempts: 3, // Retry attempts for failed requests
-      delay: 1000, // Delay between retries (ms)
-    },
-
-    // ⏰ CACHE SETTINGS (business logic defaults)
-    cache: {
-      categoriesTtl: 300000, // 5 minutes (mesh operations)
-      categoriesFileTimeout: 1800, // 30 minutes (file operations)
-      fileListTimeout: 300, // 5 minutes (file browser)
+      provider: 's3', // Storage provider choice: 's3' or 'app-builder'
     },
   };
 }
