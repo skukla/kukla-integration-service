@@ -20,7 +20,7 @@ async function buildCleaningStep() {
   await execAsync('npm run clean');
 
   cleanSpinner.succeed(operations.spinner.formatSpinnerSuccess('Build artifacts cleaned'));
-  await operations.command.sleep(300);
+  await operations.sleep(300);
 
   return {
     success: true,
