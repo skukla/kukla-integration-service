@@ -64,24 +64,24 @@ function validateRequiredConfig(config, domain) {
  * @returns {Object} Complete configuration
  */
 function loadConfig(params = {}) {
-  // 🎯 MAIN CONFIG: Shared source of truth for business defaults
+  // 🎯 MAIN CONFIG: Shared business settings only
   const mainConfig = buildMainConfig();
 
-  // 🏗️ BUILD OTHER DOMAINS: Pass main config as shared resource
-  const commerceConfig = buildCommerceConfig(params, mainConfig);
-  const productsConfig = buildProductsConfig(params, mainConfig);
-  const filesConfig = buildFilesConfig(params, mainConfig);
-  const runtimeConfig = buildRuntimeConfig(params, mainConfig);
-  const meshConfig = buildMeshConfig(params, mainConfig);
-  const performanceConfig = buildPerformanceConfig(mainConfig);
-  const testingConfig = buildTestingConfig(params, mainConfig);
-  const uiConfig = buildUiConfig(params, mainConfig);
+  // 🏗️ BUILD DOMAINS: Only pass mainConfig to domains that need shared business settings
+  const commerceConfig = buildCommerceConfig(params);
+  const productsConfig = buildProductsConfig();
+  const filesConfig = buildFilesConfig(params, mainConfig); // Needs CSV filename
+  const runtimeConfig = buildRuntimeConfig(params);
+  const meshConfig = buildMeshConfig(params);
+  const performanceConfig = buildPerformanceConfig(); // Self-contained
+  const testingConfig = buildTestingConfig(params, mainConfig); // Needs expected product count
+  const uiConfig = buildUiConfig();
 
   return {
-    // 🎯 SHARED CORE: Most commonly changed settings
+    // 🎯 MAIN CONFIG: Business settings only
     main: mainConfig,
 
-    // 🏗️ BUSINESS DOMAINS (with shared references)
+    // 🏗️ BUSINESS DOMAINS
     commerce: commerceConfig,
     products: productsConfig,
 
@@ -96,7 +96,7 @@ function loadConfig(params = {}) {
       processing: filesConfig.processing,
     },
 
-    // 🔧 INFRASTRUCTURE DOMAINS (with shared references)
+    // 🔧 INFRASTRUCTURE DOMAINS
     runtime: runtimeConfig,
     mesh: meshConfig,
     performance: performanceConfig,

@@ -980,8 +980,8 @@ async function actionBusinessLogic(context) {
 ```javascript
 // ❌ WRONG: Inline defaults scattered throughout code
 const baseUrl = process.env.API_BASE_URL || 'https://285361-namespace-stage.adobeioruntime.net';
-const provider = params.STORAGE_PROVIDER || process.env.STORAGE_PROVIDER || 's3';
 const timeout = config.api?.timeout || 30000;
+const provider = someComplexLogic || 's3'; // Business logic scattered
 
 // ✅ CORRECT: Defaults defined in configuration structure
 // config/domains/runtime.js
@@ -993,11 +993,22 @@ function buildRuntimeConfig(params = {}) {
     // Environment override applied by loadConfig()
   };
 }
+
+// config/domains/main.js - Business defaults
+function buildMainConfig() {
+  return {
+    storage: {
+      provider: 's3', // Clean business default
+    },
+    // Other business defaults...
+  };
+}
 ```
 
 ### Configuration Default Rules
 
 **1. Static Defaults in Configuration Structure:**
+
 ```javascript
 // ✅ CORRECT: Static defaults in config structure
 function buildDomainConfig() {
@@ -1010,6 +1021,7 @@ function buildDomainConfig() {
 ```
 
 **2. Environment Defaults in Domain Builders:**
+
 ```javascript
 // ✅ CORRECT: Environment defaults in domain config builders only
 function buildDomainConfig(params = {}) {
@@ -1022,6 +1034,7 @@ function buildDomainConfig(params = {}) {
 ```
 
 **3. No Fallbacks in Business Logic:**
+
 ```javascript
 // ✅ CORRECT: Trust configuration system
 async function businessFunction(params, config) {
@@ -1061,7 +1074,7 @@ const pageSize = config.commerce?.product?.pagination?.pageSize || 100;
 // ✅ CORRECT: Override in test setup
 const testConfig = loadConfig({
   API_BASE_URL: 'https://test-api.com',
-  STORAGE_PROVIDER: 'app-builder'
+  COMMERCE_ADMIN_USERNAME: 'test-admin'
 });
 
 // ❌ WRONG: Override in business logic
