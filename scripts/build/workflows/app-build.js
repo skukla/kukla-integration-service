@@ -7,11 +7,10 @@
 const { exec } = require('child_process');
 const { promisify } = require('util');
 
-const chalk = require('chalk');
-
 const frontendGeneration = require('./frontend-generation');
 const meshGeneration = require('./mesh-generation');
 const core = require('../../core');
+const { TEMPLATES, FORMATTERS } = require('../../core/operations/output-standards');
 
 const execAsync = promisify(exec);
 
@@ -21,17 +20,18 @@ const execAsync = promisify(exec);
  * @param {Object} options - Build options
  * @param {boolean} options.skipMesh - Skip mesh generation
  * @param {boolean} options.includeAioAppBuild - Include Adobe I/O App build
+ * @param {string} options.environment - Target environment (staging/production)
  * @returns {Promise<Object>} Build result
  */
 async function appBuildWorkflow(options = {}) {
   try {
-    console.log(chalk.bold.cyan('\n🔨 Starting application build...\n'));
+    console.log(TEMPLATES.buildStart());
 
-    // Step 1: Environment Detection
+    // Step 1: Environment Detection (use provided environment or detect)
     const envSpinner = core.createSpinner('Detecting environment...');
-    const env = core.detectScriptEnvironment();
-    const envDisplay = chalk.bold(core.capitalize(env));
-    envSpinner.succeed(core.formatSpinnerSuccess('Environment detected: ' + envDisplay));
+    const env = options.environment || core.detectScriptEnvironment();
+    const envDisplay = core.capitalize(env);
+    envSpinner.succeed(core.formatSpinnerSuccess(`Environment detected: ${envDisplay}`));
 
     // Step 2: Frontend Generation
     const frontendSpinner = core.createSpinner('Generating frontend assets...');
@@ -39,10 +39,15 @@ async function appBuildWorkflow(options = {}) {
     frontendSpinner.succeed(core.formatSpinnerSuccess('Frontend assets generated'));
 
     // Step 3: Mesh Resolver Generation (if not skipped)
+    let meshStepMessage = 'Mesh generation skipped';
+    let meshRegenerated = false;
     if (!options.skipMesh) {
       const meshSpinner = core.createSpinner('Generating mesh resolver...');
-      await meshGeneration.generateMeshResolver();
-      meshSpinner.succeed(core.formatSpinnerSuccess('Mesh resolver generated'));
+      const meshResult = await meshGeneration.generateMeshResolver();
+      const meshMessage = meshResult.generated ? 'Mesh resolver generated' : `Mesh resolver: ${meshResult.reason}`;
+      meshSpinner.succeed(core.formatSpinnerSuccess(meshMessage));
+      meshStepMessage = meshMessage;
+      meshRegenerated = meshResult.generated;
     }
 
     // Step 4: Adobe I/O App Build (if requested)
@@ -52,21 +57,22 @@ async function appBuildWorkflow(options = {}) {
       aioSpinner.succeed(core.formatSpinnerSuccess('Adobe I/O App built'));
     }
 
-    console.log(chalk.bold.green('\n✅ Application build completed successfully!\n'));
+    console.log(TEMPLATES.buildComplete());
 
     return {
       success: true,
       environment: env,
+      meshRegenerated,
       steps: [
         'Environment detected',
         'Frontend assets generated',
-        options.skipMesh ? 'Mesh generation skipped' : 'Mesh resolver generated',
+        meshStepMessage,
         ...(options.includeAioAppBuild ? ['Adobe I/O App built'] : []),
       ],
     };
 
   } catch (error) {
-    console.log(chalk.red('Build failed: ' + error.message));
+    console.log(FORMATTERS.error('Build failed: ' + error.message));
     throw error;
   }
 }
