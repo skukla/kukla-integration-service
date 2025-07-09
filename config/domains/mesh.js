@@ -1,6 +1,9 @@
 /**
  * Mesh Domain Configuration
  * @module config/domains/mesh
+ *
+ * 🎯 Used by: API Mesh product export (consolidates 200+ calls to 1)
+ * ⚙️ Key settings: GraphQL endpoints, pagination, batching optimization
  */
 
 /**

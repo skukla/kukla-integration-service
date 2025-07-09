@@ -1,6 +1,9 @@
 /**
  * Products Domain Configuration
  * @module config/domains/products
+ *
+ * 🎯 Used by: Product Export processing
+ * ⚙️ Key settings: Batch sizes for data processing
  */
 
 /**
