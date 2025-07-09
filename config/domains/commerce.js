@@ -3,7 +3,7 @@
  * @module config/domains/commerce
  *
  * 🎯 Used by: Product Export (REST & Mesh methods)
- * ⚙️ Key settings: API timeouts, endpoints, caching
+ * ⚙️ Key settings: API timeouts, endpoints, caching, retry logic, batching
  */
 
 /**
@@ -16,12 +16,29 @@ function buildCommerceConfig(params = {}) {
 
   return {
     baseUrl: commerceBaseUrl,
-    timeout: 30000,
+    api: {
+      timeout: 30000,
+      retries: 3,
+      retryDelay: 1000,
+      concurrency: 3,
+    },
+    pagination: {
+      defaultPageSize: 20,
+      maxPageSize: 200,
+    },
+    batching: {
+      inventory: 50,
+      products: 100,
+    },
     paths: {
       products: '/products',
       stockItem: '/inventory/source-items',
       category: '/categories/:id',
       categoryList: '/categories',
+    },
+    authentication: {
+      maxRetries: 2,
+      retryDelay: 1000,
     },
     caching: {
       duration: 1800, // 30 minutes
