@@ -1,0 +1,4 @@
+type ProductInventory {
+  qty: Float
+  is_in_stock: Boolean
+}

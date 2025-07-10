@@ -1,0 +1,6 @@
+type MediaGalleryEntry {
+  file: String
+  url: String
+  position: Int
+  types: [String]
+}
