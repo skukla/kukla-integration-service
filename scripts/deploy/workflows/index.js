@@ -3,14 +3,14 @@
  * All deployment-related workflow orchestrations
  */
 
-const appDeployment = require('./app-deployment');
-const meshDeployment = require('./mesh-deployment');
+const { appDeploymentWorkflow } = require('./app-deployment');
+const { meshDeploymentWorkflow } = require('./mesh-deployment');
 
 /**
  * Deploy workflows catalog
  * Organizes all deployment workflow functions
  */
 module.exports = {
-  appDeployment,
-  meshDeployment,
+  appDeploymentWorkflow,
+  meshDeploymentWorkflow,
 };

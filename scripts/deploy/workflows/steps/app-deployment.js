@@ -5,7 +5,8 @@
 
 const { spawn } = require('child_process');
 
-const { FORMATTERS, COLORS } = require('../../../core/operations/output-standards');
+const { basicFormatters } = require('../../../core/utils');
+const { COLORS } = require('../../../core/utils/output-constants');
 
 /**
  * Deploy App Builder application
@@ -29,16 +30,16 @@ async function appDeploymentStep(options = {}) {
   await new Promise((resolve, reject) => {
     deployProcess.on('close', (code) => {
       if (code !== 0) {
-        console.log(FORMATTERS.error(`Deployment failed with exit code ${code}`));
+        console.log(basicFormatters.error(`Deployment failed with exit code ${code}`));
         reject(new Error('Deployment failed'));
       } else {
-        console.log(FORMATTERS.success('App Builder deployment completed'));
+        console.log(basicFormatters.success('App Builder deployment completed'));
         resolve();
       }
     });
 
     deployProcess.on('error', (err) => {
-      console.log(FORMATTERS.error('Failed to start deployment command'));
+      console.log(basicFormatters.error('Failed to start deployment command'));
       reject(err);
     });
   });
