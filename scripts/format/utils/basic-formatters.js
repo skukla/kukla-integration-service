@@ -3,6 +3,8 @@
  * Low-level formatting utilities for consistent message output
  * Pure formatting functions with no business logic - belongs in utils layer
  * Shared infrastructure used across all script domains
+ *
+ * ENHANCED: Includes better function signatures and parameter options
  */
 
 const { ICONS, COLORS, SPACING } = require('./constants');
@@ -44,12 +46,15 @@ function info(text) {
 }
 
 /**
- * Format progress message
+ * Format progress message (for status updates)
  * @param {string} text - Progress message
+ * @param {number} current - Current step (optional)
+ * @param {number} total - Total steps (optional)
  * @returns {string} Formatted progress message
  */
-function progress(text) {
-  return COLORS.info(`${ICONS.progress} ${text}`);
+function progress(text, current = null, total = null) {
+  const progressPart = current && total ? ` (${current}/${total})` : '';
+  return COLORS.muted(`${SPACING.indent}${text}${progressPart}`);
 }
 
 /**
@@ -63,8 +68,8 @@ function step(text) {
 
 /**
  * Format normal text
- * @param {string} text - Normal text
- * @returns {string} Formatted normal text
+ * @param {string} text - Text to format
+ * @returns {string} Formatted text
  */
 function text(text) {
   return COLORS.normal(text);
@@ -72,7 +77,7 @@ function text(text) {
 
 /**
  * Format muted text
- * @param {string} text - Muted text
+ * @param {string} text - Text to format
  * @returns {string} Formatted muted text
  */
 function muted(text) {
@@ -81,7 +86,7 @@ function muted(text) {
 
 /**
  * Format bold text
- * @param {string} text - Bold text
+ * @param {string} text - Text to format
  * @returns {string} Formatted bold text
  */
 function bold(text) {
@@ -90,7 +95,7 @@ function bold(text) {
 
 /**
  * Format highlighted text
- * @param {string} text - Highlighted text
+ * @param {string} text - Text to format
  * @returns {string} Formatted highlighted text
  */
 function highlight(text) {
@@ -99,11 +104,14 @@ function highlight(text) {
 
 /**
  * Format URL
- * @param {string} text - URL text
+ * ENHANCED: Supports optional label parameter
+ * @param {string} url - URL to format
+ * @param {string} label - Optional label (default: url)
  * @returns {string} Formatted URL
  */
-function url(text) {
-  return COLORS.url(text);
+function url(url, label = null) {
+  const displayText = label || url;
+  return COLORS.url(displayText);
 }
 
 module.exports = {
