@@ -7,12 +7,16 @@
  * - Errors: Standardized error object creation
  * - Transformation: Object transformation utilities
  * - Async: Asynchronous operation utilities
+ * - Template: Template substitution and processing utilities
+ * - GraphQL: GraphQL schema processing and format conversion
  */
 
 // Import operations modules
 const async = require('./operations/async');
 const errors = require('./operations/errors');
 const formatting = require('./operations/formatting');
+const graphql = require('./operations/graphql');
+const template = require('./operations/template');
 const transformation = require('./operations/transformation');
 
 module.exports = {
@@ -24,9 +28,20 @@ module.exports = {
   transformObject: transformation.transformObject,
   sleep: async.sleep,
 
+  // Template utilities
+  applyGenericSubstitutions: template.applyGenericSubstitutions,
+  validateTemplateSubstitution: template.validateTemplateSubstitution,
+
+  // GraphQL utilities
+  processGraphQLSchemas: graphql.processGraphQLSchemas,
+  generateAdobeCliFormat: graphql.generateAdobeCliFormat,
+  validateGraphQLSchema: graphql.validateGraphQLSchema,
+
   // Export organized by operation type
   formatting,
   errors,
   transformation,
   async,
+  template,
+  graphql,
 };
