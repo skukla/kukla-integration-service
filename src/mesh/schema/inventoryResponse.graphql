@@ -1,0 +1,6 @@
+type InventoryResponse {
+  inventory: JSON
+  total_count: Int
+  message: String
+  status: String
+}
