@@ -9,8 +9,9 @@ const { promisify } = require('util');
 
 const frontendGeneration = require('./frontend-generation');
 const meshGeneration = require('./mesh-generation');
+const { outputTemplates } = require('../../build/operations');
 const core = require('../../core');
-const { TEMPLATES, FORMATTERS } = require('../../core/operations/output-standards');
+const { basicFormatters } = require('../../core/utils');
 
 const execAsync = promisify(exec);
 
@@ -25,7 +26,7 @@ const execAsync = promisify(exec);
  */
 async function appBuildWorkflow(options = {}) {
   try {
-    console.log(TEMPLATES.buildStart());
+    console.log(outputTemplates.buildStart());
 
     // Step 1: Environment Detection (use provided environment or detect)
     const envSpinner = core.createSpinner('Detecting environment...');
@@ -57,7 +58,7 @@ async function appBuildWorkflow(options = {}) {
       aioSpinner.succeed(core.formatSpinnerSuccess('Adobe I/O App built'));
     }
 
-    console.log(TEMPLATES.buildComplete());
+    console.log(outputTemplates.buildComplete());
 
     return {
       success: true,
@@ -72,11 +73,11 @@ async function appBuildWorkflow(options = {}) {
     };
 
   } catch (error) {
-    console.log(FORMATTERS.error('Build failed: ' + error.message));
+    console.log(basicFormatters.error('Build failed: ' + error.message));
     throw error;
   }
 }
 
 module.exports = {
   appBuildWorkflow,
-}; 
+};

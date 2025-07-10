@@ -28,14 +28,13 @@
     "prettier": "^3.5.3"
   },
   "scripts": {
-    "build": "node scripts/build.js --aio",
-    "build:config": "node scripts/build.js --skip-mesh",
-    "build:mesh": "node scripts/build.js",
+    "build:config": "node scripts/build.js --config-only",
+    "build:mesh": "node scripts/build.js --mesh-only",
     "clean": "rm -rf dist",
     "deploy": "node scripts/deploy.js",
-    "deploy:prod": "node scripts/deploy.js --workspace=Production",
+    "deploy:prod": "node scripts/deploy.js --environment=production",
     "deploy:mesh": "node scripts/deploy.js --mesh-only",
-    "deploy:mesh:prod": "node scripts/deploy.js --mesh-only --workspace=Production",
+    "deploy:mesh:prod": "node scripts/deploy.js --mesh-only --environment=production",
     "test": "node scripts/test.js",
     "test:action": "node scripts/test.js action",
     "test:api": "node scripts/test.js api",
