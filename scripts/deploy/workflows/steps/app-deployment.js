@@ -5,8 +5,7 @@
 
 const { spawn } = require('child_process');
 
-const { basicFormatters } = require('../../../core/utils');
-const { COLORS } = require('../../../core/utils/output-constants');
+const format = require('../../../format');
 
 /**
  * Deploy App Builder application
@@ -17,7 +16,7 @@ const { COLORS } = require('../../../core/utils/output-constants');
 async function appDeploymentStep(options = {}) {
   const { isProd = false } = options;
 
-  console.log(COLORS.header('\nDeploying App Builder actions...\n'));
+  console.log(format.section('Deploying App Builder actions'));
 
   const deployCommand = isProd ? 'aio app deploy --workspace=Production' : 'aio app deploy';
   const [cmd, ...args] = deployCommand.split(' ');
@@ -30,16 +29,16 @@ async function appDeploymentStep(options = {}) {
   await new Promise((resolve, reject) => {
     deployProcess.on('close', (code) => {
       if (code !== 0) {
-        console.log(basicFormatters.error(`Deployment failed with exit code ${code}`));
+        console.log(format.error(`Deployment failed with exit code ${code}`));
         reject(new Error('Deployment failed'));
       } else {
-        console.log(basicFormatters.success('App Builder deployment completed'));
+        console.log(format.success('App Builder deployment completed'));
         resolve();
       }
     });
 
     deployProcess.on('error', (err) => {
-      console.log(basicFormatters.error('Failed to start deployment command'));
+      console.log(format.error('Failed to start deployment command'));
       reject(err);
     });
   });

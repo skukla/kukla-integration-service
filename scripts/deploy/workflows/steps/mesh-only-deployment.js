@@ -5,8 +5,7 @@
 
 const { spawn } = require('child_process');
 
-const { basicFormatters } = require('../../../core/utils');
-const { COLORS } = require('../../../core/utils/output-constants');
+const format = require('../../../format');
 
 /**
  * Deploy only the API Mesh
@@ -17,7 +16,7 @@ const { COLORS } = require('../../../core/utils/output-constants');
 async function meshOnlyDeploymentStep(options = {}) {
   const { isProd = false } = options;
 
-  console.log(COLORS.header('\nDeploying API Mesh only...\n'));
+  console.log(format.section('Deploying API Mesh only'));
 
   const meshCommand = isProd
     ? 'aio api-mesh update mesh.json --env=prod'
@@ -32,16 +31,16 @@ async function meshOnlyDeploymentStep(options = {}) {
   await new Promise((resolve, reject) => {
     meshProcess.on('close', (code) => {
       if (code !== 0) {
-        console.log(basicFormatters.error(`Mesh deployment failed with exit code ${code}`));
+        console.log(format.error(`Mesh deployment failed with exit code ${code}`));
         reject(new Error('Mesh deployment failed'));
       } else {
-        console.log(basicFormatters.success('API Mesh deployment completed'));
+        console.log(format.success('API Mesh deployment completed'));
         resolve();
       }
     });
 
     meshProcess.on('error', (err) => {
-      console.log(basicFormatters.error('Failed to start mesh deployment command'));
+      console.log(format.error('Failed to start mesh deployment command'));
       reject(err);
     });
   });

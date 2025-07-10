@@ -1,16 +1,16 @@
 /**
  * Format Domain Facade
- * Simple, direct functions for common formatting needs
- * No complex objects or nested APIs - just clean functions
+ * Simplified high-level formatting functions for common script patterns
+ * Clean, readable API that hides internal complexity
  */
 
-const operations = require('./operations');
-const utils = require('./utils');
-const workflows = require('./workflows');
+const { scriptLifecycleWorkflow } = require('./workflows');
 
-// Simple lifecycle functions
+/**
+ * Build lifecycle shortcuts
+ */
 async function buildStart() {
-  const workflow = await workflows.scriptLifecycleWorkflow({
+  const workflow = await scriptLifecycleWorkflow({
     operation: 'build',
     target: '',
     emphasis: true,
@@ -19,7 +19,7 @@ async function buildStart() {
 }
 
 async function buildDone() {
-  const workflow = await workflows.scriptLifecycleWorkflow({
+  const workflow = await scriptLifecycleWorkflow({
     operation: 'build',
     target: '',
     emphasis: true,
@@ -27,53 +27,89 @@ async function buildDone() {
   return workflow.complete();
 }
 
-async function deployStart(env = 'staging') {
-  const workflow = await workflows.scriptLifecycleWorkflow({
-    operation: 'deploy',
-    target: env,
+/**
+ * Deploy lifecycle shortcuts
+ */
+async function deployStart() {
+  const workflow = await scriptLifecycleWorkflow({
+    operation: 'deployment',
+    target: '',
     emphasis: true,
   });
   return workflow.start();
 }
 
-async function deployDone(env = 'staging') {
-  const workflow = await workflows.scriptLifecycleWorkflow({
-    operation: 'deploy',
-    target: env,
+async function deployDone() {
+  const workflow = await scriptLifecycleWorkflow({
+    operation: 'deployment',
+    target: '',
     emphasis: true,
   });
   return workflow.complete();
 }
 
-async function testStart(type = 'action') {
-  const workflow = await workflows.scriptLifecycleWorkflow({
-    operation: 'test',
-    target: type,
+/**
+ * Test lifecycle shortcuts
+ */
+async function testStart() {
+  const workflow = await scriptLifecycleWorkflow({
+    operation: 'testing',
+    target: '',
     emphasis: true,
   });
   return workflow.start();
 }
 
-async function testDone(type = 'action') {
-  const workflow = await workflows.scriptLifecycleWorkflow({
-    operation: 'test',
-    target: type,
+async function testDone() {
+  const workflow = await scriptLifecycleWorkflow({
+    operation: 'testing',
+    target: '',
     emphasis: true,
   });
   return workflow.complete();
+}
+
+/**
+ * Mesh lifecycle shortcuts - CLEAN PATTERN
+ */
+async function meshStart(environment = '') {
+  const workflow = await scriptLifecycleWorkflow({
+    operation: 'mesh update',
+    target: environment,
+    emphasis: true,
+  });
+  return workflow.start();
+}
+
+async function meshDone(environment = '') {
+  const workflow = await scriptLifecycleWorkflow({
+    operation: 'mesh update',
+    target: environment,
+    emphasis: true,
+  });
+  return workflow.complete();
+}
+
+/**
+ * Mesh operation shortcuts - CLEAN PATTERN
+ */
+function meshUpdateStart() {
+  return '🔗 Updating API Mesh configuration...';
+}
+
+function meshPollingStart(pollInterval, maxChecks) {
+  return `⏳ Polling mesh status (${pollInterval}s intervals, max ${maxChecks} checks)...`;
 }
 
 module.exports = {
-  // Simple lifecycle functions
   buildStart,
   buildDone,
   deployStart,
   deployDone,
   testStart,
   testDone,
-
-  // Direct access to domain layers (when needed)
-  operations,
-  utils,
-  workflows,
+  meshStart,
+  meshDone,
+  meshUpdateStart,
+  meshPollingStart,
 };

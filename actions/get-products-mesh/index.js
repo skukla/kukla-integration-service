@@ -26,13 +26,14 @@ async function getProductsMeshBusinessLogic(context) {
   // Branch based on requested format
   if (format === 'json') {
     // Return JSON response with product data
-    return core.response.jsonData(
+    return core.success(
       {
         products: builtProducts,
         total_count: builtProducts.length,
         performance: meshData.performance,
       },
-      'Product data retrieved successfully via API Mesh'
+      'Product data retrieved successfully via API Mesh',
+      {}
     );
   }
 
@@ -47,13 +48,10 @@ async function getProductsMeshBusinessLogic(context) {
   const totalDuration = endTime - trace.startTime;
 
   // Return CSV export response with performance metrics
-  return core.response.exportSuccess(
+  return core.success(
     {
       message: 'Product export completed successfully',
       downloadUrl: exportResult.downloadUrl,
-    },
-    'Product export completed via API Mesh',
-    {
       performance: {
         // Include mesh performance metrics
         ...meshData.performance,
@@ -64,7 +62,9 @@ async function getProductsMeshBusinessLogic(context) {
         method: 'API Mesh',
       },
       storage: exportResult.storage,
-    }
+    },
+    'Product export completed via API Mesh',
+    {}
   );
 }
 

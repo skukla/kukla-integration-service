@@ -104,44 +104,56 @@ url: chalk.underline.blue   // URLs and links
 
 ### Basic Formatting
 
-```javascript
-const { FORMATTERS } = require('../core/operations/output-standards');
-
-// Status messages
-console.log(FORMATTERS.success('Operation completed'));
-console.log(FORMATTERS.error('Operation failed'));
-console.log(FORMATTERS.warning('Check configuration'));
-console.log(FORMATTERS.info('Additional information'));
-
-// Section headers
-console.log(FORMATTERS.sectionHeader('Starting deployment', ICONS.deploy));
-
-// Progress updates
-console.log(FORMATTERS.progress('Processing files', 3, 10));
-```
-
-### Template Usage
+**SIMPLE RULE: All format functions return strings. Always use `console.log()` to print.**
 
 ```javascript
-const { TEMPLATES } = require('../core/operations/output-standards');
+const format = require('../../scripts/format');
 
-// Pre-built templates
-console.log(TEMPLATES.deploymentStart('staging'));
-console.log(TEMPLATES.buildStart());
-console.log(TEMPLATES.deploymentComplete('staging'));
+// Basic formatting - ALL RETURN STRINGS
+console.log(format.success('Operation completed'));
+console.log(format.error('Operation failed'));
+console.log(format.warning('Check configuration'));
+console.log(format.info('Additional information'));
+
+// Section formatting - RETURNS STRINGS
+console.log(format.section('Starting deployment'));
+console.log(format.header('Processing Files'));
+
+// Lifecycle formatting - RETURNS STRINGS
+console.log(await format.buildStart());
+console.log(await format.buildDone());
+console.log(await format.deployStart(environment));
+console.log(await format.deployDone(environment));
+
+// Common operations - RETURNS STRINGS
+console.log(format.verbose('Processing step 1...'));
+console.log(format.step('Environment validated'));
 ```
 
-### Environment Indicators
+**Why This Pattern:**
 
-```javascript
-const { FORMATTERS } = require('../core/operations/output-standards');
-
-// Environment display with Unicode symbols
-console.log(FORMATTERS.environment('staging'));    // ◉ Staging
-console.log(FORMATTERS.environment('production')); // ● Production
-```
+- Zero cognitive load (same pattern everywhere)
+- Pure functions (easy to test and compose)
+- Industry standard (how most logging libraries work)
+- Flexible (can redirect output, save to files, use in tests)
 
 ## Migration Guide
+
+### From Mixed Patterns (Confusing)
+
+```javascript
+// ❌ OLD: Inconsistent patterns
+console.log(format.error('Build failed'));     // String returner
+format.verbose('Starting mesh update...');     // Direct printer
+console.log(await format.buildStart());        // String returner
+format.section('Deploying App Builder');       // Direct printer
+
+// ✅ NEW: Consistent pattern (simple)
+console.log(format.error('Build failed'));
+console.log(format.verbose('Starting mesh update...'));
+console.log(await format.buildStart());
+console.log(format.section('Deploying App Builder'));
+```
 
 ### From Legacy Output
 
@@ -150,23 +162,21 @@ console.log(FORMATTERS.environment('production')); // ● Production
 console.log(chalk.green('🎉 Success!'));
 console.log(chalk.red('❌ Failed'));
 
-// ✅ NEW: Standardized formatters
-console.log(FORMATTERS.success('Success!'));
-console.log(FORMATTERS.error('Failed'));
+// ✅ NEW: Format domain functions
+console.log(format.success('Success!'));
+console.log(format.error('Failed'));
 ```
 
-### From Emoji-Heavy Output
+### From Direct chalk Usage
 
 ```javascript
-// ❌ OLD: Heavy emoji usage
-console.log('🚀 Starting deployment...');
-console.log('🔨 Building application...');
-console.log('🎉 Deployment complete!');
+// ❌ OLD: Direct chalk usage scattered throughout code
+console.log(chalk.cyan('🚀 Starting deployment...'));
+console.log(chalk.yellow('⚠ Warning: Check configuration'));
 
-// ✅ NEW: Professional Unicode symbols
-console.log(FORMATTERS.sectionHeader('Starting deployment', ICONS.deploy));
-console.log(FORMATTERS.sectionHeader('Building application', ICONS.build));
-console.log(FORMATTERS.finalSuccess('Deployment complete!'));
+// ✅ NEW: Centralized format domain
+console.log(format.section('Starting deployment'));
+console.log(format.warning('Warning: Check configuration'));
 ```
 
 ## Benefits
@@ -214,11 +224,12 @@ console.log(FORMATTERS.finalSuccess('Deployment complete!'));
 
 ## Best Practices
 
-1. **Always use formatters** instead of direct console.log with colors
-2. **Choose appropriate icons** based on semantic meaning
-3. **Maintain visual hierarchy** through consistent color usage
-4. **Test output** across different terminal environments
-5. **Update standards** when adding new output patterns
+1. **SIMPLE RULE**: All format functions return strings, always use `console.log()` to print
+2. **Use format domain**: Import `const format = require('../../scripts/format')` instead of direct chalk
+3. **Consistent pattern**: `console.log(format.functionName())` everywhere, no exceptions
+4. **Choose appropriate functions** based on semantic meaning (success, error, warning, info)
+5. **Test output** across different terminal environments
+6. **Update centrally** - all formatting changes go in the format domain only
 
 ## Future Considerations
 

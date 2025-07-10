@@ -87,9 +87,8 @@ function loadConfig(params = {}) {
 
     // 📁 STORAGE CONFIGURATION (combined from main and files domains)
     storage: {
-      provider: mainConfig.storage.provider, // From main domain
-      directory: mainConfig.storage.directory, // From main domain
-      ...filesConfig.storage, // File-specific storage settings
+      ...mainConfig.storage, // Include all storage config from main (provider, directory, s3, etc.)
+      ...filesConfig.storage, // File-specific storage settings (csv config)
     },
     files: {
       extensions: filesConfig.extensions,

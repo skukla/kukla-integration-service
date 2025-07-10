@@ -45,7 +45,7 @@ async function downloadFileBusinessLogic(context) {
     logger.error('Error in download-file action:', error);
 
     // Return standardized error response
-    return core.response.error(error, {});
+    return core.error(error, {});
   }
 }
 

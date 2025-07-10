@@ -3,8 +3,7 @@
  * High-level orchestration for application deployment processes
  */
 
-const { basicFormatters } = require('../../core/utils');
-const { outputTemplates } = require('../operations');
+const format = require('../../format');
 
 /**
  * Application deployment workflow
@@ -17,7 +16,7 @@ async function appDeploymentWorkflow(options = {}) {
   const { environment = 'staging', verbose = false } = options;
 
   try {
-    console.log(outputTemplates.deploymentStart(environment));
+    console.log(await format.deployStart(environment));
 
     // Import step modules
     const { environmentDetection } = require('./steps');
@@ -32,27 +31,27 @@ async function appDeploymentWorkflow(options = {}) {
     }
 
     // Step 2: Build process
-    if (verbose) console.log(basicFormatters.info('Starting build process...'));
+    if (verbose) console.log(format.verbose('Starting build process...'));
     const buildResult = await buildProcess.buildProcessStep({ verbose });
     if (!buildResult.success) {
       throw new Error(buildResult.error);
     }
 
     // Step 3: App deployment
-    if (verbose) console.log(basicFormatters.info('Starting app deployment...'));
+    if (verbose) console.log(format.verbose('Starting app deployment...'));
     const deployResult = await appDeployment.appDeploymentStep({ environment, verbose });
     if (!deployResult.success) {
       throw new Error(deployResult.error);
     }
 
     // Step 4: Mesh update
-    if (verbose) console.log(basicFormatters.info('Starting mesh update...'));
+    if (verbose) console.log(format.verbose('Starting mesh update...'));
     const meshResult = await meshUpdate.meshUpdateStep({ environment, verbose });
     if (!meshResult.success) {
       throw new Error(meshResult.error);
     }
 
-    console.log(outputTemplates.deploymentComplete(environment));
+    console.log(await format.deployDone(environment));
 
     return {
       success: true,
@@ -60,7 +59,7 @@ async function appDeploymentWorkflow(options = {}) {
       steps: ['Environment detection', 'Build process', 'App deployment', 'Mesh update'],
     };
   } catch (error) {
-    console.error(basicFormatters.error(`App deployment failed: ${error.message}`));
+    console.error(format.error(`App deployment failed: ${error.message}`));
     return {
       success: false,
       error: error.message,

@@ -5,8 +5,7 @@
 
 const { spawn } = require('child_process');
 
-const { basicFormatters } = require('../utils');
-const { meshTemplates } = require('./mesh-templates');
+const format = require('../../format');
 
 /**
  * Sleep utility for status polling
@@ -126,7 +125,7 @@ async function updateMeshWithRetry(options = {}) {
     maxPollChecks = environment === 'production' ? 20 : 6,
   } = options;
 
-  console.log(meshTemplates.meshUpdateStart());
+  console.log(format.meshUpdateStart());
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -137,12 +136,12 @@ async function updateMeshWithRetry(options = {}) {
         if (attempt === maxRetries) {
           throw new Error(`Mesh update failed after ${maxRetries} attempts: ${updateResult.error}`);
         }
-        console.log(basicFormatters.warning(`Attempt ${attempt} failed: ${updateResult.error}`));
+        console.log(format.warning(`Attempt ${attempt} failed: ${updateResult.error}`));
         continue;
       }
 
       // Start status polling
-      console.log(meshTemplates.meshPollingStart(pollInterval, maxPollChecks));
+      console.log(format.meshPollingStart(pollInterval, maxPollChecks));
 
       for (let check = 1; check <= maxPollChecks; check++) {
         await sleep(pollInterval * 1000);
@@ -150,15 +149,11 @@ async function updateMeshWithRetry(options = {}) {
         const statusResult = await checkMeshStatus();
 
         if (!statusResult.success) {
-          console.log(
-            basicFormatters.warning(`Status check ${check} failed: ${statusResult.error}`)
-          );
+          console.log(format.warning(`Status check ${check} failed: ${statusResult.error}`));
           continue;
         }
 
-        console.log(
-          basicFormatters.progress(`Status check ${check}/${maxPollChecks}: ${statusResult.status}`)
-        );
+        console.log(format.info(`Status check ${check}/${maxPollChecks}: ${statusResult.status}`));
 
         if (statusResult.status === 'success') {
           return {
@@ -180,7 +175,7 @@ async function updateMeshWithRetry(options = {}) {
       if (attempt === maxRetries) {
         throw error;
       }
-      console.log(basicFormatters.warning(`Attempt ${attempt} failed: ${error.message}`));
+      console.log(format.warning(`Attempt ${attempt} failed: ${error.message}`));
     }
   }
 }
