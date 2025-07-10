@@ -5,7 +5,7 @@
 
 const ora = require('ora');
 
-const { basicFormatters } = require('../utils');
+const format = require('../../format');
 
 /**
  * Create and start a spinner with consistent styling
@@ -14,7 +14,7 @@ const { basicFormatters } = require('../utils');
  */
 function createSpinner(text) {
   return ora({
-    text: basicFormatters.muted(text),
+    text: format.muted(text),
     spinner: 'dots',
   }).start();
 }
@@ -25,7 +25,7 @@ function createSpinner(text) {
  * @param {string} text - New text
  */
 function updateSpinner(spinner, text) {
-  spinner.text = basicFormatters.muted(text);
+  spinner.text = format.muted(text);
 }
 
 /**
@@ -35,7 +35,7 @@ function updateSpinner(spinner, text) {
  */
 function succeedSpinner(spinner, text) {
   // Use muted formatting since ora adds its own green checkmark
-  spinner.succeed(basicFormatters.muted(text));
+  spinner.succeed(format.muted(text));
 }
 
 /**
@@ -45,7 +45,7 @@ function succeedSpinner(spinner, text) {
  */
 function failSpinner(spinner, text) {
   // Use muted formatting since ora adds its own red X
-  spinner.fail(basicFormatters.muted(text));
+  spinner.fail(format.muted(text));
 }
 
 /**
@@ -55,7 +55,7 @@ function failSpinner(spinner, text) {
  */
 function warnSpinner(spinner, text) {
   // Use muted formatting since ora adds its own yellow warning
-  spinner.warn(basicFormatters.muted(text));
+  spinner.warn(format.muted(text));
 }
 
 module.exports = {

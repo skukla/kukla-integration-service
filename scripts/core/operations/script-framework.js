@@ -3,7 +3,7 @@
  * Shared script execution framework used across all script domains
  */
 
-const { basicFormatters } = require('../utils');
+const format = require('../../format');
 
 /**
  * Execute a script with consistent error handling and output formatting
@@ -20,11 +20,11 @@ async function executeScript(scriptName, scriptFunction, args) {
       result,
     };
   } catch (error) {
-    console.error(basicFormatters.error(`${scriptName} failed: ${error.message}`));
+    console.error(format.error(`${scriptName} failed: ${error.message}`));
 
     if (process.env.NODE_ENV === 'development' || args.includes('--verbose')) {
-      console.error(basicFormatters.muted('Stack trace:'));
-      console.error(basicFormatters.muted(error.stack));
+      console.error(format.muted('Stack trace:'));
+      console.error(format.muted(error.stack));
     }
 
     return {

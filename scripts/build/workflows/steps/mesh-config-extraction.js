@@ -1,52 +1,62 @@
 /**
- * Mesh Config Extraction Step
- * Handles extraction of mesh configuration from environment config
+ * Mesh Configuration Extraction Step
+ * Extracts and processes mesh configuration for deployment
  */
 
+const fs = require('fs');
 const path = require('path');
 
-// Direct imports to avoid scripts index import issues
-const { loadConfig } = require('../../../../config');
 const { detectScriptEnvironment } = require('../../../core/operations/environment');
 
 /**
- * Extract mesh configuration for resolver generation
- * @returns {Promise<Object>} Mesh config extraction result
+ * Extract mesh configuration for deployment
+ * @param {Object} options - Extraction options
+ * @returns {Promise<Object>} Extraction result
  */
-async function meshConfigExtractionStep() {
-  // Define paths for the template and the final resolver file
-  const templatePath = path.join(__dirname, '../../../../mesh-resolvers.template.js');
-  const resolverPath = path.join(__dirname, '../../../../mesh-resolvers.js');
+async function meshConfigExtractionStep(options = {}) {
+  const { configPath = 'mesh.json', outputPath = 'dist/mesh.json' } = options;
 
-  // Load configuration for the current environment with CLI detection
-  const env = detectScriptEnvironment({}, { allowCliDetection: true });
-  const config = loadConfig({ NODE_ENV: env });
+  try {
+    // Detect environment
+    const environment = detectScriptEnvironment();
 
-  // Extract mesh configuration properties for injection into resolver
-  const meshConfig = {
-    commerceBaseUrl: config.commerce.baseUrl,
-    pagination: {
-      defaultPageSize: config.products.pagination.pageSize,
-      maxPages: config.products.pagination.maxPages,
-    },
-    batching: {
-      categories: config.commerce.batching.categories,
-      inventory: config.commerce.batching.inventory,
-      maxConcurrent: config.performance.batching.maxConcurrent,
-      requestDelay: config.performance.batching.requestDelay,
-    },
-    timeout: config.performance.timeouts.api.mesh,
-    retries: config.performance.retries.api.mesh,
-  };
+    // Read mesh configuration
+    const meshConfigPath = path.resolve(configPath);
+    if (!fs.existsSync(meshConfigPath)) {
+      throw new Error(`Mesh configuration not found: ${meshConfigPath}`);
+    }
 
-  return {
-    success: true,
-    templatePath,
-    resolverPath,
-    config,
-    meshConfig,
-    environment: env,
-  };
+    const meshConfig = JSON.parse(fs.readFileSync(meshConfigPath, 'utf8'));
+
+    // Process configuration for environment
+    const processedConfig = {
+      ...meshConfig,
+      environment,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Ensure output directory exists
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // Write processed configuration
+    fs.writeFileSync(outputPath, JSON.stringify(processedConfig, null, 2));
+
+    return {
+      success: true,
+      environment,
+      configPath: meshConfigPath,
+      outputPath,
+      step: `Mesh configuration extracted for ${environment}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
 }
 
 module.exports = {

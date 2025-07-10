@@ -1,13 +1,13 @@
 /**
  * Build Cleaning Step
- * Handles cleanup of build artifacts
+ * Handles cleanup of build artifacts and temporary files
  */
 
 const { createSpinner } = require('../../../core/operations/spinner');
-const { basicFormatters } = require('../../../core/utils');
+const format = require('../../../format');
 
 /**
- * Clean build artifacts
+ * Clean build artifacts and temporary files
  * @param {Object} options - Cleaning options
  * @returns {Promise<Object>} Cleaning result
  */
@@ -17,13 +17,13 @@ async function buildCleaningStep(options = {}) {
   try {
     const spinner = createSpinner('Cleaning build artifacts...');
 
-    // Simulate cleanup process
+    // Simulate build cleaning process
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    spinner.succeed(basicFormatters.muted('Build artifacts cleaned'));
+    spinner.succeed(format.muted('Build artifacts cleaned'));
 
     if (verbose) {
-      console.log(basicFormatters.info('Removed temporary files'));
+      console.log(format.info('Removed temporary files'));
     }
 
     return {
@@ -31,8 +31,9 @@ async function buildCleaningStep(options = {}) {
       step: 'Build artifacts cleaned',
     };
   } catch (error) {
-    console.error(basicFormatters.error('Build cleaning failed'));
-    console.error(basicFormatters.error(error.message));
+    console.error(format.error('Build cleaning failed'));
+    console.error(format.error(error.message));
+
     return {
       success: false,
       error: error.message,

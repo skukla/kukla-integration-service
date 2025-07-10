@@ -1,12 +1,11 @@
 /**
  * Scripts Core Utilities
  * Low-level pure functions and constants
+ *
  */
 
-const basicFormatters = require('./basic-formatters');
 const file = require('./file');
 const format = require('./format');
-const outputConstants = require('./output-constants');
 const string = require('./string');
 
 /**
@@ -22,7 +21,5 @@ module.exports = {
   file,
   format,
   string,
-  outputConstants,
-  basicFormatters,
   sleep,
 };
