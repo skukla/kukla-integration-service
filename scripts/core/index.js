@@ -8,25 +8,20 @@
  * - String and file utilities
  * - Hash operations
  * - Common script utilities
- * - Unified format domain integration
  *
  * Following the same pattern as src/core/ - provides shared infrastructure
  * that eliminates duplication across build, deploy, and test domains.
  *
- * CONSOLIDATED: Format operations now unified in scripts/format domain
  */
 
 // Import modules
 const formatDomain = require('../format');
 const environment = require('./operations/environment');
 const hash = require('./operations/hash');
-const meshTemplates = require('./operations/mesh-templates');
 const scriptFramework = require('./operations/script-framework');
 const spinner = require('./operations/spinner');
 const file = require('./utils/file');
 const string = require('./utils/string');
-
-// Backward compatibility re-exports (DEPRECATED - use format domain directly)
 
 module.exports = {
   // Environment utilities
@@ -47,15 +42,6 @@ module.exports = {
   // Hash operations
   calculateFileHash: hash.calculateFileHash,
   calculateObjectHash: hash.calculateObjectHash,
-
-  // Format utilities (CONSOLIDATED - from unified format domain)
-  formatSuccess: formatDomain.success,
-  formatError: formatDomain.error,
-  formatWarning: formatDomain.warning,
-  formatInfo: formatDomain.info,
-  formatProgress: formatDomain.progress,
-  formatStep: formatDomain.step,
-  formatSection: formatDomain.section,
 
   // String utilities
   capitalize: string.capitalize,
@@ -78,9 +64,6 @@ module.exports = {
   file,
   scriptFramework,
 
-  // Backward compatibility (DEPRECATED - use format domain directly)
-  meshTemplates,
-
-  // Unified format domain (PREFERRED)
+  // Format domain integration (PREFERRED)
   formatting: formatDomain,
 };
