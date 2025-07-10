@@ -23,7 +23,8 @@ Options:
   }
 
   const operation = args['mesh-only'] ? 'mesh deployment' : 'application deployment';
-  const environment = args.environment || core.detectEnvironment();
+  const environment =
+    args.environment || core.detectScriptEnvironment({}, { allowCliDetection: true });
 
   console.log(outputTemplates.scriptStartEmphasis(operation, environment));
 

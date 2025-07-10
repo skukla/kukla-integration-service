@@ -33,8 +33,17 @@ function detectScriptEnvironment(params = {}, options = {}) {
       });
 
       const namespaces = JSON.parse(output);
-      const currentNamespace = namespaces.find((ns) => ns.current);
 
+      // Handle array format (current CLI output)
+      if (Array.isArray(namespaces) && namespaces.length > 0) {
+        const namespace = namespaces[0];
+        if (namespace.includes('stage')) {
+          return 'staging';
+        }
+      }
+
+      // Handle object format (legacy support)
+      const currentNamespace = namespaces.find && namespaces.find((ns) => ns.current);
       if (currentNamespace && currentNamespace.name.includes('stage')) {
         return 'staging';
       }
