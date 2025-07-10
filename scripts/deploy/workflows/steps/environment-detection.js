@@ -4,7 +4,7 @@
  */
 
 const core = require('../../../core');
-const { basicFormatters } = require('../../../core/utils');
+const format = require('../../../format');
 
 /**
  * Detect and validate environment step
@@ -13,7 +13,7 @@ const { basicFormatters } = require('../../../core/utils');
  */
 async function detectAndValidateEnvironment(environment) {
   try {
-    console.log(basicFormatters.info(`Detecting environment: ${environment}`));
+    console.log(format.info(`Detecting environment: ${environment}`));
 
     // Validate environment
     if (!['staging', 'production'].includes(environment)) {
@@ -25,13 +25,11 @@ async function detectAndValidateEnvironment(environment) {
 
     if (detectedEnv !== environment) {
       console.log(
-        basicFormatters.warning(
-          `Environment mismatch: detected ${detectedEnv}, requested ${environment}`
-        )
+        format.warning(`Environment mismatch: detected ${detectedEnv}, requested ${environment}`)
       );
     }
 
-    console.log(basicFormatters.success(`Environment validated: ${environment}`));
+    console.log(format.step(`Environment validated: ${environment}`));
 
     return {
       success: true,
@@ -40,7 +38,7 @@ async function detectAndValidateEnvironment(environment) {
       step: `Environment detection completed for ${environment}`,
     };
   } catch (error) {
-    console.error(basicFormatters.error(`Environment detection failed: ${error.message}`));
+    console.error(format.error(`Environment detection failed: ${error.message}`));
     return {
       success: false,
       error: error.message,

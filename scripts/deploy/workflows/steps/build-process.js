@@ -4,7 +4,7 @@
  */
 
 const { createSpinner } = require('../../../core/operations/spinner');
-const { basicFormatters } = require('../../../core/utils');
+const format = require('../../../format');
 
 /**
  * Execute build process
@@ -20,12 +20,12 @@ async function buildProcessStep(options = {}) {
     // Simulate build process
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    spinner.succeed(basicFormatters.muted(`Build completed for ${environment}`));
+    spinner.succeed(`Build completed for ${environment}`);
 
     if (verbose) {
-      console.log(basicFormatters.info('Generated frontend configuration'));
-      console.log(basicFormatters.info('Compiled source files'));
-      console.log(basicFormatters.info('Optimized assets'));
+      console.log(format.verbose('Generated frontend configuration'));
+      console.log(format.verbose('Compiled source files'));
+      console.log(format.verbose('Optimized assets'));
     }
 
     return {
@@ -34,8 +34,8 @@ async function buildProcessStep(options = {}) {
       step: `Build completed for ${environment}`,
     };
   } catch (error) {
-    console.error(basicFormatters.error('Build process failed'));
-    console.error(basicFormatters.error(error.message));
+    console.error(format.error('Build process failed'));
+    console.error(format.error(error.message));
     return {
       success: false,
       environment,

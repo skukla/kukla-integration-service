@@ -5,7 +5,7 @@
 
 // Direct imports to avoid scripts index import issues
 const { updateMeshWithRetry } = require('../../../core/operations/mesh');
-const { basicFormatters } = require('../../../core/utils');
+const format = require('../../../format');
 
 /**
  * Update API Mesh if needed
@@ -42,12 +42,8 @@ async function meshUpdateStep(options = {}) {
   });
 
   if (!meshUpdateSuccess) {
-    console.log(
-      basicFormatters.warning('Mesh update failed, but deployment completed successfully.')
-    );
-    console.log(
-      basicFormatters.info(`You may need to run: npm run deploy:mesh${isProd ? ':prod' : ''}`)
-    );
+    console.log(format.warning('Mesh update failed, but deployment completed successfully.'));
+    console.log(format.info(`You may need to run: npm run deploy:mesh${isProd ? ':prod' : ''}`));
 
     return {
       success: true,

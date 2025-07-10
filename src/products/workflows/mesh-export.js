@@ -5,10 +5,7 @@
  * Consolidates the mesh data fetching and processing pipeline.
  */
 
-const {
-  fetchEnrichedProductsFromMesh,
-  validateMeshInput,
-} = require('../operations/mesh-integration');
+const { fetchEnrichedProductsFromMesh } = require('../operations/mesh-integration');
 const { buildProducts } = require('../operations/transformation');
 const { createCsv } = require('../utils/csv');
 
@@ -24,16 +21,13 @@ const { createCsv } = require('../utils/csv');
  * @returns {Promise<Object>} Export result with mesh data and built products
  */
 async function exportProductsViaMesh(params, config, trace = null) {
-  // Step 1: Validate mesh configuration
-  await validateMeshInput(params, config);
-
-  // Step 2: Fetch enriched products from mesh
+  // Step 1: Fetch enriched products from mesh (validation handled internally)
   const meshData = await fetchEnrichedProductsFromMesh(config, params, trace);
 
   // Sort products by SKU for consistent output
   meshData.products.sort((a, b) => a.sku.localeCompare(b.sku));
 
-  // Step 3: Build product data using shared transformation
+  // Step 2: Build product data using shared transformation
   const builtProducts = await buildProducts(meshData.products, config);
 
   return {

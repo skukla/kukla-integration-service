@@ -94,9 +94,17 @@ async function testAction(actionUrl, params) {
   const fetch = require('node-fetch');
 
   // Filter out reserved/system properties that shouldn't be sent to actions
-  const reservedProperties = ['NODE_ENV'];
   const actionParams = Object.keys(params)
-    .filter((key) => !reservedProperties.includes(key))
+    .filter((key) => {
+      // Filter out Adobe I/O system variables
+      if (key.startsWith('AIO_')) return false;
+
+      // Filter out other reserved properties
+      const reservedProperties = ['NODE_ENV', 'SERVICE_API_KEY'];
+      if (reservedProperties.includes(key)) return false;
+
+      return true;
+    })
     .reduce((obj, key) => {
       obj[key] = params[key];
       return obj;

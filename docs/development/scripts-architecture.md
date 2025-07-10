@@ -148,28 +148,45 @@ scripts/
 
 ### Using Format Domain
 
+**SIMPLE RULE: All format functions return strings. Always use `console.log()` to print.**
+
 ```javascript
 // Import the format domain
 const format = require('../format');
 
-// Use basic formatters
+// Basic formatting - ALL RETURN STRINGS
 console.log(format.success('Operation completed'));
 console.log(format.error('Operation failed'));
+console.log(format.warning('Warning message'));
+console.log(format.info('Information'));
 
-// Use templates
-console.log(format.templates.build.start());
-console.log(format.templates.deploy.complete('staging'));
+// Section formatting - RETURNS STRINGS
+console.log(format.section('Deploying App Builder'));
+console.log(format.header('Processing Files'));
 
-// Use workflows for complex scenarios
-const lifecycle = format.scriptLifecycle({
-  operation: 'deployment',
-  target: 'staging',
-  emphasis: true
-});
-console.log(lifecycle.start());
-// ... deployment logic
-console.log(lifecycle.complete());
+// Lifecycle formatting - RETURNS STRINGS
+console.log(await format.buildStart());
+console.log(await format.buildDone());
+console.log(await format.deployStart(environment));
+console.log(await format.deployDone(environment));
+
+// Mesh formatting - RETURNS STRINGS
+console.log(await format.meshStart(environment));
+console.log(await format.meshDone(environment));
+console.log(format.meshUpdateStart());
+console.log(format.meshPollingStart(pollInterval, maxChecks));
+
+// Common operations - RETURNS STRINGS
+console.log(format.verbose('Processing step 1...'));
+console.log(format.step('Environment validated'));
 ```
+
+**Why This Pattern:**
+
+- Zero cognitive load (same pattern everywhere)
+- Pure functions (easy to test and compose)
+- Industry standard (how most logging libraries work)
+- Flexible (can redirect output, save to files, use in tests)
 
 ### Using Core Domain
 

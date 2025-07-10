@@ -1,30 +1,47 @@
 /**
  * Format Domain
- * Simple, focused formatting for script domains
+ * Simple, consistent string-returning formatters
  *
- * Exports only the functions actually used by scripts.
- * Internal DDD architecture maintained but hidden from public API.
+ * SIMPLE RULE: All functions return formatted strings. Always use console.log() to print.
+ *
+ * Why this pattern:
+ * - Zero cognitive load (same pattern everywhere)
+ * - Pure functions (easy to test and compose)
+ * - Industry standard (how most logging libraries work)
+ * - Flexible (can redirect output, save to files, etc.)
  */
 
 const facade = require('./facade');
 const operations = require('./operations');
 const utils = require('./utils');
 
-// Simple, focused exports - only what's actually used
+// All functions return formatted strings - use console.log() to print
 module.exports = {
-  // Basic formatting (most commonly used)
+  // Basic formatting - RETURNS STRINGS
   error: utils.error,
   warning: utils.warning,
   success: utils.success,
+  info: utils.info,
 
-  // Section formatting
-  sectionHeader: operations.sectionHeader,
+  // Section formatting - RETURNS STRINGS
+  section: operations.sectionHeader,
+  header: operations.sectionHeader,
 
-  // Lifecycle shortcuts (from simplified facade)
+  // Lifecycle shortcuts - RETURNS STRINGS
   buildStart: facade.buildStart,
   buildDone: facade.buildDone,
   deployStart: facade.deployStart,
   deployDone: facade.deployDone,
   testStart: facade.testStart,
   testDone: facade.testDone,
+
+  // Mesh shortcuts - RETURNS STRINGS
+  meshStart: facade.meshStart,
+  meshDone: facade.meshDone,
+  meshUpdateStart: facade.meshUpdateStart,
+  meshPollingStart: facade.meshPollingStart,
+
+  // Common operations - RETURNS STRINGS
+  verbose: (message) => utils.info(message),
+  step: (message) => utils.success(`✔ ${message}`),
 };

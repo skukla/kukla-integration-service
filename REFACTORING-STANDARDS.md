@@ -1214,44 +1214,54 @@ const { outputTemplates } = require('./operations/output-templates');
 
 ### Format Domain Usage Patterns
 
-**Basic Formatting:**
+**CRITICAL: Simple Consistent Pattern**
+
+**ONE RULE: All format functions return strings. Always use `console.log()` to print.**
 
 ```javascript
 const format = require('../format');
 
-// Basic formatters
+// Basic formatting - ALL RETURN STRINGS
 console.log(format.success('Operation completed'));
 console.log(format.error('Operation failed'));
 console.log(format.warning('Warning message'));
 console.log(format.info('Information'));
+
+// Section formatting - RETURNS STRINGS
+console.log(format.section('Deploying App Builder'));
+console.log(format.header('Processing Files'));
+
+// Lifecycle formatting - RETURNS STRINGS
+console.log(await format.buildStart());
+console.log(await format.buildDone());
+console.log(await format.deployStart(environment));
+console.log(await format.deployDone(environment));
+
+// Mesh formatting - RETURNS STRINGS
+console.log(await format.meshStart(environment));
+console.log(await format.meshDone(environment));
+console.log(format.meshUpdateStart());
+console.log(format.meshPollingStart(pollInterval, maxChecks));
+
+// Common operations - RETURNS STRINGS
+console.log(format.verbose('Processing step 1...'));
+console.log(format.step('Environment validated'));
 ```
 
-**Template Usage:**
+**Why This Pattern:**
+
+- ✅ **Zero cognitive load** - Same pattern everywhere, no memorization required
+- ✅ **Industry standard** - How most successful logging libraries work
+- ✅ **Pure functions** - Easy to test, compose, and reason about
+- ✅ **Flexible** - Can redirect output, save to files, use in tests
+- ✅ **Clear separation** - Formatting vs output are separate concerns
+
+**❌ WRONG: Mixed patterns (eliminated)**
 
 ```javascript
-// Domain-specific templates
-console.log(format.templates.build.start());
-console.log(format.templates.deploy.complete('staging'));
-console.log(format.templates.test.start('action'));
-
-// Generic templates
-console.log(format.scriptStartTemplate('deployment', 'staging'));
-console.log(format.scriptCompleteTemplate('build', 'production'));
-```
-
-**Workflow Usage for Complex Scenarios:**
-
-```javascript
-// Script lifecycle management
-const lifecycle = format.scriptLifecycle({
-  operation: 'deployment',
-  target: 'staging',
-  emphasis: true
-});
-
-console.log(lifecycle.start());
-// ... business logic
-console.log(lifecycle.complete());
+// Don't mix string returners and direct printers
+console.log(format.error('message'));  // String returner
+format.verbose('message');             // Direct printer (REMOVED)
 ```
 
 ### Scripts Architecture Benefits
@@ -1292,27 +1302,23 @@ console.log(lifecycle.complete());
 **Example Migration:**
 
 ```javascript
-// OLD: Scattered formatting in business domain
-// scripts/deploy/operations/output-templates.js
-function deploymentStart(environment) {
-  return chalk.cyan(`🚀 Starting deployment to ${environment}...`);
-}
+// OLD: Mixed patterns (confusing)
+// scripts/deploy/workflows/app-deployment.js
+console.log(format.error('Build failed'));     // String returner
+format.verbose('Starting mesh update...');     // Direct printer
+console.log(await format.buildStart());        // String returner
+format.section('Deploying App Builder');       // Direct printer
 
-// NEW: Centralized in format domain
-// scripts/format/operations/templates.js
-const deployTemplates = {
-  start(environment) {
-    const envIcon = environment === 'production' ? ICONS.production : ICONS.staging;
-    return COLORS.header(
-      `${SPACING.beforeSection}${ICONS.deploy} Starting deployment to ${environment} ${envIcon}...${SPACING.afterSection}`
-    );
-  }
-};
-
-// UPDATED: Business domain uses format domain
+// NEW: Consistent pattern (simple)
 // scripts/deploy/workflows/app-deployment.js
 const format = require('../../format');
-console.log(format.templates.deploy.start(environment));
+
+console.log(format.error('Build failed'));
+console.log(format.verbose('Starting mesh update...'));
+console.log(await format.buildStart());
+console.log(format.section('Deploying App Builder'));
+
+// ALL functions return strings, ALWAYS use console.log() to print
 ```
 
 ### Scripts Standards Compliance

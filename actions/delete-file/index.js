@@ -41,14 +41,10 @@ async function deleteFileBusinessLogic(context) {
   }
 
   // Return JSON response for API consumers
-  return core.response.success(
-    {
-      deletedFile: allActionParams.fileName,
-      message: 'File deleted successfully',
-    },
-    'File deleted successfully',
-    {}
-  );
+  return core.success({
+    deletedFile: allActionParams.fileName,
+    message: 'File deleted successfully',
+  });
 }
 
 // Create action with framework - clean orchestrator pattern using domain workflows!

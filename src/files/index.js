@@ -36,10 +36,9 @@ const {
   createFileError,
   getContentType,
   validatePath,
-  removePublicPrefix,
 } = require('./utils/errors');
 const {
-  extractCleanFilename,
+  removePublicPrefix,
   addPublicPrefix,
   normalizePath,
   isPathSafe,
@@ -85,7 +84,7 @@ module.exports = {
   createFileError,
 
   // Path utilities
-  extractCleanFilename,
+  removePublicPrefix,
   addPublicPrefix,
   normalizePath,
   isPathSafe,
@@ -94,7 +93,6 @@ module.exports = {
   getFilename,
   getExtension,
   changeExtension,
-  removePublicPrefix,
 
   // CSV operations
   getCsvConfig,

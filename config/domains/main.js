@@ -25,6 +25,11 @@ function buildMainConfig() {
     storage: {
       provider: 's3', // Storage provider choice: 's3' or 'app-builder'
       directory: 'public/', // Directory for file organization (used by both providers)
+      s3: {
+        region: 'us-east-1',
+        bucket: 'demo-commerce-integrations',
+        prefix: 'kukla-integration/',
+      },
     },
   };
 }

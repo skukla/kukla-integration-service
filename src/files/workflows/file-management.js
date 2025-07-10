@@ -7,7 +7,7 @@
  */
 
 const { selectStorageStrategy } = require('../strategies/storage-strategies');
-const { extractCleanFilename } = require('../utils/paths');
+const { removePublicPrefix } = require('../utils/paths');
 
 /**
  * Initialize storage provider based on configuration
@@ -69,7 +69,7 @@ async function storeCsvFile(csvData, config, params, fileName) {
  */
 async function readStoredFile(fileName, config, params) {
   const storage = await initializeStorage(config, params);
-  const cleanFileName = extractCleanFilename(fileName);
+  const cleanFileName = removePublicPrefix(fileName);
   return await storage.read(cleanFileName);
 }
 
@@ -84,7 +84,7 @@ async function readStoredFile(fileName, config, params) {
  */
 async function deleteStoredFile(fileName, config, params) {
   const storage = await initializeStorage(config, params);
-  const cleanFileName = extractCleanFilename(fileName);
+  const cleanFileName = removePublicPrefix(fileName);
   await storage.delete(cleanFileName);
 }
 
@@ -145,7 +145,7 @@ async function exportCsvWithStorage(csvData, config, params, fileName) {
 async function downloadFileWorkflow(fileName, config, params) {
   try {
     const fileContent = await readStoredFile(fileName, config, params);
-    const cleanFileName = extractCleanFilename(fileName);
+    const cleanFileName = removePublicPrefix(fileName);
 
     // Set proper content type
     const contentType = fileName.endsWith(config.files.extensions.csv)
