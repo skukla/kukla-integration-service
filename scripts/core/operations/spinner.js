@@ -34,6 +34,7 @@ function updateSpinner(spinner, text) {
  * @param {string} text - Success text
  */
 function succeedSpinner(spinner, text) {
+  // Use muted formatting since ora adds its own green checkmark
   spinner.succeed(basicFormatters.muted(text));
 }
 
@@ -43,6 +44,7 @@ function succeedSpinner(spinner, text) {
  * @param {string} text - Failure text
  */
 function failSpinner(spinner, text) {
+  // Use muted formatting since ora adds its own red X
   spinner.fail(basicFormatters.muted(text));
 }
 
@@ -52,6 +54,7 @@ function failSpinner(spinner, text) {
  * @param {string} text - Warning text
  */
 function warnSpinner(spinner, text) {
+  // Use muted formatting since ora adds its own yellow warning
   spinner.warn(basicFormatters.muted(text));
 }
 
