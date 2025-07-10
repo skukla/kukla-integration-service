@@ -104,7 +104,6 @@ function highlight(text) {
 
 /**
  * Format URL
- * ENHANCED: Supports optional label parameter
  * @param {string} url - URL to format
  * @param {string} label - Optional label (default: url)
  * @returns {string} Formatted URL
