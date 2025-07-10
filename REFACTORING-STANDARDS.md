@@ -497,14 +497,14 @@ This document provides guidelines for maintaining consistent, high-quality code 
 ```javascript
 // ✅ CORRECT: Current action pattern using domain workflows
 const { createAction } = require('../../../src/core');
-const { exportProductsViaMesh } = require('../../../src/products/workflows/mesh-export');
+const { exportMeshProducts } = require('../../../src/products/workflows/mesh-export');
 const { exportCsvWithStorage } = require('../../../src/files/workflows/file-management');
 
 async function actionBusinessLogic(context) {
   const { extractedParams, config, trace } = context;
   
   // Use domain workflows for business logic
-  const { meshData, builtProducts } = await exportProductsViaMesh(extractedParams, config, trace);
+  const { meshData, builtProducts } = await exportMeshProducts(extractedParams, config, trace, false);
   const exportResult = await exportCsvWithStorage(csvResult.content, config, extractedParams);
   
   return core.response.exportSuccess(exportResult, 'Operation completed', {});
@@ -594,17 +594,22 @@ Instead of action-specific `lib/` directories, all business logic belongs in dom
 ```javascript
 // ✅ CORRECT: Domain workflow extraction
 // src/products/workflows/mesh-export.js
-async function exportProductsViaMesh(params, config, trace) {
+async function exportMeshProducts(params, config, trace, includeCSV = true) {
   // Complete mesh export workflow
   const products = await fetchProductsFromMesh(params, config);
   const builtProducts = await buildProducts(products, config);
-  return { meshData, builtProducts };
+  
+  const result = { meshData, builtProducts };
+  if (includeCSV) {
+    result.csvData = await createCsv(builtProducts, config);
+  }
+  return result;
 }
 
 // ✅ CORRECT: Action uses workflow
 async function actionBusinessLogic(context) {
   const { extractedParams, config, trace } = context;
-  const result = await exportProductsViaMesh(extractedParams, config, trace);
+  const result = await exportMeshProducts(extractedParams, config, trace, false);
   return core.response.exportSuccess(result, 'Export completed', {});
 }
 ```
@@ -802,14 +807,14 @@ const { storeFile } = require('../../src/core/storage/operations');
 ```javascript
 // actions/get-products-mesh/index.js
 const { createAction } = require('../../../src/core');
-const { exportProductsViaMesh } = require('../../../src/products/workflows/mesh-export');
+const { exportMeshProducts } = require('../../../src/products/workflows/mesh-export');
 const { exportCsvWithStorage } = require('../../../src/files/workflows/file-management');
 
 async function getProductsMeshBusinessLogic(context) {
   const { extractedParams, config, trace, core } = context;
 
   // Use domain workflow for mesh export
-  const { meshData, builtProducts } = await exportProductsViaMesh(extractedParams, config, trace);
+  const { meshData, builtProducts } = await exportMeshProducts(extractedParams, config, trace, false);
   
   // Use file workflow for CSV export
   const exportResult = await exportCsvWithStorage(csvResult.content, config, extractedParams);

@@ -30,7 +30,7 @@ Options:
     process.exit(1);
   }
 
-  console.log(format.sectionHeader(`Testing action: ${actionName}`, '⟐'));
+  console.log(format.section(`Testing action: ${actionName}`));
 
   try {
     const { actionTesting } = require('./test/workflows');

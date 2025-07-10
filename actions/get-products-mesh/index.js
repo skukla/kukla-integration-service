@@ -5,8 +5,7 @@
 
 const { createAction } = require('../../src/core');
 const { exportCsvWithStorage } = require('../../src/files/workflows/file-management');
-const { createCsv } = require('../../src/products/utils/csv');
-const { exportProductsViaMesh } = require('../../src/products/workflows/mesh-export');
+const { exportMeshProducts } = require('../../src/products/workflows/mesh-export');
 
 /**
  * Business logic for get-products-mesh action
@@ -20,8 +19,10 @@ async function getProductsMeshBusinessLogic(context) {
   const allActionParams = { ...webActionParams, ...extractedParams };
   const format = allActionParams.format || 'csv';
 
-  // Step 1-3: Export products via mesh using domain workflow
-  const { meshData, builtProducts } = await exportProductsViaMesh(extractedParams, config, trace);
+  // Step 1-4: Export products via mesh
+  const includeCSV = format !== 'json';
+  const exportResult = await exportMeshProducts(extractedParams, config, trace, includeCSV);
+  const { meshData, builtProducts, csvData } = exportResult;
 
   // Branch based on requested format
   if (format === 'json') {
@@ -37,11 +38,8 @@ async function getProductsMeshBusinessLogic(context) {
     );
   }
 
-  // Step 4: Generate CSV from built products
-  const csvResult = await createCsv(builtProducts, config);
-
   // Step 5: Store CSV using file workflow
-  const exportResult = await exportCsvWithStorage(csvResult.content, config, extractedParams);
+  const storageResult = await exportCsvWithStorage(csvData.content, config, extractedParams);
 
   // Calculate total duration for performance metrics
   const endTime = Date.now();
@@ -51,7 +49,7 @@ async function getProductsMeshBusinessLogic(context) {
   return core.success(
     {
       message: 'Product export completed successfully',
-      downloadUrl: exportResult.downloadUrl,
+      downloadUrl: storageResult.downloadUrl,
       performance: {
         // Include mesh performance metrics
         ...meshData.performance,
@@ -61,7 +59,7 @@ async function getProductsMeshBusinessLogic(context) {
         // Override method to ensure consistency
         method: 'API Mesh',
       },
-      storage: exportResult.storage,
+      storage: storageResult.storage,
     },
     'Product export completed via API Mesh',
     {}
