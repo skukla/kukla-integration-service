@@ -3,8 +3,8 @@
  * Validates that API Mesh is operational before deployment
  */
 
+const format = require('../../../core/formatting');
 const { createSpinner } = require('../../../core/operations/spinner');
-const format = require('../../../format');
 
 /**
  * Check if API Mesh is operational

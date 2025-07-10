@@ -8,15 +8,8 @@ const fs = require('fs');
 const { loadConfig } = require('../../../config');
 const core = require('../../core');
 
-/**
- * Ensure output directory exists
- * @param {string} outputDir - Output directory path
- */
-function ensureOutputDirectory(outputDir) {
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-}
+// ensureOutputDirectory moved inline to workflows
+// This was a simple 4-line fs operation that didn't warrant separate abstraction
 
 /**
  * Load configuration with environment detection and spinner feedback
@@ -29,49 +22,14 @@ async function loadConfigWithEnvironment(useSpinners) {
   const config = loadConfig({ NODE_ENV: env });
   
   if (configSpinner) {
-    configSpinner.succeed(core.formatSpinnerSuccess('Configuration loaded'));
+    configSpinner.succeed('Configuration loaded');
   }
 
   return { config, env };
 }
 
-/**
- * Generate frontend configuration object
- * @param {Object} config - Loaded configuration
- * @param {string} env - Environment name
- * @returns {Object} Frontend configuration
- */
-function buildFrontendConfig(config, env) {
-  return {
-    environment: env,
-    runtime: {
-      package: config.runtime.package,
-      version: config.runtime.version,
-      url: config.runtime.url,
-      paths: config.runtime.paths,
-      actions: config.runtime.actions,
-    },
-    performance: {
-      timeout: config.performance.timeouts.api.commerce,
-      maxExecutionTime: config.performance.maxExecutionTime,
-    },
-  };
-}
-
-/**
- * Generate URL configuration object
- * @param {Object} config - Loaded configuration
- * @returns {Object} URL configuration
- */
-function buildUrlConfig(config) {
-  return {
-    actions: config.runtime.actions,
-    runtime: {
-      url: config.runtime.url,
-      namespace: config.runtime.namespace,
-    },
-  };
-}
+// buildFrontendConfig and buildUrlConfig moved inline to workflows
+// These were simple object construction operations that didn't warrant separate abstractions
 
 /**
  * Write configuration file with spinner feedback
@@ -88,14 +46,12 @@ async function writeConfigFile(filePath, configData, spinnerMessage, successMess
   fs.writeFileSync(filePath, content);
   
   if (spinner) {
-    spinner.succeed(core.formatSpinnerSuccess(successMessage));
+    spinner.succeed(successMessage);
   }
 }
 
 module.exports = {
-  ensureOutputDirectory,
   loadConfigWithEnvironment,
-  buildFrontendConfig,
-  buildUrlConfig,
   writeConfigFile,
+  // ensureOutputDirectory, buildFrontendConfig, and buildUrlConfig moved inline to workflows
 }; 

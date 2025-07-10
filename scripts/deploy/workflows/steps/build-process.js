@@ -3,8 +3,8 @@
  * Handles application build process operations
  */
 
+const format = require('../../../core/formatting');
 const { createSpinner } = require('../../../core/operations/spinner');
-const format = require('../../../format');
 
 /**
  * Execute build process

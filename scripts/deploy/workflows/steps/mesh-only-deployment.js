@@ -5,7 +5,7 @@
 
 const { spawn } = require('child_process');
 
-const format = require('../../../format');
+const format = require('../../../core/formatting');
 
 /**
  * Deploy only the API Mesh

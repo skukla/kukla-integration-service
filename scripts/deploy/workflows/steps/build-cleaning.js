@@ -3,8 +3,8 @@
  * Handles cleanup of build artifacts and temporary files
  */
 
+const format = require('../../../core/formatting');
 const { createSpinner } = require('../../../core/operations/spinner');
-const format = require('../../../format');
 
 /**
  * Clean build artifacts and temporary files

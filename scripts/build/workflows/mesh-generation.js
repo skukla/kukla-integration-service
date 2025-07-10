@@ -6,7 +6,7 @@
 
 const { mesh } = require('../../');
 const { loadConfig } = require('../../../config');
-const format = require('../../format');
+const core = require('../../core');
 
 /**
  * Generate mesh resolver and configuration using new mesh domain
@@ -20,7 +20,7 @@ async function generateMeshResolver(options = {}) {
 
   try {
     if (verbose) {
-      console.log(format.info('Using mesh domain for resolver and configuration generation...'));
+      console.log(core.formatting.info('Using mesh domain for resolver and configuration generation...'));
     }
 
     // Load configuration for mesh domain
@@ -41,9 +41,9 @@ async function generateMeshResolver(options = {}) {
     }
 
     if (verbose) {
-      console.log(format.success('✅ Mesh domain compilation completed successfully'));
+      console.log(core.formatting.success('✅ Mesh domain compilation completed successfully'));
       compilationResult.steps.forEach((step, index) => {
-        console.log(format.info(`   ${index + 1}. ${step}`));
+        console.log(core.formatting.info(`   ${index + 1}. ${step}`));
       });
     }
 

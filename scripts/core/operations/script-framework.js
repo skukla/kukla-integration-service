@@ -3,7 +3,7 @@
  * Shared script execution framework used across all script domains
  */
 
-const format = require('../../format');
+const format = require('../formatting');
 
 /**
  * Execute a script with consistent error handling and output formatting

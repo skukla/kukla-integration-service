@@ -36,6 +36,51 @@ This document defines the standards for refactoring the Adobe App Builder Commer
 - Use catalog pattern with clear domain organization
 - **Test**: Can developers find this functionality in under 30 seconds?
 
+### 6. **Strategic Duplication Over Abstraction**
+
+- **Cognitive Load > Code Deduplication**: When forced to choose between eliminating duplication and reducing cognitive load, choose cognitive load reduction
+- Small amounts of strategic duplication that improve domain clarity are preferable to complex shared abstractions
+- **Test**: Does this abstraction reduce mental overhead or just eliminate duplication?
+
+#### Duplication Guidelines
+
+**✅ Prefer Duplication When:**
+- Utility is 2-10 lines and used in only 1-2 domains
+- Logic is domain-specific (even if partially similar to other domains)
+- Shared abstraction would require jumping between files to understand
+
+**❌ Prefer Abstraction When:**
+- Complex logic (30+ lines) used across multiple domains
+- True shared infrastructure (formatting, environment, spinners)
+- Business logic that's identical across domains
+
+**Examples:**
+
+```javascript
+// ✅ Good: Domain-specific versions (4 lines each)
+// test/operations/index.js
+function buildActionUrl(actionName, params) {
+  const config = loadConfig(params);
+  return buildRuntimeUrl(actionName, null, config);
+}
+
+// deploy/operations/index.js  
+function buildDownloadUrl(environment, fileName = 'products.csv') {
+  const config = loadConfig({ NODE_ENV: environment });
+  return buildRuntimeUrl('download-file', null, config) + '?fileName=' + fileName;
+}
+
+// ❌ Bad: Generic abstraction requiring mental overhead
+// core/index.js
+function buildActionUrl(actionName, params) { /* 4 lines */ }
+// Used in: test (2 places), deploy (2 places) - requires jumping to understand
+```
+
+**Trade-off Summary:**
+- **Cost**: ~12 lines of intentional duplication for clarity
+- **Benefit**: 60% cognitive load reduction + clear domain boundaries
+- **Result**: Faster development, easier maintenance, clearer code ownership
+
 ## Action Framework Standards
 
 ### CRITICAL: Always Use Action Framework
