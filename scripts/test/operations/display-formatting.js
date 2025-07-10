@@ -74,7 +74,8 @@ function displayPerformance(performance) {
  */
 function displayEnvironmentInfo(actionUrl, environment) {
   const envSymbol = environment === 'production' ? '●' : '◉';
-  console.log(basicFormatters.muted(`${envSymbol} Environment: ${environment}`));
+  const capitalizedEnv = environment.charAt(0).toUpperCase() + environment.slice(1);
+  console.log(basicFormatters.muted(`${envSymbol} Environment: ${capitalizedEnv}`));
   console.log(basicFormatters.muted(`${ICONS.api} ${actionUrl}`));
 }
 
@@ -86,7 +87,7 @@ function displayExecutionSteps(steps) {
   if (steps && Array.isArray(steps)) {
     console.log(basicFormatters.info('Execution Steps:'));
     steps.forEach((step, index) => {
-      console.log(basicFormatters.muted(`  ${index + 1}. ${step}`));
+      console.log(basicFormatters.success(`${index + 1}. ${step}`));
     });
   }
 }

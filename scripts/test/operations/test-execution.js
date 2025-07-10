@@ -48,7 +48,7 @@ async function executeRawTest(actionName, processedParams) {
   const response = await testAction(actionUrl, processedParams);
 
   return {
-    success: true,
+    success: response.status === 200,
     rawResponse: response,
     actionUrl,
   };
@@ -74,7 +74,7 @@ async function executeEnhancedTest(actionName, processedParams, displayActionRes
   displayActionResults(response, actionName, actionUrl, processedParams.NODE_ENV);
 
   return {
-    success: true,
+    success: response.status === 200,
     actionName,
     actionUrl,
     response,
@@ -93,12 +93,21 @@ async function executeEnhancedTest(actionName, processedParams, displayActionRes
 async function testAction(actionUrl, params) {
   const fetch = require('node-fetch');
 
+  // Filter out reserved/system properties that shouldn't be sent to actions
+  const reservedProperties = ['NODE_ENV'];
+  const actionParams = Object.keys(params)
+    .filter((key) => !reservedProperties.includes(key))
+    .reduce((obj, key) => {
+      obj[key] = params[key];
+      return obj;
+    }, {});
+
   const response = await fetch(actionUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(params),
+    body: JSON.stringify(actionParams),
   });
 
   const responseBody = await response.json();
