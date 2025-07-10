@@ -33,21 +33,21 @@ async function appDeploymentWorkflow(options = {}) {
 
     // Step 2: Build process
     if (verbose) console.log(basicFormatters.info('Starting build process...'));
-    const buildResult = await buildProcess.executeBuildProcess({ verbose });
+    const buildResult = await buildProcess.buildProcessStep({ verbose });
     if (!buildResult.success) {
       throw new Error(buildResult.error);
     }
 
     // Step 3: App deployment
     if (verbose) console.log(basicFormatters.info('Starting app deployment...'));
-    const deployResult = await appDeployment.executeAppDeployment({ environment, verbose });
+    const deployResult = await appDeployment.appDeploymentStep({ environment, verbose });
     if (!deployResult.success) {
       throw new Error(deployResult.error);
     }
 
     // Step 4: Mesh update
     if (verbose) console.log(basicFormatters.info('Starting mesh update...'));
-    const meshResult = await meshUpdate.executeMeshUpdate({ environment, verbose });
+    const meshResult = await meshUpdate.meshUpdateStep({ environment, verbose });
     if (!meshResult.success) {
       throw new Error(meshResult.error);
     }

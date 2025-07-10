@@ -31,7 +31,7 @@ async function meshDeploymentWorkflow(options = {}) {
 
     // Step 2: Mesh update
     if (verbose) console.log(basicFormatters.info('Starting mesh update...'));
-    const meshResult = await meshUpdate.executeMeshUpdate({ environment, verbose });
+    const meshResult = await meshUpdate.meshUpdateStep({ environment, verbose });
     if (!meshResult.success) {
       throw new Error(meshResult.error);
     }

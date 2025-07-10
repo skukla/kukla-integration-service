@@ -3,8 +3,8 @@
  * Handles API Mesh status validation
  */
 
-const { FORMATTERS } = require('../../../core/operations/output-standards');
-const { createSpinner, formatSpinnerSuccess } = require('../../../core/operations/spinner');
+const { createSpinner } = require('../../../core/operations/spinner');
+const { basicFormatters } = require('../../../core/utils');
 
 /**
  * Check mesh status
@@ -23,7 +23,7 @@ async function meshStatusCheckStep(options = {}) {
     const meshStatus = 'success'; // Simulate successful status
 
     if (meshStatus === 'success') {
-      spinner.succeed(formatSpinnerSuccess('API Mesh is operational'));
+      spinner.succeed(basicFormatters.muted('API Mesh is operational'));
       return {
         success: true,
         status: meshStatus,
@@ -38,8 +38,8 @@ async function meshStatusCheckStep(options = {}) {
       };
     }
   } catch (error) {
-    console.error(FORMATTERS.error('Mesh status check failed'));
-    console.error(FORMATTERS.error(error.message));
+    console.error(basicFormatters.error('Mesh status check failed'));
+    console.error(basicFormatters.error(error.message));
     return {
       success: false,
       error: error.message,
