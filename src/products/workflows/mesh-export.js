@@ -10,17 +10,18 @@ const { buildProducts } = require('../operations/transformation');
 const { createCsv } = require('../utils/csv');
 
 /**
- * Complete mesh-based product export workflow
+ * Complete mesh-based product export workflow with CSV generation
  *
- * Orchestrates the full process from mesh fetching to product building.
- * This workflow handles the mesh-specific data pipeline.
+ * Orchestrates the full process from mesh fetching to CSV generation.
+ * This workflow handles the complete mesh-specific data pipeline.
  *
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object
  * @param {Object} trace - Trace context for performance monitoring
- * @returns {Promise<Object>} Export result with mesh data and built products
+ * @param {boolean} [includeCSV=true] - Whether to generate CSV data
+ * @returns {Promise<Object>} Export result with mesh data, built products, and optionally CSV
  */
-async function exportProductsViaMesh(params, config, trace = null) {
+async function exportMeshProducts(params, config, trace = null, includeCSV = true) {
   // Step 1: Fetch enriched products from mesh (validation handled internally)
   const meshData = await fetchEnrichedProductsFromMesh(config, params, trace);
 
@@ -30,39 +31,24 @@ async function exportProductsViaMesh(params, config, trace = null) {
   // Step 2: Build product data using shared transformation
   const builtProducts = await buildProducts(meshData.products, config);
 
-  return {
+  // Base result object
+  const result = {
     meshData,
     builtProducts,
     productCount: builtProducts.length,
     totalCount: meshData.total_count,
   };
-}
 
-/**
- * Complete mesh export with CSV generation
- *
- * Full workflow that includes CSV generation from mesh data.
- *
- * @param {Object} params - Action parameters with OAuth credentials
- * @param {Object} config - Configuration object
- * @param {Object} trace - Trace context for performance monitoring
- * @returns {Promise<Object>} Export result with CSV data
- */
-async function exportMeshProductsToCsv(params, config, trace = null) {
-  // Step 1-3: Export products via mesh
-  const exportResult = await exportProductsViaMesh(params, config, trace);
+  // Step 3: Generate CSV if requested
+  if (includeCSV) {
+    const csvResult = await createCsv(builtProducts, config);
+    result.csvData = csvResult;
+    result.csvSize = csvResult.stats.originalSize;
+  }
 
-  // Step 4: Generate CSV from built products
-  const csvResult = await createCsv(exportResult.builtProducts, config);
-
-  return {
-    ...exportResult,
-    csvData: csvResult,
-    csvSize: csvResult.stats.originalSize,
-  };
+  return result;
 }
 
 module.exports = {
-  exportProductsViaMesh,
-  exportMeshProductsToCsv,
+  exportMeshProducts,
 };

@@ -9,7 +9,6 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 const { loadConfig } = require('../../../config');
-const format = require('../../format');
 const { testExecution } = require('../operations');
 
 /**
@@ -56,8 +55,11 @@ function processActionParameters(actionName, params) {
  * @param {string} environment - Environment name
  */
 function displayActionResults(response, actionName, actionUrl, environment) {
-  // Use centralized display formatter
-  format.display.displayActionResults(response, actionName, actionUrl, environment);
+  // Use centralized display formatter from operations
+  const {
+    displayActionResults: displayFormatter,
+  } = require('../../format/operations/display-formatters');
+  displayFormatter(response, actionName, actionUrl, environment);
 }
 
 /**
