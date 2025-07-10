@@ -1,62 +1,58 @@
 /**
  * Mesh Generation Workflow
- * Extracted from scripts/generate-mesh-resolver.js for domain organization
- * Handles mesh resolver generation
+ * Updated to use new mesh domain architecture
+ * Handles both mesh resolver generation and mesh configuration compilation
  */
 
-const steps = require('./steps');
+const { mesh } = require('../../');
+const { loadConfig } = require('../../../config');
+const format = require('../../format');
 
 /**
- * Generate mesh resolver from template
+ * Generate mesh resolver and configuration using new mesh domain
  * @param {Object} options - Generation options
  * @param {boolean} options.force - Force regeneration
  * @param {boolean} options.verbose - Verbose output
  * @returns {Promise<Object>} Generation result
  */
 async function generateMeshResolver(options = {}) {
-  try {
-    // Step 1: Extract mesh configuration and paths
-    const configResult = await steps.meshConfigExtraction.meshConfigExtractionStep();
-    
-    // Step 2: Check if regeneration is needed
-    const regenerationCheck = steps.regenerationCheck.regenerationCheckStep(
-      { templatePath: configResult.templatePath, resolverPath: configResult.resolverPath },
-      configResult.meshConfig,
-      options
-    );
+  const { verbose = false } = options;
 
-    if (!regenerationCheck.needed) {
-      if (options.verbose) {
-        console.log('✅ Mesh resolver is up to date');
-        console.log(`   Reason: ${regenerationCheck.reason}`);
-      }
-      return {
-        success: true,
-        generated: false,
-        reason: regenerationCheck.reason,
-      };
+  try {
+    if (verbose) {
+      console.log(format.info('Using mesh domain for resolver and configuration generation...'));
     }
 
-    // Step 3: Process template with configuration
-    const processingResult = steps.templateProcessing.templateProcessingStep({
-      templatePath: configResult.templatePath,
-      config: configResult.config,
-      meshConfig: configResult.meshConfig,
+    // Load configuration for mesh domain
+    const config = loadConfig({});
+
+    // Use mesh domain compilation workflow to generate both resolver and config
+    const compilationResult = await mesh.workflows.compile.compileMeshWorkflow({
+      templatePath: 'mesh-resolvers.template.js',
+      resolverPath: 'mesh-resolvers.js', 
+      configPath: 'mesh.config.js',
+      outputPath: 'mesh.json',
+      config,
+      generateResolver: true,
     });
 
-    // Step 4: Generate the resolver file
-    steps.fileGeneration.fileGenerationStep({
-      resolverPath: configResult.resolverPath,
-      resolverContent: processingResult.resolverContent,
-      reason: regenerationCheck.reason,
-    });
+    if (!compilationResult.success) {
+      throw new Error(`Mesh compilation failed: ${compilationResult.error}`);
+    }
+
+    if (verbose) {
+      console.log(format.success('✅ Mesh domain compilation completed successfully'));
+      compilationResult.steps.forEach((step, index) => {
+        console.log(format.info(`   ${index + 1}. ${step}`));
+      });
+    }
 
     return {
       success: true,
       generated: true,
-      environment: configResult.environment,
-      reason: regenerationCheck.reason,
-      metadata: processingResult.metadata,
+      workflow: 'mesh-domain-compilation',
+      steps: compilationResult.steps,
+      results: compilationResult.results,
     };
 
   } catch (error) {
@@ -64,13 +60,14 @@ async function generateMeshResolver(options = {}) {
   }
 }
 
-// Keep the old function for backward compatibility
-function needsRegeneration(templatePath, resolverPath, meshConfig, options = {}) {
-  return steps.regenerationCheck.regenerationCheckStep(
-    { templatePath, resolverPath },
-    meshConfig,
-    options
-  );
+// Keep the old function for backward compatibility (simplified for mesh domain)
+function needsRegeneration() {
+  // Always regenerate when using mesh domain workflow
+  // The mesh domain handles its own change detection
+  return {
+    needed: true,
+    reason: 'Using mesh domain workflow regeneration',
+  };
 }
 
 module.exports = {
