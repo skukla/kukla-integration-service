@@ -33,12 +33,19 @@ Options:
 
   try {
     const { actionTesting } = require('./test/workflows');
-    await actionTesting.actionTestingWorkflow(actionName, {
+    const result = await actionTesting.actionTestingWorkflow(actionName, {
       rawOutput: args.raw,
       verbose: args.verbose,
     });
 
-    console.log(core.formatting.finalSuccess('Test completed successfully'));
+    if (result.success) {
+      console.log(core.formatting.finalSuccess('Test completed successfully'));
+    } else {
+      console.log(
+        core.formatting.error(`Test failed with status ${result.status}: ${result.statusText}`)
+      );
+      process.exit(1);
+    }
   } catch (error) {
     console.error(core.formatting.error(`Test failed: ${error.message}`));
     process.exit(1);
