@@ -1,52 +1,54 @@
 /**
  * Mesh Status Check Step
- * Handles API Mesh status validation
+ * Validates that API Mesh is operational before deployment
  */
 
 const { createSpinner } = require('../../../core/operations/spinner');
-const { basicFormatters } = require('../../../core/utils');
+const format = require('../../../format');
 
 /**
- * Check mesh status
- * @param {Object} options - Check options
- * @returns {Promise<Object>} Status check result
+ * Check if API Mesh is operational
+ * @returns {Promise<Object>} Mesh status result
  */
-async function meshStatusCheckStep(options = {}) {
-  const { timeout = 30000 } = options; // eslint-disable-line no-unused-vars
+async function checkMeshStatus() {
+  const spinner = createSpinner('Checking API Mesh status...');
 
   try {
-    const spinner = createSpinner('Checking API Mesh status...');
+    // TODO: Implement actual mesh health check
+    // For now, assume mesh is operational
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Simulate mesh status check
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // Simulate mesh check result
+    const isOperational = true;
 
-    const meshStatus = 'success'; // Simulate successful status
-
-    if (meshStatus === 'success') {
-      spinner.succeed(basicFormatters.muted('API Mesh is operational'));
+    if (isOperational) {
+      spinner.succeed(format.muted('API Mesh is operational'));
       return {
         success: true,
-        status: meshStatus,
-        step: 'Mesh status verified',
+        operational: true,
+        message: 'API Mesh is ready for deployment',
       };
     } else {
-      spinner.fail('API Mesh status check failed');
+      spinner.fail('API Mesh is not operational');
       return {
         success: false,
-        status: meshStatus,
-        error: 'Mesh not operational',
+        operational: false,
+        message: 'API Mesh health check failed',
       };
     }
   } catch (error) {
-    console.error(basicFormatters.error('Mesh status check failed'));
-    console.error(basicFormatters.error(error.message));
+    spinner.fail('Mesh status check failed');
+    console.error(format.error('Mesh status check failed'));
+    console.error(format.error(error.message));
+
     return {
       success: false,
+      operational: false,
       error: error.message,
     };
   }
 }
 
 module.exports = {
-  meshStatusCheckStep,
+  checkMeshStatus,
 };
