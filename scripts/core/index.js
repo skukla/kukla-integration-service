@@ -5,13 +5,15 @@
  * This catalog exports all core infrastructure used across script domains:
  * - Environment detection and management
  * - Spinner and UI operations
- * - String and format utilities
- * - Hash and file operations
+ * - String and file utilities
+ * - Hash operations
  * - Common script utilities
- * - Output formatting operations
+ * - Unified format domain integration
  *
  * Following the same pattern as src/core/ - provides shared infrastructure
  * that eliminates duplication across build, deploy, and test domains.
+ *
+ * CONSOLIDATED: Format operations now unified in scripts/format domain
  */
 
 // Import modules
@@ -24,7 +26,7 @@ const spinner = require('./operations/spinner');
 const file = require('./utils/file');
 const string = require('./utils/string');
 
-// Import unified format domain
+// Backward compatibility re-exports (DEPRECATED - use format domain directly)
 
 module.exports = {
   // Environment utilities
@@ -46,11 +48,14 @@ module.exports = {
   calculateFileHash: hash.calculateFileHash,
   calculateObjectHash: hash.calculateObjectHash,
 
-  // Format utilities (from unified format domain)
+  // Format utilities (CONSOLIDATED - from unified format domain)
   formatSuccess: formatDomain.success,
   formatError: formatDomain.error,
   formatWarning: formatDomain.warning,
   formatInfo: formatDomain.info,
+  formatProgress: formatDomain.progress,
+  formatStep: formatDomain.step,
+  formatSection: formatDomain.section,
 
   // String utilities
   capitalize: string.capitalize,
@@ -72,8 +77,10 @@ module.exports = {
   string,
   file,
   scriptFramework,
+
+  // Backward compatibility (DEPRECATED - use format domain directly)
   meshTemplates,
 
-  // Unified format domain
+  // Unified format domain (PREFERRED)
   formatting: formatDomain,
 };

@@ -3,7 +3,6 @@
  * Mid-level message formatting operations for consistent output
  * Shared infrastructure used across all script domains
  *
- * CONSOLIDATED: Merged from core/operations/formatting.js and mesh-templates.js
  * ENHANCED: Complete set of message formatting operations
  */
 
@@ -22,7 +21,6 @@ function sectionHeader(text, icon = '') {
 
 /**
  * Format subsection header with lighter styling
- * ENHANCED: Supports optional icon parameter for consistency
  * @param {string} text - Subheader text
  * @param {string} icon - Optional icon
  * @returns {string} Formatted subheader
@@ -52,7 +50,6 @@ function finalSuccess(text) {
 
 /**
  * Format script start with emoji emphasis
- * CONSOLIDATED: From core/operations/formatting.js
  * @param {string} text - Script start text
  * @returns {string} Formatted script start
  */
@@ -64,7 +61,6 @@ function scriptStart(text) {
 
 /**
  * Format script end with emoji emphasis
- * CONSOLIDATED: From core/operations/formatting.js
  * @param {string} text - Script completion text
  * @returns {string} Formatted script end
  */
@@ -76,7 +72,6 @@ function scriptEnd(text) {
 
 /**
  * Format mesh update start message
- * CONSOLIDATED: From core/operations/mesh-templates.js
  * @returns {string} Formatted mesh update start message
  */
 function meshUpdateStart() {
@@ -87,7 +82,6 @@ function meshUpdateStart() {
 
 /**
  * Format mesh polling start message
- * CONSOLIDATED: From core/operations/mesh-templates.js
  * @param {number} interval - Polling interval in seconds
  * @param {number} maxChecks - Maximum number of checks
  * @returns {string} Formatted mesh polling start message
@@ -101,7 +95,6 @@ function meshPollingStart(interval, maxChecks) {
 
 /**
  * Format mesh start with emoji emphasis
- * CONSOLIDATED: From core/operations/mesh-templates.js
  * @param {string} environment - Target environment
  * @returns {string} Formatted mesh start with emoji
  */
@@ -113,7 +106,6 @@ function meshStartEmphasis(environment) {
 
 /**
  * Format mesh completion with emoji emphasis
- * CONSOLIDATED: From core/operations/mesh-templates.js
  * @param {string} environment - Target environment
  * @returns {string} Formatted mesh completion with emoji
  */
