@@ -40,7 +40,7 @@
     "deploy:mesh": "node scripts/deploy.js --mesh-only",
     "deploy:mesh:prod": "node scripts/deploy.js --mesh-only --environment=production",
     "test": "node scripts/test.js",
-    "test:action": "node scripts/test.js action",
+    "test:action": "node scripts/test.js",
     "test:api": "node scripts/test.js api",
     "test:perf": "node scripts/test.js performance"
   },

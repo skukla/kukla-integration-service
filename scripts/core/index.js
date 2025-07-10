@@ -2,31 +2,66 @@
  * Scripts Core Infrastructure Catalog
  * @module scripts/core
  *
- * This catalog exports all core infrastructure used across script domains:
+ * This catalog exports essential shared infrastructure used across script domains:
  * - Environment detection and management
  * - Spinner and UI operations
- * - String and file utilities
- * - Hash operations
- * - Common script utilities
+ * - Script framework utilities
+ * - Simple formatting functions
  *
- * Following the same pattern as src/core/ - provides shared infrastructure
- * that eliminates duplication across build, deploy, and test domains.
+ * Following Strategic Duplication approach - domain-specific utilities moved to their domains,
+ * only truly shared infrastructure remains in core.
  *
  */
 
 // Import modules
-const formatDomain = require('../format');
+const format = require('./formatting');
 const environment = require('./operations/environment');
-const hash = require('./operations/hash');
 const scriptFramework = require('./operations/script-framework');
 const spinner = require('./operations/spinner');
-const file = require('./utils/file');
-const string = require('./utils/string');
+
+/**
+ * Environment detection with UI feedback - Shared across workflows
+ * @param {Object} [params={}] - Parameters object (can contain NODE_ENV override)
+ * @param {Object} [options={}] - Detection options
+ * @param {boolean} [options.silent=false] - Suppress UI output (for raw mode)
+ * @param {boolean} [options.allowCli=true] - Allow CLI workspace detection
+ * @returns {string} Detected environment (staging/production)
+ */
+function handleEnvironmentDetection(params = {}, options = {}) {
+  const { silent = false, allowCli = true } = options;
+  const processedParams = { ...params };
+
+  if (!processedParams.NODE_ENV && !process.env.NODE_ENV) {
+    if (!silent) {
+      const envSpinner = spinner.createSpinner('Detecting workspace environment...');
+      try {
+        processedParams.NODE_ENV = environment.detectScriptEnvironment(processedParams, {
+          allowCliDetection: allowCli,
+        });
+        const capitalizedEnv =
+          processedParams.NODE_ENV.charAt(0).toUpperCase() + processedParams.NODE_ENV.slice(1);
+        envSpinner.stop();
+
+        console.log(format.success(`Environment detected: ${format.environment(capitalizedEnv)}`));
+      } catch (error) {
+        envSpinner.fail('Environment detection failed, defaulting to production');
+        processedParams.NODE_ENV = 'production';
+      }
+    } else {
+      processedParams.NODE_ENV = environment.detectScriptEnvironment(processedParams, {
+        allowCliDetection: allowCli,
+      });
+    }
+  }
+
+  return processedParams.NODE_ENV;
+}
 
 module.exports = {
   // Environment utilities
   detectEnvironment: environment.detectScriptEnvironment,
   detectScriptEnvironment: environment.detectScriptEnvironment,
+  handleEnvironmentDetection, // New shared utility
 
   // Script framework
   parseArgs: scriptFramework.parseArgs,
@@ -39,31 +74,11 @@ module.exports = {
   failSpinner: spinner.failSpinner,
   warnSpinner: spinner.warnSpinner,
 
-  // Hash operations
-  calculateFileHash: hash.calculateFileHash,
-  calculateObjectHash: hash.calculateObjectHash,
-
-  // String utilities
-  capitalize: string.capitalize,
-  camelToKebab: string.camelToKebab,
-  kebabToCamel: string.kebabToCamel,
-  truncate: string.truncate,
-
-  // File utilities
-  fileExists: file.fileExists,
-  readJsonFile: file.readJsonFile,
-  getFileExtension: file.getFileExtension,
-  getBasename: file.getBasename,
-  joinPath: file.joinPath,
-
   // Structured exports for organized access
   environment,
   spinner,
-  hash,
-  string,
-  file,
   scriptFramework,
 
-  // Format domain integration (PREFERRED)
-  formatting: formatDomain,
+  // Simple formatting functions (Light DDD compliant)
+  formatting: format,
 };

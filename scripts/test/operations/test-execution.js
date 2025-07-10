@@ -1,86 +1,41 @@
 /**
  * Test Execution Operations
- * Mid-level operations for test execution and environment handling
+ * Test domain specific operations for action execution
  */
 
-const { loadConfig } = require('../../../config');
-const { buildRuntimeUrl } = require('../../../src/core/routing');
-const core = require('../../core');
+const { buildActionUrl, isSuccessfulResponse } = require('./index');
 
 /**
- * Handle environment detection with spinner feedback
- * @param {Object} processedParams - Processed parameters object
- * @param {boolean} rawOutput - Whether in raw output mode
- * @returns {string} Detected environment
- */
-function handleEnvironmentDetection(processedParams, rawOutput) {
-  if (!processedParams.NODE_ENV && !process.env.NODE_ENV) {
-    if (!rawOutput) {
-      const envSpinner = core.createSpinner('Detecting workspace environment...');
-      try {
-        processedParams.NODE_ENV = core.detectScriptEnvironment(processedParams, {
-          allowCliDetection: true,
-        });
-        const capitalizedEnv = core.capitalize(processedParams.NODE_ENV);
-        core.succeedSpinner(envSpinner, `Environment: ${capitalizedEnv}`);
-      } catch (error) {
-        envSpinner.fail('Environment detection failed, defaulting to production');
-        processedParams.NODE_ENV = 'production';
-      }
-    } else {
-      processedParams.NODE_ENV = core.detectScriptEnvironment(processedParams, {
-        allowCliDetection: true,
-      });
-    }
-  }
-  return processedParams.NODE_ENV;
-}
-
-/**
- * Execute action test in raw mode
+ * Execute action test - Clean operation for Light DDD pattern
  * @param {string} actionName - Name of action to test
- * @param {Object} processedParams - Processed parameters
- * @returns {Promise<Object>} Raw test result
+ * @param {Object} params - Action parameters
+ * @returns {Promise<Object>} Test response with success determination
  */
-async function executeRawTest(actionName, processedParams) {
-  const config = loadConfig(processedParams);
-  const actionUrl = buildRuntimeUrl(actionName, null, config);
-  const response = await testAction(actionUrl, processedParams);
+async function executeActionTest(actionName, params) {
+  const actionUrl = buildActionUrl(actionName, params);
+  const response = await testAction(actionUrl, params);
 
   return {
-    success: response.status === 200,
-    rawResponse: response,
+    ...response,
+    success: isSuccessfulResponse(response),
     actionUrl,
   };
 }
 
 /**
- * Execute action test in enhanced mode with display
+ * Execute action test in raw mode - Simplified using shared functions
  * @param {string} actionName - Name of action to test
- * @param {Object} processedParams - Processed parameters
- * @param {Function} displayActionResults - Display function
- * @returns {Promise<Object>} Enhanced test result
+ * @param {Object} params - Action parameters
+ * @returns {Promise<Object>} Raw test result
  */
-async function executeEnhancedTest(actionName, processedParams, displayActionResults) {
-  const testSpinner = core.createSpinner(`Testing action: ${actionName}`);
-
-  const config = loadConfig(processedParams);
-  const actionUrl = buildRuntimeUrl(actionName, null, config);
-  const response = await testAction(actionUrl, processedParams);
-
-  core.succeedSpinner(testSpinner, 'Action response received');
-
-  // Display rich results
-  displayActionResults(response, actionName, actionUrl, processedParams.NODE_ENV);
+async function executeRawTest(actionName, params) {
+  const actionUrl = buildActionUrl(actionName, params);
+  const response = await testAction(actionUrl, params);
 
   return {
-    success: response.status === 200,
-    actionName,
+    success: isSuccessfulResponse(response),
+    rawResponse: response,
     actionUrl,
-    response,
-    environment: processedParams.NODE_ENV,
-    status: response.status,
-    statusText: response.statusText,
   };
 }
 
@@ -92,23 +47,10 @@ async function executeEnhancedTest(actionName, processedParams, displayActionRes
  */
 async function testAction(actionUrl, params) {
   const fetch = require('node-fetch');
+  const { filterActionParameters } = require('./index');
 
-  // Filter out reserved/system properties that shouldn't be sent to actions
-  const actionParams = Object.keys(params)
-    .filter((key) => {
-      // Filter out Adobe I/O system variables
-      if (key.startsWith('AIO_')) return false;
-
-      // Filter out other reserved properties
-      const reservedProperties = ['NODE_ENV', 'SERVICE_API_KEY'];
-      if (reservedProperties.includes(key)) return false;
-
-      return true;
-    })
-    .reduce((obj, key) => {
-      obj[key] = params[key];
-      return obj;
-    }, {});
+  // Use business logic operation to filter parameters
+  const actionParams = filterActionParameters(params);
 
   const response = await fetch(actionUrl, {
     method: 'POST',
@@ -129,8 +71,7 @@ async function testAction(actionUrl, params) {
 }
 
 module.exports = {
-  handleEnvironmentDetection,
+  executeActionTest,
   executeRawTest,
-  executeEnhancedTest,
   testAction,
 };

@@ -10,7 +10,7 @@ const { promisify } = require('util');
 const frontendGeneration = require('./frontend-generation');
 const meshGeneration = require('./mesh-generation');
 const core = require('../../core');
-const format = require('../../format');
+const { capitalize } = require('../operations/string');
 
 const execAsync = promisify(exec);
 
@@ -25,18 +25,18 @@ const execAsync = promisify(exec);
  */
 async function appBuildWorkflow(options = {}) {
   try {
-    console.log(await format.buildStart());
+    console.log(core.formatting.success('Build started'));
 
     // Step 1: Environment Detection (use provided environment or detect)
     const envSpinner = core.createSpinner('Detecting environment...');
     const env = options.environment || core.detectScriptEnvironment();
-    const envDisplay = core.capitalize(env);
-    envSpinner.succeed(core.formatSpinnerSuccess(`Environment detected: ${envDisplay}`));
+    const envDisplay = capitalize(env);
+    envSpinner.succeed(`Environment detected: ${envDisplay}`);
 
     // Step 2: Frontend Generation
     const frontendSpinner = core.createSpinner('Generating frontend assets...');
     await frontendGeneration.generateFrontendConfig();
-    frontendSpinner.succeed(core.formatSpinnerSuccess('Frontend assets generated'));
+    frontendSpinner.succeed('Frontend assets generated');
 
     // Step 3: Mesh Resolver Generation (if not skipped)
     let meshStepMessage = 'Mesh generation skipped';
@@ -45,7 +45,7 @@ async function appBuildWorkflow(options = {}) {
       const meshSpinner = core.createSpinner('Generating mesh resolver...');
       const meshResult = await meshGeneration.generateMeshResolver();
       const meshMessage = meshResult.generated ? 'Mesh resolver generated' : `Mesh resolver: ${meshResult.reason}`;
-      meshSpinner.succeed(core.formatSpinnerSuccess(meshMessage));
+      meshSpinner.succeed(meshMessage);
       meshStepMessage = meshMessage;
       meshRegenerated = meshResult.generated;
     }
@@ -54,10 +54,10 @@ async function appBuildWorkflow(options = {}) {
     if (options.includeAioAppBuild) {
       const aioSpinner = core.createSpinner('Building Adobe I/O App...');
       await execAsync('aio app build');
-      aioSpinner.succeed(core.formatSpinnerSuccess('Adobe I/O App built'));
+      aioSpinner.succeed('Adobe I/O App built');
     }
 
-    console.log(await format.buildDone());
+    console.log(core.formatting.success('Build completed'));
 
     return {
       success: true,
@@ -72,7 +72,7 @@ async function appBuildWorkflow(options = {}) {
     };
 
   } catch (error) {
-    console.log(format.error('Build failed: ' + error.message));
+    console.log(core.formatting.error('Build failed: ' + error.message));
     throw error;
   }
 }

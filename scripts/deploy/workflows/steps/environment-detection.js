@@ -4,7 +4,7 @@
  */
 
 const core = require('../../../core');
-const format = require('../../../format');
+const format = require('../../../core/formatting');
 
 /**
  * Detect and validate environment step
