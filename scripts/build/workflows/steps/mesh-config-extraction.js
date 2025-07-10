@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const { loadConfig } = require('../../../../config');
 const { detectScriptEnvironment } = require('../../../core/operations/environment');
 
 /**
@@ -28,6 +29,9 @@ async function meshConfigExtractionStep(options = {}) {
 
     const meshConfig = JSON.parse(fs.readFileSync(meshConfigPath, 'utf8'));
 
+    // Load environment configuration
+    const config = loadConfig();
+
     // Process configuration for environment
     const processedConfig = {
       ...meshConfig,
@@ -47,6 +51,8 @@ async function meshConfigExtractionStep(options = {}) {
     return {
       success: true,
       environment,
+      config,
+      meshConfig: processedConfig,
       configPath: meshConfigPath,
       outputPath,
       step: `Mesh configuration extracted for ${environment}`,

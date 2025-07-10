@@ -32,13 +32,12 @@ module.exports = {
   core: require('./core'),
   format: require('./format'),
 
-  // Shared operations for backwards compatibility
+  // Shared operations
   operations: {
     environment: require('./core/operations/environment'),
     spinner: require('./core/operations/spinner'),
     hash: require('./core/operations/hash'),
     sleep: require('./core/utils').sleep,
-    mesh: require('./core/operations/mesh'),
   },
 
   // Business domain exports
@@ -67,4 +66,7 @@ module.exports = {
     },
     operations: require('./test/operations'),
   },
+
+  // Mesh domain - cohesive mesh functionality
+  mesh: require('./mesh'),
 };
