@@ -9,6 +9,8 @@
  * - Pure functions (easy to test and compose)
  * - Industry standard (how most logging libraries work)
  * - Flexible (can redirect output, save to files, etc.)
+ *
+ * CONSOLIDATED: Unified access to all formatting functionality
  */
 
 const facade = require('./facade');
@@ -22,10 +24,30 @@ module.exports = {
   warning: utils.warning,
   success: utils.success,
   info: utils.info,
+  progress: utils.progress, // Enhanced with current/total support
+  step: utils.step,
+  text: utils.text,
+  muted: utils.muted,
+  bold: utils.bold,
+  highlight: utils.highlight,
+  url: utils.url, // Enhanced with label support
 
   // Section formatting - RETURNS STRINGS
   section: operations.sectionHeader,
   header: operations.sectionHeader,
+  subsection: operations.subsectionHeader,
+  completion: operations.completion,
+  finalSuccess: operations.finalSuccess,
+
+  // Script lifecycle - RETURNS STRINGS
+  scriptStart: operations.scriptStart,
+  scriptEnd: operations.scriptEnd,
+
+  // Mesh operations - RETURNS STRINGS
+  meshUpdateStart: operations.meshUpdateStart,
+  meshPollingStart: operations.meshPollingStart,
+  meshStartEmphasis: operations.meshStartEmphasis,
+  meshCompleteEmphasis: operations.meshCompleteEmphasis,
 
   // Lifecycle shortcuts - RETURNS STRINGS
   buildStart: facade.buildStart,
@@ -38,10 +60,7 @@ module.exports = {
   // Mesh shortcuts - RETURNS STRINGS
   meshStart: facade.meshStart,
   meshDone: facade.meshDone,
-  meshUpdateStart: facade.meshUpdateStart,
-  meshPollingStart: facade.meshPollingStart,
 
-  // Common operations - RETURNS STRINGS
+  // Legacy aliases for backward compatibility (will be removed in cleanup phase)
   verbose: (message) => utils.info(message),
-  step: (message) => utils.success(`✔ ${message}`),
 };

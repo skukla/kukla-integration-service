@@ -2,45 +2,55 @@
  * Format Domain Constants
  * Low-level formatting constants for consistent visual output
  * Shared infrastructure used across all script domains
+ *
+ * ICON STANDARD: Professional Unicode symbols for consistency
  */
 
 const chalk = require('chalk');
 
 /**
- * Standard Icons (Unicode symbols for visual clarity)
- * Consistent iconography across all script output
+ * Standard Icons (Professional Unicode symbols)
+ * Consistent visual weight and cross-platform compatibility
+ * STANDARD CHOICE: Professional Unicode over emoji for better terminal compatibility
  */
 const ICONS = {
-  // Operation status
+  // Status icons - thin checkmarks and crosses (PREFERRED)
   success: '✔',
   error: '✖',
   warning: '⚠',
   info: 'ℹ',
 
-  // Process indicators
-  loading: '⏳',
-  complete: '✅',
-  progress: '⟐',
+  // Process icons - clean Unicode symbols
+  loading: '○', // Spinner base (ora handles animation)
+  progress: '▸', // Progress indicator
+  step: '→', // Step progression
 
-  // Script lifecycle
-  scriptStart: '🚀',
-  scriptEnd: '🎉',
+  // Action icons - professional Unicode alternatives
+  deploy: '▸', // Right arrow for deployment
+  build: '⬢', // Hexagon for build processes
+  update: '↻', // Clockwise open circle arrow for updates
+  complete: '✔', // Success checkmark for completion
 
-  // Operations
-  build: '🔨',
-  deploy: '🚀',
-  test: '🧪',
-  file: '📄',
-  download: '⬇️',
-  upload: '⬆️',
+  // File operations - Unicode symbols
+  file: '◦', // White bullet for files
+  folder: '▫', // White square for folders
+  download: '⇣', // Downward arrow
+  upload: '⇡', // Upward arrow
 
-  // Environments
-  staging: '🔧',
-  production: '🌟',
+  // Network/API - Unicode symbols
+  api: '⟐', // White diamond for API
+  mesh: '⬢', // Hexagon for mesh operations
 
-  // Special
-  mesh: '🔗',
-  api: '⚡',
+  // Environment - Unicode symbols
+  staging: '◉', // Fisheye for staging
+  production: '●', // Black circle for production
+
+  // Script lifecycle (OPTION 2: Minimal emoji for start/end only)
+  scriptStart: '🚀', // Only for major script start
+  scriptEnd: '🎉', // Only for major script completion
+
+  // Legacy aliases for backward compatibility (will be removed in cleanup phase)
+  test: '⬢', // Maps to build icon
 };
 
 /**
