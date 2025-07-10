@@ -1089,6 +1089,243 @@ const baseUrl = config.api.baseUrl || (process.env.NODE_ENV === 'test' ? 'test-u
 - ✅ **Environment separation** - Environment-specific defaults only in config builders
 - ✅ **Clean access patterns** - Direct object access, no optional chaining with fallbacks
 
+## Scripts Architecture Standards
+
+### CRITICAL: Domain-Driven Scripts with Shared Infrastructure
+
+**All scripts follow Domain-Driven Design (DDD) principles with clear separation between shared infrastructure domains and business domains:**
+
+```bash
+scripts/
+├── core/           # Shared infrastructure (environment, hash, script framework)
+├── format/         # Shared infrastructure (formatting, display, messaging)
+├── build/          # Business domain (build processes)
+├── deploy/         # Business domain (deployment processes)
+└── test/           # Business domain (testing processes)
+```
+
+### Shared Infrastructure Domains
+
+**Shared infrastructure domains** provide reusable utilities used across multiple business domains:
+
+#### Core Domain (`scripts/core/`)
+
+- **Purpose**: Environment detection, script framework, hash operations
+- **Usage**: Used by all business domains for basic infrastructure
+- **Contents**: Environment detection, script execution framework, file operations
+
+#### Format Domain (`scripts/format/`)
+
+- **Purpose**: Consistent formatting, display, and messaging across all scripts
+- **Usage**: Used by all business domains for output formatting
+- **Contents**: Message templates, display formatting, script lifecycle formatting
+
+### Business Domains
+
+**Business domains** focus on specific business processes:
+
+#### Build Domain (`scripts/build/`)
+
+- **Purpose**: Build processes and artifact generation
+- **Workflows**: App building, frontend generation, mesh generation
+
+#### Deploy Domain (`scripts/deploy/`)
+
+- **Purpose**: Deployment processes and environment management
+- **Workflows**: App deployment, mesh deployment
+
+#### Test Domain (`scripts/test/`)
+
+- **Purpose**: Testing processes and validation
+- **Workflows**: Action testing, API testing, performance testing
+
+### Scripts Domain Structure
+
+Each domain follows the same DDD hierarchy:
+
+```bash
+domain/
+├── workflows/      # High-level orchestration (business logic)
+├── operations/     # Mid-level processes (domain operations)
+└── utils/          # Low-level utilities (pure functions)
+```
+
+### CRITICAL: Format Domain Eliminates Formatting Pollution
+
+**Before Format Domain (Problematic):**
+
+```bash
+scripts/
+├── core/operations/formatting.js          # Mixed concerns
+├── build/operations/output-templates.js   # Duplicate formatting
+├── deploy/operations/output-templates.js  # Duplicate formatting
+└── test/operations/display-formatting.js  # Duplicate formatting
+```
+
+**After Format Domain (Clean):**
+
+```bash
+scripts/
+├── format/                    # Centralized formatting
+│   ├── workflows/            # Complex formatting scenarios
+│   ├── operations/           # Formatting operations and templates
+│   └── utils/                # Basic formatters and constants
+├── build/                    # Clean business domain
+├── deploy/                   # Clean business domain
+└── test/                     # Clean business domain
+```
+
+### Scripts Import Standards
+
+**✅ CORRECT: Import from shared infrastructure domains**
+
+```javascript
+// Import shared infrastructure
+const core = require('../core');
+const format = require('../format');
+
+// Use format domain for all output
+console.log(format.success('Operation completed'));
+console.log(format.templates.build.start());
+
+// Use core domain for infrastructure
+const env = core.detectEnvironment();
+const result = await core.executeScript('deploy', deployFunction, args);
+```
+
+**❌ WRONG: Import from business domains or scattered locations**
+
+```javascript
+// Don't import from other business domains
+const { deploymentStep } = require('../deploy/operations');
+
+// Don't use scattered formatting
+const { outputTemplates } = require('./operations/output-templates');
+```
+
+### Scripts Dependency Rules
+
+**Domain Dependencies:**
+
+- ✅ Business domains can depend on shared infrastructure domains (core, format)
+- ✅ Shared infrastructure domains can depend on each other (with care)
+- ❌ Business domains should NOT depend on other business domains
+- ❌ No circular dependencies allowed
+
+### Format Domain Usage Patterns
+
+**Basic Formatting:**
+
+```javascript
+const format = require('../format');
+
+// Basic formatters
+console.log(format.success('Operation completed'));
+console.log(format.error('Operation failed'));
+console.log(format.warning('Warning message'));
+console.log(format.info('Information'));
+```
+
+**Template Usage:**
+
+```javascript
+// Domain-specific templates
+console.log(format.templates.build.start());
+console.log(format.templates.deploy.complete('staging'));
+console.log(format.templates.test.start('action'));
+
+// Generic templates
+console.log(format.scriptStartTemplate('deployment', 'staging'));
+console.log(format.scriptCompleteTemplate('build', 'production'));
+```
+
+**Workflow Usage for Complex Scenarios:**
+
+```javascript
+// Script lifecycle management
+const lifecycle = format.scriptLifecycle({
+  operation: 'deployment',
+  target: 'staging',
+  emphasis: true
+});
+
+console.log(lifecycle.start());
+// ... business logic
+console.log(lifecycle.complete());
+```
+
+### Scripts Architecture Benefits
+
+**1. Single Responsibility**
+
+- Each domain focuses on its core business logic
+- No formatting pollution in business domains
+
+**2. Centralized Formatting**
+
+- All formatting concerns in format domain
+- Consistent iconography and color usage
+- Single place to update formatting standards
+
+**3. Reusable Patterns**
+
+- Format workflows shared across all domains
+- Clean dependencies between domains
+- Easy maintenance and updates
+
+**4. Clean Domain Boundaries**
+
+- Business domains depend on shared infrastructure
+- No cross-domain business dependencies
+- Clear separation of concerns
+
+### Scripts Migration Guidelines
+
+**When moving formatting from business domains to format domain:**
+
+1. **Identify formatting logic** in business domains
+2. **Extract to format domain** at appropriate level (utils/operations/workflows)
+3. **Update imports** in business domains to use format domain
+4. **Remove duplicate formatting** from business domains
+5. **Test functionality** to ensure no regressions
+
+**Example Migration:**
+
+```javascript
+// OLD: Scattered formatting in business domain
+// scripts/deploy/operations/output-templates.js
+function deploymentStart(environment) {
+  return chalk.cyan(`🚀 Starting deployment to ${environment}...`);
+}
+
+// NEW: Centralized in format domain
+// scripts/format/operations/templates.js
+const deployTemplates = {
+  start(environment) {
+    const envIcon = environment === 'production' ? ICONS.production : ICONS.staging;
+    return COLORS.header(
+      `${SPACING.beforeSection}${ICONS.deploy} Starting deployment to ${environment} ${envIcon}...${SPACING.afterSection}`
+    );
+  }
+};
+
+// UPDATED: Business domain uses format domain
+// scripts/deploy/workflows/app-deployment.js
+const format = require('../../format');
+console.log(format.templates.deploy.start(environment));
+```
+
+### Scripts Standards Compliance
+
+**Before approving any script changes, verify:**
+
+- [ ] **Uses shared infrastructure domains** (core, format)
+- [ ] **No formatting in business domains** (use format domain)
+- [ ] **Follows DDD hierarchy** (workflows → operations → utils)
+- [ ] **Clean domain dependencies** (no cross-business-domain imports)
+- [ ] **Consistent formatting patterns** (format domain usage)
+- [ ] **Proper domain organization** (infrastructure vs business separation)
+
 ---
 
 This refactoring standard ensures all actions follow the clean orchestrator pattern with domain-driven workflows, eliminating duplication while maintaining high code quality and consistency.

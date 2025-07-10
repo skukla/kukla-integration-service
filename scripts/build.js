@@ -5,8 +5,8 @@
  * Entry point for build operations
  */
 
-const { outputTemplates } = require('./build/operations');
 const core = require('./core');
+const format = require('./format');
 
 async function main() {
   const args = core.parseArgs(process.argv.slice(2));
@@ -26,7 +26,16 @@ Note: For full deployment, use 'npm run deploy'
     return;
   }
 
-  console.log(outputTemplates.buildStartEmphasis());
+  // Use format domain facade for clean logging
+  const target = args['config-only'] ? 'config' : args['mesh-only'] ? 'mesh' : '';
+
+  if (!target) {
+    console.log(format.warning('No build target specified. Use --config-only or --mesh-only'));
+    console.log('For full deployment, use: npm run deploy');
+    return;
+  }
+
+  console.log(await format.buildStart());
 
   try {
     if (args['config-only']) {
@@ -37,24 +46,18 @@ Note: For full deployment, use 'npm run deploy'
       // Mesh resolver generation only
       const { meshGenerationWorkflow } = require('./build/workflows');
       await meshGenerationWorkflow({ verbose: args.verbose });
-    } else {
-      console.log(
-        core.formatting.warning('No build target specified. Use --config-only or --mesh-only')
-      );
-      console.log('For full deployment, use: npm run deploy');
-      return;
     }
 
-    console.log(outputTemplates.buildComplete());
+    console.log(await format.buildDone());
   } catch (error) {
-    console.error(core.formatting.error(`Build failed: ${error.message}`));
+    console.log(format.error(`Build failed: ${error.message}`));
     process.exit(1);
   }
 }
 
 if (require.main === module) {
   main().catch((error) => {
-    console.error(core.formatting.error(`Script execution failed: ${error.message}`));
+    console.log(format.error(`Script execution failed: ${error.message}`));
     process.exit(1);
   });
 }
