@@ -9,7 +9,8 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 const { loadConfig } = require('../../../config');
-const { displayFormatting, testExecution } = require('../operations');
+const format = require('../../format');
+const { testExecution } = require('../operations');
 
 /**
  * Process parameters for specific actions to provide better UX
@@ -38,40 +39,9 @@ function processActionParameters(actionName, params) {
 
   // For get-products action, load Commerce URL from config and credentials from .env if not provided
   if (actionName === 'get-products') {
-    // Load Commerce URL from environment configuration if not provided
-    if (!processedParams.COMMERCE_BASE_URL) {
-      try {
-        const config = loadConfig();
-        const commerceUrl = config.commerce.baseUrl;
-        if (commerceUrl) {
-          processedParams.COMMERCE_BASE_URL = commerceUrl;
-        }
-      } catch (error) {
-        // Silently fail - user can provide URL manually
-      }
-    }
-
-    // Load OAuth credentials from .env if not provided
-    if (!processedParams.COMMERCE_CONSUMER_KEY || !processedParams.COMMERCE_ACCESS_TOKEN) {
-      try {
-        const envPath = path.join(__dirname, '../../../.env');
-        if (fs.existsSync(envPath)) {
-          const envContent = fs.readFileSync(envPath, 'utf8');
-          const envLines = envContent.split('\n');
-
-          envLines.forEach((line) => {
-            const [key, ...valueParts] = line.split('=');
-            const value = valueParts.join('=').trim();
-
-            if (key && value && !processedParams[key]) {
-              processedParams[key] = value;
-            }
-          });
-        }
-      } catch (error) {
-        // Silently fail - user can provide params manually
-      }
-    }
+    // get-products action gets all configuration from inputs/environment variables
+    // Don't send any parameters to avoid 400 "reserved properties" errors
+    return processedParams;
   }
 
   return processedParams;
@@ -79,34 +49,15 @@ function processActionParameters(actionName, params) {
 
 /**
  * Display rich action test results with detailed information
+ * Uses centralized formatting from format domain
  * @param {Object} response - Action response
  * @param {string} actionName - Name of the action
  * @param {string} actionUrl - Action URL
  * @param {string} environment - Environment name
  */
 function displayActionResults(response, actionName, actionUrl, environment) {
-  const { status, statusText, body } = response;
-
-  // Add spacing before results
-  console.log('');
-
-  // Display status and environment info
-  displayFormatting.displayActionStatus(status, statusText);
-  displayFormatting.displayEnvironmentInfo(actionUrl, environment);
-
-  // Display response details if successful
-  if (status === 200 && body) {
-    displayFormatting.displayExecutionSteps(body.steps);
-    displayFormatting.displayStorageInfo(body);
-    displayFormatting.displayDownloadInfo(body.downloadUrl);
-    displayFormatting.displayPerformanceMetrics(body.performance);
-    displayFormatting.displayMessage(body.message);
-  } else if (body && body.error) {
-    displayFormatting.displayErrorDetails(body.error);
-  }
-
-  // Add spacing after results
-  console.log('');
+  // Use centralized display formatter
+  format.display.displayActionResults(response, actionName, actionUrl, environment);
 }
 
 /**

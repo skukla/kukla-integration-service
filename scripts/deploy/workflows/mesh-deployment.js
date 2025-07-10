@@ -3,8 +3,7 @@
  * High-level orchestration for mesh-only deployment processes
  */
 
-const { meshTemplates } = require('../../core/operations');
-const { basicFormatters } = require('../../core/utils');
+const format = require('../../format');
 
 /**
  * Mesh deployment workflow
@@ -17,7 +16,7 @@ async function meshDeploymentWorkflow(options = {}) {
   const { environment = 'staging', verbose = false } = options;
 
   try {
-    console.log(meshTemplates.meshStartEmphasis(environment));
+    console.log(await format.meshStart(environment));
 
     // Import step modules
     const { environmentDetection } = require('./steps');
@@ -30,13 +29,13 @@ async function meshDeploymentWorkflow(options = {}) {
     }
 
     // Step 2: Mesh update
-    if (verbose) console.log(basicFormatters.info('Starting mesh update...'));
+    if (verbose) console.log(format.verbose('Starting mesh update...'));
     const meshResult = await meshUpdate.meshUpdateStep({ environment, verbose });
     if (!meshResult.success) {
       throw new Error(meshResult.error);
     }
 
-    console.log(meshTemplates.meshCompleteEmphasis(environment));
+    console.log(await format.meshDone(environment));
 
     return {
       success: true,
@@ -44,7 +43,7 @@ async function meshDeploymentWorkflow(options = {}) {
       steps: ['Environment detection', 'Mesh update'],
     };
   } catch (error) {
-    console.error(basicFormatters.error(`Mesh deployment failed: ${error.message}`));
+    console.error(format.error(`Mesh deployment failed: ${error.message}`));
     return {
       success: false,
       error: error.message,
