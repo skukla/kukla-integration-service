@@ -1,0 +1,7 @@
+extend type Query {
+  mesh_products_enriched(
+    pageSize: Int
+    adminUsername: String
+    adminPassword: String
+  ): ProductsResponse
+}
