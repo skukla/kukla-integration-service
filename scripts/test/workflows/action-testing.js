@@ -91,13 +91,13 @@ function displayActionResults(response, actionName, actionUrl, environment) {
   console.log('');
 
   // Display status and environment info
-  displayFormatting.displayActionStatus(status, statusText, actionName);
+  displayFormatting.displayActionStatus(status, statusText);
   displayFormatting.displayEnvironmentInfo(actionUrl, environment);
 
   // Display response details if successful
   if (status === 200 && body) {
     displayFormatting.displayExecutionSteps(body.steps);
-    displayFormatting.displayStorageInfo(body.storage);
+    displayFormatting.displayStorageInfo(body);
     displayFormatting.displayDownloadInfo(body.downloadUrl);
     displayFormatting.displayPerformanceMetrics(body.performance);
     displayFormatting.displayMessage(body.message);

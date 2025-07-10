@@ -34,7 +34,7 @@ function updateSpinner(spinner, text) {
  * @param {string} text - Success text
  */
 function succeedSpinner(spinner, text) {
-  spinner.succeed(basicFormatters.success(text));
+  spinner.succeed(basicFormatters.muted(text));
 }
 
 /**
@@ -43,7 +43,7 @@ function succeedSpinner(spinner, text) {
  * @param {string} text - Failure text
  */
 function failSpinner(spinner, text) {
-  spinner.fail(basicFormatters.error(text));
+  spinner.fail(basicFormatters.muted(text));
 }
 
 /**
@@ -52,7 +52,7 @@ function failSpinner(spinner, text) {
  * @param {string} text - Warning text
  */
 function warnSpinner(spinner, text) {
-  spinner.warn(basicFormatters.warning(text));
+  spinner.warn(basicFormatters.muted(text));
 }
 
 module.exports = {
