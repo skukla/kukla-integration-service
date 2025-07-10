@@ -1,18 +1,3 @@
 extend type Query {
-  mesh_products_basic(pageSize: Int, maxPages: Int): ProductsResponse
-
-  mesh_inventory(
-    skus: [String!]!
-    adminUsername: String!
-    adminPassword: String!
-  ): InventoryResponse
-
-  mesh_categories(categoryIds: [String!]!): CategoriesResponse
-
-  mesh_products_enriched(
-    pageSize: Int
-    maxPages: Int
-    adminUsername: String
-    adminPassword: String
-  ): ProductsResponse
+  mesh_products_enriched(pageSize: Int, maxPages: Int): ProductsResponse
 }

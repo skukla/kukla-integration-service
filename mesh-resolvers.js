@@ -231,12 +231,13 @@ async function fetchAllProducts(context, pageSize, maxPages) {
 // =============================================================================
 
 async function getAdminToken(context) {
-  const username = context.adminCredentials?.username;
-  const password = context.adminCredentials?.password;
+  // Get admin credentials from headers (passed via mesh deployment)
+  const username = context.headers['x-commerce-admin-username'];
+  const password = context.headers['x-commerce-admin-password'];
 
   if (!username || !password) {
     throw new Error(
-      'Admin credentials required: adminUsername and adminPassword GraphQL variables'
+      'Admin credentials required: x-commerce-admin-username and x-commerce-admin-password headers'
     );
   }
 
@@ -537,34 +538,26 @@ module.exports = {
             const startTime = Date.now();
             const pageSize = args.pageSize || 100;
             const maxPages = args.maxPages || 25;
-            const adminUsername = args.adminUsername;
-            const adminPassword = args.adminPassword;
 
             // Initialize performance tracking
             const performance = initializePerformanceTracking();
 
-            // Step 1: Fetch basic products
+            // Step 1: Fetch basic products (uses OAuth from headers)
             const products = await fetchAllProducts(context, pageSize, maxPages);
 
             // Step 2: Extract identifiers
             const { categoryIds, skus } = extractProductIdentifiers(products);
 
-            // Step 3: Set admin credentials for inventory fetching
-            context.adminCredentials = {
-              username: adminUsername,
-              password: adminPassword,
-            };
-
-            // Step 4: Get additional data in parallel
+            // Step 3: Get additional data in parallel (all use OAuth from headers)
             const [inventory, categories] = await Promise.all([
               fetchInventoryData(context, skus),
               fetchCategoriesData(context, Array.from(categoryIds)),
             ]);
 
-            // Step 5: Enrich products
+            // Step 4: Enrich products
             const enrichedProducts = enrichProductsWithData(products, categories, inventory);
 
-            // Step 6: Calculate performance metrics
+            // Step 5: Calculate performance metrics
             performance.processedProducts = enrichedProducts.length;
             const finalPerformance = calculatePerformanceMetrics(
               performance,
