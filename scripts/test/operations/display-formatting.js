@@ -4,20 +4,18 @@
  */
 
 const { basicFormatters } = require('../../core/utils');
+const { ICONS } = require('../../core/utils/output-constants');
 
 /**
  * Display action execution status
  * @param {number} status - HTTP status code
  * @param {string} statusText - HTTP status text
- * @param {string} actionName - Name of the action
  */
-function displayActionStatus(status, statusText, actionName) {
+function displayActionStatus(status, statusText) {
   if (status === 200) {
-    console.log(basicFormatters.success(`Action ${actionName} executed successfully`));
+    console.log(basicFormatters.success('Action executed successfully'));
   } else {
-    console.log(
-      basicFormatters.error(`Action ${actionName} failed with status ${status}: ${statusText}`)
-    );
+    console.log(basicFormatters.error(`Action failed (${status}: ${statusText})`));
   }
 }
 
@@ -26,21 +24,21 @@ function displayActionStatus(status, statusText, actionName) {
  * @param {Object} responseData - Response data containing storage info
  */
 function displayStorageInfo(responseData) {
-  if (responseData.storage) {
+  if (responseData && responseData.storage) {
     const { provider, location } = responseData.storage;
     const providerDisplay = provider === 's3' ? 'S3' : 'APP-BUILDER';
     const locationDisplay = provider === 's3' ? location.split('/')[0] : 'Adobe I/O Files';
-    console.log(basicFormatters.info(`📦 Storage: ${providerDisplay} (${locationDisplay})`));
+    console.log(basicFormatters.info(`Storage: ${providerDisplay} (${locationDisplay})`));
   }
 }
 
 /**
  * Display download URL information
- * @param {Object} responseData - Response data containing download URL
+ * @param {string} downloadUrl - Download URL
  */
-function displayDownloadInfo(responseData) {
-  if (responseData.downloadUrl) {
-    console.log(basicFormatters.info(`⇣ Download: ${responseData.downloadUrl}`));
+function displayDownloadInfo(downloadUrl) {
+  if (downloadUrl) {
+    console.log(basicFormatters.info(`Download: ${downloadUrl}`));
   }
 }
 
@@ -75,8 +73,9 @@ function displayPerformance(performance) {
  * @param {string} environment - Environment name
  */
 function displayEnvironmentInfo(actionUrl, environment) {
-  console.log(basicFormatters.muted(`🌐 Environment: ${environment}`));
-  console.log(basicFormatters.muted(`🔗 URL: ${actionUrl}`));
+  const envSymbol = environment === 'production' ? '●' : '◉';
+  console.log(basicFormatters.muted(`${envSymbol} Environment: ${environment}`));
+  console.log(basicFormatters.muted(`${ICONS.api} ${actionUrl}`));
 }
 
 /**
@@ -85,7 +84,7 @@ function displayEnvironmentInfo(actionUrl, environment) {
  */
 function displayExecutionSteps(steps) {
   if (steps && Array.isArray(steps)) {
-    console.log(basicFormatters.info('📋 Execution Steps:'));
+    console.log(basicFormatters.info('Execution Steps:'));
     steps.forEach((step, index) => {
       console.log(basicFormatters.muted(`  ${index + 1}. ${step}`));
     });
@@ -106,7 +105,7 @@ function displayPerformanceMetrics(performance) {
  */
 function displayMessage(message) {
   if (message) {
-    console.log(basicFormatters.info(`💬 ${message}`));
+    console.log(basicFormatters.info(`${message}`));
   }
 }
 
@@ -116,7 +115,7 @@ function displayMessage(message) {
  */
 function displayErrorDetails(error) {
   if (error) {
-    console.log(basicFormatters.error(`❌ Error: ${error.message || error}`));
+    console.log(basicFormatters.error(`${error.message || error}`));
     if (error.stack) {
       console.log(basicFormatters.muted(error.stack));
     }
