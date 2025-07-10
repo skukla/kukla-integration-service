@@ -29,7 +29,7 @@ Options:
     process.exit(1);
   }
 
-  console.log(core.formatting.scriptStart(`Starting test for ${actionName}`));
+  console.log(core.formatting.sectionHeader(`Testing action: ${actionName}`, '⟐'));
 
   try {
     const { actionTesting } = require('./test/workflows');
@@ -38,7 +38,7 @@ Options:
       verbose: args.verbose,
     });
 
-    console.log(core.formatting.scriptEnd(`Test for ${actionName} completed successfully`));
+    console.log(core.formatting.finalSuccess('Test completed successfully'));
   } catch (error) {
     console.error(core.formatting.error(`Test failed: ${error.message}`));
     process.exit(1);

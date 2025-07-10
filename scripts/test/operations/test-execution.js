@@ -22,7 +22,7 @@ function handleEnvironmentDetection(processedParams, rawOutput) {
           allowCliDetection: true,
         });
         const capitalizedEnv = core.capitalize(processedParams.NODE_ENV);
-        core.succeedSpinner(envSpinner, `Environment detected: ${capitalizedEnv}`);
+        core.succeedSpinner(envSpinner, `Environment: ${capitalizedEnv}`);
       } catch (error) {
         envSpinner.fail('Environment detection failed, defaulting to production');
         processedParams.NODE_ENV = 'production';
@@ -68,7 +68,7 @@ async function executeEnhancedTest(actionName, processedParams, displayActionRes
   const actionUrl = buildRuntimeUrl(actionName, null, config);
   const response = await testAction(actionUrl, processedParams);
 
-  core.succeedSpinner(testSpinner, `Action tested: ${actionName}`);
+  core.succeedSpinner(testSpinner, 'Action response received');
 
   // Display rich results
   displayActionResults(response, actionName, actionUrl, processedParams.NODE_ENV);
