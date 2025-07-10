@@ -1,31 +1,36 @@
 /**
  * Scripts Domain Catalog
  *
- * Following Domain-Driven Design (DDD) principles where each domain
- * has its own complete hierarchy of workflows, operations, and utils.
+ * Following Domain-Driven Design (DDD) principles with separation between
+ * shared infrastructure domains and business domains.
  *
  * Architecture:
  * scripts/
- * ├── core/         # Core infrastructure domain (shared utilities)
+ * ├── core/         # Shared infrastructure (environment, hash, script framework)
  * │   ├── operations/   # Shared operations (environment, spinner, hash)
- * │   └── utils/        # Shared utilities (format, string, file)
- * ├── build/        # Build domain
+ * │   └── utils/        # Shared utilities (string, file)
+ * ├── format/       # Shared infrastructure (formatting, display, messaging)
+ * │   ├── workflows/    # Complex formatting scenarios
+ * │   ├── operations/   # Formatting operations and templates
+ * │   └── utils/        # Basic formatters and constants
+ * ├── build/        # Business domain (build processes)
  * │   ├── workflows/    # High-level build orchestration
  * │   └── operations/   # Mid-level build processes
- * ├── deploy/       # Deployment domain
+ * ├── deploy/       # Business domain (deployment processes)
  * │   ├── workflows/    # High-level deployment orchestration
  * │   └── operations/   # Mid-level deployment processes
- * └── test/         # Testing domain
+ * └── test/         # Business domain (testing processes)
  *     ├── workflows/    # High-level test orchestration
  *     └── operations/   # Mid-level test processes
  *
- * The core domain provides shared infrastructure that eliminates
- * duplication across build, deploy, and test domains.
+ * Shared infrastructure domains (core, format) provide reusable utilities
+ * that eliminate duplication across business domains (build, deploy, test).
  */
 
 module.exports = {
-  // Core infrastructure shared across all domains
+  // Shared infrastructure domains
   core: require('./core'),
+  format: require('./format'),
 
   // Shared operations for backwards compatibility
   operations: {
@@ -36,7 +41,7 @@ module.exports = {
     mesh: require('./core/operations/mesh'),
   },
 
-  // Domain-specific exports
+  // Business domain exports
   build: {
     workflows: {
       appBuild: require('./build/workflows/app-build'),

@@ -4,7 +4,7 @@
  */
 
 const core = require('./core');
-const { outputTemplates } = require('./deploy/operations');
+const format = require('./format');
 
 async function main() {
   const args = core.parseArgs(process.argv.slice(2));
@@ -22,11 +22,11 @@ Options:
     return;
   }
 
-  const operation = args['mesh-only'] ? 'mesh deployment' : 'application deployment';
   const environment =
     args.environment || core.detectScriptEnvironment({}, { allowCliDetection: true });
 
-  console.log(outputTemplates.scriptStartEmphasis(operation, environment));
+  // Use format domain facade for clean logging
+  console.log(await format.deployStart(environment));
 
   try {
     if (args['mesh-only']) {
@@ -37,16 +37,16 @@ Options:
       await appDeploymentWorkflow({ environment, verbose: args.verbose });
     }
 
-    console.log(outputTemplates.scriptCompleteEmphasis(operation, environment));
+    console.log(await format.deployDone(environment));
   } catch (error) {
-    console.error(core.formatting.error(`Deployment failed: ${error.message}`));
+    console.log(format.error(`Deployment failed: ${error.message}`));
     process.exit(1);
   }
 }
 
 if (require.main === module) {
   main().catch((error) => {
-    console.error(core.formatting.error(`Script execution failed: ${error.message}`));
+    console.log(format.error(`Script execution failed: ${error.message}`));
     process.exit(1);
   });
 }

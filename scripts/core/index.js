@@ -15,17 +15,16 @@
  */
 
 // Import modules
+const formatDomain = require('../format');
 const environment = require('./operations/environment');
-const formatting = require('./operations/formatting');
 const hash = require('./operations/hash');
 const meshTemplates = require('./operations/mesh-templates');
 const scriptFramework = require('./operations/script-framework');
 const spinner = require('./operations/spinner');
-const basicFormatters = require('./utils/basic-formatters');
 const file = require('./utils/file');
-const format = require('./utils/format');
-const outputConstants = require('./utils/output-constants');
 const string = require('./utils/string');
+
+// Import unified format domain
 
 module.exports = {
   // Environment utilities
@@ -47,11 +46,11 @@ module.exports = {
   calculateFileHash: hash.calculateFileHash,
   calculateObjectHash: hash.calculateObjectHash,
 
-  // Format utilities (legacy)
-  formatSuccess: format.formatSuccess,
-  formatError: format.formatError,
-  formatWarning: format.formatWarning,
-  formatInfo: format.formatInfo,
+  // Format utilities (from unified format domain)
+  formatSuccess: formatDomain.success,
+  formatError: formatDomain.error,
+  formatWarning: formatDomain.warning,
+  formatInfo: formatDomain.info,
 
   // String utilities
   capitalize: string.capitalize,
@@ -70,12 +69,11 @@ module.exports = {
   environment,
   spinner,
   hash,
-  format,
   string,
   file,
   scriptFramework,
-  formatting,
   meshTemplates,
-  outputConstants,
-  basicFormatters,
+
+  // Unified format domain
+  formatting: formatDomain,
 };
