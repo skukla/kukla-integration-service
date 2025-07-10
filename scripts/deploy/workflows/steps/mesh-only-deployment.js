@@ -18,6 +18,7 @@ async function meshOnlyDeploymentStep(options = {}) {
 
   console.log(format.section('Deploying API Mesh only'));
 
+  // Use compiled mesh.json file - mesh.config.js is compiled to JSON format before deployment
   const meshCommand = isProd
     ? 'aio api-mesh update mesh.json --env=prod'
     : 'aio api-mesh update mesh.json';

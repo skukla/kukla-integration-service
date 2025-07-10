@@ -15,8 +15,6 @@
 const configGeneration = require('./config-generation');
 
 module.exports = {
+  // Configuration generation operations
   configGeneration,
-  // No build-specific operations yet
-  // All operations are available via core domain
-  // All formatting is available via format domain
 }; 

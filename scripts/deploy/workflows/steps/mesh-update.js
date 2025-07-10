@@ -3,9 +3,9 @@
  * Handles updating the API Mesh when needed
  */
 
-// Direct imports to avoid scripts index import issues
-const { updateMeshWithRetry } = require('../../../core/operations/mesh');
+// Use mesh domain for all mesh functionality
 const format = require('../../../format');
+const meshDomain = require('../../../mesh');
 
 /**
  * Update API Mesh if needed
@@ -34,29 +34,78 @@ async function meshUpdateStep(options = {}) {
     };
   }
 
-  // Update mesh with adjusted timing for 90s deployment window
-  const meshUpdateSuccess = await updateMeshWithRetry({
-    isProd,
-    waitTimeSeconds: isProd ? 60 : 45, // Production: 60s intervals, Staging: 45s intervals
-    maxStatusChecks: isProd ? 3 : 3, // Both: 3 checks (allows for ~180s total for prod, ~135s for staging)
-  });
+  try {
+    // Use workflow orchestration for mesh compilation
+    console.log(format.info('Compiling mesh configuration for deployment...'));
 
-  if (!meshUpdateSuccess) {
-    console.log(format.warning('Mesh update failed, but deployment completed successfully.'));
-    console.log(format.info(`You may need to run: npm run deploy:mesh${isProd ? ':prod' : ''}`));
+    const compilationResult = await meshDomain.workflows.compile.compileMeshConfig({});
+
+    if (!compilationResult.success) {
+      throw new Error(`Mesh compilation workflow failed: ${compilationResult.error}`);
+    }
+
+    console.log(format.success('✅ Mesh compilation workflow completed successfully'));
+
+    // Update mesh using compiled configuration
+    console.log(format.info('Updating API Mesh with compiled configuration...'));
+
+    const meshUpdateResult = await meshDomain.operations.deployment.updateMeshWithRetry({
+      environment: isProd ? 'production' : 'staging',
+      pollInterval: isProd ? 60 : 45, // Production: 60s intervals, Staging: 45s intervals
+      maxPollChecks: 3, // Both: 3 checks (allows for ~180s total for prod, ~135s for staging)
+      onEvent: (event) => {
+        // Handle events from mesh operations with proper formatting
+        switch (event.type) {
+          case 'meshUpdateStart':
+            console.log(
+              format.info(
+                `Starting mesh update (${event.environment}, max ${event.maxRetries} retries)`
+              )
+            );
+            break;
+          case 'pollingStart':
+            console.log(
+              format.info(
+                `Polling status every ${event.pollInterval}s (max ${event.maxPollChecks} checks)`
+              )
+            );
+            break;
+          case 'statusInfo':
+            console.log(
+              format.info(`Status check ${event.check}/${event.maxPollChecks}: ${event.status}`)
+            );
+            break;
+          case 'retryWarning':
+          case 'statusWarning':
+          case 'attemptWarning':
+            console.log(format.warning(event.message));
+            break;
+          default:
+            console.log(format.info(event.message));
+        }
+      },
+    });
+
+    if (!meshUpdateResult.success) {
+      console.log(format.warning('Mesh update failed, but deployment completed successfully.'));
+      console.log(format.info(`You may need to run: npm run deploy:mesh${isProd ? ':prod' : ''}`));
+
+      return {
+        success: true,
+        failed: true,
+        step: 'Mesh update failed',
+        warning: true,
+      };
+    }
 
     return {
       success: true,
-      failed: true,
-      step: 'Mesh update failed',
-      warning: true,
+      step: 'Mesh updated with template-generated resolver and external GraphQL schemas',
     };
+  } catch (error) {
+    console.log(format.error(`Mesh update step failed: ${error.message}`));
+    throw error;
   }
-
-  return {
-    success: true,
-    step: 'Mesh updated',
-  };
 }
 
 module.exports = {
