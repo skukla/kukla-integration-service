@@ -11,7 +11,7 @@ dist/
 # Generated files
 web-src/src/config/generated/
 web-src/src/js/core/url/index.js
-mesh-config.js
+mesh.json
 
 # IDE and OS files
 .DS_Store
