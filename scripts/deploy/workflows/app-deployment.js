@@ -1,68 +1,83 @@
 /**
- * App Deployment Workflow
- * High-level orchestration for application deployment processes
+ * Deploy Domain - App Deployment Workflow
+ * Clean orchestrator pattern following established codebase conventions
  */
 
-const format = require('../../format');
+const format = require('../../core/formatting');
+const {
+  detectEnvironment,
+  buildApplication,
+  deployToAdobeIO,
+  updateMesh,
+} = require('../operations');
 
 /**
- * Application deployment workflow
+ * App deployment workflow - Clean orchestrator pattern
+ * Single function that orchestrates all deployment operations
  * @param {Object} options - Deployment options
  * @param {string} options.environment - Target environment
  * @param {boolean} options.verbose - Enable verbose output
  * @returns {Promise<Object>} Deployment result
  */
 async function appDeploymentWorkflow(options = {}) {
-  const { environment = 'staging', verbose = false } = options;
+  const { environment, verbose = false } = options;
+  const steps = [];
 
   try {
-    console.log(await format.deployStart(environment));
+    // Step 1: Environment detection and validation
+    const detectedEnv = await detectEnvironment(environment);
+    console.log(format.success(`Environment detected: ${format.environment(detectedEnv)}`));
+    steps.push(`Successfully detected ${detectedEnv} environment`);
 
-    // Import step modules
-    const { environmentDetection } = require('./steps');
-    const { buildProcess } = require('./steps');
-    const { appDeployment } = require('./steps');
-    const { meshUpdate } = require('./steps');
+    // Step 2: Build application
+    await buildApplication(detectedEnv, verbose);
+    console.log(format.success('Build process completed'));
+    steps.push(`Successfully built application for ${detectedEnv}`);
 
-    // Step 1: Environment detection
-    const envResult = await environmentDetection.detectAndValidateEnvironment(environment);
-    if (!envResult.success) {
-      throw new Error(envResult.error);
+    // Step 3: Deploy to Adobe I/O
+    const deployResult = await deployToAdobeIO(detectedEnv, verbose);
+    console.log(format.success('App deployed to Adobe I/O Runtime'));
+    console.log(format.url(deployResult.appUrl));
+    steps.push(`Successfully deployed ${deployResult.actionCount} actions to Adobe I/O Runtime`);
+
+    // Step 4: Update mesh (if needed)
+    const meshResult = await updateMesh(detectedEnv, verbose);
+    if (meshResult.updated) {
+      console.log(format.success('API Mesh updated successfully'));
+      steps.push('Successfully updated API Mesh configuration');
+    } else {
+      steps.push('API Mesh unchanged (no update needed)');
     }
 
-    // Step 2: Build process
-    if (verbose) console.log(format.verbose('Starting build process...'));
-    const buildResult = await buildProcess.buildProcessStep({ verbose });
-    if (!buildResult.success) {
-      throw new Error(buildResult.error);
+    // Final status
+    console.log(); // Blank line
+    console.log(format.status('SUCCESS', 200));
+    console.log(format.section('Message: Deployment completed successfully'));
+
+    if (deployResult.downloadUrl) {
+      console.log(); // Blank line
+      console.log(format.downloadUrl(deployResult.downloadUrl));
     }
 
-    // Step 3: App deployment
-    if (verbose) console.log(format.verbose('Starting app deployment...'));
-    const deployResult = await appDeployment.appDeploymentStep({ environment, verbose });
-    if (!deployResult.success) {
-      throw new Error(deployResult.error);
-    }
-
-    // Step 4: Mesh update
-    if (verbose) console.log(format.verbose('Starting mesh update...'));
-    const meshResult = await meshUpdate.meshUpdateStep({ environment, verbose });
-    if (!meshResult.success) {
-      throw new Error(meshResult.error);
-    }
-
-    console.log(await format.deployDone(environment));
+    console.log(); // Blank line
+    console.log(format.section('Steps:'));
+    console.log(format.steps(steps));
 
     return {
       success: true,
-      environment,
-      steps: ['Environment detection', 'Build process', 'App deployment', 'Mesh update'],
+      environment: detectedEnv,
+      steps,
+      urls: {
+        app: deployResult.appUrl,
+        download: deployResult.downloadUrl,
+      },
     };
   } catch (error) {
-    console.error(format.error(`App deployment failed: ${error.message}`));
+    console.log(format.error(`Deployment failed: ${error.message}`));
     return {
       success: false,
       error: error.message,
+      steps,
     };
   }
 }

@@ -4,7 +4,7 @@
  */
 
 // Use mesh domain for all mesh functionality
-const format = require('../../../format');
+const format = require('../../../core/formatting');
 const meshDomain = require('../../../mesh');
 
 /**

@@ -30,7 +30,7 @@
 module.exports = {
   // Shared infrastructure domains
   core: require('./core'),
-  format: require('./format'),
+  format: require('./core/formatting'),
 
   // Shared operations
   operations: {

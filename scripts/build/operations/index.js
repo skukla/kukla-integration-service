@@ -2,19 +2,19 @@
  * Build Domain Operations
  * Business operations specific to build processes
  * 
- * For shared operations like environment detection, spinner, and hash,
- * use scripts/core instead.
- * 
- * For formatting operations, use scripts/format instead.
+ * Following Strategic Duplication approach - domain-specific utilities
+ * moved here for clarity and domain autonomy.
  */
 
-// Currently no build-specific operations
-// Use require('../core') for shared operations
-// Use require('../format') for formatting operations
-
 const configGeneration = require('./config-generation');
+const hash = require('./hash');
+const string = require('./string');
 
 module.exports = {
   // Configuration generation operations
   configGeneration,
+  
+  // Domain-specific utilities
+  hash,
+  string,
 }; 

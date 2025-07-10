@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { hash } = require('../../../core');
+const hash = require('../../operations/hash');
 
 /**
  * Process independent resolvers (no template processing needed)

@@ -5,7 +5,7 @@
  */
 
 const file = require('./file');
-const format = require('./format');
+const format = require('../formatting');
 const string = require('./string');
 
 /**

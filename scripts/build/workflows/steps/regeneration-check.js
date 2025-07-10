@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 
-const { hash } = require('../../../core');
+const hash = require('../../operations/hash');
 
 /**
  * Check if mesh resolver regeneration is needed
@@ -62,7 +62,6 @@ function regenerationCheckStep(paths, meshConfig, options = {}) {
 
 module.exports = {
   regenerationCheckStep,
-  // Re-export core utilities for convenience in this context
   calculateFileHash: hash.calculateFileHash,
   calculateObjectHash: hash.calculateObjectHash,
 }; 

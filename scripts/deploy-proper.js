@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Deploy Script - Light DDD Entry Point
+ * Deploy Script - Proper Light DDD Structure
  * Main entry point that delegates to appropriate domain workflows
+ * Demonstrates clean separation of concerns
  */
 
 const { parseDeployArgs, showDeployHelp } = require('./core/args');
 const format = require('./core/formatting');
 const { appDeploymentWorkflow } = require('./deploy/workflows/app-deployment-simple');
-const { meshDeploymentWorkflow } = require('./deploy/workflows/mesh-deployment');
 
 /**
  * Main function - Clean entry point
@@ -23,18 +23,10 @@ async function main() {
   }
 
   try {
-    let result;
-
-    if (args.meshOnly) {
-      result = await meshDeploymentWorkflow({
-        verbose: args.verbose,
-      });
-    } else {
-      result = await appDeploymentWorkflow({
-        meshOnly: args.meshOnly,
-        verbose: args.verbose,
-      });
-    }
+    const result = await appDeploymentWorkflow({
+      meshOnly: args.meshOnly,
+      verbose: args.verbose,
+    });
 
     if (!result.success) {
       process.exit(1);

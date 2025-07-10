@@ -5,7 +5,7 @@
 
 const ora = require('ora');
 
-const format = require('../../format');
+const format = require('../formatting');
 
 /**
  * Create and start a spinner with consistent styling
