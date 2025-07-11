@@ -13,8 +13,8 @@ const testOrchestration = require('./test-orchestration');
  * Organizes all testing workflow functions
  */
 module.exports = {
-  testOrchestration,
   actionTesting,
   apiTesting,
   performanceTesting,
+  testOrchestration,
 };
