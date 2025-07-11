@@ -1,6 +1,7 @@
 /**
  * App Deployment Step
  * Handles Adobe I/O App Builder deployment
+ * Following standardized deploy domain pattern
  */
 
 const { spawn } = require('child_process');
@@ -16,37 +17,45 @@ const format = require('../../../core/formatting');
 async function appDeploymentStep(options = {}) {
   const { isProd = false } = options;
 
-  console.log(format.section('Deploying App Builder actions'));
+  console.log(format.info('Deploying App Builder actions'));
 
   const deployCommand = isProd ? 'aio app deploy --workspace=Production' : 'aio app deploy';
   const [cmd, ...args] = deployCommand.split(' ');
 
+  // Standardized deploy domain command execution pattern
   const deployProcess = spawn(cmd, args, {
     stdio: 'inherit',
     shell: true,
   });
 
-  await new Promise((resolve, reject) => {
-    deployProcess.on('close', (code) => {
-      if (code !== 0) {
-        console.log(format.error(`Deployment failed with exit code ${code}`));
-        reject(new Error('Deployment failed'));
-      } else {
-        console.log(format.success('App Builder deployment completed'));
-        resolve();
-      }
+  try {
+    await new Promise((resolve, reject) => {
+      deployProcess.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`App deployment failed with exit code ${code}`));
+        } else {
+          resolve();
+        }
+      });
+
+      deployProcess.on('error', (err) => {
+        reject(new Error(`Failed to start deployment command: ${err.message}`));
+      });
     });
 
-    deployProcess.on('error', (err) => {
-      console.log(format.error('Failed to start deployment command'));
-      reject(err);
-    });
-  });
-
-  return {
-    success: true,
-    step: 'App Builder deployed',
-  };
+    console.log(format.success('✅ App Builder deployment completed'));
+    return {
+      success: true,
+      step: 'App Builder deployed',
+    };
+  } catch (error) {
+    console.log(format.error(`App deployment failed: ${error.message}`));
+    return {
+      success: false,
+      error: error.message,
+      step: 'App deployment failed',
+    };
+  }
 }
 
 module.exports = {

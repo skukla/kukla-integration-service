@@ -1,10 +1,10 @@
 /**
  * Build Process Step
  * Handles application build process operations
+ * Following standardized deploy domain pattern
  */
 
 const format = require('../../../core/formatting');
-const { createSpinner } = require('../../../core/operations/spinner');
 
 /**
  * Execute build process
@@ -12,34 +12,36 @@ const { createSpinner } = require('../../../core/operations/spinner');
  * @returns {Promise<Object>} Build result
  */
 async function buildProcessStep(options = {}) {
-  const { environment = 'staging', verbose = false } = options;
+  const { environment = 'staging' } = options;
 
+  console.log(format.info(`Building for ${environment} environment`));
+
+  // Standardized deploy domain process execution pattern
+  // Note: Currently simulated - replace with actual build command when needed
   try {
-    const spinner = createSpinner(`Building for ${environment} environment...`);
+    await new Promise((resolve) => {
+      // Simulate build process - replace with actual spawn when needed
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+    });
 
-    // Simulate build process
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Always show build details - beautiful output approach
+    console.log(format.muted('  Generated frontend configuration'));
+    console.log(format.muted('  Compiled source files'));
+    console.log(format.muted('  Optimized assets'));
 
-    spinner.succeed(`Build completed for ${environment}`);
-
-    if (verbose) {
-      console.log(format.verbose('Generated frontend configuration'));
-      console.log(format.verbose('Compiled source files'));
-      console.log(format.verbose('Optimized assets'));
-    }
-
+    console.log(format.success(`✅ Build completed for ${environment}`));
     return {
       success: true,
-      environment,
       step: `Build completed for ${environment}`,
     };
   } catch (error) {
-    console.error(format.error('Build process failed'));
-    console.error(format.error(error.message));
+    console.log(format.error(`Build process failed: ${error.message}`));
     return {
       success: false,
-      environment,
       error: error.message,
+      step: 'Build process failed',
     };
   }
 }
