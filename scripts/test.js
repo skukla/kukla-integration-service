@@ -7,11 +7,12 @@
 
 const { parseTestArgs, showTestHelp } = require('./core/args');
 const format = require('./core/formatting');
-const { actionTestingWorkflow } = require('./test/workflows/action-testing');
+const { executeScriptWithExit } = require('./core/operations/script-framework');
+const { dispatchTest } = require('./test/operations/test-dispatch');
 
 /**
  * Main function - Clean entry point
- * Only handles argument processing and workflow delegation
+ * Handles different test types and delegates to appropriate workflows
  */
 async function main() {
   const args = parseTestArgs(process.argv.slice(2));
@@ -21,28 +22,33 @@ async function main() {
     return;
   }
 
-  const actionName = args.actionName;
-  if (!actionName) {
-    console.log(format.error('Action name is required'));
-    console.log('Usage: npm run test:action <action>');
+  const testType = process.argv[2]; // First argument determines test type
+  const target = process.argv[3]; // Second argument is the target (action/endpoint/suite)
+
+  // Validate required arguments
+  if (!testType) {
+    console.log(format.error('Test type or action name is required'));
+    console.log('Usage: npm run test:action <action> [options]');
     process.exit(1);
   }
 
-  try {
-    const result = await actionTestingWorkflow(actionName, {
-      params: args.params,
-      rawOutput: args.raw,
-    });
+  const result = await dispatchTest(testType, target, {
+    params: args.params,
+    isProd: args.prod,
+    rawOutput: args.raw,
+    failFast: args.failFast,
+  });
 
-    if (!result.success) {
-      process.exit(1);
-    }
-  } catch (error) {
-    console.log(format.error(`Script execution failed: ${error.message}`));
+  // Handle list operations that don't need success check
+  if (result.listed) {
+    return;
+  }
+
+  if (!result.success) {
     process.exit(1);
   }
 }
 
 if (require.main === module) {
-  main();
+  executeScriptWithExit('test', main);
 }

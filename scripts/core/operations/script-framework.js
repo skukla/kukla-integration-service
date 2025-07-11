@@ -22,7 +22,7 @@ async function executeScript(scriptName, scriptFunction, args) {
   } catch (error) {
     console.error(format.error(`${scriptName} failed: ${error.message}`));
 
-    if (process.env.NODE_ENV === 'development' || args.includes('--verbose')) {
+    if (process.env.NODE_ENV === 'development') {
       console.error(format.muted('Stack trace:'));
       console.error(format.muted(error.stack));
     }
@@ -31,6 +31,22 @@ async function executeScript(scriptName, scriptFunction, args) {
       success: false,
       error: error.message,
     };
+  }
+}
+
+/**
+ * Execute a script with process.exit behavior for main entry points
+ * @param {string} scriptName - Name of the script being executed
+ * @param {Function} scriptFunction - The script function to execute
+ * @param {Array} args - Command line arguments
+ * @returns {Promise<void>} Exits process on error
+ */
+async function executeScriptWithExit(scriptName, scriptFunction, args) {
+  try {
+    await scriptFunction(args);
+  } catch (error) {
+    console.log(format.error(`Script execution failed: ${error.message}`));
+    process.exit(1);
   }
 }
 
@@ -61,5 +77,6 @@ function parseArgs(args) {
 
 module.exports = {
   executeScript,
+  executeScriptWithExit,
   parseArgs,
 };

@@ -7,7 +7,9 @@
 
 const { parseDeployArgs, showDeployHelp } = require('./core/args');
 const format = require('./core/formatting');
-const { appDeploymentWorkflow } = require('./deploy/workflows/app-deployment-simple');
+const { executeScriptWithExit } = require('./core/operations/script-framework');
+const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/utils/environment');
+const { appDeploymentWorkflow } = require('./deploy/workflows/app-deployment');
 const { meshDeploymentWorkflow } = require('./deploy/workflows/mesh-deployment');
 
 /**
@@ -22,29 +24,28 @@ async function main() {
     return;
   }
 
-  try {
-    let result;
+  // Simple environment detection using shared utility
+  const isProd = parseEnvironmentFromArgs(args);
+  const environment = getEnvironmentString(isProd);
 
-    if (args.meshOnly) {
-      result = await meshDeploymentWorkflow({
-        verbose: args.verbose,
-      });
-    } else {
-      result = await appDeploymentWorkflow({
-        meshOnly: args.meshOnly,
-        verbose: args.verbose,
-      });
-    }
+  console.log(format.success(`Environment: ${format.environment(environment)}`));
 
-    if (!result.success) {
-      process.exit(1);
-    }
-  } catch (error) {
-    console.log(format.error(`Script execution failed: ${error.message}`));
+  let result;
+
+  if (args.meshOnly) {
+    result = await meshDeploymentWorkflow({ isProd });
+  } else {
+    result = await appDeploymentWorkflow({
+      meshOnly: args.meshOnly,
+      isProd,
+    });
+  }
+
+  if (!result.success) {
     process.exit(1);
   }
 }
 
 if (require.main === module) {
-  main();
+  executeScriptWithExit('deploy', main);
 }
