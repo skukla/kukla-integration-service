@@ -45,11 +45,13 @@ This document defines the standards for refactoring the Adobe App Builder Commer
 #### Duplication Guidelines
 
 **✅ Prefer Duplication When:**
+
 - Utility is 2-10 lines and used in only 1-2 domains
 - Logic is domain-specific (even if partially similar to other domains)
 - Shared abstraction would require jumping between files to understand
 
 **❌ Prefer Abstraction When:**
+
 - Complex logic (30+ lines) used across multiple domains
 - True shared infrastructure (formatting, environment, spinners)
 - Business logic that's identical across domains
@@ -77,6 +79,7 @@ function buildActionUrl(actionName, params) { /* 4 lines */ }
 ```
 
 **Trade-off Summary:**
+
 - **Cost**: ~12 lines of intentional duplication for clarity
 - **Benefit**: 60% cognitive load reduction + clear domain boundaries
 - **Result**: Faster development, easier maintenance, clearer code ownership
@@ -1164,223 +1167,185 @@ scripts/
 - **Usage**: Used by all business domains for basic infrastructure
 - **Contents**: Environment detection, script execution framework, file operations
 
-#### Format Domain (`scripts/format/`)
+**Environment Detection Standards:**
 
-- **Purpose**: Consistent formatting, display, and messaging across all scripts
-- **Usage**: Used by all business domains for output formatting
-- **Contents**: Message templates, display formatting, script lifecycle formatting
+```javascript
+// ✅ CORRECT: Direct import pattern for maximum readability
+const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/operations/environment');
 
-### Business Domains
+// Environment detection
+const isProd = parseEnvironmentFromArgs(args);
+const environment = getEnvironmentString(isProd);
 
-**Business domains** focus on specific business processes:
+// Display formatting (let formatter handle capitalization)
+console.log(format.environment(environment));
 
-#### Build Domain (`scripts/build/`)
+// ❌ WRONG: Verbose namespace pattern
+const { operations } = require('./core');
+const isProd = operations.environment.parseEnvironmentFromArgs(args);
 
-- **Purpose**: Build processes and artifact generation
-- **Workflows**: App building, frontend generation, mesh generation
+// ❌ WRONG: Manual capitalization
+const displayEnv = environment.charAt(0).toUpperCase() + environment.slice(1);
+console.log(format.environment(displayEnv));
+```
 
-#### Deploy Domain (`scripts/deploy/`)
+## Direct Import Audit Framework
 
-- **Purpose**: Deployment processes and environment management
-- **Workflows**: App deployment, mesh deployment
+### **The Direct Import Standard**
 
-#### Test Domain (`scripts/test/`)
+**CRITICAL: All shared utility imports must use direct imports instead of namespace imports for maximum readability.**
 
-- **Purpose**: Testing processes and validation
-- **Workflows**: Action testing, API testing, performance testing
+This standard applies to ALL shared utilities across the codebase, not just environment detection.
 
-### Scripts Domain Structure
+### **Direct Import Benefits**
 
-Each domain follows the same DDD hierarchy:
+1. **📖 Readability**: Clean function calls without namespace pollution
+2. **🎯 Selective**: Only import what you need
+3. **🔧 Self-Documenting**: Function names are immediately clear
+4. **🚀 Performance**: Smaller import footprint
+5. **✅ Consistency**: Same pattern across all utilities
+
+### **Audit Process**
+
+**Step 1: Identify Namespace Import Patterns**
 
 ```bash
-domain/
-├── workflows/      # High-level orchestration (business logic)
-├── operations/     # Mid-level processes (domain operations)
-└── utils/          # Low-level utilities (pure functions)
+# Search for namespace imports that should be direct imports
+grep -r "const { operations } = require" scripts/
+grep -r "const core = require" scripts/
+grep -r "\.operations\." scripts/
+grep -r "\.utils\." scripts/
 ```
 
-### CRITICAL: Format Domain Eliminates Formatting Pollution
+**Step 2: Classify Import Patterns**
 
-**Before Format Domain (Problematic):**
+```javascript
+// 🔍 AUDIT TARGET: Namespace imports with single function usage
+const { operations } = require('./core');
+const isProd = operations.environment.parseEnvironmentFromArgs(args);
+
+// 🔍 AUDIT TARGET: Core imports with nested access
+const core = require('./core');
+const result = core.operations.environment.getEnvironmentString(isProd);
+
+// ✅ ALREADY CORRECT: Direct imports
+const { parseEnvironmentFromArgs } = require('./core/operations/environment');
+const isProd = parseEnvironmentFromArgs(args);
+```
+
+**Step 3: Refactor Priority**
+
+1. **HIGH PRIORITY**: Single function usage through namespace
+2. **MEDIUM PRIORITY**: 2-3 functions from same module
+3. **LOW PRIORITY**: Complex usage patterns requiring analysis
+
+### **Audit Checklist**
+
+**Environment Detection:**
+
+- [ ] `scripts/deploy.js` - ✅ COMPLETED
+- [ ] `scripts/deploy-proper.js` - ✅ COMPLETED
+- [ ] `scripts/test/workflows/action-testing.js` - ✅ COMPLETED
+- [ ] `scripts/build/operations/config-generation.js` - ✅ COMPLETED
+- [ ] `scripts/deploy/workflows/app-deployment.js` - ✅ COMPLETED
+
+**Other Shared Utilities to Audit:**
+
+- [ ] Core formatting utilities
+- [ ] Core script framework functions
+- [ ] Core hash operations
+- [ ] Build operations
+- [ ] Deploy operations
+- [ ] Test operations
+
+### **Refactoring Process**
+
+**1. Identify Usage Pattern**
+
+```javascript
+// Find this pattern
+const { operations } = require('./core');
+const result = operations.utilityName.functionName(args);
+```
+
+**2. Extract Function Names**
+
+```javascript
+// List all functions used from the namespace
+operations.environment.parseEnvironmentFromArgs()
+operations.environment.getEnvironmentString()
+```
+
+**3. Replace with Direct Import**
+
+```javascript
+// Replace with direct import
+const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/operations/environment');
+const isProd = parseEnvironmentFromArgs(args);
+const environment = getEnvironmentString(isProd);
+```
+
+**4. Update Function Calls**
+
+```javascript
+// Remove namespace prefix
+operations.environment.parseEnvironmentFromArgs(args) → parseEnvironmentFromArgs(args)
+operations.environment.getEnvironmentString(isProd) → getEnvironmentString(isProd)
+```
+
+**5. Test Functionality**
 
 ```bash
-scripts/
-├── core/operations/formatting.js          # Mixed concerns
-├── build/operations/output-templates.js   # Duplicate formatting
-├── deploy/operations/output-templates.js  # Duplicate formatting
-└── test/operations/display-formatting.js  # Duplicate formatting
+# Verify refactored code works correctly
+npm run test:schemas
+npm run deploy
 ```
 
-**After Format Domain (Clean):**
+### **Code Quality Metrics**
+
+**Before Direct Import Refactoring:**
+
+- ❌ Verbose: `operations.environment.parseEnvironmentFromArgs(args)`
+- ❌ Namespace pollution: Import entire operations object for 1-2 functions
+- ❌ Less readable: 3+ levels of nesting to access functions
+
+**After Direct Import Refactoring:**
+
+- ✅ Clean: `parseEnvironmentFromArgs(args)`
+- ✅ Selective: Import only needed functions
+- ✅ Self-documenting: Function names immediately clear
+
+### **Audit Commands**
 
 ```bash
-scripts/
-├── format/                    # Centralized formatting
-│   ├── workflows/            # Complex formatting scenarios
-│   ├── operations/           # Formatting operations and templates
-│   └── utils/                # Basic formatters and constants
-├── build/                    # Clean business domain
-├── deploy/                   # Clean business domain
-└── test/                     # Clean business domain
+# Find all namespace imports that could be direct imports
+grep -r "const { operations } = require" scripts/ | grep -v node_modules
+
+# Find all core imports with nested access
+grep -r "core\.operations\." scripts/ | grep -v node_modules
+
+# Find all utils access patterns
+grep -r "\.utils\." scripts/ | grep -v node_modules
+
+# Verify direct imports are being used
+grep -r "require.*operations.*environment" scripts/
 ```
 
-### Scripts Import Standards
+### **Success Criteria**
 
-**✅ CORRECT: Import from shared infrastructure domains**
+**✅ Fully Refactored When:**
 
-```javascript
-// Import shared infrastructure
-const core = require('../core');
-const format = require('../format');
+1. No namespace imports for single function usage
+2. All shared utility calls use direct imports
+3. Function names are immediately readable
+4. Import statements are selective and clean
+5. All tests pass after refactoring
 
-// Use format domain for all output
-console.log(format.success('Operation completed'));
-console.log(format.templates.build.start());
+**📊 Progress Tracking:**
 
-// Use core domain for infrastructure
-const env = core.detectEnvironment();
-const result = await core.executeScript('deploy', deployFunction, args);
-```
-
-**❌ WRONG: Import from business domains or scattered locations**
-
-```javascript
-// Don't import from other business domains
-const { deploymentStep } = require('../deploy/operations');
-
-// Don't use scattered formatting
-const { outputTemplates } = require('./operations/output-templates');
-```
-
-### Scripts Dependency Rules
-
-**Domain Dependencies:**
-
-- ✅ Business domains can depend on shared infrastructure domains (core, format)
-- ✅ Shared infrastructure domains can depend on each other (with care)
-- ❌ Business domains should NOT depend on other business domains
-- ❌ No circular dependencies allowed
-
-### Format Domain Usage Patterns
-
-**CRITICAL: Simple Consistent Pattern**
-
-**ONE RULE: All format functions return strings. Always use `console.log()` to print.**
-
-```javascript
-const format = require('../format');
-
-// Basic formatting - ALL RETURN STRINGS
-console.log(format.success('Operation completed'));
-console.log(format.error('Operation failed'));
-console.log(format.warning('Warning message'));
-console.log(format.info('Information'));
-
-// Section formatting - RETURNS STRINGS
-console.log(format.section('Deploying App Builder'));
-console.log(format.header('Processing Files'));
-
-// Lifecycle formatting - RETURNS STRINGS
-console.log(await format.buildStart());
-console.log(await format.buildDone());
-console.log(await format.deployStart(environment));
-console.log(await format.deployDone(environment));
-
-// Mesh formatting - RETURNS STRINGS
-console.log(await format.meshStart(environment));
-console.log(await format.meshDone(environment));
-console.log(format.meshUpdateStart());
-console.log(format.meshPollingStart(pollInterval, maxChecks));
-
-// Common operations - RETURNS STRINGS
-console.log(format.verbose('Processing step 1...'));
-console.log(format.step('Environment validated'));
-```
-
-**Why This Pattern:**
-
-- ✅ **Zero cognitive load** - Same pattern everywhere, no memorization required
-- ✅ **Industry standard** - How most successful logging libraries work
-- ✅ **Pure functions** - Easy to test, compose, and reason about
-- ✅ **Flexible** - Can redirect output, save to files, use in tests
-- ✅ **Clear separation** - Formatting vs output are separate concerns
-
-**❌ WRONG: Mixed patterns (eliminated)**
-
-```javascript
-// Don't mix string returners and direct printers
-console.log(format.error('message'));  // String returner
-format.verbose('message');             // Direct printer (REMOVED)
-```
-
-### Scripts Architecture Benefits
-
-**1. Single Responsibility**
-
-- Each domain focuses on its core business logic
-- No formatting pollution in business domains
-
-**2. Centralized Formatting**
-
-- All formatting concerns in format domain
-- Consistent iconography and color usage
-- Single place to update formatting standards
-
-**3. Reusable Patterns**
-
-- Format workflows shared across all domains
-- Clean dependencies between domains
-- Easy maintenance and updates
-
-**4. Clean Domain Boundaries**
-
-- Business domains depend on shared infrastructure
-- No cross-domain business dependencies
-- Clear separation of concerns
-
-### Scripts Migration Guidelines
-
-**When moving formatting from business domains to format domain:**
-
-1. **Identify formatting logic** in business domains
-2. **Extract to format domain** at appropriate level (utils/operations/workflows)
-3. **Update imports** in business domains to use format domain
-4. **Remove duplicate formatting** from business domains
-5. **Test functionality** to ensure no regressions
-
-**Example Migration:**
-
-```javascript
-// OLD: Mixed patterns (confusing)
-// scripts/deploy/workflows/app-deployment.js
-console.log(format.error('Build failed'));     // String returner
-format.verbose('Starting mesh update...');     // Direct printer
-console.log(await format.buildStart());        // String returner
-format.section('Deploying App Builder');       // Direct printer
-
-// NEW: Consistent pattern (simple)
-// scripts/deploy/workflows/app-deployment.js
-const format = require('../../format');
-
-console.log(format.error('Build failed'));
-console.log(format.verbose('Starting mesh update...'));
-console.log(await format.buildStart());
-console.log(format.section('Deploying App Builder'));
-
-// ALL functions return strings, ALWAYS use console.log() to print
-```
-
-### Scripts Standards Compliance
-
-**Before approving any script changes, verify:**
-
-- [ ] **Uses shared infrastructure domains** (core, format)
-- [ ] **No formatting in business domains** (use format domain)
-- [ ] **Follows DDD hierarchy** (workflows → operations → utils)
-- [ ] **Clean domain dependencies** (no cross-business-domain imports)
-- [ ] **Consistent formatting patterns** (format domain usage)
-- [ ] **Proper domain organization** (infrastructure vs business separation)
+- Environment Detection: ✅ 100% Complete (5/5 files)
+- Other Utilities: 🔄 In Progress (0/X files)
+- Total Project: 🎯 Target 100% direct import compliance
 
 ---
 
