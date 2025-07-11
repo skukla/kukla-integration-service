@@ -3,16 +3,17 @@
  * Test domain specific operations for action execution
  */
 
-const { buildActionUrl, isSuccessfulResponse } = require('./index');
+const { filterActionParameters, buildActionUrl, isSuccessfulResponse } = require('./index');
 
 /**
  * Execute action test - Clean operation for Light DDD pattern
  * @param {string} actionName - Name of action to test
  * @param {Object} params - Action parameters
+ * @param {boolean} isProd - Whether testing in production
  * @returns {Promise<Object>} Test response with success determination
  */
-async function executeActionTest(actionName, params) {
-  const actionUrl = buildActionUrl(actionName, params);
+async function executeActionTest(actionName, params, isProd = false) {
+  const actionUrl = buildActionUrl(actionName, params, isProd);
   const response = await testAction(actionUrl, params);
 
   return {
@@ -26,10 +27,11 @@ async function executeActionTest(actionName, params) {
  * Execute action test in raw mode - Simplified using shared functions
  * @param {string} actionName - Name of action to test
  * @param {Object} params - Action parameters
+ * @param {boolean} isProd - Whether testing in production
  * @returns {Promise<Object>} Raw test result
  */
-async function executeRawTest(actionName, params) {
-  const actionUrl = buildActionUrl(actionName, params);
+async function executeRawTest(actionName, params, isProd = false) {
+  const actionUrl = buildActionUrl(actionName, params, isProd);
   const response = await testAction(actionUrl, params);
 
   return {
@@ -47,7 +49,6 @@ async function executeRawTest(actionName, params) {
  */
 async function testAction(actionUrl, params) {
   const fetch = require('node-fetch');
-  const { filterActionParameters } = require('./index');
 
   // Use business logic operation to filter parameters
   const actionParams = filterActionParameters(params);
