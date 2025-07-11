@@ -4,16 +4,16 @@
  *
  */
 
-const environment = require('./environment');
+const fileOperations = require('./file-operations');
 const hash = require('./hash');
-const mesh = require('./mesh');
 const scriptFramework = require('./script-framework');
 const spinner = require('./spinner');
+const urlBuilding = require('./url-building');
 
 module.exports = {
-  environment,
+  fileOperations,
   hash,
-  mesh,
   scriptFramework,
   spinner,
+  urlBuilding,
 };

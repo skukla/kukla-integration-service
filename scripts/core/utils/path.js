@@ -1,29 +1,9 @@
 /**
- * Scripts Core File Utilities
- * Shared file operation functions used by all script domains
+ * Scripts Core Path Utilities
+ * Pure path manipulation functions with no I/O side effects
  */
 
-const fs = require('fs');
 const path = require('path');
-
-/**
- * Check if file exists
- * @param {string} filePath - Path to file
- * @returns {boolean} True if file exists
- */
-function fileExists(filePath) {
-  return fs.existsSync(filePath);
-}
-
-/**
- * Read and parse JSON file
- * @param {string} filePath - Path to JSON file
- * @returns {Object} Parsed JSON object
- */
-function readJsonFile(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  return JSON.parse(content);
-}
 
 /**
  * Get file extension
@@ -53,8 +33,6 @@ function joinPath(...paths) {
 }
 
 module.exports = {
-  fileExists,
-  readJsonFile,
   getFileExtension,
   getBasename,
   joinPath,

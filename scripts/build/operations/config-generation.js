@@ -6,30 +6,26 @@
 const fs = require('fs');
 
 const { loadConfig } = require('../../../config');
-const core = require('../../core');
-
-// ensureOutputDirectory moved inline to workflows
-// This was a simple 4-line fs operation that didn't warrant separate abstraction
+const { createSpinner } = require('../../core/operations/spinner');
+const { getEnvironmentString } = require('../../core/utils/environment');
 
 /**
- * Load configuration with environment detection and spinner feedback
+ * Load configuration with environment and spinner feedback
  * @param {boolean} useSpinners - Whether to show spinner progress
+ * @param {boolean} isProd - Whether building for production
  * @returns {Promise<Object>} Configuration and environment
  */
-async function loadConfigWithEnvironment(useSpinners) {
-  const configSpinner = useSpinners ? core.createSpinner('Loading configuration...') : null;
-  const env = core.detectScriptEnvironment({}, { allowCliDetection: true });
-  const config = loadConfig({ NODE_ENV: env });
+async function loadConfigWithEnvironment(useSpinners, isProd = false) {
+  const configSpinner = useSpinners ? createSpinner('Loading configuration...') : null;
+  const environment = getEnvironmentString(isProd);
+  const config = loadConfig({}, isProd);
   
   if (configSpinner) {
     configSpinner.succeed('Configuration loaded');
   }
 
-  return { config, env };
+  return { config, env: environment };
 }
-
-// buildFrontendConfig and buildUrlConfig moved inline to workflows
-// These were simple object construction operations that didn't warrant separate abstractions
 
 /**
  * Write configuration file with spinner feedback
@@ -40,7 +36,7 @@ async function loadConfigWithEnvironment(useSpinners) {
  * @param {boolean} useSpinners - Whether to show spinner
  */
 async function writeConfigFile(filePath, configData, spinnerMessage, successMessage, useSpinners) {
-  const spinner = useSpinners ? core.createSpinner(spinnerMessage) : null;
+  const spinner = useSpinners ? createSpinner(spinnerMessage) : null;
   
   const content = `/* eslint-disable */\nexport default ${JSON.stringify(configData, null, 2)};\n`;
   fs.writeFileSync(filePath, content);
@@ -53,5 +49,4 @@ async function writeConfigFile(filePath, configData, spinnerMessage, successMess
 module.exports = {
   loadConfigWithEnvironment,
   writeConfigFile,
-  // ensureOutputDirectory, buildFrontendConfig, and buildUrlConfig moved inline to workflows
 }; 
