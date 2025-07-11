@@ -472,6 +472,140 @@ actions/action-name/
 ├── __tests__/            # Action-specific tests
 │   └── index.test.js
 └── README.md             # Action documentation
+```
+
+### **Index.js Exporter Pattern**
+
+**CRITICAL: All index.js files must be pure exporters - no function implementations allowed.**
+
+This standard applies to both **Complete DDD** (src/) and **Light DDD** (scripts/) architectures.
+
+```javascript
+// ✅ CORRECT: Pure exporter pattern
+const parameterHandling = require('./parameter-handling');
+const urlBuilding = require('./url-building');
+const responseHandling = require('./response-handling');
+
+module.exports = {
+  // Pure re-exports - no function implementations
+  filterActionParameters: parameterHandling.filterActionParameters,
+  buildActionUrl: urlBuilding.buildActionUrl,
+  isSuccessfulResponse: responseHandling.isSuccessfulResponse,
+  
+  // Structured access for organized usage
+  operations: {
+    parameterHandling,
+    urlBuilding,
+    responseHandling,
+  },
+};
+```
+
+```javascript
+// ❌ WRONG: Mixed implementation pattern
+const testExecution = require('./test-execution');
+
+// PROBLEM: Functions implemented in index.js
+function filterActionParameters(params) { /* implementation */ }
+function buildActionUrl(actionName, params) { /* implementation */ }
+
+module.exports = {
+  testExecution,
+  filterActionParameters, // Mixed pattern violates standard
+  buildActionUrl,
+};
+```
+
+**Benefits of Pure Exporter Pattern:**
+
+1. **🔍 Findability**: Know implementations are in separate files
+2. **📋 Documentation**: Index acts as domain API documentation  
+3. **🧹 Single Responsibility**: Index = exports, other files = implementation
+4. **🔧 Maintainability**: Easier to locate and modify specific functions
+
+**Implementation Approach:**
+
+- **Move functions** to separate implementation files (e.g., `parameter-handling.js`, `url-building.js`)
+- **Update index.js** to import and re-export functionality
+- **Maintain API compatibility** - external imports don't change
+
+### **Environment Detection Pattern**
+
+**CRITICAL: All environment detection must use direct imports from the shared utility.**
+
+This standard ensures consistency, readability, and prevents code duplication.
+
+```javascript
+// ✅ CORRECT: Direct import pattern for clean readability
+const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/operations/environment');
+
+async function main() {
+  const args = parseDeployArgs();
+  
+  // Parse environment from CLI arguments
+  const isProd = parseEnvironmentFromArgs(args);
+  
+  // Convert to environment string when needed
+  const environment = getEnvironmentString(isProd);
+  
+  // Use isProd for config loading
+  const config = loadConfig({}, isProd);
+}
+```
+
+```javascript
+// ❌ WRONG: Verbose namespace pattern
+const { operations } = require('./core');
+const isProd = operations.environment.parseEnvironmentFromArgs(args);
+
+// ❌ WRONG: Inline environment detection
+const isProd = args.environment === 'production';
+const environment = isProd ? 'production' : 'staging';
+
+// ❌ WRONG: Duplicate logic across files
+const isProd = params.NODE_ENV === 'production';
+```
+
+**Available Environment Utilities:**
+
+```javascript
+// ✅ CORRECT: Direct imports for specific needs
+const { parseEnvironmentFromArgs } = require('./core/operations/environment');
+const { parseEnvironmentFromParams } = require('./core/operations/environment');  
+const { getEnvironmentString } = require('./core/operations/environment');
+
+// ✅ CORRECT: Multiple imports in one statement
+const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/operations/environment');
+```
+
+**Benefits of Direct Import Pattern:**
+
+1. **📖 Readability**: Clean function calls without namespace pollution
+2. **🎯 Selective**: Only import what you need
+3. **🔧 Maintainability**: Self-documenting function names
+4. **🚀 Performance**: Smaller import footprint
+
+**Migration Pattern:**
+
+1. **Replace namespace imports**: `const { operations } = require('./core');` → `const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/operations/environment');`
+2. **Update function calls**: `operations.environment.parseEnvironmentFromArgs(args)` → `parseEnvironmentFromArgs(args)`
+3. **Remove manual capitalization**: Let `format.environment()` handle capitalization
+4. **Maintain compatibility**: All existing APIs continue to work
+
+**Direct Import Standard:**
+
+```javascript
+// ✅ CORRECT: Clean, readable, self-documenting
+const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/operations/environment');
+const isProd = parseEnvironmentFromArgs(args);
+const environment = getEnvironmentString(isProd);
+console.log(format.environment(environment));
+
+// ❌ WRONG: Verbose namespace pattern
+const { operations } = require('./core');
+const isProd = operations.environment.parseEnvironmentFromArgs(args);
+const environment = operations.environment.getEnvironmentString(isProd);
+```
 
 ### **Import Organization**
 

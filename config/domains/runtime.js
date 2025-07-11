@@ -11,19 +11,16 @@
 /**
  * Build runtime configuration
  * @param {Object} [params] - Action parameters for environment values
+ * @param {boolean} [isProd] - Whether building for production environment
  * @returns {Object} Runtime configuration
  */
-function buildRuntimeConfig(params = {}) {
-  // Detect environment to select appropriate runtime URL
-  const { detectEnvironment } = require('../../src/core/environment/operations/detection');
-  const environment = detectEnvironment(params);
-
+function buildRuntimeConfig(params = {}, isProd = false) {
   // Select environment-specific runtime URL
   let url;
-  if (environment === 'staging') {
-    url = params.RUNTIME_URL_STAGING || process.env.RUNTIME_URL_STAGING;
-  } else if (environment === 'production') {
+  if (isProd) {
     url = params.RUNTIME_URL_PRODUCTION || process.env.RUNTIME_URL_PRODUCTION;
+  } else {
+    url = params.RUNTIME_URL_STAGING || process.env.RUNTIME_URL_STAGING;
   }
 
   // Fallback to generic RUNTIME_URL if environment-specific not found

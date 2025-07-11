@@ -42,7 +42,8 @@
     "test": "node scripts/test.js",
     "test:action": "node scripts/test.js",
     "test:api": "node scripts/test.js api",
-    "test:perf": "node scripts/test.js performance"
+    "test:perf": "node scripts/test.js perf",
+    "test:suite": "node scripts/test.js suite"
   },
   "engines": {
     "node": ">=18"

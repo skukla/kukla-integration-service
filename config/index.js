@@ -61,9 +61,10 @@ function validateRequiredConfig(config, domain) {
 /**
  * Load configuration from all domains
  * @param {Object} [params] - Action parameters
+ * @param {boolean} [isProd] - Whether loading for production environment
  * @returns {Object} Complete configuration
  */
-function loadConfig(params = {}) {
+function loadConfig(params = {}, isProd = false) {
   // MAIN CONFIG: Shared business settings only
   const mainConfig = buildMainConfig();
 
@@ -71,7 +72,7 @@ function loadConfig(params = {}) {
   const commerceConfig = buildCommerceConfig(params);
   const productsConfig = buildProductsConfig();
   const filesConfig = buildFilesConfig(params, mainConfig); // Needs CSV filename
-  const runtimeConfig = buildRuntimeConfig(params);
+  const runtimeConfig = buildRuntimeConfig(params, isProd);
   const meshConfig = buildMeshConfig(params);
   const performanceConfig = buildPerformanceConfig(); // Self-contained
   const testingConfig = buildTestingConfig(params, mainConfig); // Needs expected product count
@@ -110,11 +111,12 @@ function loadConfig(params = {}) {
 /**
  * Load configuration with validation for required values
  * @param {Object} params - Action parameters (optional)
+ * @param {boolean} [isProd] - Whether loading for production environment
  * @returns {Object} Complete configuration object
  * @throws {Error} If required configuration is missing
  */
-function loadValidatedConfig(params = {}) {
-  const config = loadConfig(params);
+function loadValidatedConfig(params = {}, isProd = false) {
+  const config = loadConfig(params, isProd);
 
   // Validate each domain for required configuration
   validateRequiredConfig(config.commerce, 'commerce');
