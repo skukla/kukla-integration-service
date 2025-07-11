@@ -7,21 +7,21 @@ const fs = require('fs');
 const path = require('path');
 
 const { loadConfig } = require('../../../../config');
-const { detectScriptEnvironment } = require('../../../core/operations/environment');
 
 /**
  * Extract mesh configuration for deployment
  * @param {Object} options - Extraction options
+ * @param {boolean} options.isProd - Whether extracting for production
  * @returns {Promise<Object>} Extraction result
  */
 async function meshConfigExtractionStep(options = {}) {
-  const { configPath = 'mesh.json', outputPath = 'dist/mesh.json' } = options;
+  const { configPath = 'mesh.json', outputPath = 'dist/mesh.json', isProd = false } = options;
 
   try {
-    // Detect environment
-    const environment = detectScriptEnvironment();
+    // Step 1: Simple environment setup
+    const environment = isProd ? 'production' : 'staging';
 
-    // Read mesh configuration
+    // Step 2: Read mesh configuration
     const meshConfigPath = path.resolve(configPath);
     if (!fs.existsSync(meshConfigPath)) {
       throw new Error(`Mesh configuration not found: ${meshConfigPath}`);
@@ -29,10 +29,10 @@ async function meshConfigExtractionStep(options = {}) {
 
     const meshConfig = JSON.parse(fs.readFileSync(meshConfigPath, 'utf8'));
 
-    // Load environment configuration
-    const config = loadConfig();
+    // Step 3: Load environment configuration
+    const config = loadConfig({}, isProd);
 
-    // Process configuration for environment
+    // Step 4: Process configuration for environment
     const processedConfig = {
       ...meshConfig,
       environment,

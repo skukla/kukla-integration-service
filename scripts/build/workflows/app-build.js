@@ -9,8 +9,9 @@ const { promisify } = require('util');
 
 const frontendGeneration = require('./frontend-generation');
 const meshGeneration = require('./mesh-generation');
-const core = require('../../core');
-const { capitalize } = require('../operations/string');
+const format = require('../../core/formatting');
+const { createSpinner } = require('../../core/operations/spinner');
+const { capitalize } = require('../../core/utils/string');
 
 const execAsync = promisify(exec);
 
@@ -20,21 +21,22 @@ const execAsync = promisify(exec);
  * @param {Object} options - Build options
  * @param {boolean} options.skipMesh - Skip mesh generation
  * @param {boolean} options.includeAioAppBuild - Include Adobe I/O App build
- * @param {string} options.environment - Target environment (staging/production)
+ * @param {boolean} options.isProd - Whether building for production
  * @returns {Promise<Object>} Build result
  */
 async function appBuildWorkflow(options = {}) {
-  try {
-    console.log(core.formatting.success('Build started'));
+  const { isProd = false } = options;
 
-    // Step 1: Environment Detection (use provided environment or detect)
-    const envSpinner = core.createSpinner('Detecting environment...');
-    const env = options.environment || core.detectScriptEnvironment();
-    const envDisplay = capitalize(env);
-    envSpinner.succeed(`Environment detected: ${envDisplay}`);
+  try {
+    console.log(format.success('Build started'));
+
+    // Step 1: Environment setup - Simple boolean logic
+    const environment = isProd ? 'production' : 'staging';
+    const envDisplay = capitalize(environment);
+    console.log(format.success(`Environment: ${format.environment(envDisplay)}`));
 
     // Step 2: Frontend Generation
-    const frontendSpinner = core.createSpinner('Generating frontend assets...');
+    const frontendSpinner = createSpinner('Generating frontend assets...');
     await frontendGeneration.generateFrontendConfig();
     frontendSpinner.succeed('Frontend assets generated');
 
@@ -42,8 +44,8 @@ async function appBuildWorkflow(options = {}) {
     let meshStepMessage = 'Mesh generation skipped';
     let meshRegenerated = false;
     if (!options.skipMesh) {
-      const meshSpinner = core.createSpinner('Generating mesh resolver...');
-      const meshResult = await meshGeneration.generateMeshResolver();
+      const meshSpinner = createSpinner('Generating mesh resolver...');
+      const meshResult = await meshGeneration.generateMeshResolver({ isProd });
       const meshMessage = meshResult.generated ? 'Mesh resolver generated' : `Mesh resolver: ${meshResult.reason}`;
       meshSpinner.succeed(meshMessage);
       meshStepMessage = meshMessage;
@@ -52,19 +54,19 @@ async function appBuildWorkflow(options = {}) {
 
     // Step 4: Adobe I/O App Build (if requested)
     if (options.includeAioAppBuild) {
-      const aioSpinner = core.createSpinner('Building Adobe I/O App...');
+      const aioSpinner = createSpinner('Building Adobe I/O App...');
       await execAsync('aio app build');
       aioSpinner.succeed('Adobe I/O App built');
     }
 
-    console.log(core.formatting.success('Build completed'));
+    console.log(format.success('Build completed'));
 
     return {
       success: true,
-      environment: env,
+      environment,
       meshRegenerated,
       steps: [
-        'Environment detected',
+        `Environment: ${envDisplay}`,
         'Frontend assets generated',
         meshStepMessage,
         ...(options.includeAioAppBuild ? ['Adobe I/O App built'] : []),
@@ -72,7 +74,7 @@ async function appBuildWorkflow(options = {}) {
     };
 
   } catch (error) {
-    console.log(core.formatting.error('Build failed: ' + error.message));
+    console.log(format.error('Build failed: ' + error.message));
     throw error;
   }
 }
