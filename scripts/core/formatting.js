@@ -118,6 +118,15 @@ function muted(message) {
   return chalk.gray(message);
 }
 
+/**
+ * Format step message with checkmark
+ * @param {string} message - Step message
+ * @returns {string} Formatted step message
+ */
+function step(message) {
+  return chalk.green(`✓ ${message}`);
+}
+
 module.exports = {
   success,
   error,
@@ -131,4 +140,5 @@ module.exports = {
   steps,
   section,
   muted,
+  step,
 };

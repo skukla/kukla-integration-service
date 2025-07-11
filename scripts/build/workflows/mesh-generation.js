@@ -1,58 +1,62 @@
 /**
  * Mesh Generation Workflow
- * Updated to use new mesh domain architecture
- * Handles both mesh resolver generation and mesh configuration compilation
+ * Direct implementation using build workflow steps
+ * Handles mesh resolver generation and mesh configuration compilation
  */
 
-const { mesh } = require('../../');
+const { meshConfigExtractionStep } = require('./steps/mesh-config-extraction');
+const { templateProcessingStep } = require('./steps/template-processing');
 const { loadConfig } = require('../../../config');
-const core = require('../../core');
+const format = require('../../core/formatting');
 
 /**
- * Generate mesh resolver and configuration using new mesh domain
+ * Generate mesh resolver and configuration using build workflow steps
  * @param {Object} options - Generation options
- * @param {boolean} options.force - Force regeneration
- * @param {boolean} options.verbose - Verbose output
+ * @param {boolean} options.isProd - Whether generating for production
  * @returns {Promise<Object>} Generation result
  */
 async function generateMeshResolver(options = {}) {
-  const { verbose = false } = options;
-
+  const { isProd = false } = options;
+  const steps = [];
+  
   try {
-    if (verbose) {
-      console.log(core.formatting.info('Using mesh domain for resolver and configuration generation...'));
+    console.log(format.info('Generating mesh resolver and configuration...'));
+
+    // Load configuration
+    const config = loadConfig({}, isProd);
+
+    // Step 1: Extract mesh configuration
+    const meshConfigResult = await meshConfigExtractionStep({ isProd });
+    if (!meshConfigResult.success) {
+      throw new Error(`Mesh config extraction failed: ${meshConfigResult.error}`);
     }
+    steps.push('Mesh configuration extracted');
 
-    // Load configuration for mesh domain
-    const config = loadConfig({});
-
-    // Use mesh domain compilation workflow to generate both resolver and config
-    const compilationResult = await mesh.workflows.compile.compileMeshWorkflow({
-      templatePath: 'mesh-resolvers.template.js',
-      resolverPath: 'mesh-resolvers.js', 
-      configPath: 'mesh.config.js',
-      outputPath: 'mesh.json',
+    // Step 2: Process template and generate resolver
+    const templateResult = await templateProcessingStep({
       config,
-      generateResolver: true,
+      meshConfig: meshConfigResult.meshConfig,
     });
-
-    if (!compilationResult.success) {
-      throw new Error(`Mesh compilation failed: ${compilationResult.error}`);
+    if (!templateResult.success) {
+      throw new Error(`Template processing failed: ${templateResult.error}`);
     }
+    steps.push('Mesh resolver template processed');
+    steps.push('Mesh resolver file generated');
 
-    if (verbose) {
-      console.log(core.formatting.success('✅ Mesh domain compilation completed successfully'));
-      compilationResult.steps.forEach((step, index) => {
-        console.log(core.formatting.info(`   ${index + 1}. ${step}`));
-      });
-    }
+    console.log(format.success('✅ Mesh generation completed successfully'));
+    steps.forEach((step, index) => {
+      console.log(format.info(`   ${index + 1}. ${step}`));
+    });
 
     return {
       success: true,
       generated: true,
-      workflow: 'mesh-domain-compilation',
-      steps: compilationResult.steps,
-      results: compilationResult.results,
+      workflow: 'mesh-generation-workflow',
+      steps,
+      results: {
+        meshConfig: meshConfigResult.meshConfig,
+        resolverGenerated: templateResult.resolverGenerated,
+      },
     };
 
   } catch (error) {
@@ -60,17 +64,6 @@ async function generateMeshResolver(options = {}) {
   }
 }
 
-// Keep the old function for backward compatibility (simplified for mesh domain)
-function needsRegeneration() {
-  // Always regenerate when using mesh domain workflow
-  // The mesh domain handles its own change detection
-  return {
-    needed: true,
-    reason: 'Using mesh domain workflow regeneration',
-  };
-}
-
 module.exports = {
   generateMeshResolver,
-  needsRegeneration,
 }; 
