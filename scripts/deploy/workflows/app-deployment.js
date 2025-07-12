@@ -1,6 +1,6 @@
 /**
  * Deploy Domain - App Deployment Workflow
- * Direct step-based orchestration following Light DDD principles
+ * Clean spinner-based deployment flow without redundant messages
  */
 
 // Direct step imports - Light DDD approach
@@ -9,14 +9,11 @@ const { buildProcessStep } = require('./steps/build-process');
 const { meshUpdateStep } = require('./steps/mesh-update');
 const format = require('../../core/formatting');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { buildActionUrl, buildStaticAppUrl } = require('../operations/url-building');
 
 /**
- * App deployment workflow - Direct step orchestration
- * Clean orchestrator that calls step functions directly
+ * App deployment workflow
  * @param {Object} options - Deployment options
- * @param {string} options.environment - Target environment
-
+ * @param {boolean} options.isProd - Whether deploying to production
  * @param {boolean} options.skipMesh - Skip mesh updates
  * @returns {Promise<Object>} Deployment result
  */
@@ -26,8 +23,14 @@ async function appDeploymentWorkflow(options = {}) {
   const steps = [];
 
   try {
-    // Step 1: Environment setup - Simple boolean logic
-    steps.push(`Successfully configured for ${environment} environment`);
+    // Step 1: Initial setup
+    console.log(format.success(`Environment: ${format.environment(environment)}`));
+    console.log();
+    console.log(format.deploymentStart(`Starting deployment to ${environment.toLowerCase()}...`));
+    console.log();
+
+    // Brief pause for better flow
+    await format.sleep(800);
 
     // Step 2: Build process
     const buildResult = await buildProcessStep({ environment });
@@ -36,7 +39,14 @@ async function appDeploymentWorkflow(options = {}) {
     }
     steps.push(buildResult.step);
 
-    // Step 3: App deployment
+    // Pause before deployment
+    await format.sleep(1000);
+
+    // Step 3: Deploy App Builder actions
+    console.log();
+    console.log(format.deploymentAction('Deploying App Builder actions...'));
+    console.log();
+
     const deployResult = await appDeploymentStep({
       isProd,
     });
@@ -45,43 +55,40 @@ async function appDeploymentWorkflow(options = {}) {
     }
     steps.push(deployResult.step);
 
-    // Step 4: Mesh update (if needed)
-    const meshResult = await meshUpdateStep({
-      isProd,
-      skipMesh,
-    });
-    if (!meshResult.success && !meshResult.skipped) {
-      console.log(format.warning('Mesh update failed, but deployment completed successfully'));
+    // Step 4: Update API Mesh (only if mesh resolver was regenerated)
+    if (!skipMesh && buildResult.meshRegenerated) {
+      await format.sleep(1000);
+
+      console.log();
+      console.log(format.deploymentAction('Updating API Mesh...'));
+      console.log();
+
+      const meshResult = await meshUpdateStep({
+        isProd,
+        skipMesh,
+        meshRegenerated: buildResult.meshRegenerated,
+      });
+      if (!meshResult.success && !meshResult.skipped) {
+        console.log(format.warning('Mesh update failed, but deployment completed successfully'));
+      }
+      if (!meshResult.skipped) {
+        steps.push(meshResult.step);
+      }
     }
-    steps.push(meshResult.step);
 
-    // Final status
-    console.log(); // Blank line
-    console.log(format.status('SUCCESS', 200));
-    console.log(format.section('Message: Deployment completed successfully'));
-
-    // Build URLs for output
-    const appUrl = buildStaticAppUrl(isProd);
-    const downloadUrl = buildActionUrl('download-file', {}, isProd);
-
+    // Step 6: Final completion
     console.log();
-    console.log(format.url(appUrl));
-    console.log(format.downloadUrl(downloadUrl));
-
-    console.log();
-    console.log(format.section('Steps:'));
-    console.log(format.steps(steps));
+    console.log(
+      format.celebration(`Deployment to ${environment.toLowerCase()} completed successfully!`)
+    );
 
     return {
       success: true,
       environment,
       steps,
-      urls: {
-        app: appUrl,
-        download: downloadUrl,
-      },
     };
   } catch (error) {
+    console.log();
     console.log(format.error(`Deployment failed: ${error.message}`));
     return {
       success: false,
