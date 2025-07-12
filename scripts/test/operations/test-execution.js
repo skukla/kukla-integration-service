@@ -3,9 +3,9 @@
  * Test domain specific operations for action execution
  */
 
-const { filterActionParameters } = require('./parameter-handling');
 const { isSuccessfulResponse } = require('./response-handling');
 const { buildActionUrl } = require('./url-building');
+const { http, parameters } = require('../../core/utils');
 
 /**
  * Execute action test - Clean operation for Light DDD pattern
@@ -50,27 +50,9 @@ async function executeRawTest(actionName, params, isProd = false) {
  * @returns {Promise<Object>} Test result
  */
 async function testAction(actionUrl, params) {
-  const fetch = require('node-fetch');
+  const actionParams = parameters.filterActionParameters(params);
 
-  // Use business logic operation to filter parameters
-  const actionParams = filterActionParameters(params);
-
-  const response = await fetch(actionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(actionParams),
-  });
-
-  const responseBody = await response.json();
-
-  return {
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries()),
-    body: responseBody,
-  };
+  return await http.makeJsonPostRequest(actionUrl, actionParams);
 }
 
 module.exports = {
