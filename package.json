@@ -52,9 +52,7 @@
     "test:suite:list": "node scripts/test.js suite list",
     "test:suite:smoke": "node scripts/test.js suite smoke",
     "test:suite:regression": "node scripts/test.js suite regression",
-    "test:suite:performance": "node scripts/test.js suite performance",
-    "validate:scripts": "node scripts/test/validate-scripts.js",
-    "validate:formatting": "node scripts/test/validate-formatting.js"
+    "test:suite:performance": "node scripts/test.js suite performance"
   },
   "engines": {
     "node": ">=18"
