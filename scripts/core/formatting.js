@@ -95,6 +95,17 @@ function environment(env) {
 }
 
 /**
+ * Format status message with appropriate color
+ * @param {string} status - Status text (SUCCESS/ERROR)
+ * @param {number} code - HTTP status code
+ * @returns {string} Formatted status message
+ */
+function status(status, code) {
+  const color = code >= 200 && code < 300 ? 'green' : 'red';
+  return chalk[color](`Status: ${status.toUpperCase()} (${code})`);
+}
+
+/**
  * Format deployment start message
  * @param {string} message - Deployment message
  * @returns {string} Formatted deployment start message
@@ -158,6 +169,15 @@ function sectionHeader(message) {
 }
 
 /**
+ * Format section message with white color
+ * @param {string} message - Section message
+ * @returns {string} Formatted section message
+ */
+function section(message) {
+  return chalk.white(message);
+}
+
+/**
  * Format sub-information with indentation and muted color
  * @param {string} message - Sub-information message
  * @returns {string} Formatted sub-information
@@ -201,12 +221,14 @@ module.exports = {
   url,
   storage,
   environment,
+  status,
   deploymentStart,
   deploymentAction,
   celebration,
   actionUrl,
   timer,
   muted,
+  section,
   sectionHeader,
   subInfo,
   progress,
