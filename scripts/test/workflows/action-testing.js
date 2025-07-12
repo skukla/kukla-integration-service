@@ -5,7 +5,7 @@
 
 const format = require('../../core/formatting');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { isSuccessfulResponse, displayResponseData } = require('../operations/response-handling');
+const { isSuccessfulResponse } = require('../operations/response-handling');
 const { executeActionTest, executeRawTest } = require('../operations/test-execution');
 
 /**
@@ -25,34 +25,58 @@ async function actionTestingWorkflow(actionName, options = {}) {
       return await executeRawTest(actionName, params, isProd);
     }
 
-    // Step 1: Environment setup
+    // Step 1: Environment setup and display
     const environment = getEnvironmentString(isProd);
+    console.log(format.success(`Environment detected: ${format.environment(environment)}`));
+    console.log(format.success(`Action tested: ${actionName}`));
 
     // Step 2: Execute action test
     const response = await executeActionTest(actionName, params, isProd);
 
-    // Step 3: Display URL and status
+    // Step 3: Display URL
     console.log(format.url(response.actionUrl));
-    console.log();
 
-    // Step 4: Use domain-specific success logic
+    // Step 4: Display storage information if available
+    if (response.body && response.body.storage) {
+      const storageInfo = formatStorageInfo(response.body.storage);
+      console.log(format.storage(storageInfo));
+    }
+
+    console.log(); // Add blank line before status
+
+    // Step 5: Use domain-specific success logic
     const isSuccess = isSuccessfulResponse(response);
     console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', response.status));
 
-    const message = isSuccess
-      ? 'Test completed successfully'
-      : `Test failed with status ${response.status}`;
-    console.log(format.section(`Message: ${message}`));
+    // Step 6: Display response data in master branch format
+    if (isSuccess && response.body) {
+      if (response.body.message) {
+        console.log(format.section(`Message: ${response.body.message}`));
+      }
 
-    // Use domain-specific display logic
-    displayResponseData(response, isSuccess);
+      if (response.body.downloadUrl) {
+        console.log();
+        console.log(format.section('🔗 Download URL:'));
+        console.log(`   ${response.body.downloadUrl}`);
+      }
+
+      if (response.body.steps && Array.isArray(response.body.steps)) {
+        console.log();
+        console.log(format.section('Steps:'));
+        response.body.steps.forEach((step, index) => {
+          console.log(`${index + 1}. ${step}`);
+        });
+      }
+    } else if (!isSuccess && response.body && response.body.error) {
+      console.log(format.section(`Error: ${response.body.error}`));
+    }
 
     return {
       success: isSuccess,
       environment,
       actionName,
       status: response.status,
-      message: isSuccess ? null : message,
+      message: isSuccess ? null : response.body?.error || 'Test failed',
     };
   } catch (error) {
     console.log(format.error(`Action test failed: ${error.message}`));
@@ -62,6 +86,35 @@ async function actionTestingWorkflow(actionName, options = {}) {
       actionName,
     };
   }
+}
+
+/**
+ * Format storage information for display
+ * @param {Object} storage - Storage object from response
+ * @returns {string} Formatted storage information
+ */
+function formatStorageInfo(storage) {
+  const { provider, properties } = storage;
+
+  if (!provider) {
+    return 'Unknown Storage';
+  }
+
+  let info;
+  if (provider === 'app-builder') {
+    info = 'App Builder (Adobe I/O Files)';
+  } else if (provider === 's3') {
+    info = 'Amazon S3';
+    if (properties?.bucket) {
+      info += ` (${properties.bucket})`;
+    }
+  } else if (provider === 'error') {
+    info = 'Storage Failed';
+  } else {
+    info = provider.toUpperCase();
+  }
+
+  return info;
 }
 
 module.exports = {
