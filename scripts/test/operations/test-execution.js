@@ -3,7 +3,9 @@
  * Test domain specific operations for action execution
  */
 
-const { filterActionParameters, buildActionUrl, isSuccessfulResponse } = require('./index');
+const { filterActionParameters } = require('./parameter-handling');
+const { isSuccessfulResponse } = require('./response-handling');
+const { buildActionUrl } = require('./url-building');
 
 /**
  * Execute action test - Clean operation for Light DDD pattern

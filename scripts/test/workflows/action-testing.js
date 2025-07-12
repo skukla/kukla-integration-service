@@ -5,7 +5,7 @@
 
 const format = require('../../core/formatting');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { isSuccessfulResponse, displayResponseData } = require('../operations');
+const { isSuccessfulResponse, displayResponseData } = require('../operations/response-handling');
 const { executeActionTest, executeRawTest } = require('../operations/test-execution');
 
 /**
