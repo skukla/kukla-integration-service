@@ -93,11 +93,14 @@ async function meshUpdateStep(options = {}) {
 
 /**
  * Wait for mesh deployment to complete by polling status
+ * Enhanced polling with proper status detection
  * @returns {Promise<Object>} Status result
  */
 async function waitForMeshDeployment() {
-  const maxAttempts = 30; // 30 attempts * 3 seconds = 90 seconds max
-  const pollInterval = 3000; // 3 seconds between polls
+  const maxTimeout = 5 * 60 * 1000; // 5 minutes total
+  const pollInterval = 30 * 1000; // 30 seconds between polls
+  const maxAttempts = Math.ceil(maxTimeout / pollInterval);
+
   let attempts = 0;
 
   while (attempts < maxAttempts) {
@@ -107,20 +110,35 @@ async function waitForMeshDeployment() {
       const statusCommand = 'aio api-mesh:status';
       const { stdout } = await execAsync(statusCommand);
 
+      // Check for successful provisioning
       if (stdout.includes('Mesh provisioned successfully.')) {
         return { success: true };
       }
 
-      if (stdout.includes('failed') || stdout.includes('error') || stdout.includes('Failed')) {
+      // Check for various failure states
+      if (
+        stdout.includes('failed') ||
+        stdout.includes('error') ||
+        stdout.includes('Failed') ||
+        stdout.includes('ERROR')
+      ) {
         return {
           success: false,
           error: 'Mesh deployment failed - check status manually',
         };
       }
 
-      // Continue polling silently - let the spinner show progress
+      // Check for in-progress states
+      if (stdout.includes('provisioning') || stdout.includes('Provisioning')) {
+        // Continue polling - mesh is still being provisioned
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
+
+      // If we reach here, status is unclear but not failed - continue polling
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     } catch (error) {
+      // For status check failures, only fail if we're near the end
       if (attempts >= maxAttempts - 2) {
         return {
           success: false,
@@ -128,13 +146,15 @@ async function waitForMeshDeployment() {
         };
       }
 
+      // Continue polling with backoff
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
+  const timeoutMinutes = Math.round(maxTimeout / 60000);
   return {
     success: false,
-    error: 'Mesh deployment timed out (90 seconds) - check status manually',
+    error: `Mesh deployment timed out (${timeoutMinutes} minutes) - check status manually`,
   };
 }
 
