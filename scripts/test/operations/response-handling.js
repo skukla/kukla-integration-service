@@ -80,20 +80,20 @@ function displayResponseContent(isSuccess, body) {
  */
 function displaySuccessContent(body) {
   if (body.message) {
-    console.log(format.section(`Message: ${body.message}`));
+    console.log(`${format.messageLabel('Message:')} ${body.message}`);
   }
 
   if (body.downloadUrl) {
     console.log();
-    console.log(format.section('🔗 Download URL:'));
-    console.log(`   ${body.downloadUrl}`);
+    console.log(format.downloadHeader('🔗 Download URL:'));
+    console.log(`   ${format.downloadUrl(body.downloadUrl)}`);
   }
 
   if (body.steps && Array.isArray(body.steps)) {
     console.log();
-    console.log(format.section('Steps:'));
+    console.log(format.stepsHeader('Steps:'));
     body.steps.forEach((step, index) => {
-      console.log(`${index + 1}. ${step}`);
+      console.log(format.step(`${index + 1}. ${step}`));
     });
   }
 }
