@@ -9,6 +9,7 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const { loadConfig } = require('../../../config');
+const { response } = require('../http/responses');
 
 /**
  * Standard action initialization that handles all common setup
@@ -109,8 +110,7 @@ function wrapAction(actionFn, options = {}) {
       }
 
       // Return standardized error response
-      const { error: errorResponse } = require('../http/responses');
-      return errorResponse(error, {});
+      return response.error(error, {});
     }
   };
 }

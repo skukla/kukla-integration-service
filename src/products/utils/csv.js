@@ -52,10 +52,11 @@ const CSV_HEADERS = [
  * Pure function that generates CSV content from product objects.
  *
  * @param {Object[]} products - Array of product objects
+ * @param {Object} config - Configuration object
  * @returns {Promise<Object>} CSV generation result
  * @throws {Error} If CSV generation fails
  */
-async function createCsv(products) {
+async function createCsv(products, config) {
   try {
     // Try using the core CSV generation first
     try {
@@ -65,6 +66,7 @@ async function createCsv(products) {
         rowMapper: mapProductToCsvRow,
         compression: false, // Disable compression to avoid dependency issues
         preContent: RECS_HEADERS.join('\n') + '\n', // Add RECS headers before CSV data
+        config, // Pass configuration for CSV generation
       });
 
       // Convert Buffer to string for compatibility

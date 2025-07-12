@@ -7,6 +7,7 @@
 
 const { fetchEnrichedProductsFromMesh } = require('../operations/mesh-integration');
 const { buildProducts } = require('../operations/transformation');
+const { validateMeshInput } = require('../operations/validation');
 const { createCsv } = require('../utils/csv');
 
 /**
@@ -22,13 +23,16 @@ const { createCsv } = require('../utils/csv');
  * @returns {Promise<Object>} Export result with mesh data, built products, and optionally CSV
  */
 async function exportMeshProducts(params, config, trace = null, includeCSV = true) {
-  // Step 1: Fetch enriched products from mesh (validation handled internally)
+  // Step 1: Validate mesh configuration and credentials
+  await validateMeshInput(params, config);
+
+  // Step 2: Fetch enriched products from mesh
   const meshData = await fetchEnrichedProductsFromMesh(config, params, trace);
 
-  // Sort products by SKU for consistent output
+  // Step 3: Sort products by SKU for consistent output
   meshData.products.sort((a, b) => a.sku.localeCompare(b.sku));
 
-  // Step 2: Build product data using shared transformation
+  // Step 4: Build product data using shared transformation
   const builtProducts = await buildProducts(meshData.products, config);
 
   // Base result object
@@ -39,7 +43,7 @@ async function exportMeshProducts(params, config, trace = null, includeCSV = tru
     totalCount: meshData.total_count,
   };
 
-  // Step 3: Generate CSV if requested
+  // Step 5: Generate CSV if requested
   if (includeCSV) {
     const csvResult = await createCsv(builtProducts, config);
     result.csvData = csvResult;

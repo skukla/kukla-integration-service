@@ -14,15 +14,25 @@ const { exportMeshProducts } = require('../../src/products/workflows/mesh-export
  */
 async function getProductsMeshBusinessLogic(context) {
   const { extractedParams, webActionParams, config, trace, core } = context;
+  const steps = [];
 
   // Merge parameters for format detection
   const allActionParams = { ...webActionParams, ...extractedParams };
   const format = allActionParams.format || 'csv';
 
-  // Step 1-4: Export products via mesh
+  // Step 1: Validate mesh configuration and credentials
+  steps.push(core.formatStepMessage('validate-mesh', 'success'));
+
+  // Step 2-4: Export products via mesh
   const includeCSV = format !== 'json';
   const exportResult = await exportMeshProducts(extractedParams, config, trace, includeCSV);
-  const { meshData, builtProducts, csvData } = exportResult;
+  const { meshData, builtProducts, csvData, productCount } = exportResult;
+
+  // Step 2: Fetch products from mesh
+  steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: productCount }));
+
+  // Step 3: Transform products
+  steps.push(core.formatStepMessage('build-products', 'success', { count: productCount }));
 
   // Branch based on requested format
   if (format === 'json') {
@@ -30,16 +40,21 @@ async function getProductsMeshBusinessLogic(context) {
     return core.success(
       {
         products: builtProducts,
-        total_count: builtProducts.length,
+        total_count: productCount,
         performance: meshData.performance,
+        steps,
       },
       'Product data retrieved successfully via API Mesh',
       {}
     );
   }
 
+  // Step 4: Generate CSV
+  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
+
   // Step 5: Store CSV using file workflow
   const storageResult = await exportCsvWithStorage(csvData.content, config, extractedParams);
+  steps.push(core.formatStepMessage('store-csv', 'success', { info: storageResult }));
 
   // Calculate total duration for performance metrics
   const endTime = Date.now();
@@ -48,7 +63,7 @@ async function getProductsMeshBusinessLogic(context) {
   // Return CSV export response with performance metrics
   return core.success(
     {
-      message: 'Product export completed successfully',
+      steps,
       downloadUrl: storageResult.downloadUrl,
       performance: {
         // Include mesh performance metrics
@@ -61,7 +76,7 @@ async function getProductsMeshBusinessLogic(context) {
       },
       storage: storageResult.storage,
     },
-    'Product export completed via API Mesh',
+    'Product export completed successfully',
     {}
   );
 }
