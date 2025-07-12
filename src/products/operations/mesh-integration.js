@@ -62,8 +62,8 @@ async function makeMeshRequestWithRetry(requestConfig, options = {}) {
  */
 function createMeshQuery() {
   return `
-    query GetEnrichedProducts($pageSize: Int, $adminUsername: String, $adminPassword: String) {
-      mesh_products_enriched(pageSize: $pageSize, adminUsername: $adminUsername, adminPassword: $adminPassword) {
+    query GetEnrichedProducts($pageSize: Int, $maxPages: Int) {
+      mesh_products_enriched(pageSize: $pageSize, maxPages: $maxPages) {
         products {
           sku
           name
@@ -125,8 +125,7 @@ function createMeshRequestConfig(config, credentials) {
   const query = createMeshQuery();
   const variables = {
     pageSize: config.products.pagination.pageSize,
-    adminUsername: adminCredentials.adminUsername,
-    adminPassword: adminCredentials.adminPassword,
+    maxPages: config.products.pagination.maxPages,
   };
 
   const requestBody = { query, variables };
