@@ -1,14 +1,16 @@
 /**
  * API Testing Workflow
- * Tests API endpoints with beautiful formatted output
+ * Tests API endpoints
  * Following Light DDD principles and scripts standards
  */
 
 const format = require('../../core/formatting');
+const { response: responseUtils } = require('../../core/utils');
+const { getEnvironmentString } = require('../../core/utils/environment');
 const { buildActionUrl } = require('../operations/url-building');
 
 /**
- * API testing workflow with beautiful formatting
+ * API testing workflow
  * @param {string} endpoint - API endpoint to test
  * @param {Object} options - Testing options
  * @param {Object} options.params - API parameters
@@ -18,19 +20,19 @@ const { buildActionUrl } = require('../operations/url-building');
  */
 async function apiTestingWorkflow(endpoint, options = {}) {
   const { params = {}, method = 'GET', isProd = false } = options;
-  const environment = isProd ? 'production' : 'staging';
+  const environment = getEnvironmentString(isProd);
 
   try {
-    console.log(format.info(`🔗 Testing API endpoint: ${endpoint}`));
-    console.log(format.section(`Environment: ${format.environment(environment)}`));
+    // Step 1: Display environment and endpoint info (aligned with action testing)
+    console.log(format.success(`Environment detected: ${format.environment(environment)}`));
+    console.log(format.success(`API endpoint tested: ${endpoint}`));
     console.log();
 
-    // Step 1: Build API URL
+    // Step 2: Build and display API URL
     const apiUrl = buildActionUrl(endpoint, params, isProd);
     console.log(format.url(apiUrl));
-    console.log();
 
-    // Step 2: Execute API call
+    // Step 3: Execute API call
     const fetch = require('node-fetch');
     const startTime = Date.now();
 
@@ -46,16 +48,21 @@ async function apiTestingWorkflow(endpoint, options = {}) {
     const duration = endTime - startTime;
     const responseBody = await response.json();
 
-    // Step 3: Display results with beautiful formatting
+    // Step 4: Display storage info if available (aligned with action testing)
+    if (responseBody && responseBody.storage) {
+      const storageInfo = responseUtils.formatStorageInfo(responseBody.storage);
+      console.log(format.storage(storageInfo));
+    }
+    console.log();
+
+    // Step 5: Display status with response time (unique to API testing)
     const isSuccess = response.status >= 200 && response.status < 300;
     console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', response.status));
     console.log(format.section(`Response Time: ${duration}ms`));
-    console.log();
 
-    if (isSuccess) {
-      console.log(format.success('✅ API test completed successfully'));
-    } else {
-      console.log(format.error(`❌ API test failed: ${response.statusText}`));
+    // Step 6: Display message if available (aligned with action testing)
+    if (responseBody && responseBody.message) {
+      console.log(`${format.messageLabel('Message:')} ${responseBody.message}`);
     }
 
     console.log();
