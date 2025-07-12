@@ -39,10 +39,17 @@ async function storeCsvFile(csvData, config, params, fileName) {
     const storage = await initializeStorage(config, params);
     const result = await storage.write(finalFileName, csvData);
 
-    // Include bucket name from configuration (for S3 storage)
+    // Include configuration-based information in properties
     const properties = { ...result.properties };
+
+    // Add bucket name from configuration (for S3 storage)
     if (storage.provider === 's3' && config.storage.s3?.bucket) {
       properties.bucket = config.storage.s3.bucket;
+    }
+
+    // Add directory from configuration for display purposes
+    if (config.storage.directory) {
+      properties.directory = config.storage.directory;
     }
 
     return {
