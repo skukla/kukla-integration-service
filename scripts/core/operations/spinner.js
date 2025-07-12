@@ -1,6 +1,6 @@
 /**
  * Scripts Core Spinner Operations
- * Shared spinner operations used across all script domains
+ * Consistent spinner → success/failure pattern with proper formatting
  */
 
 const ora = require('ora');
@@ -29,33 +29,53 @@ function updateSpinner(spinner, text) {
 }
 
 /**
- * Stop spinner with success
+ * Stop spinner with success using our green checkmark format
  * @param {Object} spinner - Ora spinner instance
  * @param {string} text - Success text
  */
 function succeedSpinner(spinner, text) {
-  // Use muted formatting since ora adds its own green checkmark
-  spinner.succeed(format.muted(text));
+  spinner.stop();
+  console.log(format.success(text));
 }
 
 /**
- * Stop spinner with failure
+ * Stop spinner with failure using our red X format
  * @param {Object} spinner - Ora spinner instance
  * @param {string} text - Failure text
  */
 function failSpinner(spinner, text) {
-  // Use muted formatting since ora adds its own red X
-  spinner.fail(format.muted(text));
+  spinner.stop();
+  console.log(format.error(text));
 }
 
 /**
- * Stop spinner with warning
+ * Stop spinner with warning using our yellow warning format
  * @param {Object} spinner - Ora spinner instance
  * @param {string} text - Warning text
  */
 function warnSpinner(spinner, text) {
-  // Use muted formatting since ora adds its own yellow warning
-  spinner.warn(format.muted(text));
+  spinner.stop();
+  console.log(format.warning(text));
+}
+
+/**
+ * Create a spinner, run an async function, then succeed/fail based on result
+ * @param {string} spinnerText - Text to show while spinning
+ * @param {string} successText - Text to show on success
+ * @param {Function} asyncFn - Async function to execute
+ * @returns {Promise} Result of the async function
+ */
+async function withSpinner(spinnerText, successText, asyncFn) {
+  const spinner = createSpinner(spinnerText);
+
+  try {
+    const result = await asyncFn();
+    succeedSpinner(spinner, successText);
+    return result;
+  } catch (error) {
+    failSpinner(spinner, `Failed: ${error.message}`);
+    throw error;
+  }
 }
 
 module.exports = {
@@ -64,4 +84,5 @@ module.exports = {
   succeedSpinner,
   failSpinner,
   warnSpinner,
+  withSpinner,
 };

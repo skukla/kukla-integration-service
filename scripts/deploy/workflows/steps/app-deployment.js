@@ -1,7 +1,6 @@
 /**
  * App Deployment Step
- * Handles Adobe I/O App Builder deployment
- * Following standardized deploy domain pattern
+ * Handles Adobe I/O App Builder deployment, letting CLI provide its own completion message
  */
 
 const { spawn } = require('child_process');
@@ -9,7 +8,7 @@ const { spawn } = require('child_process');
 const format = require('../../../core/formatting');
 
 /**
- * Deploy App Builder application
+ * Deploy App Builder application, relying on Adobe CLI for completion feedback
  * @param {Object} options - Deployment options
  * @param {boolean} options.isProd - Whether deploying to production
  * @returns {Promise<Object>} Deployment result
@@ -17,18 +16,19 @@ const format = require('../../../core/formatting');
 async function appDeploymentStep(options = {}) {
   const { isProd = false } = options;
 
-  console.log(format.info('Deploying App Builder actions'));
-
   const deployCommand = isProd ? 'aio app deploy --workspace=Production' : 'aio app deploy';
   const [cmd, ...args] = deployCommand.split(' ');
 
-  // Standardized deploy domain command execution pattern
-  const deployProcess = spawn(cmd, args, {
-    stdio: 'inherit',
-    shell: true,
-  });
-
   try {
+    // Step 1: Start deployment with brief delay
+    await format.sleep(300);
+
+    // Step 2: Let Adobe CLI show its natural output and completion message
+    const deployProcess = spawn(cmd, args, {
+      stdio: 'inherit',
+      shell: true,
+    });
+
     await new Promise((resolve, reject) => {
       deployProcess.on('close', (code) => {
         if (code !== 0) {
@@ -43,10 +43,12 @@ async function appDeploymentStep(options = {}) {
       });
     });
 
-    console.log(format.success('✅ App Builder deployment completed'));
+    // Brief pause after Adobe CLI output for clean separation
+    await format.sleep(500);
+
     return {
       success: true,
-      step: 'App Builder deployed',
+      step: 'App Builder deployed successfully',
     };
   } catch (error) {
     console.log(format.error(`App deployment failed: ${error.message}`));
