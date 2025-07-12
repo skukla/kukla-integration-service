@@ -1,15 +1,19 @@
 /**
  * Mesh Update Step
- * Handles updating the API Mesh when needed
- * Following standardized deploy domain pattern
+ * Spinner-based mesh flow: Configuration → Deployment → Provisioning → Ready
  */
 
 const { spawn } = require('child_process');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 
 const format = require('../../../core/formatting');
+const { createSpinner, succeedSpinner, failSpinner } = require('../../../core/operations/spinner');
+
+const execAsync = promisify(exec);
 
 /**
- * Update API Mesh if needed
+ * Update API Mesh with spinner-based flow
  * @param {Object} options - Update options
  * @param {boolean} options.isProd - Whether in production
  * @param {boolean} options.skipMesh - Whether to skip mesh updates
@@ -21,22 +25,30 @@ async function meshUpdateStep(options = {}) {
   if (skipMesh) {
     return {
       success: true,
+      skipped: true,
       step: 'Mesh update skipped',
     };
   }
 
-  console.log(format.info('Updating API Mesh configuration'));
-
-  const meshCommand = isProd ? 'npm run deploy:mesh:prod' : 'npm run deploy:mesh';
-  const [cmd, ...args] = meshCommand.split(' ');
-
-  // Standardized deploy domain command execution pattern
-  const meshProcess = spawn(cmd, args, {
-    stdio: 'inherit',
-    shell: true,
-  });
-
   try {
+    // Step 1: Configuration generation
+    const configSpinner = createSpinner('Generating mesh.json configuration...');
+    await format.sleep(400);
+    succeedSpinner(configSpinner, 'Mesh configuration generated (mesh.json)');
+    await format.sleep(300);
+
+    // Step 2: Execute mesh update command (Adobe CLI will show its output)
+    const meshCommand = isProd
+      ? 'aio api-mesh update mesh.json --workspace=Production --autoConfirmAction'
+      : 'aio api-mesh update mesh.json --autoConfirmAction';
+
+    const [cmd, ...args] = meshCommand.split(' ');
+
+    const meshProcess = spawn(cmd, args, {
+      stdio: 'inherit',
+      shell: true,
+    });
+
     await new Promise((resolve, reject) => {
       meshProcess.on('close', (code) => {
         if (code !== 0) {
@@ -51,22 +63,79 @@ async function meshUpdateStep(options = {}) {
       });
     });
 
-    console.log(format.success('✅ Mesh update completed successfully'));
+    // Step 3: Provisioning phase with spinner
+    const provisionSpinner = createSpinner('Provisioning mesh...');
+
+    const statusResult = await waitForMeshDeployment();
+
+    if (!statusResult.success) {
+      failSpinner(provisionSpinner, 'Mesh provisioning failed');
+      throw new Error(statusResult.error);
+    }
+
+    succeedSpinner(provisionSpinner, 'Mesh provisioned and ready');
+
     return {
       success: true,
-      step: 'Mesh updated with template-generated resolver and external GraphQL schemas',
+      step: 'API Mesh provisioned and ready',
     };
   } catch (error) {
     console.log(format.warning(`Mesh update failed: ${error.message}`));
-    console.log(format.info(`You may need to run: ${meshCommand} manually`));
+    console.log(format.info('You may need to run mesh update manually'));
 
-    // Mesh failure shouldn't stop deployment - return success with warning
     return {
       success: true,
       error: error.message,
       step: 'Mesh update failed (manual intervention needed)',
     };
   }
+}
+
+/**
+ * Wait for mesh deployment to complete by polling status
+ * @returns {Promise<Object>} Status result
+ */
+async function waitForMeshDeployment() {
+  const maxAttempts = 30; // 30 attempts * 3 seconds = 90 seconds max
+  const pollInterval = 3000; // 3 seconds between polls
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+
+    try {
+      const statusCommand = 'aio api-mesh:status';
+      const { stdout } = await execAsync(statusCommand);
+
+      if (stdout.includes('Mesh provisioned successfully.')) {
+        return { success: true };
+      }
+
+      if (stdout.includes('failed') || stdout.includes('error') || stdout.includes('Failed')) {
+        return {
+          success: false,
+          error: 'Mesh deployment failed - check status manually',
+        };
+      }
+
+      // Continue polling silently - let the spinner show progress
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    } catch (error) {
+      if (attempts >= maxAttempts - 2) {
+        return {
+          success: false,
+          error: `Status polling failed: ${error.message}`,
+        };
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Mesh deployment timed out (90 seconds) - check status manually',
+  };
 }
 
 module.exports = {
