@@ -158,10 +158,15 @@ function createAppBuilderStorageWrapper(files, config) {
  */
 function createS3WriteMethod(s3Client, s3Config, config) {
   return async function write(fileName, content) {
-    const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
+    // Include both prefix and storage directory in the key
+    const storageDirectory = config.storage.directory || '';
+    const fullPath = s3Config.prefix
+      ? `${s3Config.prefix}${storageDirectory}${fileName}`
+      : `${storageDirectory}${fileName}`;
+
     const command = new PutObjectCommand({
       Bucket: s3Config.bucket,
-      Key: key,
+      Key: fullPath,
       Body: content,
       ContentType: 'text/csv',
     });
@@ -173,7 +178,7 @@ function createS3WriteMethod(s3Client, s3Config, config) {
       buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fileName)}`;
 
     return {
-      fileName: key,
+      fileName: fullPath, // Return the full path including storage directory
       url: actionUrl,
       downloadUrl: actionUrl,
       properties: {
@@ -182,6 +187,7 @@ function createS3WriteMethod(s3Client, s3Config, config) {
         lastModified: new Date().toISOString(),
         contentType: 'text/csv',
         bucket: s3Config.bucket, // Include bucket name for storage display
+        directory: storageDirectory, // Include directory for proper display
       },
     };
   };
@@ -195,12 +201,15 @@ function createS3WriteMethod(s3Client, s3Config, config) {
  * @param {Object} s3Config - S3 configuration
  * @returns {Function} List method implementation
  */
-function createS3ListMethod(s3Client, s3Config) {
+function createS3ListMethod(s3Client, s3Config, config) {
   return async function list() {
-    const prefix = s3Config.prefix || '';
+    // Include both prefix and storage directory in the list prefix
+    const storageDirectory = config.storage.directory || '';
+    const fullPrefix = s3Config.prefix ? `${s3Config.prefix}${storageDirectory}` : storageDirectory;
+
     const command = new ListObjectsV2Command({
       Bucket: s3Config.bucket,
-      Prefix: prefix,
+      Prefix: fullPrefix,
     });
 
     const response = await s3Client.send(command);
@@ -210,7 +219,7 @@ function createS3ListMethod(s3Client, s3Config) {
     }
 
     return response.Contents.map((item) => ({
-      name: item.Key.replace(prefix, ''),
+      name: item.Key.replace(fullPrefix, ''),
       fullPath: item.Key,
       size: formatFileSize(item.Size),
       lastModified: formatDate(item.LastModified),
@@ -229,6 +238,8 @@ function createS3ListMethod(s3Client, s3Config) {
  * @returns {Object} Storage wrapper with methods
  */
 function createS3StorageWrapper(s3Client, s3Config, config) {
+  const storageDirectory = config.storage.directory || '';
+
   return {
     provider: 's3',
     client: s3Client,
@@ -238,10 +249,13 @@ function createS3StorageWrapper(s3Client, s3Config, config) {
     write: createS3WriteMethod(s3Client, s3Config, config),
 
     async read(fileName) {
-      const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
+      // Include both prefix and storage directory in the key
+      const fullPath = s3Config.prefix
+        ? `${s3Config.prefix}${storageDirectory}${fileName}`
+        : `${storageDirectory}${fileName}`;
       const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
-        Key: key,
+        Key: fullPath,
       });
 
       const response = await s3Client.send(command);
@@ -253,22 +267,28 @@ function createS3StorageWrapper(s3Client, s3Config, config) {
     },
 
     async delete(fileName) {
-      const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
+      // Include both prefix and storage directory in the key
+      const fullPath = s3Config.prefix
+        ? `${s3Config.prefix}${storageDirectory}${fileName}`
+        : `${storageDirectory}${fileName}`;
       const command = new DeleteObjectCommand({
         Bucket: s3Config.bucket,
-        Key: key,
+        Key: fullPath,
       });
 
       await s3Client.send(command);
     },
 
-    list: createS3ListMethod(s3Client, s3Config),
+    list: createS3ListMethod(s3Client, s3Config, config),
 
     async getProperties(fileName) {
-      const key = s3Config.prefix ? `${s3Config.prefix}${fileName}` : fileName;
+      // Include both prefix and storage directory in the key
+      const fullPath = s3Config.prefix
+        ? `${s3Config.prefix}${storageDirectory}${fileName}`
+        : `${storageDirectory}${fileName}`;
       const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
-        Key: key,
+        Key: fullPath,
       });
 
       try {
