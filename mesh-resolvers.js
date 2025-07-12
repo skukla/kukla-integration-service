@@ -1,3 +1,4 @@
+/** METADATA: {"templateHash":"b425ba561e3ee2f151cfd829bcb92c793a3cf551d7d53da2fadbbde71a99420b","configHash":"a68bdefabf47a12378db92d2939c5be1c4cd0635e580227604dc78add3e8cb56","generatedAt":"2025-07-12T05:18:34.191Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Consolidated Products (Template-Generated)
  *
@@ -6,8 +7,8 @@
  *
  * Template Variables:
  * - https://citisignal-com774.adobedemo.com - Commerce instance base URL
- * - sku,name,status,price,category_links,custom_attributes,media_gallery_entries - Product fields to fetch
- * - 300000 - Category cache TTL in milliseconds
+ * - {{{COMMERCE_PRODUCT_FIELDS}}} - Product fields to fetch
+ * - {{{MESH_CACHE_TTL}}} - Category cache TTL in milliseconds
  */
 
 // =============================================================================
@@ -15,9 +16,8 @@
 // =============================================================================
 
 const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
-const productFields =
-  'sku,name,status,price,category_links,custom_attributes,media_gallery_entries';
-const CACHE_TTL = parseInt('300000');
+const productFields = '{{{COMMERCE_PRODUCT_FIELDS}}}';
+const CACHE_TTL = parseInt('{{{MESH_CACHE_TTL}}}');
 const batchSize = 20;
 const categoryCache = new Map();
 

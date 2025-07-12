@@ -6,14 +6,13 @@
  */
 
 const { parseDeployArgs, showDeployHelp } = require('./core/args');
-const format = require('./core/formatting');
 const { executeScriptWithExit } = require('./core/operations/script-framework');
-const { parseEnvironmentFromArgs, getEnvironmentString } = require('./core/utils/environment');
+const { parseEnvironmentFromArgs } = require('./core/utils/environment');
 const { appDeploymentWorkflow } = require('./deploy/workflows/app-deployment');
 const { meshDeploymentWorkflow } = require('./deploy/workflows/mesh-deployment');
 
 /**
- * Main function - Clean entry point
+ * Main function - Clean entry point with beautiful master branch formatting
  * Only handles argument processing and workflow delegation
  */
 async function main() {
@@ -24,11 +23,8 @@ async function main() {
     return;
   }
 
-  // Simple environment detection using shared utility
+  // Step 1: Simple environment detection using shared utility
   const isProd = parseEnvironmentFromArgs(args);
-  const environment = getEnvironmentString(isProd);
-
-  console.log(format.success(`Environment: ${format.environment(environment)}`));
 
   let result;
 

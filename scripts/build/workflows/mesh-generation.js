@@ -7,7 +7,6 @@
 const { meshConfigExtractionStep } = require('./steps/mesh-config-extraction');
 const { templateProcessingStep } = require('./steps/template-processing');
 const { loadConfig } = require('../../../config');
-const format = require('../../core/formatting');
 
 /**
  * Generate mesh resolver and configuration using build workflow steps
@@ -20,19 +19,17 @@ async function generateMeshResolver(options = {}) {
   const steps = [];
   
   try {
-    console.log(format.info('Generating mesh resolver and configuration...'));
-
-    // Load configuration
+    // Step 1: Load configuration
     const config = loadConfig({}, isProd);
 
-    // Step 1: Extract mesh configuration
+    // Step 2: Extract mesh configuration
     const meshConfigResult = await meshConfigExtractionStep({ isProd });
     if (!meshConfigResult.success) {
       throw new Error(`Mesh config extraction failed: ${meshConfigResult.error}`);
     }
     steps.push('Mesh configuration extracted');
 
-    // Step 2: Process template and generate resolver
+    // Step 3: Process template and generate resolver
     const templateResult = await templateProcessingStep({
       config,
       meshConfig: meshConfigResult.meshConfig,
@@ -43,14 +40,9 @@ async function generateMeshResolver(options = {}) {
     steps.push('Mesh resolver template processed');
     steps.push('Mesh resolver file generated');
 
-    console.log(format.success('✅ Mesh generation completed successfully'));
-    steps.forEach((step, index) => {
-      console.log(format.info(`   ${index + 1}. ${step}`));
-    });
-
     return {
       success: true,
-      generated: true,
+      generated: templateResult.resolverGenerated,
       workflow: 'mesh-generation-workflow',
       steps,
       results: {
