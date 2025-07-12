@@ -181,6 +181,7 @@ function createS3WriteMethod(s3Client, s3Config, config) {
         size: content.length,
         lastModified: new Date().toISOString(),
         contentType: 'text/csv',
+        bucket: s3Config.bucket, // Include bucket name for storage display
       },
     };
   };
