@@ -39,11 +39,22 @@
     "deploy:prod": "node scripts/deploy.js --environment=production",
     "deploy:mesh": "node scripts/deploy.js --mesh-only",
     "deploy:mesh:prod": "node scripts/deploy.js --mesh-only --environment=production",
-    "test": "node scripts/test.js",
     "test:action": "node scripts/test.js",
+    "test:action:prod": "node scripts/test.js --prod",
+    "test:action:raw": "node scripts/test.js --raw",
     "test:api": "node scripts/test.js api",
+    "test:api:prod": "node scripts/test.js api --prod",
     "test:perf": "node scripts/test.js perf",
-    "test:suite": "node scripts/test.js suite"
+    "test:perf:prod": "node scripts/test.js perf --prod",
+    "test:perf:list": "node scripts/test.js perf list",
+    "test:suite": "node scripts/test.js suite",
+    "test:suite:prod": "node scripts/test.js suite --prod",
+    "test:suite:list": "node scripts/test.js suite list",
+    "test:suite:smoke": "node scripts/test.js suite smoke",
+    "test:suite:regression": "node scripts/test.js suite regression",
+    "test:suite:performance": "node scripts/test.js suite performance",
+    "validate:scripts": "node scripts/test/validate-scripts.js",
+    "validate:formatting": "node scripts/test/validate-formatting.js"
   },
   "engines": {
     "node": ">=18"
