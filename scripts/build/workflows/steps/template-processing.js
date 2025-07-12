@@ -107,9 +107,11 @@ function processTemplate(templateContent, config) {
 
   // Replace common configuration placeholders
   const replacements = {
-    '{{{COMMERCE_BASE_URL}}}': config.commerce?.baseUrl || 'https://default.commerce.url',
-    '{{{MESH_API_KEY}}}': config.mesh?.apiKey || 'default-api-key',
-    '{{{ENVIRONMENT}}}': config.environment || 'staging',
+    '{{{COMMERCE_BASE_URL}}}': config.commerce.baseUrl,
+    '{{{MESH_API_KEY}}}': config.mesh.apiKey,
+    '{{{ENVIRONMENT}}}': config.environment,
+    '{{{COMMERCE_PRODUCT_FIELDS}}}': config.products.fields.export.join(','),
+    '{{{MESH_CACHE_TTL}}}': config.performance.caching.categories.meshTtl,
   };
 
   Object.entries(replacements).forEach(([placeholder, value]) => {
