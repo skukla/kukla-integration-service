@@ -178,6 +178,51 @@ function section(message) {
 }
 
 /**
+ * Format message label with white color
+ * @param {string} label - Label text
+ * @returns {string} Formatted label
+ */
+function messageLabel(label) {
+  return chalk.white(label);
+}
+
+/**
+ * Format download URL with blue color
+ * @param {string} url - URL to format
+ * @returns {string} Formatted download URL
+ */
+function downloadUrl(url) {
+  return chalk.blue(url);
+}
+
+/**
+ * Format download URL header with white color
+ * @param {string} header - Header text
+ * @returns {string} Formatted download header
+ */
+function downloadHeader(header) {
+  return chalk.white(header);
+}
+
+/**
+ * Format steps header with white color
+ * @param {string} header - Header text
+ * @returns {string} Formatted steps header
+ */
+function stepsHeader(header) {
+  return chalk.white(header);
+}
+
+/**
+ * Format individual step with green color
+ * @param {string} step - Step text
+ * @returns {string} Formatted step
+ */
+function step(step) {
+  return chalk.green(step);
+}
+
+/**
  * Format sub-information with indentation and muted color
  * @param {string} message - Sub-information message
  * @returns {string} Formatted sub-information
@@ -234,4 +279,9 @@ module.exports = {
   progress,
   sectionSeparator,
   sleep,
+  messageLabel,
+  downloadUrl,
+  downloadHeader,
+  stepsHeader,
+  step,
 };
