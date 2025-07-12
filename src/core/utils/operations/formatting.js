@@ -13,10 +13,13 @@ function formatStoreCsvStepMessage(info) {
     const size = parseInt(info.properties.size) || info.properties.size;
     const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
 
-    // Always show as public/filename for consistent user experience
-    // Use the clean filename from properties.name
+    // Use directory from configuration instead of hardcoding
     const cleanFileName = info.properties.name;
-    const displayPath = `public/${cleanFileName}`;
+    const directory = info.properties.directory;
+
+    // Ensure directory ends with a slash for proper path construction
+    const normalizedDirectory = directory.endsWith('/') ? directory : `${directory}/`;
+    const displayPath = `${normalizedDirectory}${cleanFileName}`;
 
     return `Successfully stored CSV file as ${displayPath} (${formattedSize})`;
   }
