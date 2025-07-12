@@ -177,35 +177,46 @@ function buildCategoryMapFromCache(categoryIds) {
 // =============================================================================
 
 /**
- * Fetch all products with pagination and OAuth authentication
+ * Fetch all products with pagination and bearer token authentication
  */
 async function fetchAllProducts(context, pageSize, maxPages) {
   const allProducts = [];
   let currentPage = 1;
-  const oauthParams = extractOAuthCredentials(context);
 
   try {
+    console.log('DEBUG: Getting admin token...');
+    const bearerToken = await getAdminToken(context);
+    console.log('DEBUG: Got admin token:', bearerToken ? 'SUCCESS' : 'FAILED');
+
     while (currentPage <= maxPages) {
       const url = `${commerceBaseUrl}/rest/V1/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}&fields=${productFields}`;
+      console.log(`DEBUG: Fetching products from URL: ${url}`);
 
-      const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          Authorization: authHeader,
+          Authorization: `Bearer ${bearerToken}`,
           'Content-Type': 'application/json',
         },
       });
 
+      console.log(`DEBUG: Response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`DEBUG: Error response body: ${errorText}`);
         throw new Error(`Products API request failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log(`DEBUG: Response data:`, JSON.stringify(data).substring(0, 200) + '...');
+
       if (!data.items || !Array.isArray(data.items)) {
+        console.log('DEBUG: No items in response, breaking');
         break;
       }
 
+      console.log(`DEBUG: Found ${data.items.length} products in page ${currentPage}`);
       allProducts.push(...data.items);
 
       if (
@@ -213,14 +224,19 @@ async function fetchAllProducts(context, pageSize, maxPages) {
         !data.total_count ||
         allProducts.length >= data.total_count
       ) {
+        console.log(
+          `DEBUG: Stopping pagination - items: ${data.items.length}, pageSize: ${pageSize}, total_count: ${data.total_count}, allProducts: ${allProducts.length}`
+        );
         break;
       }
 
       currentPage++;
     }
 
+    console.log(`DEBUG: Returning ${allProducts.length} total products`);
     return allProducts;
   } catch (error) {
+    console.log(`DEBUG: Error in fetchAllProducts: ${error.message}`);
     throw new Error(`Failed to fetch products: ${error.message}`);
   }
 }

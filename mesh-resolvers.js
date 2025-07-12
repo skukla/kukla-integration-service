@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"b425ba561e3ee2f151cfd829bcb92c793a3cf551d7d53da2fadbbde71a99420b","configHash":"a68bdefabf47a12378db92d2939c5be1c4cd0635e580227604dc78add3e8cb56","generatedAt":"2025-07-12T05:18:34.191Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"9a3c3372fcd1cdce09ff12ff83a74753f698dd911377eb4ec735318a8917acd6","configHash":"a68bdefabf47a12378db92d2939c5be1c4cd0635e580227604dc78add3e8cb56","generatedAt":"2025-07-12T07:20:34.124Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Consolidated Products (Template-Generated)
  *
@@ -7,8 +7,8 @@
  *
  * Template Variables:
  * - https://citisignal-com774.adobedemo.com - Commerce instance base URL
- * - {{{COMMERCE_PRODUCT_FIELDS}}} - Product fields to fetch
- * - {{{MESH_CACHE_TTL}}} - Category cache TTL in milliseconds
+ * - id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries,custom_attributes - Product fields to fetch
+ * - 300000 - Category cache TTL in milliseconds
  */
 
 // =============================================================================
@@ -16,8 +16,9 @@
 // =============================================================================
 
 const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
-const productFields = '{{{COMMERCE_PRODUCT_FIELDS}}}';
-const CACHE_TTL = parseInt('{{{MESH_CACHE_TTL}}}');
+const productFields =
+  'id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries,custom_attributes';
+const CACHE_TTL = parseInt('300000');
 const batchSize = 20;
 const categoryCache = new Map();
 
@@ -178,35 +179,46 @@ function buildCategoryMapFromCache(categoryIds) {
 // =============================================================================
 
 /**
- * Fetch all products with pagination and OAuth authentication
+ * Fetch all products with pagination and bearer token authentication
  */
 async function fetchAllProducts(context, pageSize, maxPages) {
   const allProducts = [];
   let currentPage = 1;
-  const oauthParams = extractOAuthCredentials(context);
 
   try {
+    console.log('DEBUG: Getting admin token...');
+    const bearerToken = await getAdminToken(context);
+    console.log('DEBUG: Got admin token:', bearerToken ? 'SUCCESS' : 'FAILED');
+
     while (currentPage <= maxPages) {
       const url = `${commerceBaseUrl}/rest/V1/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}&fields=${productFields}`;
+      console.log(`DEBUG: Fetching products from URL: ${url}`);
 
-      const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          Authorization: authHeader,
+          Authorization: `Bearer ${bearerToken}`,
           'Content-Type': 'application/json',
         },
       });
 
+      console.log(`DEBUG: Response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`DEBUG: Error response body: ${errorText}`);
         throw new Error(`Products API request failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log(`DEBUG: Response data:`, JSON.stringify(data).substring(0, 200) + '...');
+
       if (!data.items || !Array.isArray(data.items)) {
+        console.log('DEBUG: No items in response, breaking');
         break;
       }
 
+      console.log(`DEBUG: Found ${data.items.length} products in page ${currentPage}`);
       allProducts.push(...data.items);
 
       if (
@@ -214,14 +226,19 @@ async function fetchAllProducts(context, pageSize, maxPages) {
         !data.total_count ||
         allProducts.length >= data.total_count
       ) {
+        console.log(
+          `DEBUG: Stopping pagination - items: ${data.items.length}, pageSize: ${pageSize}, total_count: ${data.total_count}, allProducts: ${allProducts.length}`
+        );
         break;
       }
 
       currentPage++;
     }
 
+    console.log(`DEBUG: Returning ${allProducts.length} total products`);
     return allProducts;
   } catch (error) {
+    console.log(`DEBUG: Error in fetchAllProducts: ${error.message}`);
     throw new Error(`Failed to fetch products: ${error.message}`);
   }
 }
