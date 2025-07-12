@@ -4,6 +4,7 @@
  */
 
 const format = require('../../core/formatting');
+const { getEnvironmentString } = require('../../core/utils/environment');
 const {
   getAvailableScenarios,
   getScenario,
@@ -25,32 +26,41 @@ function listScenarios() {
 
 /**
  * Performance testing workflow - Simplified orchestrator
- * @param {string} actionName - Action to test
- * @param {string} scenarioName - Performance scenario name
+ * @param {string} scenarioOrAction - Scenario name or action name
+ * @param {string} scenarioName - Performance scenario name (optional)
  * @param {Object} options - Testing options
  * @param {Object} options.params - Action parameters
  * @param {boolean} options.isProd - Whether testing in production
  * @returns {Promise<Object>} Performance test result
  */
-async function performanceTestingWorkflow(actionName, scenarioName = 'quick', options = {}) {
+async function performanceTestingWorkflow(scenarioOrAction, scenarioName = null, options = {}) {
   const { params = {}, isProd = false } = options;
-  const environment = isProd ? 'production' : 'staging';
+  const environment = getEnvironmentString(isProd);
+
+  // Determine if first param is a scenario or action name
+  const availableScenarios = getAvailableScenarios();
+  const isScenario = Object.keys(availableScenarios).includes(scenarioOrAction);
+
+  const actionName = isScenario ? 'get-products' : scenarioOrAction; // Default to get-products for scenarios
+  const scenario = isScenario ? scenarioOrAction : scenarioName || 'quick';
 
   try {
     // Step 1: Validate scenario
-    const scenario = getScenario(scenarioName);
-    if (!scenario) {
-      console.log(format.error(`❌ Invalid scenario: ${scenarioName}`));
+    const scenarioData = getScenario(scenario);
+    if (!scenarioData) {
+      console.log(format.error(`❌ Invalid scenario: ${scenario}`));
       console.log(format.section('Available scenarios:'));
       displayScenarios();
       return { success: false, error: 'Invalid scenario' };
     }
 
-    // Step 2: Display test info
-    console.log(format.info(`🚀 Performance Testing: ${actionName}`));
-    console.log(format.section(`Scenario: ${scenario.name}`));
-    console.log(format.section(`Environment: ${format.environment(environment)}`));
-    console.log(format.muted(scenario.description));
+    // Step 2: Display test info (aligned with action/API testing format)
+    console.log(format.success(`Environment detected: ${format.environment(environment)}`));
+    console.log(format.success(`Performance test: ${actionName} (${scenario})`));
+    console.log();
+
+    console.log(format.section(`Scenario: ${scenarioData.name}`));
+    console.log(format.muted(scenarioData.description));
     console.log();
 
     // Step 3: Display test URL
@@ -61,10 +71,10 @@ async function performanceTestingWorkflow(actionName, scenarioName = 'quick', op
     // Step 4: Execute performance test
     console.log(
       format.info(
-        `⏱️  Running ${scenario.requests} requests with ${scenario.concurrency} concurrency...`
+        `⏱️  Running ${scenarioData.requests} requests with ${scenarioData.concurrency} concurrency...`
       )
     );
-    const results = await executeBatchedPerformanceTest(actionName, scenario, params, isProd);
+    const results = await executeBatchedPerformanceTest(actionName, scenarioData, params, isProd);
 
     // Step 5: Calculate and display results
     const stats = calculatePerformanceStats(results);
@@ -73,7 +83,7 @@ async function performanceTestingWorkflow(actionName, scenarioName = 'quick', op
     return {
       success: stats.successRate > 80, // Consider 80%+ success rate as passing
       actionName,
-      scenario: scenarioName,
+      scenario: scenario,
       environment,
       stats,
       results,
@@ -83,7 +93,7 @@ async function performanceTestingWorkflow(actionName, scenarioName = 'quick', op
     return {
       success: false,
       actionName,
-      scenario: scenarioName,
+      scenario: scenario,
       environment,
       error: error.message,
     };
