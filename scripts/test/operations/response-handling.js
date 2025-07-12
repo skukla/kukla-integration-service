@@ -29,11 +29,12 @@ function displayTestResults(environment, actionName, response) {
   // Display environment and action info
   console.log(format.success(`Environment detected: ${format.environment(environment)}`));
   console.log(format.success(`Action tested: ${actionName}`));
+  console.log();
 
   // Display URL and storage info
   console.log(format.url(response.actionUrl));
   displayStorageInfo(response.body);
-  console.log(); // Add blank line before status
+  console.log();
 
   // Display status
   console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', response.status));

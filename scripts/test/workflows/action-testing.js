@@ -21,17 +21,20 @@ async function actionTestingWorkflow(actionName, options = {}) {
 
   try {
     if (rawOutput) {
-      return await executeRawTest(actionName, params, isProd);
+      const result = await executeRawTest(actionName, params, isProd);
+      // Output raw JSON to console
+      console.log(JSON.stringify(result.rawResponse, null, 2));
+      return result;
     }
 
-    // Step 1: Delegate everything to operations
+    // Delegate everything to operations
     const environment = getEnvironmentString(isProd);
     const response = await executeActionTest(actionName, params, isProd);
 
-    // Step 2: Single operation handles all display logic and returns result
+    // Single operation handles all display logic and returns result
     return displayTestResults(environment, actionName, response);
   } catch (error) {
-    // Step 3: Delegate error handling to operations
+    // Delegate error handling to operations
     return buildErrorResult(error.message, actionName);
   }
 }
