@@ -4,6 +4,26 @@
  */
 
 /**
+ * Format store-csv step message with proper file path display
+ * @param {Object} info - Storage info object
+ * @returns {string} Formatted step message
+ */
+function formatStoreCsvStepMessage(info) {
+  if (typeof info === 'object' && info.fileName && info.properties) {
+    const size = parseInt(info.properties.size) || info.properties.size;
+    const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
+
+    // Always show as public/filename for consistent user experience
+    // Use the clean filename from properties.name
+    const cleanFileName = info.properties.name;
+    const displayPath = `public/${cleanFileName}`;
+
+    return `Successfully stored CSV file as ${displayPath} (${formattedSize})`;
+  }
+  return 'Successfully stored CSV file';
+}
+
+/**
  * Format step message with detailed, human-readable descriptions
  * @param {string} name - Step name
  * @param {string} status - Step status or description
@@ -43,14 +63,7 @@ function formatStepMessage(name, status, details = {}) {
       error: 'Failed to generate CSV file',
     },
     'store-csv': {
-      success: (info) => {
-        if (typeof info === 'object' && info.fileName && info.properties) {
-          const size = parseInt(info.properties.size) || info.properties.size;
-          const formattedSize = typeof size === 'number' ? formatFileSize(size) : size;
-          return `Successfully stored CSV file as ${info.fileName} (${formattedSize})`;
-        }
-        return 'Successfully stored CSV file';
-      },
+      success: formatStoreCsvStepMessage,
       error: 'Failed to store CSV file',
     },
   };
@@ -112,6 +125,7 @@ function formatDate(date) {
 
 module.exports = {
   formatStepMessage,
+  formatStoreCsvStepMessage,
   formatFileSize,
   formatDate,
 };
