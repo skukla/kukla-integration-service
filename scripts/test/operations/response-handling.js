@@ -4,6 +4,7 @@
  */
 
 const format = require('../../core/formatting');
+const { response: responseUtils } = require('../../core/utils');
 
 /**
  * Determine if HTTP response indicates success for testing
@@ -12,7 +13,7 @@ const format = require('../../core/formatting');
  * @returns {boolean} True if successful response
  */
 function isSuccessfulResponse(response) {
-  return response.status >= 200 && response.status < 300;
+  return responseUtils.isSuccessfulResponse(response);
 }
 
 /**
@@ -45,7 +46,7 @@ function displayTestResults(environment, actionName, response) {
     environment,
     actionName,
     status: response.status,
-    message: isSuccess ? null : response.body?.error || 'Test failed',
+    message: isSuccess ? null : responseUtils.extractErrorMessage(response),
   };
 }
 
@@ -55,7 +56,7 @@ function displayTestResults(environment, actionName, response) {
  */
 function displayStorageInfo(body) {
   if (body && body.storage) {
-    const storageInfo = formatStorageInfo(body.storage);
+    const storageInfo = responseUtils.formatStorageInfo(body.storage);
     console.log(format.storage(storageInfo));
   }
 }
@@ -95,35 +96,6 @@ function displaySuccessContent(body) {
       console.log(`${index + 1}. ${step}`);
     });
   }
-}
-
-/**
- * Format storage information for display
- * @param {Object} storage - Storage object from response
- * @returns {string} Formatted storage information
- */
-function formatStorageInfo(storage) {
-  const { provider, properties } = storage;
-
-  if (!provider) {
-    return 'Unknown Storage';
-  }
-
-  let info;
-  if (provider === 'app-builder') {
-    info = 'App Builder (Adobe I/O Files)';
-  } else if (provider === 's3') {
-    info = 'Amazon S3';
-    if (properties?.bucket) {
-      info += ` (${properties.bucket})`;
-    }
-  } else if (provider === 'error') {
-    info = 'Storage Failed';
-  } else {
-    info = provider.toUpperCase();
-  }
-
-  return info;
 }
 
 /**

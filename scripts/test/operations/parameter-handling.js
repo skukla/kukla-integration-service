@@ -3,6 +3,8 @@
  * Operations for filtering and processing action parameters
  */
 
+const { parameters } = require('../../core/utils');
+
 /**
  * Filter action parameters for Adobe I/O Runtime
  * Removes system/reserved properties that shouldn't be sent to actions
@@ -10,23 +12,20 @@
  * @returns {Object} Filtered parameters safe for action execution
  */
 function filterActionParameters(params) {
-  return Object.keys(params)
-    .filter((key) => {
-      // Filter out Adobe I/O system variables
-      if (key.startsWith('AIO_')) return false;
+  return parameters.filterActionParameters(params);
+}
 
-      // Filter out other reserved properties
-      const reservedProperties = ['NODE_ENV', 'SERVICE_API_KEY'];
-      if (reservedProperties.includes(key)) return false;
-
-      return true;
-    })
-    .reduce((obj, key) => {
-      obj[key] = params[key];
-      return obj;
-    }, {});
+/**
+ * Extract test-specific parameters from action parameters
+ * @param {Object} params - Action parameters
+ * @returns {Object} Test-specific parameters
+ */
+function extractTestParameters(params) {
+  const testKeys = ['DEBUG', 'VERBOSE', 'TIMEOUT'];
+  return parameters.extractParameters(params, testKeys);
 }
 
 module.exports = {
   filterActionParameters,
+  extractTestParameters,
 };
