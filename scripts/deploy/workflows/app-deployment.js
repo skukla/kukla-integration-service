@@ -1,14 +1,14 @@
 /**
  * Deploy Domain - App Deployment Workflow
- * Clean spinner-based deployment flow without redundant messages
+ * Clean orchestrator for deployment process following Light DDD standards
  */
 
 // Direct step imports - Light DDD approach
 const { appDeploymentStep } = require('./steps/app-deployment');
 const { buildProcessStep } = require('./steps/build-process');
 const { meshUpdateStep } = require('./steps/mesh-update');
-const format = require('../../core/formatting');
 const { getEnvironmentString } = require('../../core/utils/environment');
+const { appDeploymentOutput } = require('../operations');
 
 /**
  * App deployment workflow
@@ -23,14 +23,8 @@ async function appDeploymentWorkflow(options = {}) {
   const steps = [];
 
   try {
-    // Step 1: Initial setup
-    console.log(format.success(`Environment: ${format.environment(environment)}`));
-    console.log();
-    console.log(format.deploymentStart(`Starting deployment to ${environment.toLowerCase()}...`));
-    console.log();
-
-    // Brief pause for better flow
-    await format.sleep(800);
+    // Step 1: Initial setup with environment info
+    await appDeploymentOutput.displayInitialSetup(environment);
 
     // Step 2: Build process
     const buildResult = await buildProcessStep({ environment });
@@ -39,13 +33,8 @@ async function appDeploymentWorkflow(options = {}) {
     }
     steps.push(buildResult.step);
 
-    // Pause before deployment
-    await format.sleep(1000);
-
     // Step 3: Deploy App Builder actions
-    console.log();
-    console.log(format.deploymentAction('Deploying App Builder actions...'));
-    console.log();
+    await appDeploymentOutput.displayAppDeployment();
 
     const deployResult = await appDeploymentStep({
       isProd,
@@ -57,11 +46,7 @@ async function appDeploymentWorkflow(options = {}) {
 
     // Step 4: Update API Mesh (only if mesh resolver was regenerated)
     if (!skipMesh && buildResult.meshRegenerated) {
-      await format.sleep(1000);
-
-      console.log();
-      console.log(format.deploymentAction('Updating API Mesh...'));
-      console.log();
+      await appDeploymentOutput.displayMeshUpdate();
 
       const meshResult = await meshUpdateStep({
         isProd,
@@ -69,18 +54,15 @@ async function appDeploymentWorkflow(options = {}) {
         meshRegenerated: buildResult.meshRegenerated,
       });
       if (!meshResult.success && !meshResult.skipped) {
-        console.log(format.warning('Mesh update failed, but deployment completed successfully'));
+        appDeploymentOutput.displayMeshUpdateWarning();
       }
       if (!meshResult.skipped) {
         steps.push(meshResult.step);
       }
     }
 
-    // Step 6: Final completion
-    console.log();
-    console.log(
-      format.celebration(`Deployment to ${environment.toLowerCase()} completed successfully!`)
-    );
+    // Step 5: Final completion
+    await appDeploymentOutput.displayCompletionSummary(environment);
 
     return {
       success: true,
@@ -88,8 +70,7 @@ async function appDeploymentWorkflow(options = {}) {
       steps,
     };
   } catch (error) {
-    console.log();
-    console.log(format.error(`Deployment failed: ${error.message}`));
+    appDeploymentOutput.displayError(error.message);
     return {
       success: false,
       error: error.message,
