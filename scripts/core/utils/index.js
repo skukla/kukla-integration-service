@@ -10,6 +10,7 @@ const parameters = require('./parameters');
 const path = require('./path');
 const response = require('./response');
 const string = require('./string');
+const url = require('./url');
 
 module.exports = {
   environment,
@@ -18,4 +19,5 @@ module.exports = {
   path,
   response,
   string,
+  url,
 };

@@ -24,7 +24,19 @@ function readJsonFile(filePath) {
   return JSON.parse(content);
 }
 
+/**
+ * Write JSON object to file
+ * @param {string} filePath - Path to output file
+ * @param {Object} data - Data to write as JSON
+ * @param {number} [indent] - JSON formatting indent
+ */
+function writeJsonFile(filePath, data, indent = 2) {
+  const jsonString = JSON.stringify(data, null, indent);
+  fs.writeFileSync(filePath, jsonString);
+}
+
 module.exports = {
   fileExists,
   readJsonFile,
+  writeJsonFile,
 };
