@@ -1,13 +1,11 @@
 /**
  * Deploy Domain - Mesh Deployment Workflow
- * Clean spinner-based mesh deployment workflow
+ * Clean orchestrator for mesh deployment following Light DDD standards
  */
 
 const { meshUpdateStep } = require('./steps/mesh-update');
-const { generateMeshResolver } = require('../../build/workflows/mesh-generation');
-const format = require('../../core/formatting');
-const { createSpinner, succeedSpinner } = require('../../core/operations/spinner');
 const { getEnvironmentString } = require('../../core/utils/environment');
+const { meshDeploymentOutput } = require('../operations');
 
 /**
  * Mesh deployment workflow
@@ -21,40 +19,28 @@ async function meshDeploymentWorkflow(options = {}) {
   const steps = [];
 
   try {
-    // Step 1: Initial setup
-    console.log(format.success(`Environment: ${format.environment(environment)}`));
-    console.log();
-    console.log(
-      format.deploymentStart(`Starting mesh deployment to ${environment.toLowerCase()}...`)
-    );
-    console.log();
+    // Step 1: Initial setup with environment info
+    await meshDeploymentOutput.displayInitialSetup(environment);
 
-    // Brief pause for better flow
-    await format.sleep(800);
-
-    // Step 2: Mesh generation
-    const generationSpinner = createSpinner('Checking mesh resolver...');
-
-    const meshGenResult = await generateMeshResolver({ isProd });
+    // Step 2: Mesh generation (use core operations for deployment)
+    const { meshCoreOperations } = require('../../build/operations');
+    const meshGenResult = await meshCoreOperations.generateMeshCore({ isProd });
     if (!meshGenResult.success) {
       throw new Error(meshGenResult.error);
     }
 
-    succeedSpinner(
-      generationSpinner,
-      `Mesh resolver ${meshGenResult.generated ? 'regenerated' : 'validated'}`
-    );
-    await format.sleep(400);
+    const meshGenSpinner = meshDeploymentOutput.displayMeshGeneration(meshGenResult);
+    await meshGenSpinner.succeed();
 
     steps.push(
       `Successfully ${meshGenResult.generated ? 'regenerated' : 'validated'} mesh resolver`
     );
 
     // Pause before mesh deployment
-    await format.sleep(1000);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Step 3: Mesh deployment
-    console.log();
+    meshDeploymentOutput.displayMeshDeploymentSeparator();
 
     const meshResult = await meshUpdateStep({
       isProd,
@@ -71,8 +57,7 @@ async function meshDeploymentWorkflow(options = {}) {
     }
 
     // Step 4: Final completion
-    console.log();
-    console.log(format.celebration(`Mesh deployment to ${environment} completed successfully!`));
+    await meshDeploymentOutput.displayCompletionSummary(environment);
 
     return {
       success: true,
@@ -80,8 +65,7 @@ async function meshDeploymentWorkflow(options = {}) {
       steps,
     };
   } catch (error) {
-    console.log();
-    console.log(format.error(`Mesh deployment failed: ${error.message}`));
+    meshDeploymentOutput.displayError(error.message);
     return {
       success: false,
       error: error.message,

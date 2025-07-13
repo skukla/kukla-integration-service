@@ -1,58 +1,75 @@
 /**
  * Mesh Generation Workflow
- * Direct implementation using build workflow steps
- * Handles mesh resolver generation and mesh configuration compilation
+ * Clean orchestrator for mesh generation following Light DDD standards
  */
 
-const { meshConfigExtractionStep } = require('./steps/mesh-config-extraction');
-const { templateProcessingStep } = require('./steps/template-processing');
-const { loadConfig } = require('../../../config');
+const format = require('../../core/formatting');
+const { getEnvironmentString } = require('../../core/utils/environment');
+const { meshGenerationOutput } = require('../operations');
+const { meshCoreOperations } = require('../operations');
 
 /**
- * Generate mesh resolver and configuration using build workflow steps
+ * Generate mesh resolver and configuration with verbose deployment-style output
  * @param {Object} options - Generation options
  * @param {boolean} options.isProd - Whether generating for production
  * @returns {Promise<Object>} Generation result
  */
 async function generateMeshResolver(options = {}) {
   const { isProd = false } = options;
+  const environment = getEnvironmentString(isProd);
+  
   const steps = [];
   
   try {
-    // Step 1: Load configuration
-    const config = loadConfig({}, isProd);
+    // Step 1: Initial setup with environment info
+    await meshGenerationOutput.displayInitialSetup(environment);
 
-    // Step 2: Extract mesh configuration
-    const meshConfigResult = await meshConfigExtractionStep({ isProd });
-    if (!meshConfigResult.success) {
-      throw new Error(`Mesh config extraction failed: ${meshConfigResult.error}`);
-    }
-    steps.push('Mesh configuration extracted');
+    // Step 2: Load configuration and display progress
+    await meshGenerationOutput.displayConfigurationLoading();
+    console.log(format.success('Configuration loaded'));
+    steps.push('Configuration loaded for mesh generation');
 
-    // Step 3: Process template and generate resolver
-    const templateResult = await templateProcessingStep({
-      config,
-      meshConfig: meshConfigResult.meshConfig,
-    });
-    if (!templateResult.success) {
-      throw new Error(`Template processing failed: ${templateResult.error}`);
+    // Step 3: Display mesh configuration extraction
+    await meshGenerationOutput.displayMeshConfigExtraction();
+    
+    // Step 4: Display template processing
+    await meshGenerationOutput.displayTemplateProcessing();
+
+    // Step 5: Execute core mesh generation operations
+    const result = await meshCoreOperations.generateMeshCore({ isProd });
+    if (!result.success) {
+      throw new Error(result.error);
     }
-    steps.push('Mesh resolver template processed');
-    steps.push('Mesh resolver file generated');
+
+    // Step 6: Display detailed results
+    await meshGenerationOutput.displayMeshConfigSuccess(result.results.outputPath);
+    steps.push('Mesh configuration extracted and processed');
+
+    await meshGenerationOutput.displayTemplateResult(result.results.templateResult);
+    steps.push(result.generated 
+      ? 'Mesh resolver template processed and regenerated'
+      : 'Mesh resolver template checked (no regeneration needed)');
+
+    // Step 7: Display completion summary
+    await meshGenerationOutput.displayCompletionSummary(environment, result.results.meshConfigResult, result.results.templateResult);
 
     return {
       success: true,
-      generated: templateResult.resolverGenerated,
+      generated: result.generated,
       workflow: 'mesh-generation-workflow',
+      environment,
       steps,
-      results: {
-        meshConfig: meshConfigResult.meshConfig,
-        resolverGenerated: templateResult.resolverGenerated,
-      },
+      results: result.results,
     };
 
   } catch (error) {
-    throw new Error(`Mesh resolver generation failed: ${error.message}`);
+    console.log();
+    console.log(format.error(`Mesh generation failed: ${error.message}`));
+    return {
+      success: false,
+      error: error.message,
+      steps,
+    };
   }
 }
 
