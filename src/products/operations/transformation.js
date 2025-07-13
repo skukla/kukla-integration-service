@@ -16,10 +16,10 @@ const {
 const { transformImageEntry, getPrimaryImageUrl } = require('../utils/image');
 
 /**
- * Product fields configuration
+ * Default product fields (fallback for compatibility)
  * @constant {Array<string>}
  */
-const PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
+const DEFAULT_PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
 
 /**
  * Builds a standardized product object with all required fields
@@ -35,9 +35,8 @@ function buildProductObject(product, categoryMap = {}, config = {}) {
     return {};
   }
 
-  // Get product fields configuration (with fallback for compatibility)
-  const getProductFieldsFunc = config.getProductFields || (() => PRODUCT_FIELDS);
-  const productFields = getProductFieldsFunc(config);
+  // Get product fields from main config (determines final CSV output fields)
+  const productFields = config.main?.exportFields || DEFAULT_PRODUCT_FIELDS;
 
   const fieldMappings = {
     sku: () => product.sku || '',
@@ -187,5 +186,5 @@ module.exports = {
   buildProductObject,
   mapProductToCsvRow,
   buildProducts,
-  PRODUCT_FIELDS,
+  DEFAULT_PRODUCT_FIELDS,
 };

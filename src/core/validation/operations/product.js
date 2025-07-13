@@ -7,10 +7,10 @@
  */
 
 /**
- * Product fields configuration
+ * Default product fields (fallback for compatibility)
  * @constant {Array<string>}
  */
-const PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
+const DEFAULT_PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
 
 /**
  * Gets product fields with configuration support
@@ -20,7 +20,8 @@ const PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'images'];
  * @returns {Array} Product fields array
  */
 function getProductFields(config) {
-  return config.products?.fields || PRODUCT_FIELDS;
+  // Use main config export fields for final output, with fallback to products config
+  return config.main?.exportFields || config.products?.fields || DEFAULT_PRODUCT_FIELDS;
 }
 
 /**
@@ -136,5 +137,5 @@ module.exports = {
   getRequestedFields,
   validateProductConfig,
   // Constants
-  PRODUCT_FIELDS,
+  DEFAULT_PRODUCT_FIELDS,
 };
