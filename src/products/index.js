@@ -25,7 +25,7 @@ const {
   buildProducts,
   buildProductObject,
   mapProductToCsvRow,
-  PRODUCT_FIELDS,
+  DEFAULT_PRODUCT_FIELDS,
 } = require('./operations/transformation');
 const { validateInput, validateMeshInput } = require('./operations/validation');
 // Low-level utilities (implementation details)
@@ -102,7 +102,7 @@ module.exports = {
   extractCategoryIds,
   extractProductSkus,
   // Constants
-  PRODUCT_FIELDS,
+  DEFAULT_PRODUCT_FIELDS,
   RECS_HEADERS,
   CSV_HEADERS,
 

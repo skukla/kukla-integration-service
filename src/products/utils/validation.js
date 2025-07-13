@@ -11,7 +11,7 @@ const {
   validateProduct,
   getRequestedFields,
   validateProductConfig,
-  PRODUCT_FIELDS,
+  DEFAULT_PRODUCT_FIELDS,
 } = require('../../core/validation/operations/product');
 
 /**
@@ -75,5 +75,5 @@ module.exports = {
   validateProductData,
 
   // Constants (re-exported from core)
-  PRODUCT_FIELDS,
+  DEFAULT_PRODUCT_FIELDS,
 };
