@@ -16,7 +16,6 @@ module.exports = {
         openapi: {
           source: 'https://citisignal-com774.adobedemo.com/rest/all/schema?services=all',
           operationHeaders: {
-            Authorization: "Bearer {context.headers['x-commerce-admin-token']}",
             'Content-Type': 'application/json',
           },
         },
