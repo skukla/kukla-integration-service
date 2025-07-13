@@ -1,61 +1,41 @@
 /**
  * Mesh Configuration Extraction Step
- * Extracts and processes mesh configuration for deployment
+ * Pure orchestrator for mesh configuration extraction
  */
 
-const fs = require('fs');
-const path = require('path');
-
-const { loadConfig } = require('../../../../config');
+const { fileOperations } = require('../../../core/operations');
+const meshConfigProcessing = require('../../operations/mesh-config-processing');
 
 /**
- * Extract mesh configuration for deployment
+ * Extract and generate mesh configuration for deployment
  * @param {Object} options - Extraction options
- * @param {boolean} options.isProd - Whether extracting for production
+ * @param {Object} options.config - Application configuration
+ * @param {string} options.outputPath - Output path for mesh.json
  * @returns {Promise<Object>} Extraction result
  */
-async function meshConfigExtractionStep(options = {}) {
-  const { configPath = 'mesh.json', outputPath = 'dist/mesh.json', isProd = false } = options;
+async function meshConfigExtractionStep(options) {
+  const { config, outputPath = 'mesh.json' } = options;
+
+  if (!config) {
+    throw new Error('Configuration is required for mesh config extraction');
+  }
 
   try {
-    // Step 1: Simple environment setup
-    const environment = isProd ? 'production' : 'staging';
+    // Step 1: Load mesh configuration
+    const meshConfigModule = meshConfigProcessing.loadMeshConfig();
 
-    // Step 2: Read mesh configuration
-    const meshConfigPath = path.resolve(configPath);
-    if (!fs.existsSync(meshConfigPath)) {
-      throw new Error(`Mesh configuration not found: ${meshConfigPath}`);
-    }
+    // Step 2: Process mesh configuration
+    const processedConfig = meshConfigProcessing.buildMeshConfig(meshConfigModule, config);
 
-    const meshConfig = JSON.parse(fs.readFileSync(meshConfigPath, 'utf8'));
-
-    // Step 3: Load environment configuration
-    const config = loadConfig({}, isProd);
-
-    // Step 4: Process configuration for environment
-    const processedConfig = {
-      ...meshConfig,
-      environment,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Ensure output directory exists
-    const outputDir = path.dirname(outputPath);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    // Write processed configuration
-    fs.writeFileSync(outputPath, JSON.stringify(processedConfig, null, 2));
+    // Step 3: Write generated mesh.json
+    fileOperations.writeJsonFile(outputPath, processedConfig);
 
     return {
       success: true,
-      environment,
-      config,
       meshConfig: processedConfig,
-      configPath: meshConfigPath,
+      configPath: 'mesh.config.js',
       outputPath,
-      step: `Mesh configuration extracted for ${environment}`,
+      step: 'Mesh configuration generated from mesh.config.js',
     };
   } catch (error) {
     return {

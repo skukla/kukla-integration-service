@@ -7,8 +7,8 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 
 const frontendGeneration = require('./frontend-generation');
-const meshGeneration = require('./mesh-generation');
 const { capitalize } = require('../../core/utils/string');
+const { meshCoreOperations } = require('../operations');
 
 const execAsync = promisify(exec);
 
@@ -34,7 +34,8 @@ async function appBuildWorkflow(options = {}) {
     // Step 3: Mesh Resolver Generation (if not skipped)
     let meshRegenerated = false;
     if (!options.skipMesh) {
-      const meshResult = await meshGeneration.generateMeshResolver({ isProd });
+      
+      const meshResult = await meshCoreOperations.generateMeshCore({ isProd });
       meshRegenerated = meshResult.generated;
     }
 
