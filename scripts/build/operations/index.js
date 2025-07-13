@@ -7,8 +7,15 @@
  */
 
 const configGeneration = require('./config-generation');
+const graphqlProcessing = require('./graphql-processing');
+const meshConfigProcessing = require('./mesh-config-processing');
+const meshCoreOperations = require('./mesh-core-operations');
+const meshGenerationOutput = require('./mesh-generation-output');
 
 module.exports = {
-  // Configuration generation operations
   configGeneration,
+  graphqlProcessing,
+  meshConfigProcessing,
+  meshCoreOperations,
+  meshGenerationOutput,
 }; 

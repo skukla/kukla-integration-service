@@ -110,7 +110,7 @@ function processTemplate(templateContent, config) {
     '{{{COMMERCE_BASE_URL}}}': config.commerce.baseUrl,
     '{{{MESH_API_KEY}}}': config.mesh.apiKey,
     '{{{ENVIRONMENT}}}': config.environment,
-    '{{{COMMERCE_PRODUCT_FIELDS}}}': config.products.fields.export.join(','),
+    '{{{COMMERCE_PRODUCT_FIELDS}}}': config.products.fields.export.join(','), // Use products config for Commerce API requests
     '{{{MESH_CACHE_TTL}}}': config.performance.caching.categories.meshTtl,
   };
 
