@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"9a3c3372fcd1cdce09ff12ff83a74753f698dd911377eb4ec735318a8917acd6","configHash":"a68bdefabf47a12378db92d2939c5be1c4cd0635e580227604dc78add3e8cb56","generatedAt":"2025-07-12T07:20:34.124Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"9a3c3372fcd1cdce09ff12ff83a74753f698dd911377eb4ec735318a8917acd6","configHash":"9c647a028e550cc8ab5c4bc8181c85b9fae9a8422e4a32a376be698c7fc92f4f","generatedAt":"2025-07-12T20:52:03.384Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Consolidated Products (Template-Generated)
  *
