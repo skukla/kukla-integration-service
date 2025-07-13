@@ -1347,6 +1347,175 @@ grep -r "require.*operations.*environment" scripts/
 - Other Utilities: 🔄 In Progress (0/X files)
 - Total Project: 🎯 Target 100% direct import compliance
 
+## Mesh Native Features Refactor Plan
+
+### **Objective: Optimize Working Mesh Implementation with Realistic Adobe API Mesh Capabilities**
+
+**Current Reality**: Our working mesh implementation (598 lines) provides essential performance metrics and inventory data that the frontend requires. Previous attempts to use theoretical Adobe API Mesh features failed because those features don't exist.
+
+**Realistic Solution**: Optimize the working custom resolver using actual Adobe API Mesh capabilities for source management, authentication, and field transforms - achieving ~33% code reduction while preserving all functionality.
+
+### **Phase-Based Optimization Strategy**
+
+#### **Phase 2A: Source Optimization**
+
+```json
+// Use multiple specialized sources to reduce custom auth and source management
+{
+  "sources": [
+    {
+      "name": "products",
+      "handler": {
+        "openapi": {
+          "source": "https://commerce.example.com/rest/all/schema?services=catalogProductRepositoryV1",
+          "operationHeaders": {
+            "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+          }
+        }
+      }
+    },
+    {
+      "name": "inventory", 
+      "handler": {
+        "openapi": {
+          "source": "https://commerce.example.com/rest/all/schema?services=catalogInventoryStockRegistryV1",
+          "operationHeaders": {
+            "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+          }
+        }
+      }
+    },
+    {
+      "name": "categories",
+      "handler": {
+        "openapi": {
+          "source": "https://commerce.example.com/rest/all/schema?services=catalogCategoryRepositoryV1",
+          "operationHeaders": {
+            "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+#### **Phase 2B: Transform Optimization**
+
+```json
+// Use native transforms to reduce custom field processing
+{
+  "transforms": [
+    {
+      "filterSchema": {
+        "mode": "bare",
+        "filters": [
+          "Product.sku",
+          "Product.name", 
+          "Product.price",
+          "Product.media_gallery_entries",
+          "Product.category_links"
+        ]
+      }
+    },
+    {
+      "rename": {
+        "mode": "bare",
+        "renames": [
+          {
+            "from": { "type": "Product", "field": "media_gallery_entries" },
+            "to": { "type": "Product", "field": "images" }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### **Phase 2C: Performance Metrics Preservation**
+
+```javascript
+// Keep working performance metrics that frontend requires
+function initializePerformanceTracking() {
+  return {
+    processedProducts: 0,
+    apiCalls: 0,
+    method: 'API Mesh (Optimized)',
+    executionTime: 0,
+    // ... 25+ performance fields that frontend expects
+    meshOptimizations: ['Multi-Source', 'Native Transforms', 'Auto-Auth']
+  };
+}
+{
+  "transforms": [
+    {
+      "filterSchema": {
+        "filters": ["Product.{sku, name, price, media_gallery_entries}"]
+      }
+    },
+    {
+      "rename": {
+        "renames": [
+          {
+            "from": {"type": "Product", "field": "media_gallery_entries"},
+            "to": {"type": "Product", "field": "images"}
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### **Phase 4: Native Caching & Monitoring**
+
+```json
+// Replace custom caching (~50 lines) and monitoring (~80 lines)
+{
+  "cache": {
+    "redis": {
+      "host": "{env.REDIS_HOST}",
+      "ttl": 300000
+    }
+  },
+  "plugins": [
+    {
+      "prometheus": {
+        "endpoint": "/metrics",
+        "registry": "default"
+      }
+    }
+  ]
+}
+```
+
+### **Success Metrics**
+
+- **Code Reduction**: 530 lines → 50 lines (90% reduction)
+- **Performance**: Maintain/improve 200+ API call consolidation
+- **Maintainability**: Use Adobe-native patterns for better support
+- **Standards Compliance**: Full alignment with refactoring standards
+
+### **Architecture Standards Alignment**
+
+- ✅ **DRY Principle**: Eliminate custom code duplication
+- ✅ **Single Responsibility**: Each source handles one data type
+- ✅ **Configuration-Driven**: Move logic to declarative configuration
+- ✅ **Performance First**: Leverage Adobe's optimized features
+- ✅ **Function Length**: Target ~10-line resolvers vs current ~50-line functions
+- ✅ **Domain Separation**: Authentication, caching as native concerns
+
+### **Documentation Plan**
+
+**New Documentation Required:**
+
+- `docs/development/mesh-native-features.md` - Native features usage guide
+- `docs/architecture/mesh-native-architecture.md` - Updated architecture
+- Update `.cursorrules` with native mesh patterns
+
+**Full Implementation Plan**: See `MESH-NATIVE-REFACTOR-PLAN.md` for comprehensive 5-phase implementation strategy with timelines, risk mitigation, and testing approach.
+
 ---
 
 This refactoring standard ensures all actions follow the clean orchestrator pattern with domain-driven workflows, eliminating duplication while maintaining high code quality and consistency.
