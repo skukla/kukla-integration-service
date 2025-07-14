@@ -1,211 +1,391 @@
-# Adobe API Mesh Refactor Plan V2
+# Adobe API Mesh Native Features Refactor Plan V2
 
-## **Based on Real Implementation Experience**
+## **From Custom Resolver to Native Mesh Architecture**
 
-### 🎯 **Mission Accomplished: Working Baseline**
+### 🎯 **Mission: True Native Mesh Implementation**
 
-**✅ PROVEN CAPABILITIES:**
+**✅ BASELINE ACHIEVED:**
 
-- Full mesh implementation with OAuth 1.0 + Admin Token hybrid authentication
-- 119 products successfully processed (same as REST implementation)
-- Web Crypto API OAuth working in Adobe API Mesh environment
+- Working custom resolver proves OAuth + admin token authentication viable
+- 119 products successfully processed with Web Crypto API
 - Single GraphQL query consolidating 200+ REST API calls
-- True data federation: Products + Categories + Inventory
+- **BUT**: Everything is crammed into one custom resolver instead of using native mesh features
 
-### 📊 **Baseline Performance Comparison**
-
-| Metric | REST Implementation | Mesh Implementation | Improvement |
-|--------|-------------------|-------------------|-------------|
-| **Products** | 119 | 119 | ✅ **Parity** |
-| **File Size** | 23.18 KB | 24.07 KB | ✅ **Equivalent** |
-| **API Calls** | 200+ individual | 1 consolidated | 🚀 **200x reduction** |
-| **OAuth Auth** | Node.js crypto | Web Crypto API | ✅ **Environment adapted** |
-| **Data Sources** | Sequential fetching | Parallel consolidation | 🚀 **Optimized** |
+**🔄 REFACTOR GOAL:**
+Transform from **"everything in custom resolver"** to **"native mesh features with minimal custom code"**
 
 ---
 
-## 🔬 **Validated Technical Constraints**
+## 🏗️ **Architecture Transformation**
 
-### **1. Adobe API Mesh Environment Limitations** ✅ CONFIRMED
+### **Current State: Monolithic Custom Resolver**
 
-- ❌ **No Node.js `require()` statements** - Hard constraint
-- ✅ **Web Crypto API available** - `crypto.subtle` works perfectly
-- ✅ **Fetch API available** - HTTP requests work normally
-- ✅ **Template substitution** - Environment-specific configuration works
+```javascript
+// Single custom resolver doing everything
+mesh_products_enriched: {
+  resolve: async (parent, args, context) => {
+    // ❌ Manual OAuth implementation
+    // ❌ Manual Commerce API calls  
+    // ❌ Manual data consolidation
+    // ❌ Manual caching
+    // ❌ Admin credentials via GraphQL variables (SECURITY ISSUE!)
+  }
+}
+```
 
-### **2. Commerce API Requirements** ✅ CONFIRMED  
+### **Target State: Native Mesh Architecture**
 
-- ✅ **OAuth 1.0 authentication** - Works with Web Crypto API
-- ✅ **Field format: `items[...]`** - Critical for product queries
-- ✅ **Admin token authentication** - Works for inventory/category APIs
-- ✅ **Hybrid authentication pattern** - Both OAuth + admin tokens viable
+```yaml
+# Multiple native sources with built-in capabilities
+sources:
+  - name: commerceProducts
+    handler: 
+      openapi:
+        source: commerce/products
+        operationHeaders:
+          Authorization: "OAuth {env.OAUTH_HEADER}"
+  
+  - name: commerceCategories  
+    handler:
+      openapi:
+        source: commerce/categories
+        operationHeaders:
+          Authorization: "Bearer {env.ADMIN_TOKEN}"
 
-### **3. API Mesh Native Capabilities** ✅ CONFIRMED
+  - name: commerceInventory
+    handler:
+      openapi:
+        source: commerce/inventory  
+        operationHeaders:
+          Authorization: "Bearer {env.ADMIN_TOKEN}"
 
-- ✅ **Custom resolvers** - Full JavaScript support (within constraints)
-- ✅ **GraphQL schema composition** - Works with custom types
-- ✅ **Template generation** - Environment-specific resolver compilation
-- ✅ **True data federation** - Multiple Commerce APIs → Single GraphQL query
+transforms:
+  - filterSchema:
+      mode: wrap
+  - rename:
+      mode: wrap
+      
+additionalResolvers: "./minimal-resolvers.js"  # Only business logic
+```
 
 ---
 
-## 🏗️ **Refactor Roadmap: Optimization Phase**
+## 🔄 **Refactor Phases: Native Feature Migration**
 
-### **Phase 1: Code Quality & Performance** 📈
-
-*Duration: 1-2 days*
-
-**Objectives:**
-
-- Optimize mesh resolver performance
-- Implement proper error handling patterns
-- Add comprehensive monitoring and metrics
-- Reduce code complexity while maintaining functionality
-
-**Tasks:**
-
-- [ ] **Error Handling Enhancement**
-  - Implement circuit breaker patterns for Commerce API calls
-  - Add proper retry logic with exponential backoff
-  - Standardize error response formats
-  
-- [ ] **Performance Optimization**
-  - Optimize OAuth header generation (cache nonce generation)
-  - Implement intelligent caching for category data
-  - Add request batching for inventory calls
-  
-- [ ] **Code Cleanup**
-  - Remove debug logging from production resolver
-  - Extract reusable functions (OAuth, caching, batching)
-  - Implement proper TypeScript-like JSDoc annotations
-
-### **Phase 2: Advanced Mesh Features** 🚀
+### **Phase 1: Security & Authentication Migration** 🔐
 
 *Duration: 2-3 days*
 
 **Objectives:**
 
-- Leverage more Adobe API Mesh native capabilities
-- Implement advanced caching strategies
-- Add query optimization and field selection
+- ✅ **Fix security issue**: Remove admin credentials from GraphQL variables
+- ✅ **Native authentication**: Use Adobe API Mesh auth handlers
+- ✅ **Environment variables**: Secure credential management
 
 **Tasks:**
 
-- [ ] **Native Schema Integration**
-  - Move custom types to Adobe API Mesh schema configuration
-  - Implement GraphQL field-level caching
-  - Add query complexity analysis
-  
-- [ ] **Advanced Data Federation**
-  - Implement smart query planning (skip inventory for out-of-stock)
-  - Add conditional data fetching based on product types
-  - Optimize category tree traversal
-  
-- [ ] **Caching Strategy**
-  - Implement Redis-compatible caching (if available in mesh)
-  - Add cache invalidation strategies
-  - Implement cache warming for popular queries
+- [ ] **Security Fix: Remove Insecure Credential Passing**
+  - Remove `adminUsername`/`adminPassword` from GraphQL variables
+  - Move all credentials to environment variables
+  - Update action parameter passing to use headers only
 
-### **Phase 3: Enterprise Features** 🏢
+- [ ] **Native OAuth Configuration**
+  - Research Adobe API Mesh OAuth 1.0 support capabilities
+  - Configure OAuth credentials via environment variables
+  - Test native OAuth header generation vs custom Web Crypto
+
+- [ ] **Admin Token Environment Setup**
+  - Move admin credentials to secure environment variables  
+  - Configure admin token generation via native handlers
+  - Remove credential passing through GraphQL context
+
+**Success Criteria:**
+
+- No credentials passed via GraphQL variables
+- All authentication via environment variables
+- Native auth handlers working (or documented limitations)
+
+### **Phase 2: Multi-Source Architecture** 🌐
 
 *Duration: 3-4 days*
 
 **Objectives:**
 
-- Add enterprise-grade monitoring and observability
-- Implement advanced security patterns
-- Add support for complex business logic
+- ✅ **Split monolithic resolver**: Separate concerns into multiple sources
+- ✅ **Native data sources**: Products, Categories, Inventory as separate sources
+- ✅ **Schema composition**: Let Adobe API Mesh handle data combination
 
 **Tasks:**
 
-- [ ] **Security Enhancement**
-  - Implement request rate limiting
-  - Add credential rotation support
-  - Implement audit logging for Commerce API access
-  
-- [ ] **Business Logic Extension**
-  - Add support for complex product filtering
-  - Implement dynamic pricing calculations
-  - Add inventory reservation logic
-  
-- [ ] **Monitoring & Observability**
-  - Implement distributed tracing
-  - Add performance metrics collection
-  - Create dashboards for mesh performance monitoring
+- [ ] **Products Source Configuration**
+
+  ```yaml
+  - name: commerceProducts
+    handler:
+      openapi:
+        source: "https://citisignal-com774.adobedemo.com/rest/all/schema"
+        operationHeaders:
+          Authorization: "OAuth {oauth.header}"
+  ```
+
+- [ ] **Categories Source Configuration**  
+
+  ```yaml
+  - name: commerceCategories
+    handler:
+      openapi:
+        source: "https://citisignal-com774.adobedemo.com/rest/all/schema"
+        operationHeaders:
+          Authorization: "Bearer {env.ADMIN_TOKEN}"
+  ```
+
+- [ ] **Inventory Source Configuration**
+
+  ```yaml
+  - name: commerceInventory  
+    handler:
+      openapi:
+        source: "https://citisignal-com774.adobedemo.com/rest/all/schema"
+        operationHeaders:
+          Authorization: "Bearer {env.ADMIN_TOKEN}"
+  ```
+
+- [ ] **Remove Custom Data Fetching**
+  - Replace manual `fetchAllProducts()` with native source queries
+  - Replace manual `fetchCategoriesData()` with native source queries  
+  - Replace manual `fetchInventoryData()` with native source queries
+
+**Success Criteria:**
+
+- Three separate native data sources working
+- No custom Commerce API calls in resolvers
+- Native schema composition providing unified interface
+
+### **Phase 3: Native Data Federation** 🔗
+
+*Duration: 2-3 days*
+
+**Objectives:**
+
+- ✅ **Schema stitching**: Replace manual data consolidation with native features
+- ✅ **Transforms**: Use native transform system for data shaping
+- ✅ **Field selection**: Native GraphQL field filtering
+
+**Tasks:**
+
+- [ ] **Schema Stitching Configuration**
+
+  ```yaml
+  additionalTypeDefs: |
+    extend type Query {
+      enrichedProducts(pageSize: Int): [EnrichedProduct]
+    }
+    
+    type EnrichedProduct {
+      # Auto-stitched from multiple sources
+      sku: String
+      name: String  
+      categories: [Category]
+      inventory: Inventory
+    }
+  ```
+
+- [ ] **Native Transform Implementation**
+
+  ```yaml
+  transforms:
+    - rename:
+        mode: wrap
+        renames:
+          - from:
+              type: "Product"
+              field: "custom_attributes"
+            to:
+              type: "Product" 
+              field: "attributes"
+  ```
+
+- [ ] **Minimal Custom Resolvers**
+
+  ```javascript
+  // Only business logic, not data fetching
+  module.exports = {
+    resolvers: {
+      EnrichedProduct: {
+        categories: (parent) => {
+          // Simple field mapping, not API calls
+          return parent.category_ids?.map(id => ({ id }));
+        }
+      }
+    }
+  };
+  ```
+
+**Success Criteria:**
+
+- Data consolidation handled by native schema stitching
+- Transforms handle data shaping automatically
+- Custom resolvers only contain pure business logic (no API calls)
+
+### **Phase 4: Advanced Native Features** 🚀
+
+*Duration: 2-3 days*
+
+**Objectives:**
+
+- ✅ **Native caching**: Replace manual category caching
+- ✅ **Rate limiting**: Built-in Commerce API protection
+- ✅ **Error handling**: Native retry and circuit breaker patterns
+
+**Tasks:**
+
+- [ ] **Native Caching Strategy**
+
+  ```yaml
+  cache:
+    - field: "Query.categories"
+      cacheKeyArgs: ["id"]
+      ttl: 300  # 5 minutes
+    - field: "Query.products"  
+      cacheKeyArgs: ["pageSize", "currentPage"]
+      ttl: 60   # 1 minute
+  ```
+
+- [ ] **Rate Limiting Configuration**
+
+  ```yaml
+  rateLimitConfig:
+    - sourcePattern: "commerceProducts"
+      max: 100
+      window: "1m"
+    - sourcePattern: "commerceInventory"
+      max: 50
+      window: "1m"
+  ```
+
+- [ ] **Native Error Handling**
+
+  ```yaml
+  retry:
+    retries: 3
+    retryDelay: 1000
+    retryOn:
+      - NETWORK_ERROR
+      - TIMEOUT_ERROR
+  ```
+
+**Success Criteria:**
+
+- No manual caching code in resolvers
+- Commerce API protected by native rate limiting  
+- Error handling and retries managed by platform
 
 ---
 
-## 🎯 **Success Metrics for Each Phase**
+## 🎯 **Success Metrics by Phase**
 
 ### **Phase 1 Targets:**
 
-- **Response Time**: < 2 seconds for 100 products
-- **Error Rate**: < 1% for Commerce API calls
-- **Code Coverage**: > 90% for critical paths
-- **Memory Usage**: < 50MB per request
+- ✅ **Security**: Zero credentials in GraphQL variables
+- ✅ **Authentication**: Native auth handlers configured
+- ✅ **Environment**: All credentials in environment variables
 
-### **Phase 2 Targets:**
+### **Phase 2 Targets:**  
 
-- **Cache Hit Rate**: > 80% for category data
-- **Query Efficiency**: < 5 Commerce API calls per GraphQL query
-- **Field Selection**: Support for dynamic field filtering
-- **Concurrent Requests**: Handle 10+ simultaneous requests
+- ✅ **Sources**: 3 separate native data sources
+- ✅ **Code Reduction**: 80% reduction in custom resolver code
+- ✅ **Performance**: Same 119 products, faster response time
 
 ### **Phase 3 Targets:**
 
-- **Enterprise SLA**: 99.9% uptime
-- **Audit Compliance**: Full request/response logging
-- **Security Score**: Pass enterprise security audit
-- **Business Logic**: Support for complex e-commerce workflows
+- ✅ **Native Federation**: Schema stitching replaces manual consolidation
+- ✅ **Transforms**: Native data shaping replaces custom JavaScript
+- ✅ **Resolver Size**: <50 lines of pure business logic
+
+### **Phase 4 Targets:**
+
+- ✅ **Zero Manual Infrastructure**: No custom caching, rate limiting, retries
+- ✅ **Platform Features**: 100% native Adobe API Mesh capabilities
+- ✅ **Maintainability**: Business logic only, platform handles infrastructure
 
 ---
 
-## 📝 **Implementation Notes**
+## 🔍 **Native Feature Research Priorities**
 
-### **Critical Lessons Learned:**
+### **Research Findings: Native Capabilities Assessment**
 
-1. **Web Crypto API is mandatory** - Don't attempt Node.js crypto workarounds
-2. **Commerce API field format is strict** - Always use `items[field1,field2]` format
-3. **OAuth encoding matters** - Use `encodeURIComponent()`, not custom encoding
-4. **Template substitution is reliable** - Great for environment-specific configuration
-5. **Hybrid authentication works** - OAuth + admin tokens can coexist in mesh
+✅ **CONFIRMED LIMITATIONS:**
 
-### **Architecture Decisions:**
+1. **OAuth 1.0 Native Support**: ❌ **Not available** - Adobe API Mesh lacks native OAuth 1.0 handlers
+2. **Commerce API Compatibility**: ✅ **Limited** - OpenAPI sources possible but may require custom auth
+3. **Dynamic Authentication**: ⚠️ **Workaround needed** - Environment variables + custom auth logic
+4. **Schema Discovery**: ✅ **Available** - GraphQL schema stitching works well
 
-1. **Keep hybrid authentication** - Both OAuth and admin tokens are needed
-2. **Maintain template approach** - Environment-specific resolver generation
-3. **Preserve data transformation** - Use existing `buildProducts` step for consistency
-4. **Optimize incrementally** - Don't break working functionality
+### **Realistic Refactor Strategy:**
+
+- **Keep custom OAuth**: Minimal Web Crypto API implementation (can't eliminate)
+- **Use native sources**: HTTP/OpenAPI sources with custom auth headers
+- **Leverage schema stitching**: Replace manual data consolidation with native federation
+- **Adopt native transforms**: Use built-in data transformation capabilities
+- **Implement native caching**: Replace manual Map-based caching with platform features
+
+---
+
+## 🚨 **Security Improvements**
+
+### **Current Security Issues:**
+
+- ❌ Admin credentials passed via GraphQL variables (visible in queries)
+- ❌ Credentials potentially logged in mesh resolver logs
+- ❌ No credential rotation capability
+
+### **Target Security Model:**
+
+- ✅ All credentials in environment variables only
+- ✅ Native authentication handlers with credential isolation
+- ✅ No credentials in GraphQL queries or resolver code
+- ✅ Audit trail for Commerce API access
+
+---
+
+## 📝 **Implementation Strategy**
+
+### **Incremental Migration Approach:**
+
+1. **Parallel Implementation**: Build native sources alongside existing custom resolver
+2. **A/B Testing**: Compare native vs custom resolver performance
+3. **Gradual Cutover**: Source by source migration (Products → Categories → Inventory)
+4. **Rollback Plan**: Keep custom resolver as fallback during migration
 
 ### **Risk Mitigation:**
 
-1. **Always test in staging first** - Mesh deployment can be slow
-2. **Maintain REST fallback** - Keep working REST implementation as backup
-3. **Monitor Commerce API limits** - Implement proper rate limiting
-4. **Version control resolvers** - Template changes should be tracked
+- **Maintain baseline**: Never break the working 119 product output
+- **Performance monitoring**: Track response times through migration
+- **Security validation**: Audit credential handling at each phase
+- **Documentation**: Record native feature limitations discovered
 
 ---
 
-## 🚀 **Next Steps**
+## 🚀 **Expected Outcomes**
 
-1. **Commit Working Baseline** - Ensure clean git state with working implementation
-2. **Start Phase 1** - Begin with error handling and performance optimization
-3. **Incremental Testing** - Test each optimization against baseline performance
-4. **Documentation** - Update architecture docs with real implementation details
-5. **Team Review** - Share learnings and get feedback on optimization priorities
+### **Code Reduction:**
+
+- **Before**: ~800 lines of custom resolver code
+- **After**: ~50 lines of business logic + native configuration
+
+### **Architecture Benefits:**
+
+- **Maintainability**: Platform handles infrastructure concerns
+- **Security**: Native credential management
+- **Performance**: Built-in caching, rate limiting, retry logic
+- **Scalability**: Adobe's optimized data federation
+
+### **Platform Alignment:**
+
+- **Adobe Best Practices**: Using mesh as intended
+- **Future-Proof**: Automatic platform improvements benefit us
+- **Support**: Adobe support for native features vs custom code
 
 ---
 
-## 💡 **Future Opportunities**
-
-Based on our successful implementation, future enhancements could include:
-
-- **Multi-tenant support** - Handle multiple Commerce instances
-- **Real-time inventory updates** - WebSocket integration for live data
-- **Advanced analytics** - Product performance metrics and insights
-- **Mobile optimization** - Lightweight queries for mobile apps
-- **AI/ML integration** - Personalized product recommendations
-
----
-
-*This plan is based on real implementation experience with Adobe API Mesh and Adobe Commerce, not theoretical assumptions. All constraints and capabilities have been validated in practice.*
+*This refactor plan prioritizes the original goal: maximum use of native Adobe API Mesh features with minimal custom code, while addressing security concerns and maintaining proven functionality.*

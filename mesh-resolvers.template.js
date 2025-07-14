@@ -249,33 +249,13 @@ async function fetchAllProducts(context, pageSize, maxPages) {
 // =============================================================================
 
 async function getAdminToken(context) {
-  // Get admin credentials from GraphQL context (passed as variables)
-  const username = context.adminCredentials?.username;
-  const password = context.adminCredentials?.password;
+  // Get pre-generated admin token from context headers (secure approach)
+  const token = context.adminToken;
 
-  if (!username || !password) {
-    throw new Error(
-      'Admin credentials required for inventory: adminUsername and adminPassword GraphQL variables'
-    );
+  if (!token) {
+    throw new Error('Admin token required for inventory: x-commerce-admin-token header');
   }
 
-  const tokenUrl = `${commerceBaseUrl}/rest/all/V1/integration/admin/token`;
-  const response = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      username,
-      password,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get admin token: ${response.status} ${response.statusText}`);
-  }
-
-  const token = await response.json();
   return token;
 }
 
@@ -584,11 +564,8 @@ module.exports = {
               meshOptimizations: [],
             };
 
-            // Store admin credentials from GraphQL arguments (like master branch)
-            context.adminCredentials = {
-              username: args.adminUsername,
-              password: args.adminPassword,
-            };
+            // Extract admin token from context headers (secure approach)
+            context.adminToken = context.headers['x-commerce-admin-token'];
 
             // Step 1: Fetch all products using OAuth (like master branch)
             console.log(

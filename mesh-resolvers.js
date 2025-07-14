@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"039103ac2446130f78c90d7ca4d1c0716645d45b06ae3ef8f529a4111ce8c5e3","configHash":"f9ad6954c2e6faf3d9ba983f9776d96b799f39ece0743ae066dac35f9241ad83","generatedAt":"2025-07-14T03:10:35.999Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"fa51ddb6657752eb0744e7bbc0142d561aa7d227c877e1602ccce8a52f74d79e","configHash":"8a71c34fe24d9fbfb5d192e56cde04681d5312f19a862bf8bebb0e735d282117","generatedAt":"2025-07-14T13:50:33.055Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Consolidated Products (Template-Generated)
  *
@@ -199,29 +199,11 @@ async function fetchAllProducts(context, pageSize, maxPages) {
   let currentPage = 1;
 
   try {
-    console.log('🔑 Step 1 - Getting OAuth credentials...');
     const oauthParams = extractOAuthCredentials(context);
-    console.log('🔑 OAuth credentials check:', {
-      hasConsumerKey: !!oauthParams.consumerKey,
-      hasConsumerSecret: !!oauthParams.consumerSecret,
-      hasAccessToken: !!oauthParams.accessToken,
-      hasAccessTokenSecret: !!oauthParams.accessTokenSecret,
-      consumerKeyStart: oauthParams.consumerKey?.substring(0, 8) + '...',
-    });
 
-    console.log('DEBUG: Step 3 - Starting product fetch loop');
     while (currentPage <= maxPages) {
-      console.log(`DEBUG: Step 4.${currentPage} - Building URL`);
       const url = `${commerceBaseUrl}/rest/V1/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}&fields=${productFields}`;
-      console.log(`DEBUG: Step 5.${currentPage} - URL built: ${url.substring(0, 100)}...`);
-
-      console.log(`DEBUG: Step 6.${currentPage} - Creating OAuth header`);
       const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
-      console.log(
-        `DEBUG: Step 7.${currentPage} - OAuth header created: ${authHeader.substring(0, 50)}...`
-      );
-
-      console.log(`DEBUG: Step 8.${currentPage} - Making fetch request`);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -230,29 +212,20 @@ async function fetchAllProducts(context, pageSize, maxPages) {
         },
       });
 
-      console.log(
-        `DEBUG: Step 9.${currentPage} - Response received: ${response.status} ${response.statusText}`
-      );
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`DEBUG: Error response body: ${errorText}`);
-        // Don't throw error, just return empty - let's see what the error is
-        console.log(
-          `DEBUG: Products API failed but continuing: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`
+        console.error(
+          `Products API failed: ${response.status} ${response.statusText} - ${errorText}`
         );
-        return []; // Return empty instead of throwing
+        return [];
       }
 
       const data = await response.json();
-      console.log(`DEBUG: Response data:`, JSON.stringify(data).substring(0, 200) + '...');
 
       if (!data.items || !Array.isArray(data.items)) {
-        console.log('DEBUG: No items in response, breaking');
         break;
       }
 
-      console.log(`DEBUG: Found ${data.items.length} products in page ${currentPage}`);
       allProducts.push(...data.items);
 
       if (
@@ -260,19 +233,15 @@ async function fetchAllProducts(context, pageSize, maxPages) {
         !data.total_count ||
         allProducts.length >= data.total_count
       ) {
-        console.log(
-          `DEBUG: Stopping pagination - items: ${data.items.length}, pageSize: ${pageSize}, total_count: ${data.total_count}, allProducts: ${allProducts.length}`
-        );
         break;
       }
 
       currentPage++;
     }
 
-    console.log(`DEBUG: Returning ${allProducts.length} total products`);
     return allProducts;
   } catch (error) {
-    console.log(`DEBUG: Error in fetchAllProducts: ${error.message}`);
+    console.error(`Failed to fetch products: ${error.message}`);
     throw new Error(`Failed to fetch products: ${error.message}`);
   }
 }
@@ -282,33 +251,13 @@ async function fetchAllProducts(context, pageSize, maxPages) {
 // =============================================================================
 
 async function getAdminToken(context) {
-  // Get admin credentials from GraphQL context (passed as variables)
-  const username = context.adminCredentials?.username;
-  const password = context.adminCredentials?.password;
+  // Get pre-generated admin token from context headers (secure approach)
+  const token = context.adminToken;
 
-  if (!username || !password) {
-    throw new Error(
-      'Admin credentials required for inventory: adminUsername and adminPassword GraphQL variables'
-    );
+  if (!token) {
+    throw new Error('Admin token required for inventory: x-commerce-admin-token header');
   }
 
-  const tokenUrl = `${commerceBaseUrl}/rest/all/V1/integration/admin/token`;
-  const response = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      username,
-      password,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get admin token: ${response.status} ${response.statusText}`);
-  }
-
-  const token = await response.json();
   return token;
 }
 
@@ -617,11 +566,8 @@ module.exports = {
               meshOptimizations: [],
             };
 
-            // Store admin credentials from GraphQL arguments (like master branch)
-            context.adminCredentials = {
-              username: args.adminUsername,
-              password: args.adminPassword,
-            };
+            // Extract admin token from context headers (secure approach)
+            context.adminToken = context.headers['x-commerce-admin-token'];
 
             // Step 1: Fetch all products using OAuth (like master branch)
             console.log(
