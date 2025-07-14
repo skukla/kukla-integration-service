@@ -1,0 +1,77 @@
+{
+  "source": "Products",
+  "operations": [
+    {
+      "type": "Query",
+      "field": "products_list",
+      "path": "/rest/V1/products",
+      "method": "GET",
+      "description": "Get paginated list of products",
+      "requestSample": {
+        "searchCriteria": {
+          "pageSize": 20,
+          "currentPage": 1
+        }
+      },
+      "responseFields": [
+        "items",
+        "total_count",
+        "search_criteria"
+      ],
+      "endpoint": "https://citisignal-com774.adobedemo.com/rest/V1/products"
+    },
+    {
+      "type": "Query",
+      "field": "products_search",
+      "path": "/rest/V1/products",
+      "method": "GET",
+      "description": "Search products with filters",
+      "requestSample": {
+        "searchCriteria": {
+          "filterGroups": [
+            {
+              "filters": [
+                {
+                  "field": "status",
+                  "value": "1",
+                  "conditionType": "eq"
+                }
+              ]
+            }
+          ],
+          "pageSize": 20,
+          "currentPage": 1
+        }
+      },
+      "responseFields": [
+        "items",
+        "total_count",
+        "search_criteria"
+      ],
+      "endpoint": "https://citisignal-com774.adobedemo.com/rest/V1/products"
+    },
+    {
+      "type": "Query",
+      "field": "product_by_sku",
+      "path": "/rest/V1/products/{sku}",
+      "method": "GET",
+      "description": "Get single product by SKU",
+      "requestSample": {
+        "sku": "sample-product-sku"
+      },
+      "responseFields": [
+        "id",
+        "sku",
+        "name",
+        "price",
+        "status",
+        "visibility",
+        "type_id"
+      ],
+      "endpoint": "https://citisignal-com774.adobedemo.com/rest/V1/products/{sku}"
+    }
+  ],
+  "authentication": "OAuth 1.0",
+  "primaryKey": "sku",
+  "responseType": "ProductsResponse"
+}

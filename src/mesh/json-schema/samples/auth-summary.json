@@ -1,0 +1,45 @@
+{
+  "environment": "production",
+  "commerceUrl": "https://citisignal-com774.adobedemo.com",
+  "authenticationMethods": {
+    "products": "OAuth 1.0",
+    "categories": "OAuth 1.0",
+    "inventory": "Admin Token"
+  },
+  "sources": [
+    {
+      "name": "Products",
+      "endpoint": "https://citisignal-com774.adobedemo.com/rest/V1/products",
+      "operations": [
+        {
+          "field": "products_get",
+          "method": "GET",
+          "path": "/rest/V1/products"
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "endpoint": "https://citisignal-com774.adobedemo.com/rest/V1/categories",
+      "operations": [
+        {
+          "field": "categories_get",
+          "method": "GET",
+          "path": "/rest/V1/categories/{id}"
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "endpoint": "https://citisignal-com774.adobedemo.com/rest/all/V1/inventory",
+      "operations": [
+        {
+          "field": "inventory_get",
+          "method": "GET",
+          "path": "/rest/all/V1/inventory/source-items"
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2025-07-14T19:45:44.429Z"
+}
