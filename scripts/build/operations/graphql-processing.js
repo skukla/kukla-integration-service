@@ -13,6 +13,11 @@ const { processGraphQLSchemas } = require('../../../src/core/utils/operations/gr
  * @returns {string} GraphQL schema string
  */
 function convertTypeDefsToString(additionalTypeDefs) {
+  // Handle undefined or null additionalTypeDefs
+  if (!additionalTypeDefs) {
+    return '';
+  }
+
   let sdlString;
 
   // Handle different input types
