@@ -1,0 +1,59 @@
+{
+  "totalAnalysis": {
+    "linesAnalyzed": 744,
+    "sectionsFound": 9,
+    "functionsFound": 15,
+    "utilitiesExtracted": 4,
+    "sourcePatternsFound": 3
+  },
+  "extractionTargets": {
+    "utilities": [
+      {
+        "category": "OAuth Authentication",
+        "priority": "HIGH",
+        "location": "src/mesh/json-schema/utilities/oauth.js"
+      },
+      {
+        "category": "Category Caching",
+        "priority": "HIGH",
+        "location": "src/mesh/json-schema/utilities/caching.js"
+      },
+      {
+        "category": "Data Enrichment",
+        "priority": "MEDIUM",
+        "location": "src/mesh/json-schema/utilities/enrichment.js"
+      },
+      {
+        "category": "Performance Tracking",
+        "priority": "MEDIUM",
+        "location": "src/mesh/json-schema/utilities/performance.js"
+      }
+    ],
+    "resolvers": [
+      {
+        "source": "Products",
+        "target": "src/mesh/json-schema/resolvers/products.js",
+        "complexity": "MEDIUM"
+      },
+      {
+        "source": "Categories",
+        "target": "src/mesh/json-schema/resolvers/categories.js",
+        "complexity": "MEDIUM"
+      },
+      {
+        "source": "Inventory",
+        "target": "src/mesh/json-schema/resolvers/inventory.js",
+        "complexity": "LOW"
+      }
+    ]
+  },
+  "nextSteps": {
+    "step1": "Extract shared utilities (OAuth, caching, performance)",
+    "step2": "Create products resolver with extracted utilities",
+    "step3": "Create categories resolver with caching",
+    "step4": "Create inventory resolver with admin token auth",
+    "step5": "Update mesh configuration to use JSON Schema sources",
+    "step6": "Test and validate parity with monolithic resolver"
+  },
+  "generatedAt": "2025-07-14T20:03:55.531Z"
+}
