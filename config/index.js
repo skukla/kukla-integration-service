@@ -105,6 +105,8 @@ function loadConfig(params = {}, isProd = false) {
 
     // 🎨 FRONTEND DOMAIN
     ui: uiConfig,
+
+    // 🔄 JSON SCHEMA DOMAIN
   };
 }
 
