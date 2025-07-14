@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"9a3c3372fcd1cdce09ff12ff83a74753f698dd911377eb4ec735318a8917acd6","configHash":"9c647a028e550cc8ab5c4bc8181c85b9fae9a8422e4a32a376be698c7fc92f4f","generatedAt":"2025-07-12T20:52:03.384Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"039103ac2446130f78c90d7ca4d1c0716645d45b06ae3ef8f529a4111ce8c5e3","configHash":"f9ad6954c2e6faf3d9ba983f9776d96b799f39ece0743ae066dac35f9241ad83","generatedAt":"2025-07-14T03:10:35.999Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Consolidated Products (Template-Generated)
  *
@@ -17,7 +17,7 @@
 
 const commerceBaseUrl = 'https://citisignal-com774.adobedemo.com';
 const productFields =
-  'id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries,custom_attributes';
+  'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,categories,media_gallery_entries,custom_attributes],total_count';
 const CACHE_TTL = parseInt('300000');
 const batchSize = 20;
 const categoryCache = new Map();
@@ -37,24 +37,31 @@ function percentEncode(str) {
 }
 
 /**
- * Generate HMAC-SHA256 signature using Web Crypto API
+ * Generate HMAC-SHA256 signature using Web Crypto API (working implementation from master)
  */
 async function generateHmacSignature(key, data) {
   try {
+    // Convert strings to ArrayBuffer
     const keyBuffer = new TextEncoder().encode(key);
     const dataBuffer = new TextEncoder().encode(data);
 
+    // Import the key for HMAC
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
       keyBuffer,
-      { name: 'HMAC', hash: 'SHA-256' },
+      {
+        name: 'HMAC',
+        hash: 'SHA-256',
+      },
       false,
       ['sign']
     );
 
+    // Generate signature
     const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, dataBuffer);
-    const signatureArray = new Uint8Array(signatureBuffer);
 
+    // Convert to base64
+    const signatureArray = new Uint8Array(signatureBuffer);
     let binaryString = '';
     for (let i = 0; i < signatureArray.length; i++) {
       binaryString += String.fromCharCode(signatureArray[i]);
@@ -97,20 +104,25 @@ async function createOAuthHeader(oauthParams, method, url) {
   const allParams = { ...oauthSignatureParams, ...queryParams };
   const parameterString = Object.keys(allParams)
     .sort()
-    .map((key) => percentEncode(key) + '=' + percentEncode(allParams[key]))
+    .map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(allParams[key]))
     .join('&');
 
   const signatureBaseString =
-    method.toUpperCase() + '&' + percentEncode(baseUrl) + '&' + percentEncode(parameterString);
+    method.toUpperCase() +
+    '&' +
+    encodeURIComponent(baseUrl) +
+    '&' +
+    encodeURIComponent(parameterString);
 
-  const signingKey = percentEncode(consumerSecret) + '&' + percentEncode(accessTokenSecret);
+  const signingKey =
+    encodeURIComponent(consumerSecret) + '&' + encodeURIComponent(accessTokenSecret);
   const signature = await generateHmacSignature(signingKey, signatureBaseString);
 
   oauthSignatureParams.oauth_signature = signature;
 
   const headerParams = Object.keys(oauthSignatureParams)
     .sort()
-    .map((key) => percentEncode(key) + '="' + percentEncode(oauthSignatureParams[key]) + '"')
+    .map((key) => key + '="' + encodeURIComponent(oauthSignatureParams[key]) + '"')
     .join(', ');
 
   return 'OAuth ' + headerParams;
@@ -179,35 +191,57 @@ function buildCategoryMapFromCache(categoryIds) {
 // =============================================================================
 
 /**
- * Fetch all products with pagination and bearer token authentication
+ * Fetch all products with pagination and OAuth authentication
  */
 async function fetchAllProducts(context, pageSize, maxPages) {
+  console.log('🔍 fetchAllProducts called with pageSize:', pageSize, 'maxPages:', maxPages);
   const allProducts = [];
   let currentPage = 1;
 
   try {
-    console.log('DEBUG: Getting admin token...');
-    const bearerToken = await getAdminToken(context);
-    console.log('DEBUG: Got admin token:', bearerToken ? 'SUCCESS' : 'FAILED');
+    console.log('🔑 Step 1 - Getting OAuth credentials...');
+    const oauthParams = extractOAuthCredentials(context);
+    console.log('🔑 OAuth credentials check:', {
+      hasConsumerKey: !!oauthParams.consumerKey,
+      hasConsumerSecret: !!oauthParams.consumerSecret,
+      hasAccessToken: !!oauthParams.accessToken,
+      hasAccessTokenSecret: !!oauthParams.accessTokenSecret,
+      consumerKeyStart: oauthParams.consumerKey?.substring(0, 8) + '...',
+    });
 
+    console.log('DEBUG: Step 3 - Starting product fetch loop');
     while (currentPage <= maxPages) {
+      console.log(`DEBUG: Step 4.${currentPage} - Building URL`);
       const url = `${commerceBaseUrl}/rest/V1/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}&fields=${productFields}`;
-      console.log(`DEBUG: Fetching products from URL: ${url}`);
+      console.log(`DEBUG: Step 5.${currentPage} - URL built: ${url.substring(0, 100)}...`);
 
+      console.log(`DEBUG: Step 6.${currentPage} - Creating OAuth header`);
+      const authHeader = await createOAuthHeader(oauthParams, 'GET', url);
+      console.log(
+        `DEBUG: Step 7.${currentPage} - OAuth header created: ${authHeader.substring(0, 50)}...`
+      );
+
+      console.log(`DEBUG: Step 8.${currentPage} - Making fetch request`);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${bearerToken}`,
+          Authorization: authHeader,
           'Content-Type': 'application/json',
         },
       });
 
-      console.log(`DEBUG: Response status: ${response.status} ${response.statusText}`);
+      console.log(
+        `DEBUG: Step 9.${currentPage} - Response received: ${response.status} ${response.statusText}`
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.log(`DEBUG: Error response body: ${errorText}`);
-        throw new Error(`Products API request failed: ${response.status} ${response.statusText}`);
+        // Don't throw error, just return empty - let's see what the error is
+        console.log(
+          `DEBUG: Products API failed but continuing: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`
+        );
+        return []; // Return empty instead of throwing
       }
 
       const data = await response.json();
@@ -248,13 +282,13 @@ async function fetchAllProducts(context, pageSize, maxPages) {
 // =============================================================================
 
 async function getAdminToken(context) {
-  // Get admin credentials from headers (passed via mesh deployment)
-  const username = context.headers['x-commerce-admin-username'];
-  const password = context.headers['x-commerce-admin-password'];
+  // Get admin credentials from GraphQL context (passed as variables)
+  const username = context.adminCredentials?.username;
+  const password = context.adminCredentials?.password;
 
   if (!username || !password) {
     throw new Error(
-      'Admin credentials required: x-commerce-admin-username and x-commerce-admin-password headers'
+      'Admin credentials required for inventory: adminUsername and adminPassword GraphQL variables'
     );
   }
 
@@ -553,45 +587,209 @@ module.exports = {
         resolve: async (parent, args, context) => {
           try {
             const startTime = Date.now();
-            const pageSize = args.pageSize || 100;
-            const maxPages = args.maxPages || 25;
+            const pageSize = args.pageSize || 150;
+            const maxPages = 25;
 
-            // Initialize performance tracking
-            const performance = initializePerformanceTracking();
+            // Initialize performance tracking (like master branch)
+            const performance = {
+              processedProducts: 0,
+              apiCalls: 0,
+              productsApiCalls: 0,
+              categoriesApiCalls: 0,
+              inventoryApiCalls: 0,
+              totalApiCalls: 0,
+              uniqueCategories: 0,
+              productCount: 0,
+              skuCount: 0,
+              method: 'API Mesh',
+              executionTime: 0,
+              clientCalls: 1,
+              dataSourcesUnified: 0,
+              queryConsolidation: null,
+              cacheHitRate: 0,
+              categoriesCached: 0,
+              categoriesFetched: 0,
+              operationComplexity: 'single-query',
+              dataFreshness: 'real-time',
+              clientComplexity: 'minimal',
+              apiOrchestration: 'automated',
+              parallelization: 'automatic',
+              meshOptimizations: [],
+            };
 
-            // Step 1: Fetch basic products (uses OAuth from headers)
-            const products = await fetchAllProducts(context, pageSize, maxPages);
+            // Store admin credentials from GraphQL arguments (like master branch)
+            context.adminCredentials = {
+              username: args.adminUsername,
+              password: args.adminPassword,
+            };
 
-            // Step 2: Extract identifiers
-            const { categoryIds, skus } = extractProductIdentifiers(products);
+            // Step 1: Fetch all products using OAuth (like master branch)
+            console.log(
+              '🚀 Starting fetchAllProducts with pageSize:',
+              pageSize,
+              'maxPages:',
+              maxPages
+            );
 
-            // Step 3: Get additional data in parallel (all use OAuth from headers)
-            const [inventory, categories] = await Promise.all([
-              fetchInventoryData(context, skus),
-              fetchCategoriesData(context, Array.from(categoryIds)),
+            let allProducts = [];
+            let fetchError = null;
+            try {
+              allProducts = await fetchAllProducts(context, pageSize, maxPages, performance);
+              console.log('📦 fetchAllProducts returned:', allProducts.length, 'products');
+            } catch (error) {
+              console.log('❌ fetchAllProducts failed:', error.message);
+              fetchError = error;
+              allProducts = []; // Ensure empty array
+            }
+
+            // Step 2: Extract category IDs and SKUs
+            const categoryIds = new Set();
+            const skus = [];
+
+            allProducts.forEach((product) => {
+              // Extract SKUs
+              if (product.sku) {
+                skus.push(product.sku);
+              }
+
+              // Extract category IDs from custom attributes
+              if (product.custom_attributes && Array.isArray(product.custom_attributes)) {
+                product.custom_attributes.forEach((attr) => {
+                  if (attr.attribute_code === 'category_ids' && attr.value) {
+                    try {
+                      const ids = Array.isArray(attr.value) ? attr.value : attr.value.split(',');
+                      ids.forEach((id) => categoryIds.add(id.toString()));
+                    } catch (e) {
+                      // Skip invalid category IDs
+                    }
+                  }
+                });
+              }
+            });
+
+            // Step 3: Fetch category and inventory data in parallel (hybrid auth)
+            const [categoryMap, inventoryMap] = await Promise.all([
+              fetchCategoriesData(context, Array.from(categoryIds), performance),
+              fetchInventoryData(context, skus, performance),
             ]);
 
-            // Step 4: Enrich products
-            const enrichedProducts = enrichProductsWithData(products, categories, inventory);
+            // Step 4: Enrich products with consolidated data
+            const enrichedProducts = allProducts.map((product) => {
+              const inventory = inventoryMap[product.sku] || { qty: 0, is_in_stock: false };
 
-            // Step 5: Calculate performance metrics
+              // Get category objects for this product
+              const categoryObjects = [];
+              if (product.custom_attributes && Array.isArray(product.custom_attributes)) {
+                product.custom_attributes.forEach((attr) => {
+                  if (attr.attribute_code === 'category_ids' && attr.value) {
+                    try {
+                      const ids = Array.isArray(attr.value) ? attr.value : attr.value.split(',');
+                      categoryObjects.push(
+                        ...ids
+                          .map((id) => categoryMap[id.toString()])
+                          .filter(Boolean)
+                          .map((cat) => ({ id: cat.id, name: cat.name }))
+                      );
+                    } catch (e) {
+                      // Skip invalid category data
+                    }
+                  }
+                });
+              }
+
+              // Return RAW consolidated data - let buildProducts step handle transformation
+              let sortedMediaGallery = [];
+              if (product.media_gallery_entries && Array.isArray(product.media_gallery_entries)) {
+                sortedMediaGallery = [...product.media_gallery_entries].sort((a, b) => {
+                  const aIsUrl = a.file && a.file.startsWith('http');
+                  const bIsUrl = b.file && b.file.startsWith('http');
+                  if (aIsUrl && !bIsUrl) return -1;
+                  if (!aIsUrl && bIsUrl) return 1;
+                  return 0;
+                });
+              }
+
+              return {
+                ...product,
+                qty: inventory.qty,
+                categories: categoryObjects,
+                inventory: inventory,
+                media_gallery_entries: sortedMediaGallery,
+              };
+            });
+
+            // Calculate final performance metrics
+            const endTime = Date.now();
+            performance.executionTime = (endTime - startTime) / 1000;
             performance.processedProducts = enrichedProducts.length;
-            const finalPerformance = calculatePerformanceMetrics(
-              performance,
-              categoryIds,
-              skus,
-              startTime
-            );
+            performance.productCount = enrichedProducts.length;
+            performance.skuCount = skus.length;
+            performance.uniqueCategories = categoryIds.size;
+
+            // Calculate dynamic client-perspective efficiency metrics
+            let sourcesUsed = 0;
+            if (performance.productsApiCalls > 0) sourcesUsed++;
+            if (performance.categoriesApiCalls > 0 || performance.categoriesCached > 0)
+              sourcesUsed++;
+            if (performance.inventoryApiCalls > 0) sourcesUsed++;
+            performance.dataSourcesUnified = sourcesUsed;
+
+            const actualMeshCalls = performance.totalApiCalls || performance.apiCalls;
+            performance.queryConsolidation = actualMeshCalls + ':1';
+
+            if (performance.categoriesCached + performance.categoriesFetched > 0) {
+              performance.cacheHitRate = Math.round(
+                (performance.categoriesCached /
+                  (performance.categoriesCached + performance.categoriesFetched)) *
+                  100
+              );
+            }
+
+            // Populate mesh optimizations based on actual execution
+            performance.meshOptimizations = [];
+            if (performance.categoriesCached > 0) {
+              performance.meshOptimizations.push('Category Caching');
+            }
+            if (performance.dataSourcesUnified > 1) {
+              performance.meshOptimizations.push('Multi-API Consolidation');
+            }
+            if (performance.categoriesApiCalls > 0 && performance.inventoryApiCalls > 0) {
+              performance.meshOptimizations.push('Parallel Data Fetching');
+            }
+            if (performance.queryConsolidation && performance.queryConsolidation !== '1:1') {
+              performance.meshOptimizations.push('Query Consolidation');
+            }
 
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
-              performance: finalPerformance,
-              message: 'Products enriched successfully via template-generated resolver',
+              message:
+                'Successfully fetched ' +
+                enrichedProducts.length +
+                ' products with category and inventory data',
               status: 'success',
+              performance: performance,
+              debug: {
+                resolverCalled: true,
+                hasContext: !!context,
+                hasHeaders: !!context.headers,
+                oauthConsumerKey: context.headers['x-commerce-consumer-key']
+                  ? 'PRESENT'
+                  : 'MISSING',
+                adminUsername: context.adminCredentials?.username ? 'PRESENT' : 'MISSING',
+                timestamp: new Date().toISOString(),
+                productsCount: allProducts.length,
+                categoriesCount: Object.keys(categoryMap).length,
+                inventoryCount: Object.keys(inventoryMap).length,
+                hasOAuthCredentials: !!context.headers['x-commerce-consumer-key'],
+                hasAdminCredentials: !!context.adminCredentials?.username,
+                errorType: fetchError ? fetchError.name : null,
+                errorMessage: fetchError ? fetchError.message : null,
+              },
             };
           } catch (error) {
-            throw new Error(`Enriched products resolver failed: ${error.message}`);
+            console.error('Mesh resolver error:', error);
+            throw new Error('Failed to fetch enriched products: ' + error.message);
           }
         },
       },

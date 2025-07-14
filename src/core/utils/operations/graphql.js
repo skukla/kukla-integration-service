@@ -23,12 +23,25 @@ function processGraphQLSchemas(meshConfig) {
   const { print } = require('graphql');
   const processedConfig = { ...meshConfig };
 
-  if (meshConfig.additionalTypeDefs && typeof meshConfig.additionalTypeDefs === 'object') {
-    // Convert GraphQL AST to SDL string using graphql print function
-    let sdlString = print(meshConfig.additionalTypeDefs);
+  if (meshConfig.additionalTypeDefs) {
+    let sdlString;
+
+    if (typeof meshConfig.additionalTypeDefs === 'object') {
+      // Convert GraphQL AST to SDL string using graphql print function
+      sdlString = print(meshConfig.additionalTypeDefs);
+    } else if (typeof meshConfig.additionalTypeDefs === 'string') {
+      // Already a string, use as-is
+      sdlString = meshConfig.additionalTypeDefs;
+    } else {
+      // Unknown type, return unchanged
+      return processedConfig;
+    }
 
     // Remove schema definition that conflicts with Adobe's OpenAPI Query type
-    sdlString = sdlString.replace(/\n\nschema\s*\{\s*query:\s*Query\s*\}\s*$/, '');
+    // Remove any occurrence of schema { query: Query } with flexible whitespace handling
+    sdlString = sdlString.replace(/schema\s*\{\s*query:\s*Query\s*\}/gi, '');
+    // Clean up any leftover empty lines or trailing whitespace
+    sdlString = sdlString.replace(/\n\s*\n/g, '\n').trim();
 
     processedConfig.additionalTypeDefs = sdlString;
   }
