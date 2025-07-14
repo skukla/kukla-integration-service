@@ -22,6 +22,13 @@ async function makeMeshRequestWithRetry(requestConfig, options = {}) {
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      console.log(`Mesh request attempt ${attempt + 1}:`, {
+        endpoint,
+        hasApiKey: !!headers['x-api-key'],
+        bodySize: JSON.stringify(requestBody).length,
+        query: requestBody.query?.substring(0, 100) + '...',
+      });
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -41,11 +48,18 @@ async function makeMeshRequestWithRetry(requestConfig, options = {}) {
       const result = await res.json();
 
       if (result.errors && result.errors.length > 0) {
+        console.error('GraphQL errors:', result.errors);
         throw new Error(`GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`);
       }
 
       return result;
     } catch (error) {
+      console.error(`Mesh request attempt ${attempt + 1} failed:`, {
+        errorMessage: error.message,
+        errorName: error.name,
+        endpoint,
+        statusCode: error.status || 'unknown',
+      });
       lastError = error;
       if (attempt < retries) {
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
@@ -62,8 +76,8 @@ async function makeMeshRequestWithRetry(requestConfig, options = {}) {
  */
 function createMeshQuery() {
   return `
-    query GetEnrichedProducts($pageSize: Int, $maxPages: Int) {
-      mesh_products_enriched(pageSize: $pageSize, maxPages: $maxPages) {
+    query GetEnrichedProducts($pageSize: Int, $adminUsername: String, $adminPassword: String) {
+      mesh_products_enriched(pageSize: $pageSize, adminUsername: $adminUsername, adminPassword: $adminPassword) {
         products {
           sku
           name
@@ -125,19 +139,19 @@ function createMeshRequestConfig(config, credentials) {
   const query = createMeshQuery();
   const variables = {
     pageSize: config.products.pagination.pageSize,
-    maxPages: config.products.pagination.maxPages,
+    adminUsername: adminCredentials.adminUsername,
+    adminPassword: adminCredentials.adminPassword,
   };
 
   const requestBody = { query, variables };
   const headers = {
     'Content-Type': 'application/json',
     'x-api-key': meshApiKey,
+    // OAuth credentials via HTTP headers (for mesh resolver)
     'x-commerce-consumer-key': oauthCredentials.consumerKey,
     'x-commerce-consumer-secret': oauthCredentials.consumerSecret,
     'x-commerce-access-token': oauthCredentials.accessToken,
     'x-commerce-access-token-secret': oauthCredentials.accessTokenSecret,
-    'x-commerce-admin-username': adminCredentials.adminUsername,
-    'x-commerce-admin-password': adminCredentials.adminPassword,
   };
 
   return { requestBody, headers };
@@ -192,6 +206,14 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
     accessTokenSecret: actionParams.COMMERCE_ACCESS_TOKEN_SECRET,
   };
 
+  console.log('DEBUG: OAuth credentials check:', {
+    hasConsumerKey: !!oauthCredentials.consumerKey,
+    hasConsumerSecret: !!oauthCredentials.consumerSecret,
+    hasAccessToken: !!oauthCredentials.accessToken,
+    hasAccessTokenSecret: !!oauthCredentials.accessTokenSecret,
+    consumerKeyPrefix: oauthCredentials.consumerKey?.substring(0, 10) + '...',
+  });
+
   if (
     !oauthCredentials.consumerKey ||
     !oauthCredentials.consumerSecret ||
@@ -227,6 +249,18 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
     retries: config.performance.retries.api.mesh.attempts,
     retryDelay: config.performance.retries.api.mesh.delay,
     timeout: config.performance.timeouts.api.mesh,
+  });
+
+  console.log('DEBUG: Mesh response received:', {
+    hasData: !!result.data,
+    hasProducts: !!result.data?.mesh_products_enriched,
+    productCount: result.data?.mesh_products_enriched?.products?.length || 0,
+    totalCount: result.data?.mesh_products_enriched?.total_count || 0,
+    status: result.data?.mesh_products_enriched?.status,
+    message: result.data?.mesh_products_enriched?.message,
+    hasPerformance: !!result.data?.mesh_products_enriched?.performance,
+    performanceApiCalls: result.data?.mesh_products_enriched?.performance?.totalApiCalls,
+    performanceMethod: result.data?.mesh_products_enriched?.performance?.method,
   });
 
   return validateMeshResponse(result);

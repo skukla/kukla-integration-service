@@ -1,6 +1,7 @@
 /**
  * Main action for exporting Adobe Commerce product data via API Mesh
  * @module get-products-mesh
+ * @updated Force redeploy to fix errorResponse bug
  */
 
 const { createAction } = require('../../src/core');
@@ -41,8 +42,10 @@ async function getProductsMeshBusinessLogic(context) {
       {
         products: builtProducts,
         total_count: productCount,
-        performance: meshData.performance,
+        performance: meshData.performance || { method: 'API Mesh (No Data)', processedProducts: 0 },
         steps,
+        // Include debug information from mesh response
+        ...(meshData.debug && { meshDebug: meshData.debug }),
       },
       'Product data retrieved successfully via API Mesh',
       {}
@@ -67,7 +70,7 @@ async function getProductsMeshBusinessLogic(context) {
       downloadUrl: storageResult.downloadUrl,
       performance: {
         // Include mesh performance metrics
-        ...meshData.performance,
+        ...(meshData.performance || { method: 'API Mesh (No Data)', processedProducts: 0 }),
         // Add total duration
         duration: totalDuration,
         durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
@@ -75,6 +78,8 @@ async function getProductsMeshBusinessLogic(context) {
         method: 'API Mesh',
       },
       storage: storageResult.storage,
+      // Include debug information from mesh response
+      ...(meshData.debug && { meshDebug: meshData.debug }),
     },
     'Product export completed successfully',
     {}

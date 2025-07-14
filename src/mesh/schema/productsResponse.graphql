@@ -1,7 +1,24 @@
+type ProductsDebug {
+  resolverCalled: Boolean
+  hasContext: Boolean
+  hasHeaders: Boolean
+  oauthConsumerKey: String
+  adminUsername: String
+  timestamp: String
+  productsCount: Int
+  categoriesCount: Int
+  inventoryCount: Int
+  hasOAuthCredentials: Boolean
+  hasAdminCredentials: Boolean
+  errorType: String
+  errorMessage: String
+}
+
 type ProductsResponse {
   products: [EnrichedProduct]
   total_count: Int
   message: String
   status: String
   performance: ProductsPerformance
+  debug: ProductsDebug
 }
