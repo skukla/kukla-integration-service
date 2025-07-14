@@ -97,7 +97,7 @@ async function meshUpdateStep(options = {}) {
  * @returns {Promise<Object>} Status result
  */
 async function waitForMeshDeployment() {
-  const maxTimeout = 5 * 60 * 1000; // 5 minutes total
+  const maxTimeout = 10 * 60 * 1000; // 5 minutes total
   const pollInterval = 30 * 1000; // 30 seconds between polls
   const maxAttempts = Math.ceil(maxTimeout / pollInterval);
 

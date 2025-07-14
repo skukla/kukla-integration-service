@@ -10,6 +10,73 @@ const customTypes = mergeTypeDefs(
 
 module.exports = {
   sources: [
+    // Products Source - OAuth 1.0 Authentication
+    {
+      name: 'commerceProducts',
+      handler: {
+        openapi: {
+          source: 'https://citisignal-com774.adobedemo.com/rest/all/schema?services=all',
+          operationHeaders: {
+            'Content-Type': 'application/json',
+            // OAuth 1.0 signature will be handled by custom resolver for now
+          },
+        },
+      },
+      transforms: [
+        {
+          prefix: {
+            value: 'Products_',
+            includeRootOperations: true,
+          },
+        },
+      ],
+    },
+
+    // Inventory Source - Admin Token Authentication
+    {
+      name: 'commerceInventory',
+      handler: {
+        openapi: {
+          source: 'https://citisignal-com774.adobedemo.com/rest/all/schema?services=all',
+          operationHeaders: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer {context.headers.x-commerce-admin-token}',
+          },
+        },
+      },
+      transforms: [
+        {
+          prefix: {
+            value: 'Inventory_',
+            includeRootOperations: true,
+          },
+        },
+      ],
+    },
+
+    // Categories Source - OAuth 1.0 Authentication
+    {
+      name: 'commerceCategories',
+      handler: {
+        openapi: {
+          source: 'https://citisignal-com774.adobedemo.com/rest/all/schema?services=all',
+          operationHeaders: {
+            'Content-Type': 'application/json',
+            // OAuth 1.0 signature will be handled by custom resolver for now
+          },
+        },
+      },
+      transforms: [
+        {
+          prefix: {
+            value: 'Categories_',
+            includeRootOperations: true,
+          },
+        },
+      ],
+    },
+
+    // Keep original source for backward compatibility during transition
     {
       name: 'commercerest',
       handler: {
@@ -23,7 +90,7 @@ module.exports = {
     },
   ],
   additionalResolvers: [
-    './mesh-resolvers.js', // Single template-generated resolver file
+    './mesh-resolvers.js', // Simplified multi-source resolver
   ],
   additionalTypeDefs: customTypes,
 };
