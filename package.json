@@ -58,6 +58,8 @@
     "test:suite:prod": "node scripts/test.js suite --prod",
     "test:suite:list": "node scripts/test.js suite list",
     "test:suite:smoke": "node scripts/test.js suite smoke",
+    "verify:mesh": "node verify-mesh-sources.js",
+    "debug:phase2": "node debug-phase2-dataflow.js",
     "test:suite:regression": "node scripts/test.js suite regression",
     "test:suite:performance": "node scripts/test.js suite performance"
   },
