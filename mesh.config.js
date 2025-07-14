@@ -17,7 +17,6 @@ module.exports = {
           source: 'https://citisignal-com774.adobedemo.com/rest/all/schema?services=all',
           operationHeaders: {
             'Content-Type': 'application/json',
-            Authorization: "Bearer {context.headers['x-commerce-admin-token']}",
           },
         },
       },

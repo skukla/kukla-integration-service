@@ -6,6 +6,8 @@
  * Moved from action-specific lib to domain for reusability.
  */
 
+const { getAuthToken } = require('../../commerce/utils/admin-auth');
+
 /**
  * Make GraphQL request to mesh with retry logic
  * @param {Object} requestConfig - Request configuration
@@ -76,8 +78,8 @@ async function makeMeshRequestWithRetry(requestConfig, options = {}) {
  */
 function createMeshQuery() {
   return `
-    query GetEnrichedProducts($pageSize: Int, $adminUsername: String, $adminPassword: String) {
-      mesh_products_enriched(pageSize: $pageSize, adminUsername: $adminUsername, adminPassword: $adminPassword) {
+    query GetEnrichedProducts($pageSize: Int) {
+      mesh_products_enriched(pageSize: $pageSize) {
         products {
           sku
           name
@@ -130,17 +132,15 @@ function createMeshQuery() {
  * @param {Object} config - Configuration object
  * @param {Object} credentials - All credential data
  * @param {Object} credentials.oauth - OAuth credentials
- * @param {Object} credentials.admin - Admin credentials
+ * @param {string} credentials.adminToken - Pre-generated admin bearer token
  * @param {string} credentials.meshApiKey - Mesh API key
  * @returns {Object} Request configuration
  */
 function createMeshRequestConfig(config, credentials) {
-  const { oauth: oauthCredentials, admin: adminCredentials, meshApiKey } = credentials;
+  const { oauth: oauthCredentials, adminToken, meshApiKey } = credentials;
   const query = createMeshQuery();
   const variables = {
     pageSize: config.products.pagination.pageSize,
-    adminUsername: adminCredentials.adminUsername,
-    adminPassword: adminCredentials.adminPassword,
   };
 
   const requestBody = { query, variables };
@@ -152,6 +152,8 @@ function createMeshRequestConfig(config, credentials) {
     'x-commerce-consumer-secret': oauthCredentials.consumerSecret,
     'x-commerce-access-token': oauthCredentials.accessToken,
     'x-commerce-access-token-secret': oauthCredentials.accessTokenSecret,
+    // Admin token via HTTP header (secure approach)
+    'x-commerce-admin-token': adminToken,
   };
 
   return { requestBody, headers };
@@ -225,20 +227,18 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
     );
   }
 
-  const adminCredentials = {
-    adminUsername: actionParams.COMMERCE_ADMIN_USERNAME,
-    adminPassword: actionParams.COMMERCE_ADMIN_PASSWORD,
-  };
+  // Generate admin token using established Commerce authentication pattern
+  const adminToken = await getAuthToken(actionParams, config);
 
-  if (!adminCredentials.adminUsername || !adminCredentials.adminPassword) {
+  if (!adminToken) {
     throw new Error(
-      'Admin credentials required for inventory: COMMERCE_ADMIN_USERNAME, COMMERCE_ADMIN_PASSWORD'
+      'Failed to generate admin token: COMMERCE_ADMIN_USERNAME, COMMERCE_ADMIN_PASSWORD required'
     );
   }
 
   const credentials = {
     oauth: oauthCredentials,
-    admin: adminCredentials,
+    adminToken,
     meshApiKey,
   };
 
