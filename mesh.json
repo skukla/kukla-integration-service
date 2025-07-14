@@ -2,6 +2,64 @@
   "meshConfig": {
     "sources": [
       {
+        "name": "commerceProducts",
+        "handler": {
+          "openapi": {
+            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
+            "operationHeaders": {
+              "Content-Type": "application/json"
+            }
+          }
+        },
+        "transforms": [
+          {
+            "prefix": {
+              "value": "Products_",
+              "includeRootOperations": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "commerceInventory",
+        "handler": {
+          "openapi": {
+            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
+            "operationHeaders": {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+            }
+          }
+        },
+        "transforms": [
+          {
+            "prefix": {
+              "value": "Inventory_",
+              "includeRootOperations": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "commerceCategories",
+        "handler": {
+          "openapi": {
+            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
+            "operationHeaders": {
+              "Content-Type": "application/json"
+            }
+          }
+        },
+        "transforms": [
+          {
+            "prefix": {
+              "value": "Categories_",
+              "includeRootOperations": true
+            }
+          }
+        ]
+      },
+      {
         "name": "commercerest",
         "handler": {
           "openapi": {
