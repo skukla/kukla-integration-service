@@ -78,6 +78,17 @@ async function getProductsMeshBusinessLogic(context) {
         method: 'API Mesh',
       },
       storage: storageResult.storage,
+      // Add debugging information
+      debug: {
+        meshDataReceived: !!meshData,
+        meshDataKeys: meshData ? Object.keys(meshData) : [],
+        productCount: productCount,
+        builtProductsCount: builtProducts ? builtProducts.length : 0,
+        rawMeshSample: meshData
+          ? JSON.stringify(meshData).substring(0, 500) + '...'
+          : 'No mesh data',
+        timestamp: new Date().toISOString(),
+      },
       // Include debug information from mesh response
       ...(meshData.debug && { meshDebug: meshData.debug }),
     },
@@ -94,3 +105,4 @@ module.exports = createAction(getProductsMeshBusinessLogic, {
   withLogger: false,
   description: 'Export Adobe Commerce product data via API Mesh to CSV using domain workflows',
 });
+// Force rebuild Mon Jul 14 13:49:42 EDT 2025
