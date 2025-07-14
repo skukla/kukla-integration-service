@@ -42,7 +42,7 @@ function buildProductsConfig() {
     },
 
     pagination: {
-      pageSize: 100, // Standard page size for Commerce API
+      pageSize: 200,
       maxPages: 25, // Maximum pages to process
       fallbackPageSize: 50, // Fallback for error conditions
     },
