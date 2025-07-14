@@ -2,78 +2,74 @@
   "meshConfig": {
     "sources": [
       {
-        "name": "commerceProducts",
+        "name": "Products",
         "handler": {
-          "openapi": {
-            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
-            "operationHeaders": {
-              "Content-Type": "application/json"
-            }
-          }
-        },
-        "transforms": [
-          {
-            "prefix": {
-              "value": "Products_",
-              "includeRootOperations": true
-            }
-          }
-        ]
-      },
-      {
-        "name": "commerceInventory",
-        "handler": {
-          "openapi": {
-            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
+          "JsonSchema": {
+            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
             "operationHeaders": {
               "Content-Type": "application/json",
               "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
-            }
+            },
+            "operations": [
+              {
+                "type": "Query",
+                "field": "products_list",
+                "path": "/products?searchCriteria[pageSize]=200",
+                "method": "GET",
+                "responseSchema": "./samples/json-schema/products-response.json"
+              }
+            ]
           }
-        },
-        "transforms": [
-          {
-            "prefix": {
-              "value": "Inventory_",
-              "includeRootOperations": true
-            }
-          }
-        ]
+        }
       },
       {
-        "name": "commerceCategories",
+        "name": "Categories",
         "handler": {
-          "openapi": {
-            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
+          "JsonSchema": {
+            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
             "operationHeaders": {
-              "Content-Type": "application/json"
-            }
+              "Content-Type": "application/json",
+              "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+            },
+            "operations": [
+              {
+                "type": "Query",
+                "field": "category_info",
+                "path": "/categories/{args.categoryId}",
+                "method": "GET",
+                "argTypeMap": {
+                  "categoryId": {
+                    "type": "integer"
+                  }
+                },
+                "responseSchema": "./samples/json-schema/categories-response.json"
+              }
+            ]
           }
-        },
-        "transforms": [
-          {
-            "prefix": {
-              "value": "Categories_",
-              "includeRootOperations": true
-            }
-          }
-        ]
+        }
       },
       {
-        "name": "commercerest",
+        "name": "Inventory",
         "handler": {
-          "openapi": {
-            "source": "https://citisignal-com774.adobedemo.com/rest/all/schema?services=all",
+          "JsonSchema": {
+            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
             "operationHeaders": {
-              "Content-Type": "application/json"
-            }
+              "Content-Type": "application/json",
+              "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+            },
+            "operations": [
+              {
+                "type": "Query",
+                "field": "inventory_items",
+                "path": "/inventory/source-items?searchCriteria[pageSize]=200",
+                "method": "GET",
+                "responseSchema": "./samples/json-schema/inventory-response.json"
+              }
+            ]
           }
         }
       }
     ],
-    "additionalResolvers": [
-      "./mesh-resolvers.js"
-    ],
-    "additionalTypeDefs": "type CategoriesResponse {\n  categories: JSON\n  total_count: Int\n  message: String\n  status: String\n}\ntype EnrichedProduct {\n  sku: String!\n  name: String\n  price: Float\n  qty: Float\n  categories: [ProductCategory]\n  images: [ProductImage]\n  media_gallery_entries: [MediaGalleryEntry]\n  inventory: ProductInventory\n}\ntype EnrichedProductsResponse {\n  products: [EnrichedProduct]\n  total_count: Int\n  message: String\n  status: String\n  performance: ProductsPerformance\n}\ntype InventoryResponse {\n  inventory: JSON\n  total_count: Int\n  message: String\n  status: String\n}\ntype MediaGalleryEntry {\n  file: String\n  url: String\n  position: Int\n  types: [String]\n}\ntype ProductCategory {\n  id: String!\n  name: String!\n}\ntype ProductImage {\n  filename: String\n  url: String\n  position: Int\n  roles: [String]\n}\ntype ProductInventory {\n  qty: Float\n  is_in_stock: Boolean\n}\ntype ProductsPerformance {\n  processedProducts: Int\n  apiCalls: Int\n  method: String\n  executionTime: Float\n  totalTime: String\n  productFetch: String\n  dataExtraction: String\n  parallelFetch: String\n  dataEnrichment: String\n  productsApiCalls: Int\n  categoriesApiCalls: Int\n  inventoryApiCalls: Int\n  totalApiCalls: Int\n  uniqueCategories: Int\n  productCount: Int\n  skuCount: Int\n  clientCalls: Int\n  dataSourcesUnified: Int\n  queryConsolidation: String\n  cacheHitRate: Int\n  categoriesCached: Int\n  categoriesFetched: Int\n  operationComplexity: String\n  dataFreshness: String\n  clientComplexity: String\n  apiOrchestration: String\n  parallelization: String\n  meshOptimizations: [String]\n}\ntype ProductsDebug {\n  resolverCalled: Boolean\n  hasContext: Boolean\n  hasHeaders: Boolean\n  oauthConsumerKey: String\n  adminUsername: String\n  timestamp: String\n  productsCount: Int\n  categoriesCount: Int\n  inventoryCount: Int\n  hasOAuthCredentials: Boolean\n  hasAdminCredentials: Boolean\n  errorType: String\n  errorMessage: String\n}\ntype ProductsResponse {\n  products: [EnrichedProduct]\n  total_count: Int\n  message: String\n  status: String\n  performance: ProductsPerformance\n  debug: ProductsDebug\n}\nextend type Query {\n  mesh_products_enriched(pageSize: Int, maxPages: Int): ProductsResponse\n}"
+    "additionalTypeDefs": ""
   }
 }
