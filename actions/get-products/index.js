@@ -53,7 +53,9 @@ async function getProductsBusinessLogic(context) {
     steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.content.length }));
 
     // Step 5: Store CSV file
-    const storageResult = await storeCsvFile(csvData.content, config, extractedParams);
+    const storageResult = await storeCsvFile(csvData.content, config, extractedParams, undefined, {
+      useCase: extractedParams.useCase,
+    });
 
     if (!storageResult.stored) {
       throw new Error(
