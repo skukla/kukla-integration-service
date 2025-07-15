@@ -4,8 +4,8 @@
  */
 
 const graphqlProcessing = require('./graphql-processing');
-const { moduleLoading } = require('../../core/operations');
-const { url } = require('../../core/utils');
+const { loadModule } = require('../../core/operations/module-loading');
+const { replaceDomain } = require('../../core/utils/url');
 
 /**
  * Load mesh configuration from mesh.config.js
@@ -14,7 +14,7 @@ const { url } = require('../../core/utils');
  */
 function loadMeshConfig(configPath = 'mesh.config.js') {
   const errorMessage = `Mesh configuration source not found: ${configPath}`;
-  return moduleLoading.loadModule(configPath, errorMessage);
+  return loadModule(configPath, errorMessage);
 }
 
 /**
@@ -27,7 +27,7 @@ function processMeshSources(sources, config) {
   return sources.map(source => {
     if (source.handler?.openapi?.source) {
       // Replace with Commerce URL from configuration
-      source.handler.openapi.source = url.replaceDomain(
+      source.handler.openapi.source = replaceDomain(
         source.handler.openapi.source,
         config.commerce.baseUrl
       );

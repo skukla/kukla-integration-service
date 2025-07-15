@@ -5,8 +5,8 @@
 
 const format = require('../../core/formatting');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { meshGenerationOutput } = require('../operations');
-const { meshCoreOperations } = require('../operations');
+const { meshCoreOperations } = require('../operations/mesh-core-operations');
+const { meshGenerationOutput } = require('../operations/mesh-generation-output');
 
 /**
  * Generate mesh resolver and configuration with verbose deployment-style output

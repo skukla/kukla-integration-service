@@ -8,7 +8,7 @@ const { promisify } = require('util');
 
 const frontendGeneration = require('./frontend-generation');
 const { capitalize } = require('../../core/utils/string');
-const { meshCoreOperations } = require('../operations');
+const { meshCoreOperations } = require('../operations/mesh-core-operations');
 
 const execAsync = promisify(exec);
 

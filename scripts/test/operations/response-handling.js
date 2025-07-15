@@ -4,17 +4,11 @@
  */
 
 const format = require('../../core/formatting');
-const { response: responseUtils } = require('../../core/utils');
-
-/**
- * Determine if HTTP response indicates success for testing
- * Domain-specific version with test-focused success criteria
- * @param {Object} response - HTTP response object
- * @returns {boolean} True if successful response
- */
-function isSuccessfulResponse(response) {
-  return responseUtils.isSuccessfulResponse(response);
-}
+const {
+  isSuccessfulResponse,
+  extractErrorMessage,
+  formatStorageInfo,
+} = require('../../core/utils/response');
 
 /**
  * Display complete test results - Comprehensive operation
@@ -47,7 +41,7 @@ function displayTestResults(environment, actionName, response) {
     environment,
     actionName,
     status: response.status,
-    message: isSuccess ? null : responseUtils.extractErrorMessage(response),
+    message: isSuccess ? null : extractErrorMessage(response),
   };
 }
 
@@ -57,7 +51,7 @@ function displayTestResults(environment, actionName, response) {
  */
 function displayStorageInfo(body) {
   if (body && body.storage) {
-    const storageInfo = responseUtils.formatStorageInfo(body.storage);
+    const storageInfo = formatStorageInfo(body.storage);
     console.log(format.storage(storageInfo));
   }
 }

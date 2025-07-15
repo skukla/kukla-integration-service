@@ -4,8 +4,9 @@
  */
 
 const { meshUpdateStep } = require('./steps/mesh-update');
+const { meshCoreOperations } = require('../../build/operations/mesh-core-operations');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { meshDeploymentOutput } = require('../operations');
+const { meshDeploymentOutput } = require('../operations/mesh-deployment-output');
 
 /**
  * Mesh deployment workflow
@@ -23,7 +24,6 @@ async function meshDeploymentWorkflow(options = {}) {
     await meshDeploymentOutput.displayInitialSetup(environment);
 
     // Step 2: Mesh generation (use core operations for deployment)
-    const { meshCoreOperations } = require('../../build/operations');
     const meshGenResult = await meshCoreOperations.generateMeshCore({ isProd });
     if (!meshGenResult.success) {
       throw new Error(meshGenResult.error);
