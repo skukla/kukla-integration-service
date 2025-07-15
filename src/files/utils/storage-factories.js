@@ -26,7 +26,7 @@ const { generatePresignedUrl } = require('../operations/presigned-urls');
  * @returns {Function} Write method implementation
  */
 function createAppBuilderWriteMethod(files, config) {
-  return async function write(fileName, content) {
+  return async function write(fileName, content, options = {}) {
     // Store files in configured directory for organization and accessibility
     const storageDirectory = config.storage.directory;
     const fullFileName = buildStorageFilePath(fileName, storageDirectory);
@@ -36,13 +36,26 @@ function createAppBuilderWriteMethod(files, config) {
     // Generate action-based download URL for consistent interface across providers
     const actionUrl = buildFileDownloadUrl(fileName, config);
 
-    // Generate presigned URL for public access
+    // Generate presigned URL for public access with dynamic expiration based on use case
     let presignedUrlResult = null;
     if (config.storage.presignedUrls.enabled) {
       try {
         const storage = { provider: 'app-builder', client: files };
+
+        // Determine expiration based on use case or default to short
+        let expiresIn = config.storage.presignedUrls.expiration.short;
+
+        if (options.useCase) {
+          const { getAccessMethod } = require('../utils/access-patterns');
+          const accessMethod = getAccessMethod(options.useCase, config);
+          if (accessMethod.expiresIn) {
+            expiresIn = accessMethod.expiresIn;
+          }
+        }
+
         presignedUrlResult = await generatePresignedUrl(storage, fileName, config, {
-          expiresIn: config.storage.presignedUrls.expiration.short,
+          expiresIn,
+          useCase: options.useCase,
         });
       } catch (error) {
         console.warn('Failed to generate presigned URL:', error.message);
@@ -170,7 +183,7 @@ function createAppBuilderStorageWrapper(files, config) {
  * @returns {Function} Write method implementation
  */
 function createS3WriteMethod(s3Client, s3Config, config) {
-  return async function write(fileName, content) {
+  return async function write(fileName, content, options = {}) {
     // Include both prefix and storage directory in the key
     const storageDirectory = config.storage.directory || '';
     const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
@@ -187,7 +200,7 @@ function createS3WriteMethod(s3Client, s3Config, config) {
     // Generate action-based download URL for consistent interface across providers
     const actionUrl = buildFileDownloadUrl(fileName, config);
 
-    // Generate presigned URL for public access
+    // Generate presigned URL for public access with dynamic expiration based on use case
     let presignedUrlResult = null;
     if (config.storage.presignedUrls.enabled) {
       try {
@@ -197,8 +210,21 @@ function createS3WriteMethod(s3Client, s3Config, config) {
           bucket: s3Config.bucket,
           prefix: s3Config.prefix,
         };
+
+        // Determine expiration based on use case or default to short
+        let expiresIn = config.storage.presignedUrls.expiration.short;
+
+        if (options.useCase) {
+          const { getAccessMethod } = require('../utils/access-patterns');
+          const accessMethod = getAccessMethod(options.useCase, config);
+          if (accessMethod.expiresIn) {
+            expiresIn = accessMethod.expiresIn;
+          }
+        }
+
         presignedUrlResult = await generatePresignedUrl(storage, fileName, config, {
-          expiresIn: config.storage.presignedUrls.expiration.short,
+          expiresIn,
+          useCase: options.useCase,
         });
       } catch (error) {
         console.warn('Failed to generate presigned URL:', error.message);
