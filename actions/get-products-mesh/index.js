@@ -29,6 +29,14 @@ async function getProductsMeshBusinessLogic(context) {
   const exportResult = await exportMeshProducts(extractedParams, config, trace, includeCSV);
   const { meshData, builtProducts, csvData, productCount } = exportResult;
 
+  // DEBUG: Log meshData.performance to see if batchOptimizations is there
+  console.log('DEBUG: meshData.performance in action:', {
+    hasBatchOptimizations: !!meshData.performance?.batchOptimizations,
+    batchOptimizations: meshData.performance?.batchOptimizations,
+    meshOptimizations: meshData.performance?.meshOptimizations,
+    inventoryApiCalls: meshData.performance?.inventoryApiCalls,
+  });
+
   // Step 2: Fetch products from mesh
   steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: productCount }));
 
