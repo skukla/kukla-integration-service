@@ -40,6 +40,13 @@ async function getProductsBusinessLogic(context) {
       steps,
       storage: storageResult,
       downloadUrl: storageResult.downloadUrl,
+      performance: {
+        method: 'Commerce REST API',
+        processedProducts: builtProducts.length,
+        totalApiCalls: Math.ceil(builtProducts.length / 25) + 1,
+        inventoryApiCalls: builtProducts.length,
+        categoriesApiCalls: 1,
+      },
     },
     'Product export completed successfully',
     {}
