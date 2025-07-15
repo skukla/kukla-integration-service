@@ -69,7 +69,11 @@ async function getProductsBusinessLogic(context) {
       message: 'Product export completed successfully',
       steps,
       downloadUrl: storageResult.downloadUrl,
-      storage: storageResult.storage,
+      storage: {
+        provider: storageResult.provider,
+        location: storageResult.fileName,
+        properties: storageResult.properties,
+      },
       performance: {
         productCount: builtProducts.length,
         csvSize: csvData.content.length,
