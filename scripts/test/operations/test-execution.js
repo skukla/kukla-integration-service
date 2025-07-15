@@ -5,11 +5,13 @@
 
 const { isSuccessfulResponse } = require('./response-handling');
 const { buildActionUrl } = require('./url-building');
+const format = require('../../core/formatting');
+const { withSpinner } = require('../../core/operations/spinner');
 const { makeJsonPostRequest } = require('../../core/utils/http');
 const { filterActionParameters } = require('../../core/utils/parameters');
 
 /**
- * Execute action test - Clean operation for Light DDD pattern
+ * Execute action test with progress feedback
  * @param {string} actionName - Name of action to test
  * @param {Object} params - Action parameters
  * @param {boolean} isProd - Whether testing in production
@@ -17,7 +19,14 @@ const { filterActionParameters } = require('../../core/utils/parameters');
  */
 async function executeActionTest(actionName, params, isProd = false) {
   const actionUrl = buildActionUrl(actionName, params, isProd);
-  const response = await testAction(actionUrl, params);
+
+  // Show URL immediately
+  console.log(format.url(actionUrl));
+
+  // Execute test with spinner
+  const response = await withSpinner('Making request...', 'Request completed', async () => {
+    return await testAction(actionUrl, params);
+  });
 
   return {
     ...response,
