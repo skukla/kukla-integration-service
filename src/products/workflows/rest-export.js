@@ -5,7 +5,7 @@
  * This workflow composes multiple business operations for REST API data sources.
  */
 
-const { storeCsvFile } = require('../../files');
+const { storeCsvFile } = require('../../files/workflows/file-management');
 const { fetchAndEnrichProducts } = require('../operations/enrichment');
 const { buildProducts } = require('../operations/transformation');
 const { createCsv } = require('../utils/csv');

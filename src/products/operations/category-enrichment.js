@@ -5,7 +5,7 @@
  * Contains operations for fetching category data and enriching products with category names.
  */
 
-const { executeCommerceRequest } = require('../../commerce');
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
 const { extractCategoryIds } = require('../utils/category');
 
 /**
@@ -52,7 +52,7 @@ async function fetchCategoryData(categoryIds, config, params, trace = null) {
       const chunk = chunks[chunkIndex];
       const categoryPromises = chunk.map(async (categoryId) => {
         try {
-          const response = await executeCommerceRequest(
+          const response = await executeAdminTokenCommerceRequest(
             `/categories/${categoryId}`,
             { method: 'GET' },
             config,
