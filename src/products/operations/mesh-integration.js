@@ -121,6 +121,11 @@ function createMeshQuery() {
           apiOrchestration
           parallelization
           meshOptimizations
+          batchOptimizations {
+            categoriesBatched
+            inventoryBatched
+            apiCallsReduced
+          }
         }
       }
     }
