@@ -6,8 +6,8 @@
  */
 
 const { getAuthToken } = require('./admin-auth');
-const { http } = require('../../core');
-const { buildCommerceUrl } = require('../../core');
+const { http } = require('../../core/http/client');
+const { buildCommerceUrl } = require('../../core/routing/operations/commerce');
 
 // ============================================================================
 // CONFIGURATION UTILITIES

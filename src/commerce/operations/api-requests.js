@@ -5,7 +5,7 @@
  * Coordinates request execution with authentication, caching, and error handling.
  */
 
-const { buildCommerceUrl } = require('../../core');
+const { buildCommerceUrl } = require('../../core/routing/operations/commerce');
 const { validateAdminCredentials } = require('../utils/admin-auth');
 const {
   createAdminTokenRequestFunction,
