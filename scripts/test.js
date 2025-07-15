@@ -22,13 +22,56 @@ async function main() {
     return;
   }
 
-  const testType = process.argv[2]; // First argument determines test type
-  const target = process.argv[3]; // Second argument is the target (action/endpoint/suite)
+  // For test:action commands, require action=<name> format
+  if (args.actionName) {
+    // Action testing - use standardized action=<name> format
+    const result = await dispatchTest('action', args.actionName, {
+      params: args.params,
+      isProd: args.prod,
+      rawOutput: args.raw,
+      failFast: args.failFast,
+    });
 
-  // Validate required arguments
+    if (result.listed) {
+      return;
+    }
+
+    if (!result.success) {
+      process.exit(1);
+    }
+    return;
+  }
+
+  // Check if this looks like an action test with wrong format
+  const firstArg = process.argv[2];
+  const knownTestTypes = ['api', 'perf', 'performance', 'suite', 'orchestration'];
+
+  if (firstArg && !knownTestTypes.includes(firstArg)) {
+    // This looks like someone tried to use the old positional format
+    console.log(format.error('Invalid format. Action tests require action=<name> format.'));
+    console.log('');
+    console.log('Usage: npm run test:action action=<action> [options]');
+    console.log('');
+    console.log('Examples:');
+    console.log('  npm run test:action action=get-products');
+    console.log('  npm run test:action action=get-products useCase=adobeTarget');
+    console.log('');
+    console.log(`Did you mean: npm run test:action action=${firstArg}?`);
+    process.exit(1);
+  }
+
+  // For other test types (api, perf, suite), use process.argv pattern
+  const testType = firstArg;
+  const target = process.argv[3];
+
+  // Validate required arguments for non-action tests
   if (!testType) {
-    console.log(format.error('Test type or action name is required'));
-    console.log('Usage: npm run test:action <action> [options]');
+    console.log(format.error('Action name is required'));
+    console.log('Usage: npm run test:action action=<action> [options]');
+    console.log('');
+    console.log('Examples:');
+    console.log('  npm run test:action action=get-products');
+    console.log('  npm run test:action action=get-products useCase=adobeTarget');
     process.exit(1);
   }
 

@@ -19,6 +19,9 @@ async function dispatchTest(testType, target, options = {}) {
   const { params = {}, isProd = false, rawOutput = false, failFast = false } = options;
 
   switch (testType) {
+    case 'action':
+      return await actionTestingWorkflow(target, { params, rawOutput, isProd });
+
     case 'api':
       return await apiTestingWorkflow(target, { params, isProd });
 
@@ -43,8 +46,8 @@ async function dispatchTest(testType, target, options = {}) {
     }
 
     default: {
-      // Default to action testing (backward compatibility)
-      const actionName = testType; // First arg is action name for action tests
+      // For non-action test types (api, perf, suite) that use positional arguments
+      const actionName = testType; // First arg is action name for these test types
       return await actionTestingWorkflow(actionName, { params, rawOutput, isProd });
     }
   }
