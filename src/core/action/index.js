@@ -9,7 +9,9 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const { loadConfig } = require('../../../config');
+const { extractActionParams } = require('../http/client');
 const { response } = require('../http/responses');
+const { createTraceContext } = require('../tracing');
 
 /**
  * Standard action initialization that handles all common setup
@@ -41,7 +43,6 @@ async function initializeAction(params, options = {}) {
   }
 
   // Extract and load configuration
-  const { extractActionParams } = require('../http/client');
   const actionParams = extractActionParams(params);
   const config = loadConfig(actionParams);
 
@@ -61,7 +62,6 @@ async function initializeAction(params, options = {}) {
 
   // Set up tracing if requested
   if (withTracing && actionName) {
-    const { createTraceContext } = require('../tracing');
     context.trace = createTraceContext(actionName, config, actionParams);
   }
 
@@ -83,7 +83,12 @@ async function initializeAction(params, options = {}) {
   }
 
   // Always include core utilities
-  context.core = require('../index');
+  context.core = {
+    formatStepMessage: require('../utils/operations/formatting').formatStepMessage,
+    checkMissingParams: require('../validation/operations/parameters').checkMissingParams,
+    success: require('../http/responses').success,
+    error: require('../http/responses').error,
+  };
 
   return context;
 }
