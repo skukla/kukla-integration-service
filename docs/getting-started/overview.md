@@ -1,228 +1,214 @@
-# Project Overview
+# Adobe App Builder - Kukla Integration Service Overview
 
-> **Adobe Commerce integration service built on Adobe App Builder platform**
+This document provides a comprehensive overview of the Kukla Integration Service, an Adobe App Builder application that integrates with Adobe Commerce and API Mesh using the JsonSchema sources pattern.
 
-## What is Kukla Integration Service?
+## Quick Start
 
-The Kukla Integration Service is an Adobe App Builder application that provides seamless integration between Adobe Commerce and file management operations. It enables product data export via both REST API and API Mesh (GraphQL), file operations, and provides a modern web interface using HTMX for progressive enhancement.
-
-## Architecture Overview
+### **Project Structure at a Glance**
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                     Adobe I/O Runtime                      │
-├─────────────────────────────────────────────────────────────┤
-│  Backend Actions          │  Frontend Actions              │
-│  ├── get-products/        │  ├── browse-files/             │
-│  ├── get-products-mesh/   │  ├── upload-file/              │
-│  ├── download-file/       │  └── (HTMX responses)          │
-│  └── delete-file/         │                                │
-├─────────────────────────────────────────────────────────────┤
-│                     Shared Utilities                       │
-│  ├── src/commerce/        │  ├── src/htmx/                │
-│  ├── src/core/           │  └── config/                   │
-├─────────────────────────────────────────────────────────────┤
-│               Frontend (HTMX + Progressive Enhancement)    │
-│  └── web-src/ (Static assets with HTMX)                   │
-├─────────────────────────────────────────────────────────────┤
-│                    API Mesh Integration                    │
-│  ├── mesh.json            │  └── mesh-resolvers.js         │
-│  │  (GraphQL config)      │     (True Mesh pattern)       │
-└─────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-                    ┌───────────────────────┐
-                    │   Adobe Commerce     │
-                    │   (Product Data)      │
-                    └───────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Adobe App Builder                                   │
+│                                                                             │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐  │
+│  │  REST API Export    │  │  API Mesh Export    │  │  File Operations    │  │
+│  │  (get-products)     │  │  (get-products-mesh │  │  (browse/download)  │  │
+│  │                     │  │   JsonSchema)       │  │                     │  │
+│  ├── mesh.json            │  └── mesh.config.js             │  └── HTMX Interface      │  │
+│  │  (GraphQL config)      │     (JsonSchema sources)       │     (Dynamic UI)        │  │
+│  └─────────────────────┘  └─────────────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Key Technologies
+### **Key Features**
 
-### **Adobe App Builder Platform**
+- **Dual Export Methods**: REST API (compatibility) and API Mesh (performance)
+- **API Mesh**: GraphQL consolidation using JsonSchema sources pattern (1 call)
+- **JsonSchema Sources Pattern**: Consolidates 200+ API calls into single GraphQL query
+- **File Management**: Browse, download, and delete exported files
+- **HTMX Frontend**: Progressive enhancement with zero-JavaScript fallback
+- **Staging-First**: Development workflow with production deployment
 
-- **Serverless Functions**: Adobe I/O Runtime actions for backend logic
-- **File Storage**: Adobe I/O Files SDK and AWS S3 for file operations
-- **Security**: Adobe I/O authentication and authorization
-- **Deployment**: Adobe I/O CLI for staging-first workflow
+### **Performance Comparison**
 
-### **API Integration Stack**
+| Method | API Calls | Performance | Use Case |
+|--------|-----------|-------------|----------|
+| **REST API** | 200+ calls | ~6-8 seconds | Legacy compatibility |
+| **JsonSchema Sources** | 1 GraphQL call | ~1-2 seconds | Optimal performance |
 
-- **REST API**: Traditional Commerce API integration (200+ calls)
-- **API Mesh**: GraphQL consolidation using True Mesh pattern (1 call)
-- **True Mesh Pattern**: Consolidates 200+ API calls into single GraphQL query
-- **Configuration System**: Environment-aware with schema validation
+### **Core Architecture**
 
-### **Frontend Stack**
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Project Architecture                                │
+│                                                                             │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐  │
+│  │     Actions         │  │       Core          │  │     Frontend        │  │
+│  │  (Adobe I/O Runtime │  │   (src/utilities)   │  │   (web-src/HTMX)    │  │
+│  │   serverless)       │  │                     │  │                     │  │
+│  └─────────────────────┘  └─────────────────────┘  └─────────────────────┘  │
+│                                                                             │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐  │
+│  │   Configuration     │  │     Commerce        │  │     File Storage    │  │
+│  │  (Environment-aware │  │   (API Integration) │  │   (Adobe I/O Files  │  │
+│  │   with validation)  │  │                     │  │    or AWS S3)      │  │
+│  └─────────────────────┘  └─────────────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-- **HTMX**: Progressive enhancement for dynamic UI updates
-- **Vanilla JavaScript**: Minimal JavaScript for enhanced UX
-- **Modern CSS**: Clean, accessible design system with component library
-- **Progressive Enhancement**: Works without JavaScript
+### **JsonSchema Sources Pattern**
 
-### **Integration Layer**
+The API Mesh integration uses the JsonSchema sources pattern:
 
-- **Adobe Commerce API**: Product data retrieval and management
-- **File Operations**: Upload, download, delete, and browse files
-- **Performance Optimization**: Intelligent caching and compression
-- **Error Handling**: Comprehensive error handling and logging
+- **JsonSchema Sources**: Consolidates multiple Commerce APIs into unified GraphQL schema
+- **Admin Token Authentication**: Simplified authentication for all Commerce APIs
+- **Declarative Configuration**: Schema-driven approach with JSON Schema files
+- **Configuration Integration**: Environment-aware with automatic pagination settings
 
-## Core Features
-
-### 🛍️ **Product Export**
-
-- **Dual Export Methods**: REST API and API Mesh (GraphQL) integration
-- **Perfect Parity**: Identical CSV output from both methods (119 products, ~15KB)
-- **Performance**: API Mesh consolidates 200+ calls into 1 GraphQL query
-- **Multiple Formats**: JSON and CSV support with configurable options
-- **Bulk Operations**: Progress tracking and performance metrics
-
-### 📁 **File Management**
-
-- **Multi-Provider Storage**: Adobe I/O Files (staging) and AWS S3 (production)
-- **File Operations**: Upload, browse, download, and delete with HTMX UI
-- **Security**: Proper MIME type handling and access controls
-- **Performance**: Optimized file transfers with compression
-
-### 🎨 **Modern UI**
-
-- **HTMX-Powered**: Dynamic updates without page refreshes
-- **Progressive Enhancement**: Full functionality without JavaScript
-- **Design System**: Consistent component library with accessibility
-- **Real-Time Feedback**: Toast notifications and loading states
-
-### 🔧 **Developer Experience**
-
-- **True Mesh Pattern**: Consolidates multiple Commerce APIs into unified GraphQL schema
-- **Step Functions**: Reusable action components following DRY principles
-- **Schema Validation**: Build-time configuration validation
-- **Comprehensive Testing**: Action testing with automatic configuration
-- **Staging-First Workflow**: Reliable development and deployment
-
-## Development Workflow
-
-### **Staging-First Approach**
+### **Development Commands**
 
 ```bash
-# Quick development iteration
-npm run deploy              # Deploy to staging
+# Start development
+npm run start                       # Quick deployment to staging
 
-# Reliable staging deployment
-npm run deploy              # Clean build and deploy to staging
+# Testing
+npm run test:action get-products    # Test REST API export
+npm run test:action get-products-mesh # Test JsonSchema sources export
 
-# Production deployment
-npm run deploy:prod         # Clean build and deploy to production
+# Deployment
+npm run deploy                      # Deploy to staging
+npm run deploy:prod                 # Deploy to production
 ```
 
-### **Testing Strategy**
-
-```bash
-# Test individual actions
-npm run test:action get-products      # REST API method
-npm run test:action get-products-mesh # API Mesh method
-
-# Performance testing
-npm run test:performance
-
-# Schema validation
-npm run test:schemas
-```
-
-## File Structure
-
-For complete project structure details, see the [**Project Structure Guide**](../architecture/project-structure.md).
+### **Project Structure**
 
 ```text
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
-│   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # True Mesh Pattern resolvers
-├── ⚙️ actions/                    # Adobe I/O Runtime actions
+│   ├── mesh.json                  # API Mesh configuration (generated)
+│   ├── mesh.config.js             # Mesh configuration source (JsonSchema)
+│   └── src/mesh/schema/           # JSON Schema response definitions
+├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
 │   ├── get-products/              # REST API product export
-│   ├── get-products-mesh/         # API Mesh product export  
+│   ├── get-products-mesh/         # API Mesh product export (JsonSchema)
 │   ├── download-file/             # File download operations
 │   ├── delete-file/               # File deletion operations
 │   └── browse-files/              # HTMX file browser interface
 ├── 🛠️ src/                        # Shared utilities and core logic
 │   ├── core/                      # Configuration, HTTP, storage, tracing
-│   ├── commerce/                  # Adobe Commerce integration
-│   └── htmx/                      # HTMX-specific helpers
+│   ├── htmx/                      # HTMX helpers and response utilities
+│   └── commerce/                  # Adobe Commerce integration utilities
 ├── 🌍 web-src/                    # Frontend assets with HTMX enhancement
 ├── 📋 config/                     # Environment-aware configuration system
 ├── 🔧 scripts/                    # Build and testing utilities
-└── 📚 docs/                       # Comprehensive documentation
+└── 📚 docs/                       # This comprehensive documentation
 ```
 
-## Environment Configuration
+## Export Methods Comparison
 
-The service supports multiple environments with schema-validated configuration:
+### **REST API Export (`get-products`)**
 
-- **Staging**: Full testing environment with Adobe I/O Files storage
-- **Production**: Live environment with AWS S3 storage and monitoring
-- **Configuration**: Environment-specific settings with automatic detection
-- **Validation**: Build-time schema validation for quality assurance
+Traditional sequential API approach:
 
-## Security
+```bash
+npm run test:action get-products
+```
 
-- **Adobe I/O Authentication**: Secure API access with proper credential handling
-- **Input Validation**: All inputs validated with comprehensive schemas
-- **Rate Limiting**: Commerce API rate limit management
-- **File Security**: Secure file operations with proper access controls
-- **Environment Separation**: Clear boundaries between staging and production
+**Process:**
 
-## Performance
+1. Fetch products from Commerce API (paginated)
+2. Fetch inventory for each product SKU
+3. Fetch category details for each category ID
+4. Transform and consolidate data
+5. Generate CSV file
+
+**Characteristics:**
+
+- 200+ API calls
+- Sequential processing
+- Full compatibility
+- 6-8 seconds execution time
+
+### **JsonSchema Sources Export (`get-products-mesh`)**
+
+Modern GraphQL consolidation approach:
+
+```bash
+npm run test:action get-products-mesh
+```
+
+**Process:**
+
+1. Single GraphQL query to API Mesh
+2. Mesh consolidates data from multiple Commerce APIs
+3. Transform consolidated data
+4. Generate CSV file
+
+**Characteristics:**
+
+- 1 GraphQL call
+- Consolidated data retrieval
+- JsonSchema sources: Consolidates 200+ API calls into single GraphQL query
+- 1-2 seconds execution time
+
+## Configuration System
+
+### **Environment-Aware Configuration**
+
+```javascript
+// Configuration loads from config/environments/staging.js or production.js
+const config = loadConfig();
+
+// Commerce API settings
+config.commerce.baseUrl           // Environment-specific Commerce URL
+config.commerce.api.timeout       // API timeout settings
+config.products.pagination.pageSize // Product pagination settings
+
+// Mesh configuration
+config.mesh.endpoint              // API Mesh GraphQL endpoint
+config.mesh.apiKey               // API Mesh authentication key
+```
+
+### **Credential Management**
+
+```bash
+# .env file (never committed)
+COMMERCE_ADMIN_TOKEN=your_admin_token_here
+MESH_API_KEY=your_mesh_api_key_here
+
+# app.config.yaml inputs
+COMMERCE_ADMIN_TOKEN: $COMMERCE_ADMIN_TOKEN
+MESH_API_KEY: $MESH_API_KEY
+```
+
+## Integration Documentation
 
 ### **API Mesh Integration**
 
-- **Consolidation**: 200+ Commerce API calls reduced to 1 GraphQL query
-- **True Mesh**: Consolidates 200+ API calls into single GraphQL query
-- **Perfect Parity**: Identical output between REST and mesh methods
+- **[API Mesh Integration Guide](../development/api-mesh-integration.md)** - Complete JsonSchema sources implementation
+- **[JsonSchema Sources Pattern](../architecture/true-mesh-pattern.md)** - Architecture and benefits
 
-### **Optimization Features**
+### **Development Resources**
 
-- **Intelligent Caching**: Commerce data and file operations
-- **Lazy Loading**: Progressive data loading in UI
-- **Compression**: Optimized file transfers and responses
-- **Performance Monitoring**: Detailed metrics and tracing
+- **[Project Structure](../architecture/project-structure.md)** - Comprehensive file organization
+- **[Configuration Guide](../development/configuration.md)** - Environment and credential setup
+- **[Testing Guide](../development/testing.md)** - Testing strategies and npm scripts
+- **[Deployment Guide](../deployment/environments.md)** - Staging and production deployment
 
-## Getting Started
+### **Core Documentation**
 
-1. **[Development Setup](setup.md)** - Set up your development environment
-2. **[Project Structure](../architecture/project-structure.md)** - Understand the codebase organization
-3. **[Architecture Deep Dive](../architecture/adobe-app-builder.md)** - Understand the platform
-
-## Integration Patterns
-
-### **API Mesh with True Mesh Pattern**
-
-- **[API Mesh Integration](../development/api-mesh-integration.md)** - Complete implementation guide
-- **[True Mesh Pattern](../architecture/true-mesh-pattern.md)** - Architecture and benefits
-- **Performance**: Single GraphQL query replaces 200+ REST calls
-- **Architecture**: Embedded resolvers consolidate data from multiple Commerce APIs
-
-### **Configuration System**
-
-- **[Configuration Guide](../development/configuration.md)** - Environment-aware configuration
-- **[Schema Validation](../development/schemas.md)** - Build-time quality assurance
-- **Security**: Backend vs frontend configuration boundaries
-
-## Related Documentation
-
-### **Architecture Guides**
-
-- **[Adobe App Builder Platform](../architecture/adobe-app-builder.md)** - Platform overview and patterns
-- **[HTMX Integration](../architecture/htmx-integration.md)** - Frontend architecture
-- **[True Mesh Pattern](../architecture/true-mesh-pattern.md)** - API Mesh integration pattern
-- **[Project Structure](../architecture/project-structure.md)** - Complete file organization
+- **[Adobe App Builder Guide](../architecture/adobe-app-builder.md)** - Platform overview and patterns
 - **[Commerce Integration](../architecture/commerce-integration.md)** - API integration patterns
+- **[JsonSchema Sources Pattern](../architecture/true-mesh-pattern.md)** - API Mesh integration pattern
+- **[HTMX Frontend](../architecture/htmx-integration.md)** - Progressive enhancement patterns
 
-### **Development Guides**
+## Getting Started Workflow
 
-- **[Coding Standards](../development/coding-standards.md)** - Code quality guidelines
-- **[Frontend Development](../development/frontend.md)** - HTMX and UI patterns
-- **[Configuration System](../development/configuration.md)** - Environment configuration
-- **[Testing Guide](../development/testing.md)** - Testing strategies and tools
+1. **Environment Setup**: Follow [Setup Guide](setup.md) for complete environment configuration
+2. **Test Actions**: Use `npm run test:action` commands to verify functionality
+3. **Explore Documentation**: Review architecture and development guides
+4. **Deploy**: Use staging-first workflow with `npm run deploy`
 
 ---
 
-_This overview provides a high-level understanding of the project including our latest API Mesh integration and True Mesh pattern. For detailed implementation guides, see the specific documentation sections._
+_This overview provides a high-level understanding of the project including our latest API Mesh integration and JsonSchema sources pattern. For detailed implementation guides, see the specific documentation sections._
