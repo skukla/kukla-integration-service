@@ -29,13 +29,6 @@ async function getProductsBusinessLogic(context) {
   steps.push(core.formatStepMessage('validate-input', 'success'));
 
   try {
-    // Test admin token generation first
-    const { getAuthToken } = require('../../src/commerce/utils/admin-auth');
-    const adminToken = await getAuthToken(extractedParams, config);
-    steps.push(
-      core.formatStepMessage('admin-token', 'success', { tokenLength: adminToken.length })
-    );
-
     // Step 2: Fetch and enrich products using domain functions
     const productData = await fetchAndEnrichProducts(extractedParams, config);
     steps.push(

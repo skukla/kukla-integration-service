@@ -16,11 +16,18 @@
 function getCategoryIds(product) {
   const categoryIds = [];
 
-  // Check direct categories array
+  // Check direct categories array first
   if (product.categories && Array.isArray(product.categories)) {
     product.categories.forEach((cat) => {
       if (cat.id) {
         categoryIds.push(parseInt(cat.id));
+      }
+      // Also check if categories are just strings (category IDs)
+      if (typeof cat === 'string' || typeof cat === 'number') {
+        const categoryId = parseInt(cat);
+        if (!isNaN(categoryId) && !categoryIds.includes(categoryId)) {
+          categoryIds.push(categoryId);
+        }
       }
     });
   }
