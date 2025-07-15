@@ -4,7 +4,7 @@
  * @updated Force redeploy to fix errorResponse bug
  */
 
-const { createAction } = require('../../src/core');
+const { createAction } = require('../../src/core/action');
 const { exportCsvWithStorage } = require('../../src/files/workflows/file-management');
 const { exportMeshProducts } = require('../../src/products/workflows/mesh-export');
 
@@ -29,36 +29,11 @@ async function getProductsMeshBusinessLogic(context) {
   const exportResult = await exportMeshProducts(extractedParams, config, trace, includeCSV);
   const { meshData, builtProducts, csvData, productCount } = exportResult;
 
-  // DEBUG: Log meshData.performance to see if batchOptimizations is there
-  console.log('DEBUG: meshData.performance in action:', {
-    hasBatchOptimizations: !!meshData.performance?.batchOptimizations,
-    batchOptimizations: meshData.performance?.batchOptimizations,
-    meshOptimizations: meshData.performance?.meshOptimizations,
-    inventoryApiCalls: meshData.performance?.inventoryApiCalls,
-  });
-
   // Step 2: Fetch products from mesh
   steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: productCount }));
 
   // Step 3: Transform products
   steps.push(core.formatStepMessage('build-products', 'success', { count: productCount }));
-
-  // Branch based on requested format
-  if (format === 'json') {
-    // Return JSON response with product data
-    return core.success(
-      {
-        products: builtProducts,
-        total_count: productCount,
-        performance: meshData.performance || { method: 'API Mesh (No Data)', processedProducts: 0 },
-        steps,
-        // Include debug information from mesh response
-        ...(meshData.debug && { meshDebug: meshData.debug }),
-      },
-      'Product data retrieved successfully via API Mesh',
-      {}
-    );
-  }
 
   // Step 4: Generate CSV
   steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));

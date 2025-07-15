@@ -3,7 +3,7 @@
  * @module browse-files
  */
 
-const { createAction } = require('../../src/core');
+const { createAction } = require('../../src/core/action');
 const {
   generateFileBrowserUI,
   generateDeleteModal,
