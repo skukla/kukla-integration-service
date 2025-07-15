@@ -22,8 +22,6 @@ function parseDeployArgs(args) {
  * @returns {Object} Parsed arguments
  */
 function parseTestArgs(args) {
-  const actionName = args.find((arg) => !arg.startsWith('--') && !arg.includes('='));
-
   // Parse parameters in key=value format
   const paramArgs = args.filter((arg) => arg.includes('=') && !arg.startsWith('--'));
   const params = {};
@@ -38,11 +36,15 @@ function parseTestArgs(args) {
     }
   });
 
+  const actionName = params.action;
+
   return {
     help: args.includes('--help'),
     actionName,
     params,
     raw: args.includes('--raw'),
+    prod: args.includes('--prod'),
+    failFast: args.includes('--fail-fast'),
   };
 }
 
@@ -79,7 +81,7 @@ Options:
  */
 function showTestHelp() {
   console.log(`
-Usage: npm run test:action <action> [key=value ...] [options]
+Usage: npm run test:action [key=value ...] [options]
        npm run test:api <endpoint> [key=value ...] [options]
        npm run test:perf <action> [scenario] [options]
        npm run test:suite [suite] [options]
@@ -97,15 +99,18 @@ Options:
   --fail-fast   Stop on first failure (suite tests)
 
 Parameters (key=value format):
+  action        Action name to test (REQUIRED)
   useCase       Access pattern for presigned URLs ('adobeTarget', 'user', 'system')
                 - adobeTarget: 7-day expiration for Adobe Target integration
                 - user: Action URLs (never expire, default for users)
                 - system: 48-hour expiration for external systems
 
 Examples:
-  npm run test:action get-products
-  npm run test:action get-products useCase=adobeTarget
-  npm run test:action delete-file fileName=products.csv
+  npm run test:action action=get-products
+  npm run test:action action=get-products useCase=adobeTarget
+  npm run test:action action=delete-file fileName=products.csv
+
+Other commands:
   npm run test:api get-products
   npm run test:perf get-products baseline
   npm run test:perf list
