@@ -84,6 +84,14 @@ function displaySuccessContent(body) {
     console.log(`   ${format.downloadUrl(body.downloadUrl)}`);
   }
 
+  if (body.storage?.properties?.presigned?.success) {
+    const presigned = body.storage.properties.presigned;
+    console.log();
+    console.log(format.downloadHeader('🌐 Presigned URL (Direct Access):'));
+    console.log(`   ${format.downloadUrl(presigned.presignedUrl)}`);
+    console.log(`   ${format.muted(`Expires: ${presigned.expiresAt} (${presigned.expiresIn}s)`)}`);
+  }
+
   if (body.steps && Array.isArray(body.steps)) {
     console.log();
     console.log(format.stepsHeader('Steps:'));
