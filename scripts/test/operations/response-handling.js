@@ -85,6 +85,16 @@ function displayStorageInfo(body) {
   if (body && body.storage) {
     const storageInfo = formatStorageInfo(body.storage);
     console.log(format.storage(storageInfo));
+
+    // Display file management info if available
+    if (body.storage.management) {
+      const mgmt = body.storage.management;
+      const operation = mgmt.fileExisted ? '📝 Updated existing file' : '📄 Created new file';
+      const urlStatus = mgmt.urlGenerated
+        ? '(generated presigned URL)'
+        : '(preserved existing presigned URL)';
+      console.log(format.muted(`   ${operation} ${urlStatus}`));
+    }
   }
 }
 

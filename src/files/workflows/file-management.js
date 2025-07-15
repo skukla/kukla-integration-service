@@ -24,8 +24,10 @@ async function initializeStorage(config, params = {}) {
 }
 
 /**
- * Stores a CSV file with proper error handling and metadata
- * Complete workflow for CSV file storage with error handling.
+ * Stores a CSV file with smart presigned URL management
+ * Complete workflow that automatically detects file existence and manages presigned URLs accordingly.
+ * - New files: Creates file + generates presigned URL
+ * - Existing files: Updates content only, preserves existing presigned URL
  *
  * @param {string} csvData - CSV content to store
  * @param {Object} config - Configuration object with storage settings
@@ -39,7 +41,23 @@ async function storeCsvFile(csvData, config, params, fileName, options = {}) {
   const finalFileName = fileName || config.storage.csv.filename;
   try {
     const storage = await initializeStorage(config, params);
-    const result = await storage.write(finalFileName, csvData, options);
+
+    // Check if file already exists
+    const existingFile = await storage.getProperties(finalFileName);
+    const fileExists = existingFile !== null;
+
+    let result;
+    let urlGenerated = false;
+
+    if (!fileExists) {
+      // File doesn't exist → Create new file + generate presigned URL
+      result = await storage.write(finalFileName, csvData, options);
+      urlGenerated = true;
+    } else {
+      // File exists → Update content only, no presigned URL generation
+      result = await storage.writeContentOnly(finalFileName, csvData, config);
+      urlGenerated = false;
+    }
 
     // Include configuration-based information in properties
     const properties = { ...result.properties };
@@ -60,7 +78,13 @@ async function storeCsvFile(csvData, config, params, fileName, options = {}) {
       fileName: result.fileName,
       url: result.url,
       downloadUrl: result.downloadUrl,
+      presignedUrl: result.presignedUrl || null,
       properties: properties,
+      management: {
+        fileExisted: fileExists,
+        urlGenerated: urlGenerated,
+        operation: fileExists ? 'content-update' : 'new-file',
+      },
     };
   } catch (error) {
     return {
