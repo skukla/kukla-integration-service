@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"ff6acb2385bccadffc1936897f67b85dd05ec5437224250b5b2f5a46b30d75a2","configHash":"e3994f4854c2997b37795684234d723e4196df6aefe9e49948e8cbf1f598d13e","generatedAt":"2025-07-15T03:25:56.835Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"006aefe3a8fcb0b2e1d965496bd4536178530de4efabe7c1ff641b69af00910c","configHash":"e3994f4854c2997b37795684234d723e4196df6aefe9e49948e8cbf1f598d13e","generatedAt":"2025-07-15T17:40:02.262Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Optimized Implementation
  *
@@ -17,11 +17,18 @@
 function getCategoryIds(product) {
   const categoryIds = [];
 
-  // Check direct categories array
+  // Check direct categories array first
   if (product.categories && Array.isArray(product.categories)) {
     product.categories.forEach((cat) => {
       if (cat.id) {
         categoryIds.push(parseInt(cat.id));
+      }
+      // Also check if categories are just strings (category IDs)
+      if (typeof cat === 'string' || typeof cat === 'number') {
+        const categoryId = parseInt(cat);
+        if (!isNaN(categoryId) && !categoryIds.includes(categoryId)) {
+          categoryIds.push(categoryId);
+        }
       }
     });
   }
