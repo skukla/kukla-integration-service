@@ -6,6 +6,7 @@
  */
 
 const { fetchEnrichedProductsFromMesh } = require('../operations/mesh-integration');
+const { sortProductsBySku } = require('../operations/sorting');
 const { buildProducts } = require('../operations/transformation');
 const { validateMeshInput } = require('../operations/validation');
 const { createCsv } = require('../utils/csv');
@@ -30,7 +31,7 @@ async function exportMeshProducts(params, config, trace = null, includeCSV = tru
   const meshData = await fetchEnrichedProductsFromMesh(config, params, trace);
 
   // Step 3: Sort products by SKU for consistent output
-  meshData.products.sort((a, b) => a.sku.localeCompare(b.sku));
+  meshData.products = sortProductsBySku(meshData.products);
 
   // Step 4: Build product data using shared transformation
   const builtProducts = await buildProducts(meshData.products, config);

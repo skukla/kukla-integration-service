@@ -2,23 +2,36 @@
  * Commerce Integration Workflows
  *
  * High-level orchestration functions for complete Commerce API integration workflows.
- * Coordinates authentication, API requests, and data processing for business operations.
+ * Pure orchestration following DDD patterns - delegates to operations layer.
  */
 
 const {
   orchestrateProductRequests,
   orchestrateProductEnrichment,
-  handleApiRequestError,
 } = require('../operations/api-requests');
 const { retryWithAuthHandling } = require('../operations/authentication');
+const { orchestrateDataProcessing } = require('../operations/data-processing');
 const {
-  orchestrateDataProcessing,
-  handleDataProcessingError,
-} = require('../operations/data-processing');
-const { validateAdminCredentials } = require('../utils/admin-auth');
+  buildCommerceIntegrationSuccessResponse,
+  buildCommerceIntegrationErrorResponse,
+  buildProductListingSuccessResponse,
+  buildProductListingErrorResponse,
+  buildHealthCheckSuccessResponse,
+  buildHealthCheckErrorResponse,
+  buildExportSuccessResponse,
+  buildExportErrorResponse,
+} = require('../operations/response-building');
+const {
+  validateCommerceIntegrationParams,
+  validateProductListingParams,
+  validateHealthCheckParams,
+  createValidationErrorResponse,
+} = require('../operations/validation');
 
 /**
  * Executes a complete Commerce API integration workflow
+ * Pure orchestration workflow that delegates to operations layer.
+ *
  * @param {Object} params - Workflow parameters
  * @param {Object} params.query - Query parameters for API requests
  * @param {Object} params.config - Configuration object
@@ -31,11 +44,10 @@ async function executeCommerceIntegration(params) {
   const { query, config, actionParams, trace, options = {} } = params;
 
   try {
-    // Step 1: Validate admin credentials
-    if (!validateAdminCredentials(actionParams)) {
-      throw new Error(
-        'Missing admin credentials: COMMERCE_ADMIN_USERNAME and COMMERCE_ADMIN_PASSWORD required'
-      );
+    // Step 1: Validate parameters
+    const validationError = validateCommerceIntegrationParams(params);
+    if (validationError) {
+      return createValidationErrorResponse(validationError, 'commerce-integration');
     }
 
     // Step 2: Execute product enrichment with retry handling
@@ -47,35 +59,21 @@ async function executeCommerceIntegration(params) {
     // Step 3: Process the enriched data
     const processingResult = orchestrateDataProcessing(enrichmentResult, config, options);
 
-    return {
-      success: true,
-      data: processingResult,
-      metadata: {
-        timestamp: new Date().toISOString(),
-        totalProducts: processingResult.products.length,
-        processingStats: processingResult.processing,
-      },
-    };
+    // Step 4: Build success response
+    return buildCommerceIntegrationSuccessResponse(processingResult);
   } catch (error) {
-    // Enhanced error handling with context
-    const enhancedError = handleApiRequestError(error, {
+    // Step 5: Build error response
+    return buildCommerceIntegrationErrorResponse(error, {
       workflow: 'commerce-integration',
       query: JSON.stringify(query),
     });
-
-    return {
-      success: false,
-      error: enhancedError,
-      metadata: {
-        timestamp: new Date().toISOString(),
-        failurePoint: 'commerce-integration',
-      },
-    };
   }
 }
 
 /**
  * Executes a product listing workflow
+ * Pure orchestration workflow that delegates to operations layer.
+ *
  * @param {Object} params - Workflow parameters
  * @param {Object} params.listingParams - Product listing parameters
  * @param {number} [params.listingParams.pageSize] - Products per page
@@ -90,7 +88,13 @@ async function executeProductListing(params) {
   const { listingParams, config, actionParams, trace } = params;
 
   try {
-    // Execute product request without full enrichment for listing
+    // Step 1: Validate parameters
+    const validationError = validateProductListingParams(params);
+    if (validationError) {
+      return createValidationErrorResponse(validationError, 'product-listing');
+    }
+
+    // Step 2: Execute product request without full enrichment for listing
     const productResult = await orchestrateProductRequests(
       listingParams,
       config,
@@ -98,7 +102,7 @@ async function executeProductListing(params) {
       trace
     );
 
-    // Process basic product data
+    // Step 3: Process basic product data
     const processingOptions = {
       validate: false, // Skip validation for listing performance
       includeInventory: false, // Skip inventory for listing performance
@@ -111,8 +115,8 @@ async function executeProductListing(params) {
       processingOptions
     );
 
-    return {
-      success: true,
+    // Step 4: Build listing result
+    const listingResult = {
       products: processed.products,
       pagination: {
         currentPage: listingParams.currentPage || 1,
@@ -120,25 +124,16 @@ async function executeProductListing(params) {
         totalCount: productResult.total_count || 0,
         totalPages: Math.ceil((productResult.total_count || 0) / (listingParams.pageSize || 20)),
       },
-      metadata: {
-        timestamp: new Date().toISOString(),
-        resultCount: processed.products.length,
-      },
+      resultCount: processed.products.length,
     };
+
+    // Step 5: Build success response
+    return buildProductListingSuccessResponse(listingResult);
   } catch (error) {
-    const enhancedError = handleApiRequestError(error, {
-      workflow: 'product-listing',
+    // Step 6: Build error response
+    return buildProductListingErrorResponse(error, {
       listingParams: JSON.stringify(listingParams),
     });
-
-    return {
-      success: false,
-      error: enhancedError,
-      metadata: {
-        timestamp: new Date().toISOString(),
-        failurePoint: 'product-listing',
-      },
-    };
   }
 }
 
@@ -156,7 +151,7 @@ async function executeProductExport(params) {
   const { exportParams, config, actionParams, trace } = params;
 
   try {
-    // Execute complete integration for export
+    // Step 1: Execute complete integration for export
     const integrationResult = await executeCommerceIntegration({
       query: exportParams,
       config,
@@ -174,8 +169,8 @@ async function executeProductExport(params) {
       return integrationResult;
     }
 
-    return {
-      success: true,
+    // Step 2: Build export result
+    const exportResult = {
       exportData: integrationResult.data.products,
       exportMetadata: {
         ...integrationResult.metadata,
@@ -183,26 +178,23 @@ async function executeProductExport(params) {
         workflow: 'product-export',
       },
     };
+
+    // Step 3: Build success response
+    return buildExportSuccessResponse(exportResult);
   } catch (error) {
-    const enhancedError = handleDataProcessingError(error, {
+    // Step 4: Build error response
+    return buildExportErrorResponse(error, {
       stage: 'product-export',
       dataType: 'product',
       exportParams: JSON.stringify(exportParams),
     });
-
-    return {
-      success: false,
-      error: enhancedError,
-      metadata: {
-        timestamp: new Date().toISOString(),
-        failurePoint: 'product-export',
-      },
-    };
   }
 }
 
 /**
  * Executes a health check workflow for Commerce API
+ * Pure orchestration workflow that delegates to operations layer.
+ *
  * @param {Object} params - Workflow parameters
  * @param {Object} params.config - Configuration object
  * @param {Object} params.actionParams - Action parameters
@@ -212,22 +204,13 @@ async function executeHealthCheck(params) {
   const { config, actionParams } = params;
 
   try {
-    // Simple authentication validation
-    const authValidation = validateAdminCredentials(actionParams);
-    if (!authValidation) {
-      return {
-        success: false,
-        health: 'unhealthy',
-        issues: ['authentication_invalid'],
-        details: 'Admin credentials are invalid',
-        metadata: {
-          timestamp: new Date().toISOString(),
-          check: 'health-check',
-        },
-      };
+    // Step 1: Validate parameters
+    const validationError = validateHealthCheckParams(params);
+    if (validationError) {
+      return createValidationErrorResponse(validationError, 'health-check');
     }
 
-    // Simple API connectivity test (fetch 1 product)
+    // Step 2: Simple API connectivity test (fetch 1 product)
     const testResult = await orchestrateProductRequests(
       { pageSize: 1, currentPage: 1 },
       config,
@@ -236,28 +219,21 @@ async function executeHealthCheck(params) {
 
     const isHealthy = testResult && testResult.items && Array.isArray(testResult.items);
 
-    return {
-      success: true,
+    // Step 3: Build health result
+    const healthResult = {
       health: isHealthy ? 'healthy' : 'degraded',
       connectivity: isHealthy ? 'connected' : 'connection_issues',
-      metadata: {
-        timestamp: new Date().toISOString(),
-        responseTime: Date.now(),
-        check: 'health-check',
-        testResult: isHealthy ? 'passed' : 'failed',
-      },
+      responseTime: Date.now(),
+      testResult: isHealthy ? 'passed' : 'failed',
     };
+
+    // Step 4: Build success response
+    return buildHealthCheckSuccessResponse(healthResult);
   } catch (error) {
-    return {
-      success: false,
-      health: 'unhealthy',
-      error: error.message,
-      metadata: {
-        timestamp: new Date().toISOString(),
-        check: 'health-check',
-        failurePoint: 'connectivity_test',
-      },
-    };
+    // Step 5: Build error response
+    return buildHealthCheckErrorResponse(error, {
+      failurePoint: 'connectivity_test',
+    });
   }
 }
 

@@ -4,6 +4,7 @@
  */
 
 const { validation, execution, formatting } = require('../operations');
+const { formatPerformanceTestingErrorResponse } = require('../operations/error-handling');
 const { scenarios } = require('../utils');
 
 /**
@@ -30,12 +31,7 @@ async function performanceTestingWorkflow(scenarioName, options = {}) {
     // Step 4: Format response
     return formatting.formatTestResponse(testResult, 'performance', 'performance', scenarioName);
   } catch (error) {
-    return {
-      success: false,
-      scenario: scenarioName,
-      error: error.message,
-      message: `Performance testing failed: ${error.message}`,
-    };
+    return formatPerformanceTestingErrorResponse(error, scenarioName);
   }
 }
 
