@@ -5,31 +5,31 @@
 
 const { createAction } = require('../../src/core/action/operations/action-factory');
 const { deleteStoredFile } = require('../../src/files/workflows/file-management');
+const { buildFileOperationErrorResponse } = require('../../src/htmx/operations/response-building');
+const { generateFileDeletionResponse } = require('../../src/htmx/workflows/file-browser');
 
 /**
  * Business logic for delete-file action
  * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Response object
+ * @returns {Promise<Object>} HTMX response object
  */
 async function deleteFileBusinessLogic(context) {
-  const { core, config, extractedParams } = context;
-  const steps = [];
+  const { config, extractedParams } = context;
 
-  // Step 1: Input has been validated in the action factory
-  steps.push(core.formatStepMessage('validate-input', 'success'));
+  try {
+    // Step 1: Delete file from storage
+    await deleteStoredFile(extractedParams.fileName, config, extractedParams);
 
-  // Step 2: Delete file from storage
-  await deleteStoredFile(extractedParams.fileName, config, extractedParams);
-  steps.push(
-    core.formatStepMessage('delete-file', 'success', { fileName: extractedParams.fileName })
-  );
-
-  return {
-    message: 'File deletion completed successfully',
-    steps,
-    deletedFile: extractedParams.fileName,
-    success: true,
-  };
+    // Step 2: Generate updated file browser HTML response for HTMX
+    return await generateFileDeletionResponse(extractedParams.fileName, config, extractedParams);
+  } catch (error) {
+    // Step 3: Return error response with proper HTMX format
+    return buildFileOperationErrorResponse(
+      `Failed to delete file: ${error.message}`,
+      'file-deletion',
+      extractedParams.fileName
+    );
+  }
 }
 
 // Export the action with proper configuration
