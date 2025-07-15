@@ -1,149 +1,157 @@
 /**
  * Core Action - Initialization Operations
- * Core business logic for Adobe I/O Runtime action initialization
+ * Business logic for action initialization and context building
  */
 
-const { loadDomainCatalogs } = require('./domain-loading');
 const { loadConfig } = require('../../../../config');
-const { extractActionParams } = require('../../http/client');
-const { response } = require('../../http/responses');
-const { createTraceContext } = require('../../tracing/operations/context');
-const { buildActionContext } = require('../utils/context-building');
+const { extractActionParams } = require('../../http/operations/params');
+const response = require('../../http/responses');
+const { buildContext } = require('../utils/context-building');
 const { setupLogger } = require('../utils/logger-setup');
 
 /**
- * Standard action initialization that handles all common setup
- * @param {Object} params - Raw action parameters from Adobe I/O Runtime
- * @param {Object} options - Initialization options
- * @param {string} options.actionName - Name of the action (for tracing)
- * @param {Array<string>} [options.domains] - Domain catalogs to import ['products', 'files', 'commerce']
- * @param {boolean} [options.withTracing=false] - Enable tracing context
- * @param {boolean} [options.withLogger=false] - Enable logger setup
- * @param {string} [options.logLevel='info'] - Logger level
- * @returns {Promise<Object>} Initialized action context
+ * Initialize action execution environment
+ * Main orchestration for action initialization with configuration and context.
+ *
+ * @param {Object} params - Action parameters from Adobe I/O Runtime
+ * @param {Object} [options] - Initialization options
+ * @param {boolean} [options.skipValidation] - Skip input validation
+ * @returns {Promise<Object>} Initialized action context or error response
  */
 async function initializeAction(params, options = {}) {
-  const {
-    actionName,
-    domains = [],
-    withTracing = false,
-    withLogger = false,
-    logLevel = 'info',
-  } = options;
-
   try {
-    // Step 1: Initialize configuration
+    // Step 1: Load configuration and extract parameters
     const config = loadConfig(params);
-    const actionParams = extractActionParams(params);
+    const extractedParams = extractActionParams(params);
 
-    // Step 2: Initialize tracing context if requested
-    let traceContext = null;
-    if (withTracing) {
-      traceContext = createTraceContext(actionName, config, actionParams);
-    }
+    // Step 2: Setup logging with extracted parameters
+    const logger = setupLogger(extractedParams);
 
-    // Step 3: Initialize logger if requested
-    let logger = null;
-    if (withLogger) {
-      logger = setupLogger(actionName, logLevel);
-    }
-
-    // Step 4: Load domain catalogs
-    const domainCatalogs = await loadDomainCatalogs(domains);
-
-    // Step 5: Build and return action context
-    return buildActionContext({
+    // Step 3: Build base context without domain loading
+    const context = await buildContext({
       config,
-      params: actionParams,
-      traceContext,
+      extractedParams,
       logger,
-      domainCatalogs,
-      response,
+      options,
     });
+
+    return context;
   } catch (error) {
     return {
-      error: error.message,
+      error: true,
       response: response.error(error.message),
     };
   }
 }
 
 /**
- * Simplified action initialization without domain catalogs
- * @param {Object} params - Raw action parameters from Adobe I/O Runtime
- * @param {Object} options - Initialization options
- * @returns {Promise<Object>} Basic action context
+ * Validates basic action parameters
+ * Pure function that checks for required parameters.
+ *
+ * @param {Object} params - Action parameters
+ * @returns {boolean} True if parameters are valid
  */
-async function initializeSimpleAction(params, options = {}) {
-  return initializeAction(params, { ...options, domains: [] });
+function validateActionParams(params) {
+  if (!params || typeof params !== 'object') {
+    return false;
+  }
+
+  // Basic validation - specific validation should be done in business logic
+  return true;
 }
 
 /**
- * Action initialization with full tracing and logging
- * @param {Object} params - Raw action parameters from Adobe I/O Runtime
- * @param {string} actionName - Name of the action (for tracing)
- * @param {Array<string>} [domains] - Domain catalogs to import
- * @returns {Promise<Object>} Fully initialized action context
+ * Creates action initialization configuration
+ * Pure function that creates initialization options.
+ *
+ * @param {Object} options - Custom options
+ * @returns {Object} Initialization configuration
  */
-async function initializeFullAction(params, actionName, domains = []) {
-  return initializeAction(params, {
-    actionName,
-    domains,
-    withTracing: true,
-    withLogger: true,
-  });
+function createInitializationConfig(options = {}) {
+  return {
+    skipValidation: false,
+    ...options,
+  };
 }
 
 /**
- * Action initialization with products domain (common use case)
- * @param {Object} params - Raw action parameters from Adobe I/O Runtime
- * @param {string} actionName - Name of the action (for tracing)
- * @returns {Promise<Object>} Products action context
+ * Initializes action with error handling and validation
+ * Complete initialization workflow with comprehensive error handling.
+ *
+ * @param {Object} params - Action parameters
+ * @param {Object} [options] - Initialization options
+ * @returns {Promise<Object>} Action context or error response
  */
-async function initializeProductsAction(params, actionName) {
-  return initializeAction(params, {
-    actionName,
-    domains: ['products'],
-    withTracing: true,
-    withLogger: true,
-  });
+async function initializeActionSafely(params, options = {}) {
+  try {
+    // Validate basic parameters
+    if (!validateActionParams(params)) {
+      throw new Error('Invalid action parameters provided');
+    }
+
+    // Create initialization configuration
+    const initConfig = createInitializationConfig(options);
+
+    // Initialize action
+    return await initializeAction(params, initConfig);
+  } catch (error) {
+    return {
+      error: true,
+      response: response.error(`Action initialization failed: ${error.message}`),
+    };
+  }
 }
 
 /**
- * Action initialization with files domain (common use case)
- * @param {Object} params - Raw action parameters from Adobe I/O Runtime
- * @param {string} actionName - Name of the action (for tracing)
- * @returns {Promise<Object>} Files action context
+ * Initialize action context for testing
+ * Test-specific initialization that includes additional debugging info.
+ *
+ * @param {Object} params - Action parameters
+ * @param {Object} [options] - Test options
+ * @returns {Promise<Object>} Test action context
  */
-async function initializeFilesAction(params, actionName) {
-  return initializeAction(params, {
-    actionName,
-    domains: ['files'],
-    withTracing: true,
-    withLogger: true,
-  });
+async function initializeTestAction(params, options = {}) {
+  const testOptions = {
+    ...options,
+    testing: true,
+    debugMode: true,
+  };
+
+  const result = await initializeAction(params, testOptions);
+
+  if (result.error) {
+    return result;
+  }
+
+  // Add test-specific context
+  result.testing = true;
+  result.startTime = Date.now();
+
+  return result;
 }
 
 /**
- * Action initialization with commerce domain (common use case)
- * @param {Object} params - Raw action parameters from Adobe I/O Runtime
- * @param {string} actionName - Name of the action (for tracing)
- * @returns {Promise<Object>} Commerce action context
+ * Get action initialization metrics
+ * Utility function for performance monitoring of action initialization.
+ *
+ * @param {Object} context - Action context
+ * @returns {Object} Initialization metrics
  */
-async function initializeCommerceAction(params, actionName) {
-  return initializeAction(params, {
-    actionName,
-    domains: ['commerce'],
-    withTracing: true,
-    withLogger: true,
-  });
+function getInitializationMetrics(context) {
+  return {
+    initializationTime: context.initTime || 0,
+    configurationSize: context.config ? Object.keys(context.config).length : 0,
+    hasLogger: !!context.logger,
+    hasParams: !!context.extractedParams,
+    testing: !!context.testing,
+  };
 }
 
 module.exports = {
   initializeAction,
-  initializeSimpleAction,
-  initializeFullAction,
-  initializeProductsAction,
-  initializeFilesAction,
-  initializeCommerceAction,
+  validateActionParams,
+  createInitializationConfig,
+  initializeActionSafely,
+  initializeTestAction,
+  getInitializationMetrics,
 };

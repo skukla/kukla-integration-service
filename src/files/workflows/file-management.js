@@ -202,6 +202,72 @@ async function getCsvFiles(config, params) {
   return allFiles.filter((file) => file.name.endsWith(config.files.extensions.csv));
 }
 
+/**
+ * Generate presigned URL for system access
+ * Workflow for creating presigned URLs for external systems like Adobe Target.
+ * Optimized for direct access without going through action endpoints.
+ *
+ * @param {string} fileName - Name of the file
+ * @param {Object} config - Configuration object with storage settings
+ * @param {Object} params - Action parameters containing credentials
+ * @param {Object} [options] - Presigned URL options
+ * @param {number} [options.expiresIn] - Expiration time in seconds
+ * @param {string} [options.urlType] - URL type: 'external' (CDN) or 'internal' (direct storage)
+ * @param {string} [options.permissions] - Permissions: 'r', 'rw', 'rwd'
+ * @param {string} [options.useCase] - Use case: 'system', 'user', 'api'
+ * @returns {Promise<Object>} Presigned URL response with metadata
+ */
+async function generateSystemPresignedUrl(fileName, config, params, options = {}) {
+  const { generatePresignedUrl } = require('../operations/presigned-urls');
+
+  try {
+    // Initialize storage for presigned URL generation
+    const storage = await initializeStorage(config, params);
+
+    // Configure options for system access
+    const systemOptions = {
+      expiresIn: options.expiresIn || config.storage.presignedUrls.expiration.long,
+      urlType: options.urlType || 'external', // Default to CDN-based for external systems
+      permissions: options.permissions || 'r', // Default to read-only
+      operation: 'download',
+      ...options,
+    };
+
+    // Generate presigned URL using operations layer
+    const presignedUrlResult = await generatePresignedUrl(storage, fileName, config, systemOptions);
+
+    if (!presignedUrlResult.success) {
+      throw new Error(`Presigned URL generation failed: ${presignedUrlResult.error.message}`);
+    }
+
+    return {
+      success: true,
+      presignedUrl: presignedUrlResult.presignedUrl,
+      expiresAt: presignedUrlResult.expiresAt,
+      expiresIn: presignedUrlResult.expiresIn,
+      provider: storage.provider,
+      urlType: systemOptions.urlType,
+      permissions: systemOptions.permissions,
+      useCase: options.useCase || 'system',
+      metadata: {
+        fileName,
+        generatedAt: new Date().toISOString(),
+        provider: storage.provider,
+        ...presignedUrlResult,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.message,
+        type: 'PRESIGNED_URL_GENERATION_ERROR',
+        useCase: options.useCase || 'system',
+      },
+    };
+  }
+}
+
 module.exports = {
   initializeStorage,
   storeCsvFile,
@@ -211,4 +277,5 @@ module.exports = {
   exportCsvWithStorage,
   downloadFileWorkflow,
   getCsvFiles,
+  generateSystemPresignedUrl,
 };
