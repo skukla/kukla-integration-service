@@ -76,25 +76,29 @@ function handleDeleteButtonAfterRequest(event, target, loadingClass) {
     return false;
   }
 
+  // Remove loading state for delete buttons
+  target.classList.remove(loadingClass);
+
+  // Restore original text
+  if (target.dataset.originalText) {
+    target.innerText = target.dataset.originalText;
+    delete target.dataset.originalText;
+  }
+
   if (event.detail.successful) {
+    // Store success message for later use in swap handler
     const successMessage = target.getAttribute('data-success-message');
     if (successMessage) {
-      // Show success notification immediately
-      showNotification(successMessage, 'success');
-      // Close the modal
-      hideModal();
+      window._deleteSuccessMessage = successMessage;
+      window._deleteButtonTarget = target;
     }
   } else {
-    // If the request failed, remove loading state immediately
-    target.classList.remove(loadingClass);
-
-    // Restore original text
-    if (target.dataset.originalText) {
-      target.innerText = target.dataset.originalText;
-      delete target.dataset.originalText;
-    }
+    // For failed requests, show error immediately since no swap will happen
+    showNotification('Failed to delete file', 'error');
   }
-  return true; // Handled
+
+  // Don't prevent HTMX from doing its normal content swap
+  return false;
 }
 
 /**
@@ -125,18 +129,18 @@ function handleAfterRequest(event) {
   const target = event.detail.elt;
   const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
 
-  // Handle delete buttons with special logic
-  if (handleDeleteButtonAfterRequest(event, target, loadingClass)) {
-    return; // Don't process further for delete buttons
-  }
+  // Handle delete buttons (but don't prevent further processing)
+  handleDeleteButtonAfterRequest(event, target, loadingClass);
 
   // For all other buttons, remove loading state immediately
-  target.classList.remove(loadingClass);
+  if (!target.classList.contains('delete-confirm-button')) {
+    target.classList.remove(loadingClass);
 
-  // Restore original text
-  if (target.dataset.originalText) {
-    target.innerText = target.dataset.originalText;
-    delete target.dataset.originalText;
+    // Restore original text
+    if (target.dataset.originalText) {
+      target.innerText = target.dataset.originalText;
+      delete target.dataset.originalText;
+    }
   }
 
   // Handle success messages for standard buttons
