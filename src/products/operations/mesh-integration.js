@@ -136,13 +136,12 @@ function createMeshQuery() {
  * Creates request configuration for mesh API call
  * @param {Object} config - Configuration object
  * @param {Object} credentials - All credential data
- * @param {Object} credentials.oauth - OAuth credentials
  * @param {string} credentials.adminToken - Pre-generated admin bearer token
  * @param {string} credentials.meshApiKey - Mesh API key
  * @returns {Object} Request configuration
  */
 function createMeshRequestConfig(config, credentials) {
-  const { oauth: oauthCredentials, adminToken, meshApiKey } = credentials;
+  const { adminToken, meshApiKey } = credentials;
   const query = createMeshQuery();
   const variables = {
     pageSize: config.products.pagination.pageSize,
@@ -152,11 +151,6 @@ function createMeshRequestConfig(config, credentials) {
   const headers = {
     'Content-Type': 'application/json',
     'x-api-key': meshApiKey,
-    // OAuth credentials via HTTP headers (for mesh resolver)
-    'x-commerce-consumer-key': oauthCredentials.consumerKey,
-    'x-commerce-consumer-secret': oauthCredentials.consumerSecret,
-    'x-commerce-access-token': oauthCredentials.accessToken,
-    'x-commerce-access-token-secret': oauthCredentials.accessTokenSecret,
     // Admin token via HTTP header (secure approach)
     'x-commerce-admin-token': adminToken,
   };
@@ -170,29 +164,40 @@ function createMeshRequestConfig(config, credentials) {
  * @returns {Object} Validated mesh configuration
  */
 function validateMeshConfiguration(config) {
-  const meshEndpoint = config.mesh.endpoint;
-  const meshApiKey = config.mesh.apiKey;
+  if (!config.mesh) {
+    throw new Error('Mesh configuration not found');
+  }
 
-  if (!meshEndpoint || !meshApiKey) {
-    throw new Error('Mesh configuration missing: endpoint or API key not found');
+  const meshEndpoint = config.mesh.endpoint;
+  if (!meshEndpoint) {
+    throw new Error('Mesh endpoint not configured');
+  }
+
+  const meshApiKey = config.mesh.apiKey;
+  if (!meshApiKey) {
+    throw new Error('Mesh API key not configured');
   }
 
   return { meshEndpoint, meshApiKey };
 }
 
 /**
- * Validates the response from the mesh API
- * @param {Object} result - API response result
- * @returns {Object} Validated mesh data
+ * Validates mesh response
+ * @param {Object} result - Mesh response
+ * @returns {Object} Validated mesh response
  */
 function validateMeshResponse(result) {
-  if (!result.data || !result.data.mesh_products_enriched) {
-    throw new Error('Invalid mesh response: missing mesh_products_enriched data');
+  if (!result.data) {
+    throw new Error('No data in mesh response');
+  }
+
+  if (!result.data.mesh_products_enriched) {
+    throw new Error('No mesh_products_enriched in response');
   }
 
   const meshData = result.data.mesh_products_enriched;
-  if (!Array.isArray(meshData.products)) {
-    throw new Error('Invalid mesh response: products is not an array');
+  if (!meshData.products || !Array.isArray(meshData.products)) {
+    throw new Error('Invalid products data in mesh response');
   }
 
   return meshData;
@@ -206,31 +211,6 @@ function validateMeshResponse(result) {
  */
 async function fetchEnrichedProductsFromMesh(config, actionParams) {
   const { meshEndpoint, meshApiKey } = validateMeshConfiguration(config);
-  const oauthCredentials = {
-    consumerKey: actionParams.COMMERCE_CONSUMER_KEY,
-    consumerSecret: actionParams.COMMERCE_CONSUMER_SECRET,
-    accessToken: actionParams.COMMERCE_ACCESS_TOKEN,
-    accessTokenSecret: actionParams.COMMERCE_ACCESS_TOKEN_SECRET,
-  };
-
-  console.log('DEBUG: OAuth credentials check:', {
-    hasConsumerKey: !!oauthCredentials.consumerKey,
-    hasConsumerSecret: !!oauthCredentials.consumerSecret,
-    hasAccessToken: !!oauthCredentials.accessToken,
-    hasAccessTokenSecret: !!oauthCredentials.accessTokenSecret,
-    consumerKeyPrefix: oauthCredentials.consumerKey?.substring(0, 10) + '...',
-  });
-
-  if (
-    !oauthCredentials.consumerKey ||
-    !oauthCredentials.consumerSecret ||
-    !oauthCredentials.accessToken ||
-    !oauthCredentials.accessTokenSecret
-  ) {
-    throw new Error(
-      'OAuth credentials required: COMMERCE_CONSUMER_KEY, COMMERCE_CONSUMER_SECRET, COMMERCE_ACCESS_TOKEN, COMMERCE_ACCESS_TOKEN_SECRET'
-    );
-  }
 
   // Generate admin token using established Commerce authentication pattern
   const adminToken = await getAuthToken(actionParams, config);
@@ -242,7 +222,6 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
   }
 
   const credentials = {
-    oauth: oauthCredentials,
     adminToken,
     meshApiKey,
   };
@@ -256,19 +235,10 @@ async function fetchEnrichedProductsFromMesh(config, actionParams) {
     timeout: config.performance.timeouts.api.mesh,
   });
 
-  console.log('DEBUG: Mesh response received:', {
-    hasData: !!result.data,
-    hasProducts: !!result.data?.mesh_products_enriched,
-    productCount: result.data?.mesh_products_enriched?.products?.length || 0,
-    totalCount: result.data?.mesh_products_enriched?.total_count || 0,
-    status: result.data?.mesh_products_enriched?.status,
-    message: result.data?.mesh_products_enriched?.message,
-    hasPerformance: !!result.data?.mesh_products_enriched?.performance,
-    performanceApiCalls: result.data?.mesh_products_enriched?.performance?.totalApiCalls,
-    performanceMethod: result.data?.mesh_products_enriched?.performance?.method,
-  });
+  // Validate and extract mesh data
+  const meshData = validateMeshResponse(result);
 
-  return validateMeshResponse(result);
+  return meshData;
 }
 
 module.exports = {
