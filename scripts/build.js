@@ -5,7 +5,7 @@
  * Entry point for build operations
  */
 
-const { meshCoreOperations } = require('./build/operations/mesh-core-operations');
+const { generateMeshCore } = require('./build/operations/mesh-core-operations');
 const { generateFrontendConfig } = require('./build/workflows/frontend-generation');
 const format = require('./core/formatting');
 const { parseArgs, executeScriptWithExit } = require('./core/operations/script-framework');
@@ -48,7 +48,8 @@ Note: For full deployment, use 'npm run deploy'
     } else if (args['mesh-only']) {
       // Mesh resolver generation only
       const meshSpinner = createSpinner('Building mesh resolver...');
-      const result = await meshCoreOperations.generateMeshCore({});
+
+      const result = await generateMeshCore({});
 
       if (!result.success) {
         throw new Error(result.error);
