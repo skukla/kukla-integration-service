@@ -186,8 +186,9 @@ async function downloadFileWorkflow(fileName, config, params) {
     const fileContent = await readStoredFile(fileName, config, params);
     const cleanFileName = removePublicPrefix(fileName);
 
-    // Set proper content type
-    const contentType = fileName.endsWith(config.files.extensions.csv)
+    // Set proper content type and encoding based on file type
+    const isTextFile = fileName.endsWith(config.files.extensions.csv);
+    const contentType = isTextFile
       ? config.files.contentTypes.csv
       : config.files.contentTypes.binary;
 
@@ -198,8 +199,8 @@ async function downloadFileWorkflow(fileName, config, params) {
         'Content-Disposition': `attachment; filename="${cleanFileName}"`,
         'Cache-Control': 'no-cache',
       },
-      body: fileContent.toString('base64'),
-      isBase64Encoded: true,
+      body: isTextFile ? fileContent.toString('utf8') : fileContent.toString('base64'),
+      isBase64Encoded: !isTextFile,
     };
   } catch (error) {
     if (error.message.includes('not found') || error.code === 'NoSuchKey') {
