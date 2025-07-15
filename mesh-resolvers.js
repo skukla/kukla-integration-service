@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"006aefe3a8fcb0b2e1d965496bd4536178530de4efabe7c1ff641b69af00910c","configHash":"e3994f4854c2997b37795684234d723e4196df6aefe9e49948e8cbf1f598d13e","generatedAt":"2025-07-15T17:40:02.262Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"5380d633ba100836c3c6567bdf98ac6d4f9472cf72dc1fc68a99c3dd00aab700","configHash":"d2d753605209c3e18e3a06cc09acb159ad1a66fa6d9ae0cb188c0e2f334ead30","generatedAt":"2025-07-15T18:36:55.884Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Optimized Implementation
  *
@@ -58,6 +58,22 @@ function getCategoryIds(product) {
     }
   }
 
+  // Check extension_attributes for category_links
+  if (
+    product.extension_attributes &&
+    product.extension_attributes.category_links &&
+    Array.isArray(product.extension_attributes.category_links)
+  ) {
+    product.extension_attributes.category_links.forEach((link) => {
+      if (link.category_id) {
+        const categoryId = parseInt(link.category_id);
+        if (!isNaN(categoryId) && !categoryIds.includes(categoryId)) {
+          categoryIds.push(categoryId);
+        }
+      }
+    });
+  }
+
   return categoryIds;
 }
 
@@ -82,6 +98,12 @@ async function fetchProducts(context, info, pageSize = 100) {
         custom_attributes {
           attribute_code
           value
+        }
+        extension_attributes {
+          category_links {
+            category_id
+            position
+          }
         }
         media_gallery_entries {
           file

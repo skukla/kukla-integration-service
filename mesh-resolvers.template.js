@@ -57,6 +57,22 @@ function getCategoryIds(product) {
     }
   }
 
+  // Check extension_attributes for category_links
+  if (
+    product.extension_attributes &&
+    product.extension_attributes.category_links &&
+    Array.isArray(product.extension_attributes.category_links)
+  ) {
+    product.extension_attributes.category_links.forEach((link) => {
+      if (link.category_id) {
+        const categoryId = parseInt(link.category_id);
+        if (!isNaN(categoryId) && !categoryIds.includes(categoryId)) {
+          categoryIds.push(categoryId);
+        }
+      }
+    });
+  }
+
   return categoryIds;
 }
 
@@ -81,6 +97,12 @@ async function fetchProducts(context, info, pageSize = 100) {
         custom_attributes {
           attribute_code
           value
+        }
+        extension_attributes {
+          category_links {
+            category_id
+            position
+          }
         }
         media_gallery_entries {
           file
