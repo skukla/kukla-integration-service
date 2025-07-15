@@ -46,10 +46,32 @@ function handleActionSuccess(data, context = {}) {
     traceContext.duration = traceContext.completedAt - traceContext.startTime;
   }
 
+  // Check if the response is already in Adobe I/O Runtime format (for file downloads)
+  if (isRuntimeResponse(data)) {
+    return data; // Return directly without wrapping
+  }
+
   return response.success(data);
+}
+
+/**
+ * Check if response is already in Adobe I/O Runtime format
+ * @param {*} data - Response data
+ * @returns {boolean} True if already formatted for runtime
+ */
+function isRuntimeResponse(data) {
+  return (
+    data &&
+    typeof data === 'object' &&
+    typeof data.statusCode === 'number' &&
+    data.headers &&
+    typeof data.headers === 'object' &&
+    typeof data.body === 'string'
+  );
 }
 
 module.exports = {
   handleActionError,
   handleActionSuccess,
+  isRuntimeResponse,
 };
