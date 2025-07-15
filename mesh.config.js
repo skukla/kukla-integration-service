@@ -65,20 +65,20 @@ module.exports = {
                   type: 'integer',
                 },
               },
-              responseSchema: './src/mesh/schema/categories-response.json',
+              responseSchema: './src/mesh/schema/cat-response.json',
             },
             // Add batch category endpoint for better performance
             {
               type: 'Query',
               field: 'categories_batch',
-              path: `/categories?searchCriteria[pageSize]=${config.commerce.batching.categories}&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in`,
+              path: `/categories/list?searchCriteria[pageSize]=${config.performance.batching.categoryBatchSize}&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in`,
               method: 'GET',
               argTypeMap: {
                 categoryIds: {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/categories-response.json',
+              responseSchema: './src/mesh/schema/cat-batch-response.json',
             },
           ],
         },
@@ -99,7 +99,7 @@ module.exports = {
               field: 'inventory_items',
               path: `/inventory/source-items?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}`,
               method: 'GET',
-              responseSchema: './src/mesh/schema/inventory-response.json',
+              responseSchema: './src/mesh/schema/inv-batch-response.json',
             },
             // Add batch inventory endpoint for better performance
             {
@@ -112,7 +112,7 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/inventory-response.json',
+              responseSchema: './src/mesh/schema/inv-batch-response.json',
             },
           ],
         },

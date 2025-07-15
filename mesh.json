@@ -47,19 +47,19 @@
                     "type": "integer"
                   }
                 },
-                "responseSchema": "./src/mesh/schema/categories-response.json"
+                "responseSchema": "./src/mesh/schema/cat-response.json"
               },
               {
                 "type": "Query",
                 "field": "categories_batch",
-                "path": "/categories?searchCriteria[pageSize]=20&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in",
+                "path": "/categories/list?searchCriteria[pageSize]=20&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in",
                 "method": "GET",
                 "argTypeMap": {
                   "categoryIds": {
                     "type": "string"
                   }
                 },
-                "responseSchema": "./src/mesh/schema/categories-response.json"
+                "responseSchema": "./src/mesh/schema/cat-batch-response.json"
               }
             ]
           }
@@ -80,7 +80,7 @@
                 "field": "inventory_items",
                 "path": "/inventory/source-items?searchCriteria[pageSize]=50",
                 "method": "GET",
-                "responseSchema": "./src/mesh/schema/inventory-response.json"
+                "responseSchema": "./src/mesh/schema/inv-batch-response.json"
               },
               {
                 "type": "Query",
@@ -92,7 +92,7 @@
                     "type": "string"
                   }
                 },
-                "responseSchema": "./src/mesh/schema/inventory-response.json"
+                "responseSchema": "./src/mesh/schema/inv-batch-response.json"
               }
             ]
           }
