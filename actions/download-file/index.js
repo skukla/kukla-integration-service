@@ -17,7 +17,7 @@ async function downloadFileBusinessLogic(context) {
   const { core, config, extractedParams, webActionParams, logger } = context;
   const steps = [];
 
-  // Step 1: Validate input
+  // Step 1: Input has been validated in the action factory
   steps.push(core.formatStepMessage('validate-input', 'success'));
 
   // Merge raw web action params with processed extracted params for file operations
