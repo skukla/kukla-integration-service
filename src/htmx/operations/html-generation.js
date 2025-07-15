@@ -5,49 +5,27 @@
  * Contains operations that build HTML strings for HTMX responses.
  */
 
-const { formatFileSize } = require('../../core/utils/operations/formatting');
+const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
 
 /**
- * Generate file browser header HTML
- * Business operation that creates the file browser header with refresh button.
- *
- * @param {Object} config - Configuration object
- * @returns {string} HTML string for file browser header
- */
-function generateFileBrowserHeader(config) {
-  const refreshUrl = `${config.runtime.url}/api/v1/web/${config.runtime.namespace}/browse-files`;
-
-  return `
-    <div class="file-browser-header">
-      <h3>Exported Files</h3>
-      <button 
-        hx-get="${refreshUrl}"
-        hx-target="#file-browser"
-        hx-trigger="click"
-        class="btn btn-refresh">
-        Refresh
-      </button>
-    </div>
-  `;
-}
-
-/**
- * Generate empty file list HTML
+ * Generate empty file list HTML (matches browse-files structure)
  * Business operation that creates HTML for when no files are found.
  *
  * @returns {string} HTML string for empty state
  */
 function generateEmptyFileListHTML() {
   return `
-    <div class="file-list-empty">
-      <p>No exported files found.</p>
-      <p>Use the export buttons above to create CSV files.</p>
-    </div>
-  `;
+      <div class="table-row no-files">
+        <div class="table-cell" colspan="4" style="text-align: center; padding: var(--spacing-lg);">
+          <p>No exported files found.</p>
+          <p class="text-muted">Use the export buttons above to create CSV files.</p>
+        </div>
+      </div>
+    `;
 }
 
 /**
- * Generate file row HTML
+ * Generate file row HTML (matches browse-files structure)
  * Business operation that creates HTML for a single file row.
  *
  * @param {Object} file - File object with metadata
@@ -56,91 +34,68 @@ function generateEmptyFileListHTML() {
  */
 function generateFileRowHTML(file, config) {
   const downloadUrl =
-    file.downloadUrl ||
-    `${config.runtime.url}/api/v1/web/${config.runtime.namespace}/download-file?fileName=${encodeURIComponent(file.name)}`;
-  const deleteUrl = `${config.runtime.url}/api/v1/web/${config.runtime.namespace}/delete-file`;
-
-  const fileSize = formatFileSize(file.size);
-  const lastModified = file.lastModified ? new Date(file.lastModified).toLocaleString() : 'Unknown';
+    buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(file.name)}`;
 
   return `
-    <tr>
-      <td class="file-name">
-        <span class="file-icon">📄</span>
-        ${file.name}
-      </td>
-      <td class="file-size">${fileSize}</td>
-      <td class="file-date">${lastModified}</td>
-      <td class="file-actions">
-        <a href="${downloadUrl}" download="${file.name}" class="btn btn-download">
-          Download
-        </a>
-        <button 
-          class="btn btn-delete"
-          hx-delete="${deleteUrl}"
-          hx-vals='{"fileName": "${file.name}"}'
-          hx-target="#file-browser"
-          hx-confirm="Are you sure you want to delete ${file.name}?"
-          hx-indicator="#loading">
-          Delete
-        </button>
-      </td>
-    </tr>
-  `;
+        <div class="table-row">
+          <div class="table-cell">
+            <span class="file-name">${file.name}</span>
+          </div>
+          <div class="table-cell">
+            <span class="file-size">${file.size}</span>
+          </div>
+          <div class="table-cell">
+            <span class="file-date">${file.lastModified}</span>
+          </div>
+          <div class="table-cell">
+            <div class="table-actions">
+              <a href="${downloadUrl}" 
+                 class="btn btn-sm btn-primary"
+                 download="${file.name}"
+                 title="Download ${file.name}">
+                Download
+              </a>
+              <button class="btn btn-sm btn-danger btn-outline"
+                      data-action="delete"
+                      data-file-name="${file.name}"
+                      data-file-path="${file.fullPath || file.name}"
+                      title="Delete ${file.name}">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
 }
 
 /**
- * Generate file list table HTML
- * Business operation that creates complete file list table with headers and rows.
+ * Generate file list HTML (matches browse-files structure exactly)
+ * Business operation that creates file list matching the original browse-files format.
  *
  * @param {Array} files - Array of file objects
  * @param {Object} config - Configuration object
- * @returns {string} HTML string for file list table
+ * @returns {string} HTML string for file list
  */
-function generateFileListTableHTML(files, config) {
+function generateFileListHTML(files, config) {
   if (!files || files.length === 0) {
     return generateEmptyFileListHTML();
   }
 
-  const fileRows = files.map((file) => generateFileRowHTML(file, config)).join('');
-
-  return `
-    <div class="file-list">
-      <table class="files-table">
-        <thead>
-          <tr>
-            <th>File Name</th>
-            <th>Size</th>
-            <th>Last Modified</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${fileRows}
-        </tbody>
-      </table>
-    </div>
-  `;
+  return files.map((file) => generateFileRowHTML(file, config)).join('');
 }
 
 /**
  * Generate complete file browser UI HTML
  * Business operation that creates the complete file browser interface.
+ * Note: This returns only the table content for HTMX swapping, not the full browser.
  *
  * @param {Array} files - Array of file objects
  * @param {Object} config - Configuration object
- * @returns {string} Complete HTML string for file browser
+ * @returns {string} Complete HTML string for file browser table content
  */
 function generateCompleteFileBrowserHTML(files, config) {
-  const headerHTML = generateFileBrowserHeader(config);
-  const fileListHTML = generateFileListTableHTML(files, config);
-
-  return `
-    <div id="file-browser" class="file-browser">
-      ${headerHTML}
-      ${fileListHTML}
-    </div>
-  `;
+  // For HTMX, we only need to return the table content that gets swapped
+  return generateFileListHTML(files, config);
 }
 
 /**
@@ -214,10 +169,9 @@ function generateSuccessHTML(successMessage, details = '') {
 }
 
 module.exports = {
-  generateFileBrowserHeader,
   generateEmptyFileListHTML,
   generateFileRowHTML,
-  generateFileListTableHTML,
+  generateFileListHTML,
   generateCompleteFileBrowserHTML,
   generateDeleteModalHTML,
   generateErrorHTML,
