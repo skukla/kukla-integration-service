@@ -1,12 +1,12 @@
 /**
  * Deploy Domain - Mesh Deployment Workflow
- * Clean orchestrator for mesh deployment following Light DDD standards
+ * Handles mesh-only deployments with proper error handling
  */
 
 const { meshUpdateStep } = require('./steps/mesh-update');
-const { meshCoreOperations } = require('../../build/operations/mesh-core-operations');
+const { generateMeshCore } = require('../../build/operations/mesh-core-operations');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { meshDeploymentOutput } = require('../operations/mesh-deployment-output');
+const meshDeploymentOutput = require('../operations/mesh-deployment-output');
 
 /**
  * Mesh deployment workflow
@@ -17,59 +17,40 @@ const { meshDeploymentOutput } = require('../operations/mesh-deployment-output')
 async function meshDeploymentWorkflow(options = {}) {
   const { isProd = false } = options;
   const environment = getEnvironmentString(isProd);
-  const steps = [];
 
   try {
-    // Step 1: Initial setup with environment info
+    // Step 1: Display initial mesh setup
     await meshDeploymentOutput.displayInitialSetup(environment);
 
-    // Step 2: Mesh generation (use core operations for deployment)
-    const meshGenResult = await meshCoreOperations.generateMeshCore({ isProd });
-    if (!meshGenResult.success) {
-      throw new Error(meshGenResult.error);
-    }
+    // Step 2: Generate mesh resolver
+    const meshResult = await generateMeshCore({ isProd });
 
-    const meshGenSpinner = meshDeploymentOutput.displayMeshGeneration(meshGenResult);
-    await meshGenSpinner.succeed();
-
-    steps.push(
-      `Successfully ${meshGenResult.generated ? 'regenerated' : 'validated'} mesh resolver`
-    );
-
-    // Pause before mesh deployment
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Step 3: Mesh deployment
-    meshDeploymentOutput.displayMeshDeploymentSeparator();
-
-    const meshResult = await meshUpdateStep({
-      isProd,
-      skipMesh: false,
-      meshRegenerated: meshGenResult.generated,
-    });
-
-    if (!meshResult.success && !meshResult.skipped) {
+    if (!meshResult.success) {
       throw new Error(meshResult.error);
     }
 
-    if (!meshResult.skipped) {
-      steps.push('Successfully updated API Mesh configuration');
+    // Step 3: Deploy mesh
+    await meshDeploymentOutput.displayMeshDeployment();
+
+    const meshUpdateResult = await meshUpdateStep({ isProd });
+
+    if (!meshUpdateResult.success) {
+      throw new Error(meshUpdateResult.error);
     }
 
-    // Step 4: Final completion
     await meshDeploymentOutput.displayCompletionSummary(environment);
 
     return {
       success: true,
       environment,
-      steps,
+      meshRegenerated: meshResult.generated,
+      meshUpdateResult,
     };
   } catch (error) {
     meshDeploymentOutput.displayError(error.message);
     return {
       success: false,
       error: error.message,
-      steps,
     };
   }
 }
