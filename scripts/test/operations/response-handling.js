@@ -11,6 +11,37 @@ const {
 } = require('../../core/utils/response');
 
 /**
+ * Display test results with immediate progress feedback
+ * Shows only the response data since environment/action info was already displayed
+ * @param {string} environment - Environment string
+ * @param {string} actionName - Action name
+ * @param {Object} response - HTTP response object
+ * @returns {Object} Test result data
+ */
+function displayProgressResults(environment, actionName, response) {
+  const isSuccess = isSuccessfulResponse(response);
+
+  // Display storage info immediately
+  displayStorageInfo(response.body);
+  console.log();
+
+  // Display status
+  console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', response.status));
+
+  // Display response content
+  displayResponseContent(isSuccess, response.body);
+
+  return {
+    success: isSuccess,
+    environment,
+    actionName,
+    status: response.status,
+    message: isSuccess ? null : extractErrorMessage(response),
+    error: isSuccess ? null : extractErrorMessage(response),
+  };
+}
+
+/**
  * Display complete test results - Comprehensive operation
  * @param {string} environment - Environment string
  * @param {string} actionName - Action name
@@ -42,6 +73,7 @@ function displayTestResults(environment, actionName, response) {
     actionName,
     status: response.status,
     message: isSuccess ? null : extractErrorMessage(response),
+    error: isSuccess ? null : extractErrorMessage(response),
   };
 }
 
@@ -108,9 +140,6 @@ function displaySuccessContent(body) {
  * @returns {Object} Error result
  */
 function buildErrorResult(errorMessage, actionName) {
-  // Display error through operations
-  console.log(format.error(`Action test failed: ${errorMessage}`));
-
   return {
     success: false,
     error: errorMessage,
@@ -121,5 +150,6 @@ function buildErrorResult(errorMessage, actionName) {
 module.exports = {
   isSuccessfulResponse,
   displayTestResults,
+  displayProgressResults,
   buildErrorResult,
 };
