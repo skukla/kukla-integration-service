@@ -9,13 +9,6 @@ const { fetchAndEnrichProducts } = require('../../src/products/operations/enrich
 const { buildProducts } = require('../../src/products/operations/transformation');
 const { createCsv } = require('../../src/products/utils/csv');
 
-console.log('DIAGNOSTIC: Starting get-products action module load');
-console.log('DIAGNOSTIC: Action factory loaded successfully');
-console.log('DIAGNOSTIC: Storage workflow loaded successfully');
-console.log('DIAGNOSTIC: Enrichment operations loaded successfully');
-console.log('DIAGNOSTIC: Transformation operations loaded successfully');
-console.log('DIAGNOSTIC: CSV utils loaded successfully');
-
 /**
  * Business logic for get-products action
  * @param {Object} context - Initialized action context
@@ -68,6 +61,7 @@ async function getProductsBusinessLogic(context) {
         provider: storageResult.provider,
         location: storageResult.fileName,
         properties: storageResult.properties,
+        management: storageResult.management,
       },
       performance: {
         productCount: builtProducts.length,
@@ -81,8 +75,6 @@ async function getProductsBusinessLogic(context) {
   }
 }
 
-console.log('DIAGNOSTIC: About to create action export');
-
 // Export the action with proper configuration
 module.exports = createAction(getProductsBusinessLogic, {
   actionName: 'get-products',
@@ -90,5 +82,3 @@ module.exports = createAction(getProductsBusinessLogic, {
   withLogger: false,
   description: 'Export Adobe Commerce product data to CSV',
 });
-
-console.log('DIAGNOSTIC: Action export created successfully');
