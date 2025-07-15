@@ -52,17 +52,30 @@ function getCategoryIds(product) {
 
 /**
  * Extracts category ID for CSV export
- * Pure function that gets the first category ID for CSV format.
+ * Pure function that gets the first category name for CSV format.
  *
  * @param {Array<Object>} [categories] - Array of category objects
- * @returns {string} First category ID or empty string
+ * @returns {string} First category name or empty string
  */
 function extractCsvCategoryId(categories) {
   if (!Array.isArray(categories) || categories.length === 0) {
     return '';
   }
-  // Return the first category name for CSV
-  return categories[0] || '';
+
+  const firstCategory = categories[0];
+
+  // If category has a name property, use it
+  if (firstCategory && typeof firstCategory === 'object' && firstCategory.name) {
+    return firstCategory.name;
+  }
+
+  // If it's a string (category name), return it directly
+  if (typeof firstCategory === 'string') {
+    return firstCategory;
+  }
+
+  // Fallback to empty string
+  return '';
 }
 
 /**
