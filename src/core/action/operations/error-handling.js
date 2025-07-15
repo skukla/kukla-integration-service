@@ -25,7 +25,7 @@ function handleActionError(error, context = {}) {
     });
   }
 
-  return response.error(error.message);
+  return response.error(error);
 }
 
 /**
