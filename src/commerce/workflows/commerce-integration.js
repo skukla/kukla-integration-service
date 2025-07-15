@@ -10,18 +10,19 @@ const {
   orchestrateProductEnrichment,
   handleApiRequestError,
 } = require('../operations/api-requests');
-const { validateOAuthCredentials, retryWithAuthHandling } = require('../operations/authentication');
+const { retryWithAuthHandling } = require('../operations/authentication');
 const {
   orchestrateDataProcessing,
   handleDataProcessingError,
 } = require('../operations/data-processing');
+const { validateAdminCredentials } = require('../utils/admin-auth');
 
 /**
  * Executes a complete Commerce API integration workflow
  * @param {Object} params - Workflow parameters
  * @param {Object} params.query - Query parameters for API requests
  * @param {Object} params.config - Configuration object
- * @param {Object} params.actionParams - Action parameters including OAuth credentials
+ * @param {Object} params.actionParams - Action parameters including admin credentials
  * @param {Object} [params.trace] - Optional trace context
  * @param {Object} [params.options] - Processing options
  * @returns {Promise<Object>} Complete integration result
@@ -30,10 +31,11 @@ async function executeCommerceIntegration(params) {
   const { query, config, actionParams, trace, options = {} } = params;
 
   try {
-    // Step 1: Validate authentication credentials
-    const authValidation = validateOAuthCredentials(actionParams);
-    if (!authValidation.isValid) {
-      throw new Error(`Authentication validation failed: ${authValidation.errors.join(', ')}`);
+    // Step 1: Validate admin credentials
+    if (!validateAdminCredentials(actionParams)) {
+      throw new Error(
+        'Missing admin credentials: COMMERCE_ADMIN_USERNAME and COMMERCE_ADMIN_PASSWORD required'
+      );
     }
 
     // Step 2: Execute product enrichment with retry handling
@@ -211,13 +213,13 @@ async function executeHealthCheck(params) {
 
   try {
     // Simple authentication validation
-    const authValidation = validateOAuthCredentials(actionParams);
-    if (!authValidation.isValid) {
+    const authValidation = validateAdminCredentials(actionParams);
+    if (!authValidation) {
       return {
         success: false,
         health: 'unhealthy',
         issues: ['authentication_invalid'],
-        details: authValidation.errors,
+        details: 'Admin credentials are invalid',
         metadata: {
           timestamp: new Date().toISOString(),
           check: 'health-check',
@@ -279,7 +281,7 @@ function handleWorkflowError(error, context = {}) {
     enhancedMessage: `Workflow ${workflow || 'unknown'} failed at ${stage || 'unknown stage'}: ${error.message}`,
     isRetryable: !error.message.includes('Authentication') && !error.message.includes('Invalid'),
     suggestedAction: error.message.includes('Authentication')
-      ? 'Check OAuth credentials'
+      ? 'Check admin credentials'
       : 'Retry operation or check network connectivity',
   };
 }

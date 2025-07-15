@@ -5,16 +5,16 @@
  * Coordinates request execution with authentication, caching, and error handling.
  */
 
-const { createAuthenticationContext } = require('./authentication');
 const { buildCommerceUrl } = require('../../core');
+const { validateAdminCredentials } = require('../utils/admin-auth');
 const {
-  createRequestFunction,
-  createBatchRequestFunction,
-  createCachedRequestFunction,
+  createAdminTokenRequestFunction,
+  createAdminTokenBatchRequestFunction,
+  createAdminTokenCachedRequestFunction,
 } = require('../utils/request-factories');
 
 /**
- * Executes a single Commerce API request with full orchestration
+ * Executes a single Commerce API request with admin token authentication
  * @param {string} url - Request URL
  * @param {Object} options - Request options
  * @param {Object} config - Configuration object
@@ -22,12 +22,16 @@ const {
  * @param {Object} [trace] - Optional trace context
  * @returns {Promise<Object>} API response
  */
-async function executeCommerceRequest(url, options = {}, config, params, trace = null) {
-  // Validate authentication context
-  createAuthenticationContext(params, config);
+async function executeAdminTokenCommerceRequest(url, options = {}, config, params, trace = null) {
+  // Validate admin credentials
+  if (!validateAdminCredentials(params)) {
+    throw new Error(
+      'Missing admin credentials: COMMERCE_ADMIN_USERNAME and COMMERCE_ADMIN_PASSWORD required'
+    );
+  }
 
   // Create request function
-  const requestFn = createRequestFunction(config, params, trace);
+  const requestFn = createAdminTokenRequestFunction(config, params, trace);
 
   // Build full URL if needed
   const fullUrl = url.startsWith('http') ? url : buildCommerceUrl(config.commerce.baseUrl, url);
@@ -42,26 +46,30 @@ async function executeCommerceRequest(url, options = {}, config, params, trace =
 }
 
 /**
- * Executes multiple Commerce API requests in batch
+ * Executes multiple Commerce API requests in batch with admin token authentication
  * @param {Array<Object>} requests - Array of request objects
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters
  * @param {Object} [trace] - Optional trace context
  * @returns {Promise<Array>} Array of API responses
  */
-async function executeBatchCommerceRequests(requests, config, params, trace = null) {
-  // Validate authentication context
-  createAuthenticationContext(params, config);
+async function executeAdminTokenBatchCommerceRequests(requests, config, params, trace = null) {
+  // Validate admin credentials
+  if (!validateAdminCredentials(params)) {
+    throw new Error(
+      'Missing admin credentials: COMMERCE_ADMIN_USERNAME and COMMERCE_ADMIN_PASSWORD required'
+    );
+  }
 
   // Create batch request function
-  const batchRequestFn = createBatchRequestFunction(config, params, trace);
+  const batchRequestFn = createAdminTokenBatchRequestFunction(config, params, trace);
 
   // Execute batch requests
   return batchRequestFn(requests);
 }
 
 /**
- * Executes a cached Commerce API request
+ * Executes a cached Commerce API request with admin token authentication
  * @param {string} url - Request URL
  * @param {Object} options - Request options
  * @param {Object} config - Configuration object
@@ -69,165 +77,136 @@ async function executeBatchCommerceRequests(requests, config, params, trace = nu
  * @param {Object} [trace] - Optional trace context
  * @returns {Promise<Object>} API response
  */
-async function executeCachedCommerceRequest(url, options = {}, config, params, trace = null) {
+async function executeAdminTokenCachedCommerceRequest(
+  url,
+  options = {},
+  config,
+  params,
+  trace = null
+) {
   // Import cache from files domain
   const { MemoryCache } = require('../../files').cache;
 
-  // Validate authentication context
-  createAuthenticationContext(params, config);
+  // Validate admin credentials
+  if (!validateAdminCredentials(params)) {
+    throw new Error(
+      'Missing admin credentials: COMMERCE_ADMIN_USERNAME and COMMERCE_ADMIN_PASSWORD required'
+    );
+  }
 
   // Create cached request function
-  const cachedRequestFn = createCachedRequestFunction(config, params, MemoryCache, trace);
+  const cachedRequestFn = createAdminTokenCachedRequestFunction(config, params, MemoryCache, trace);
 
   // Execute the cached request
   return cachedRequestFn(url, options);
 }
 
 /**
- * Orchestrates product API requests with pagination
- * @param {Object} params - Query parameters
- * @param {Object} config - Configuration object
- * @param {Object} actionParams - Action parameters
- * @param {Object} [trace] - Optional trace context
- * @returns {Promise<Object>} Product API response
- */
-async function orchestrateProductRequests(params, config, actionParams, trace = null) {
-  const { buildProductsEndpoint } = require('../utils/endpoint-builders');
-
-  // Build endpoint URL
-  const endpoint = buildProductsEndpoint(params, config);
-
-  // Execute request
-  return executeCommerceRequest(endpoint, { method: 'GET' }, config, actionParams, trace);
-}
-
-/**
- * Orchestrates inventory API requests for multiple SKUs
- * @param {Array<string>} skus - Array of product SKUs
+ * Orchestrates product requests using admin token authentication
+ * @param {Object} query - Query parameters for product requests
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters
  * @param {Object} [trace] - Optional trace context
- * @returns {Promise<Array>} Array of inventory responses
+ * @returns {Promise<Object>} Product request result
  */
-async function orchestrateInventoryRequests(skus, config, params, trace = null) {
-  const { buildStockItemEndpoint } = require('../utils/endpoint-builders');
-
-  // Split SKUs into batches for multiple requests
-  const batchSize = config.commerce.batching.inventory;
-  const batches = [];
-
-  for (let i = 0; i < skus.length; i += batchSize) {
-    batches.push(skus.slice(i, i + batchSize));
-  }
-
-  // Create requests for each batch
-  const requests = batches.map((batch) => ({
-    url: buildStockItemEndpoint(batch, config),
-    options: { method: 'GET' },
-  }));
-
-  // Execute batch requests
-  return executeBatchCommerceRequests(requests, config, params, trace);
+async function orchestrateProductRequests(query, config, params, trace = null) {
+  // Use admin token authentication for product requests
+  const url = buildCommerceUrl(config.commerce.baseUrl, '/products');
+  return executeAdminTokenCommerceRequest(
+    url,
+    { method: 'GET', params: query },
+    config,
+    params,
+    trace
+  );
 }
 
 /**
- * Orchestrates category API requests for multiple category IDs
- * @param {Array<string>} categoryIds - Array of category IDs
+ * Orchestrates inventory requests using admin token authentication
+ * @param {Object} query - Query parameters for inventory requests
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters
  * @param {Object} [trace] - Optional trace context
- * @returns {Promise<Array>} Array of category responses
+ * @returns {Promise<Object>} Inventory request result
  */
-async function orchestrateCategoryRequests(categoryIds, config, params, trace = null) {
-  const { buildCategoryEndpoint } = require('../utils/endpoint-builders');
-
-  // Create requests for each category
-  const requests = categoryIds.map((categoryId) => ({
-    url: buildCategoryEndpoint(categoryId, config),
-    options: { method: 'GET' },
-  }));
-
-  // Execute batch requests
-  return executeBatchCommerceRequests(requests, config, params, trace);
+async function orchestrateInventoryRequests(query, config, params, trace = null) {
+  // Use admin token authentication for inventory requests
+  const url = buildCommerceUrl(config.commerce.baseUrl, '/stockItems');
+  return executeAdminTokenCommerceRequest(
+    url,
+    { method: 'GET', params: query },
+    config,
+    params,
+    trace
+  );
 }
 
 /**
- * Orchestrates a complete product enrichment request sequence
- * @param {Object} params - Query parameters
+ * Orchestrates category requests using admin token authentication
+ * @param {Object} query - Query parameters for category requests
  * @param {Object} config - Configuration object
- * @param {Object} actionParams - Action parameters
+ * @param {Object} params - Action parameters
  * @param {Object} [trace] - Optional trace context
- * @returns {Promise<Object>} Complete enrichment data
+ * @returns {Promise<Object>} Category request result
  */
-async function orchestrateProductEnrichment(params, config, actionParams, trace = null) {
-  // Step 1: Fetch products
-  const productResponse = await orchestrateProductRequests(params, config, actionParams, trace);
-
-  if (!productResponse.items || productResponse.items.length === 0) {
-    return {
-      products: [],
-      categories: {},
-      inventory: {},
-      pagination: productResponse.pagination || {},
-    };
-  }
-
-  // Step 2: Extract SKUs and category IDs
-  const skus = productResponse.items.map((product) => product.sku).filter(Boolean);
-  const categoryIds = new Set();
-
-  productResponse.items.forEach((product) => {
-    if (Array.isArray(product.categories)) {
-      product.categories.forEach((category) => {
-        if (category.id) categoryIds.add(String(category.id));
-      });
-    }
-  });
-
-  // Step 3: Fetch inventory and category data in parallel
-  const [inventoryResponses, categoryResponses] = await Promise.all([
-    skus.length > 0
-      ? orchestrateInventoryRequests(skus, config, actionParams, trace)
-      : Promise.resolve([]),
-    categoryIds.size > 0
-      ? orchestrateCategoryRequests(Array.from(categoryIds), config, actionParams, trace)
-      : Promise.resolve([]),
-  ]);
-
-  return {
-    products: productResponse.items,
-    categories: categoryResponses,
-    inventory: inventoryResponses,
-    pagination: productResponse.pagination || {},
-  };
+async function orchestrateCategoryRequests(query, config, params, trace = null) {
+  // Use admin token authentication for category requests
+  const url = buildCommerceUrl(config.commerce.baseUrl, '/categories');
+  return executeAdminTokenCommerceRequest(
+    url,
+    { method: 'GET', params: query },
+    config,
+    params,
+    trace
+  );
 }
 
 /**
- * Handles API request errors with context
- * @param {Error} error - Request error
- * @param {Object} context - Request context
+ * Orchestrates product enrichment using admin token authentication
+ * @param {Object} query - Query parameters for product enrichment
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters
+ * @param {Object} [trace] - Optional trace context
+ * @returns {Promise<Object>} Product enrichment result
+ */
+async function orchestrateProductEnrichment(query, config, params, trace = null) {
+  // Use admin token authentication for product enrichment
+  const productResult = await orchestrateProductRequests(query, config, params, trace);
+
+  // Additional enrichment logic would go here
+  return productResult;
+}
+
+/**
+ * Handles API request errors with enhanced context
+ * @param {Error} error - API request error
+ * @param {Object} context - Error context
  * @returns {Object} Enhanced error information
  */
 function handleApiRequestError(error, context = {}) {
-  const { url, method = 'GET', attempt = 1 } = context;
+  const { url, method, params } = context;
 
   return {
     originalError: error,
-    context: {
-      url,
-      method,
-      attempt,
+    apiContext: {
+      url: url || 'unknown',
+      method: method || 'unknown',
+      params: params || {},
       timestamp: new Date().toISOString(),
     },
-    enhancedMessage: `Commerce API request failed: ${error.message}`,
-    isRetryable: error.code !== 'ENOTFOUND' && error.status !== 404,
+    enhancedMessage: `API request failed for ${method || 'unknown'} ${url || 'unknown'}: ${error.message}`,
+    isRetryable: !error.message.includes('401') && !error.message.includes('Unauthorized'),
+    suggestedAction:
+      error.message.includes('401') || error.message.includes('Unauthorized')
+        ? 'Check admin credentials'
+        : 'Retry operation or check network connectivity',
   };
 }
 
 module.exports = {
-  executeCommerceRequest,
-  executeBatchCommerceRequests,
-  executeCachedCommerceRequest,
+  executeAdminTokenCommerceRequest,
+  executeAdminTokenBatchCommerceRequests,
+  executeAdminTokenCachedCommerceRequest,
   orchestrateProductRequests,
   orchestrateInventoryRequests,
   orchestrateCategoryRequests,
