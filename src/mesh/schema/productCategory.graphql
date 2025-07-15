@@ -1,4 +1,0 @@
-type ProductCategory {
-  id: String!
-  name: String!
-}
