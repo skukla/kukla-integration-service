@@ -31,13 +31,15 @@ async function initializeStorage(config, params = {}) {
  * @param {Object} config - Configuration object with storage settings
  * @param {Object} params - Action parameters containing credentials
  * @param {string} [fileName] - Name of the file to store
+ * @param {Object} [options] - Additional options including useCase for access patterns
+ * @param {string} [options.useCase] - Use case for access pattern (e.g., 'adobeTarget', 'user')
  * @returns {Promise<Object>} Storage result with download URL and metadata
  */
-async function storeCsvFile(csvData, config, params, fileName) {
+async function storeCsvFile(csvData, config, params, fileName, options = {}) {
   const finalFileName = fileName || config.storage.csv.filename;
   try {
     const storage = await initializeStorage(config, params);
-    const result = await storage.write(finalFileName, csvData);
+    const result = await storage.write(finalFileName, csvData, options);
 
     // Include configuration-based information in properties
     const properties = { ...result.properties };
