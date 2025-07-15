@@ -49,13 +49,21 @@ function buildMeshConfig(meshConfig, config) {
   // Process sources with URL substitution
   const processedSources = processMeshSources(meshConfig.sources, config);
   
+  // Build mesh configuration object
+  const meshConfigObject = {
+    sources: processedSources,
+    additionalResolvers: meshConfig.additionalResolvers,
+    additionalTypeDefs: additionalTypeDefs,
+  };
+
+  // Include responseConfig if present (for native caching)
+  if (meshConfig.responseConfig) {
+    meshConfigObject.responseConfig = meshConfig.responseConfig;
+  }
+  
   // Return Adobe API Mesh format
   return {
-    meshConfig: {
-      sources: processedSources,
-      additionalResolvers: meshConfig.additionalResolvers,
-      additionalTypeDefs: additionalTypeDefs,
-    },
+    meshConfig: meshConfigObject,
   };
 }
 
