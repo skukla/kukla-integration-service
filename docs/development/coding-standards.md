@@ -609,14 +609,111 @@ const environment = operations.environment.getEnvironmentString(isProd);
 
 ### **Import Organization**
 
-Organize imports consistently.
+- Group imports logically (framework, direct imports, utilities)
+- Use clear, descriptive import names
+- Use direct imports for domain dependencies
+- **Test**: Are imports organized and easy to understand?
+
+**✅ Good Organization:**
 
 ```javascript
-// ✅ Import order: Node.js built-ins, npm packages, local utilities
-const path = require('path');
-const { Core } = require('@adobe/aio-sdk');
-const { getCommerceProducts } = require('../../src/commerce/api');
-const { validateInput } = require('../../src/shared/validation');
+// Action framework
+const { createAction } = require('../../src/core/action');
+
+// Direct imports for domain dependencies
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
+const { buildProductsEndpoint } = require('../../commerce/utils/endpoint-builders');
+const { extractCategoryIds } = require('../utils/category');
+
+// Direct imports for file operations
+const { storeCsvFile } = require('../../files/workflows/file-management');
+const { generateCsv } = require('../../files/utils/csv');
+
+// Direct imports for core utilities
+const { formatStepMessage } = require('../../core/utils/operations/formatting');
+const { checkMissingParams } = require('../../core/validation/operations/parameters');
+const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
+
+// Action-specific modules
+const { executeMeshDataSteps } = require('./lib/steps');
+const { formatMeshResponse } = require('./lib/formatters');
+```
+
+**Benefits:**
+- **Clear dependencies**: Immediately obvious what functions come from where
+- **Easy navigation**: Direct path to actual implementations
+- **No maintenance**: No export lists to maintain
+- **Consistent**: Same pattern throughout the codebase
+
+**❌ Avoid Flat Exports:**
+
+```javascript
+// ❌ WRONG: Flat exports obscure dependencies
+const { executeAdminTokenCommerceRequest, buildProductsEndpoint } = require('../../commerce');
+const { storeCsvFile, generateCsv } = require('../../files');
+const { formatStepMessage, checkMissingParams } = require('../../core');
+```
+
+### Direct Import Examples by Domain
+
+**Commerce Domain:**
+```javascript
+// API operations
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
+
+// Endpoint builders
+const { buildProductsEndpoint } = require('../../commerce/utils/endpoint-builders');
+
+// Authentication
+const { getAuthToken } = require('../../commerce/utils/admin-auth');
+```
+
+**Files Domain:**
+```javascript
+// Workflows
+const { storeCsvFile } = require('../../files/workflows/file-management');
+const { initializeStorage } = require('../../files/workflows/file-management');
+
+// Utilities
+const { generateCsv } = require('../../files/utils/csv');
+const { removePublicPrefix } = require('../../files/utils/paths');
+```
+
+**Products Domain:**
+```javascript
+// Operations
+const { fetchAndEnrichProducts } = require('../../products/operations/enrichment');
+const { buildProducts } = require('../../products/operations/transformation');
+
+// Utilities
+const { createCsv } = require('../../products/utils/csv');
+const { extractCategoryIds } = require('../../products/utils/category');
+```
+
+**Core Domain:**
+```javascript
+// Utilities
+const { formatStepMessage } = require('../../core/utils/operations/formatting');
+const { formatFileSize } = require('../../core/utils/operations/formatting');
+
+// Validation
+const { checkMissingParams } = require('../../core/validation/operations/parameters');
+
+// HTTP
+const { success, error } = require('../../core/http/responses');
+
+// Routing
+const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
+```
+
+**Actions (Special Case):**
+```javascript
+// Actions use context injection - no domain imports needed
+const { createAction } = require('../../src/core/action');
+
+// Inside action business logic:
+const { products, files, core } = context; // Injected by framework
+```
 
 ## Documentation Standards
 
@@ -655,7 +752,7 @@ npm run test:action -- actions/action-name --param param1=value
 
 Use comments sparingly for complex logic only.
 
-````javascript
+```javascript
 // ✅ Good comment - explains why, not what
 // Use exponential backoff for Commerce API rate limits
 // as documented in their API guidelines

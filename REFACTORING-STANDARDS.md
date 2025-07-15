@@ -379,19 +379,48 @@ if (!credentials.username) {
 
 ### Domain Organization Requirements
 
-**Use domain catalogs for ALL shared functionality:**
+**Actions use context injection for business workflows:**
 
 ```javascript
-// ✅ CORRECT: Call through domain catalog
-const { products, files, commerce } = require('../../src');
+// ✅ CORRECT: Actions use context injection for business workflows
+const { products, files, core } = context; // Injected by framework
 
-const data = await products.fetchAndEnrichProducts(params, config);
-const csv = await files.storeCsv(csvData, config, params);
-
-// ❌ WRONG: Direct utility imports
-const { fetchProducts } = require('../../src/commerce/api/products');
-const { storeFile } = require('../../src/core/storage/operations');
+const data = await products.workflows.restExport(params, config);
+const csv = await files.workflows.exportCsvWithStorage(csvData, config, params);
 ```
+
+**Internal domain code uses direct imports:**
+
+```javascript
+// ✅ CORRECT: Internal domain code uses direct imports
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
+const { buildProductsEndpoint } = require('../../commerce/utils/endpoint-builders');
+const { extractCategoryIds } = require('../utils/category');
+
+// ❌ WRONG: Flat exports that obscure dependencies
+const { executeAdminTokenCommerceRequest, buildProductsEndpoint } = require('../../commerce');
+```
+
+**Benefits of Direct Imports:**
+
+- **Clarity Over Cleverness**: Dependencies are immediately obvious
+- **Practical Over Perfect**: No maintenance overhead for export lists
+- **Consistency**: One clear pattern throughout the codebase
+- **Discoverability**: Faster navigation to actual implementations
+
+### Domain Workflow Extraction
+
+**Extract to domain workflows when:**
+
+- ✅ Business logic is needed by multiple actions
+- ✅ Complex workflow spans multiple operations
+- ✅ Logic is domain-specific (products, files, htmx)
+
+**Don't extract when:**
+
+- ❌ Code is only used in one action
+- ❌ Logic is simple parameter handling
+- ❌ Infrastructure concerns (handled by framework)
 
 ### Helper Function Extraction
 
@@ -408,19 +437,11 @@ function buildCommerceApiUrl(baseUrl, endpoint) {
 }
 ```
 
-**❌ Don't Extract This:**
-
-```javascript
-// Similar but different validation logic in each place
-function validateProductData(product) {
-  // Each usage has different validation requirements
-}
-```
-
 ### Import Organization
 
-- Group imports logically (framework, domains, utilities)
+- Group imports logically (framework, direct imports, utilities)
 - Use clear, descriptive import names
+- Use direct imports for domain dependencies
 - **Test**: Are imports organized and easy to understand?
 
 **✅ Good Organization:**
@@ -429,10 +450,22 @@ function validateProductData(product) {
 // Action framework
 const { createAction } = require('../../../src/core');
 
-// Domain imports (if needed for complex actions)
+// Direct imports for domain dependencies
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
+const { buildProductsEndpoint } = require('../../commerce/utils/endpoint-builders');
+const { extractCategoryIds } = require('../utils/category');
+
+// Action-specific modules
 const { executeMeshDataSteps } = require('./lib/steps');
 const { formatMeshResponse } = require('./lib/formatters');
 ```
+
+**Benefits:**
+
+- **Clear dependencies**: Immediately obvious what functions come from where
+- **Easy navigation**: Direct path to actual implementations
+- **No maintenance**: No export lists to maintain
+- **Consistent**: Same pattern throughout the codebase
 
 ## Testing Standards
 
@@ -820,18 +853,26 @@ if (!credentials.username) {
 
 ### Domain Organization Requirements
 
-**Use domain workflows for ALL business logic:**
+**Actions use context injection for business workflows:**
 
 ```javascript
-// ✅ CORRECT: Call domain workflows
-const { products, files, commerce } = context; // Injected by framework
+// ✅ CORRECT: Actions use context injection for business workflows
+const { products, files, core } = context; // Injected by framework
 
 const data = await products.workflows.restExport(params, config);
 const csv = await files.workflows.exportCsvWithStorage(csvData, config, params);
+```
 
-// ❌ WRONG: Direct utility imports (bypasses domain organization)
-const { fetchProducts } = require('../../src/commerce/api/products');
-const { storeFile } = require('../../src/core/storage/operations');
+**Internal domain code uses direct imports:**
+
+```javascript
+// ✅ CORRECT: Internal domain code uses direct imports
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
+const { buildProductsEndpoint } = require('../../commerce/utils/endpoint-builders');
+const { extractCategoryIds } = require('../utils/category');
+
+// ❌ WRONG: Flat exports that obscure dependencies
+const { executeAdminTokenCommerceRequest, buildProductsEndpoint } = require('../../commerce');
 ```
 
 ### Domain Workflow Extraction
