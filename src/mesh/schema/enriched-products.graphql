@@ -1,0 +1,111 @@
+type EnrichedProduct {
+  sku: String!
+  name: String
+  price: Float
+  qty: Int
+  categories: [ProductCategory]
+  media_gallery_entries: [MediaGalleryEntry]
+  inventory: ProductInventory
+}
+
+type BasicProduct {
+  sku: String!
+  name: String
+  price: Float
+  status: Int
+  type_id: String
+  created_at: String
+  updated_at: String
+}
+
+type ProductCategory {
+  id: Int
+  name: String
+}
+
+type MediaGalleryEntry {
+  file: String
+  url: String
+  position: Int
+  types: [String]
+}
+
+type ProductInventory {
+  qty: Int
+  is_in_stock: Boolean
+}
+
+type DebugInfo {
+  contextKeys: [String]
+  hasProducts: Boolean
+  hasCategories: Boolean
+  hasInventory: Boolean
+  hasInjector: Boolean
+  hasHeaders: Boolean
+  timestamp: String
+}
+
+type BatchOptimizations {
+  categoriesBatched: Boolean
+  inventoryBatched: Boolean
+  apiCallsReduced: Int
+}
+
+type EnrichedProductsResponse {
+  products: [EnrichedProduct]
+  total_count: Int
+  message: String
+  status: String
+  performance: PerformanceMetrics
+  debug: DebugInfo
+}
+
+type BasicProductsResponse {
+  products: [BasicProduct]
+  total_count: Int
+  message: String
+}
+
+type CategoriesResponse {
+  categories: [ProductCategory]
+  total_count: Int
+  message: String
+}
+
+type PerformanceMetrics {
+  processedProducts: Int
+  apiCalls: Int
+  method: String
+  executionTime: Int
+  totalTime: Int
+  productFetch: Int
+  dataExtraction: Int
+  parallelFetch: Int
+  dataEnrichment: Int
+  productsApiCalls: Int
+  categoriesApiCalls: Int
+  inventoryApiCalls: Int
+  totalApiCalls: Int
+  uniqueCategories: Int
+  productCount: Int
+  skuCount: Int
+  clientCalls: Int
+  dataSourcesUnified: Int
+  queryConsolidation: Int
+  cacheHitRate: Float
+  categoriesCached: Int
+  categoriesFetched: Int
+  operationComplexity: String
+  dataFreshness: String
+  clientComplexity: String
+  apiOrchestration: String
+  parallelization: String
+  meshOptimizations: String
+  batchOptimizations: BatchOptimizations
+}
+
+extend type Query {
+  mesh_products_enriched(pageSize: Int): EnrichedProductsResponse
+  mesh_products_basic: BasicProductsResponse
+  mesh_categories(categoryIds: [Int]): CategoriesResponse
+}

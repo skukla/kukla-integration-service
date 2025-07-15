@@ -23,6 +23,8 @@ docs/
 │   ├── adobe-app-builder.md    # App Builder platform guide
 │   ├── htmx-integration.md     # HTMX frontend patterns
 │   ├── true-mesh-pattern.md    # JsonSchema sources architecture pattern
+│   ├── mesh-implementation.md  # Comprehensive mesh implementation guide
+│   ├── mesh-quick-reference.md # Mesh implementation quick reference
 │   ├── project-structure.md    # Comprehensive project file structure
 │   └── commerce-integration.md # Adobe Commerce API integration
 └── deployment/
@@ -51,6 +53,8 @@ docs/
 - **[Adobe App Builder](architecture/adobe-app-builder.md)** - Platform overview and serverless patterns
 - **[HTMX Integration](architecture/htmx-integration.md)** - Progressive enhancement and UI patterns
 - **[JsonSchema Sources Pattern](architecture/true-mesh-pattern.md)** - API Mesh integration architecture
+- **[Mesh Implementation Guide](architecture/mesh-implementation.md)** - Comprehensive mesh implementation documentation
+- **[Mesh Quick Reference](architecture/mesh-quick-reference.md)** - Quick reference for mesh resolvers and configuration
 - **[Commerce Integration](architecture/commerce-integration.md)** - API integration and data flow
 
 ### Integration Patterns
@@ -69,6 +73,8 @@ docs/
 | Commerce API work     | [Commerce Integration](architecture/commerce-integration.md)         | `src/commerce/`                         |
 | API Mesh integration  | [API Mesh Integration](development/api-mesh-integration.md)          | `mesh.config.js`, `mesh.json`          |
 | JsonSchema sources    | [JsonSchema Sources Pattern](architecture/true-mesh-pattern.md)     | `mesh.config.js`, `src/mesh/schema/` |
+| Mesh implementation   | [Mesh Implementation Guide](architecture/mesh-implementation.md)     | `mesh-resolvers.js`, `mesh.config.js`  |
+| Mesh quick reference  | [Mesh Quick Reference](architecture/mesh-quick-reference.md)         | All mesh files                          |
 | Configuration setup   | [Configuration Guide](development/configuration.md)                 | `config/`, `.env`, `app.config.yaml`   |
 | Deploy changes        | [Deployment Guide](deployment/environments.md)                       | `npm run deploy`, `npm run deploy:prod` |
 | Test actions          | [Testing Guide](development/testing.md)                              | `npm run test:action`                   |
