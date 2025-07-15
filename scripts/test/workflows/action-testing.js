@@ -1,14 +1,15 @@
 /**
  * Test Domain - Action Testing Workflow
- * Simplified orchestrator following Light DDD principles
+ * Simplified orchestrator following Light DDD principles with real-time feedback
  */
 
+const format = require('../../core/formatting');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { displayTestResults, buildErrorResult } = require('../operations/response-handling');
+const { displayProgressResults, buildErrorResult } = require('../operations/response-handling');
 const { executeActionTest, executeRawTest } = require('../operations/test-execution');
 
 /**
- * Action testing workflow - Clean orchestrator following DDD Light pattern
+ * Action testing workflow - Clean orchestrator with immediate feedback
  * @param {string} actionName - Name of action to test
  * @param {Object} options - Testing options
  * @param {Object} options.params - Action parameters
@@ -27,14 +28,20 @@ async function actionTestingWorkflow(actionName, options = {}) {
       return result;
     }
 
-    // Delegate everything to operations
+    // Show immediate feedback
     const environment = getEnvironmentString(isProd);
+    console.log(format.success(`Environment detected: ${format.environment(environment)}`));
+    console.log(format.success(`Action tested: ${actionName}`));
+    console.log();
+
+    // Execute test with progress feedback and display results as they come
     const response = await executeActionTest(actionName, params, isProd);
 
-    // Single operation handles all display logic and returns result
-    return displayTestResults(environment, actionName, response);
+    // Display final results
+    return displayProgressResults(environment, actionName, response);
   } catch (error) {
-    // Delegate error handling to operations
+    // Show error immediately
+    console.log(format.error(`Test failed: ${error.message}`));
     return buildErrorResult(error.message, actionName);
   }
 }
