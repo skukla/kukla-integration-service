@@ -5,7 +5,7 @@
  * Contains operations for fetching inventory data and enriching products with stock information.
  */
 
-const { executeCommerceRequest } = require('../../commerce');
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
 const { extractProductSkus } = require('../utils/category');
 
 /**
@@ -39,7 +39,7 @@ async function fetchInventoryData(skus, config, params, trace = null) {
       const chunk = chunks[chunkIndex];
       const inventoryPromises = chunk.map(async (sku) => {
         try {
-          const response = await executeCommerceRequest(
+          const response = await executeAdminTokenCommerceRequest(
             `/stockItems/${sku}`,
             { method: 'GET' },
             config,
