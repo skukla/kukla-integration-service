@@ -16,6 +16,15 @@ function buildFilesConfig(params = {}, mainConfig = {}) {
   // eslint-disable-next-line no-unused-vars
   params; // Keep for interface consistency
 
+  return buildFilesConfiguration(mainConfig);
+}
+
+/**
+ * Build complete files configuration object
+ * @param {Object} mainConfig - Shared main configuration
+ * @returns {Object} Files configuration
+ */
+function buildFilesConfiguration(mainConfig) {
   return {
     storage: {
       csv: {
@@ -28,21 +37,38 @@ function buildFilesConfig(params = {}, mainConfig = {}) {
       presignedUrls: {
         enabled: true, // Enable presigned URL generation
         expiration: {
-          default: 3600, // 1 hour default expiration (in seconds)
-          s3: 3600, // S3 presigned URL expiration (1 hour)
-          appBuilder: 3600, // App Builder presigned URL expiration (1 hour)
-          download: 1800, // Download URLs expiration (30 minutes)
-          upload: 900, // Upload URLs expiration (15 minutes)
+          short: 1800, // 30 minutes for downloads and temporary access
+          long: 3600, // 1 hour for uploads and extended access (legacy)
+          adobeTarget: 172800, // 48 hours (2 days) for Adobe Target integration
+          maximum: 604800, // 7 days - AWS S3 maximum expiration time
         },
         s3: {
           signatureVersion: 'v4', // AWS signature version
-          useAccelerateEndpoint: false, // Use S3 Transfer Acceleration
-          forcePathStyle: false, // Force path-style addressing
         },
-        appBuilder: {
-          fallbackToAction: true, // Fall back to action URL if presigned fails
-          cacheEnabled: true, // Cache presigned URLs
-          cacheTtl: 1800, // Cache TTL for presigned URLs (30 minutes)
+        dualAccess: {
+          // Define access patterns for different use cases
+          patterns: {
+            user: {
+              method: 'download-action', // Always use download-file action for users
+              reason: 'Reliable access, consistent availability, works across all browsers',
+            },
+            adobeTarget: {
+              method: 'presigned-url', // Adobe Target REQUIRES presigned URLs - cannot use action URLs
+              reason: 'Adobe Target technical constraint - only supports presigned URL access',
+              urlType: 'external', // CDN-based for optimal performance
+              expiresIn: 604800, // 7 days - maximum AWS S3 allows (weekly manual updates required)
+            },
+            // Future systems can be added here with specific configurations
+            // salesforce: { method: 'presigned-url', reason: '...' },
+            // hubspot: { method: 'download-action', reason: '...' },
+          },
+          // Default to presigned URLs for any unspecified integrations
+          fallback: {
+            method: 'presigned-url',
+            reason: 'Direct access for external integrations with programmatic URL updates',
+            urlType: 'external',
+            expiresIn: 172800, // 48 hours default
+          },
         },
       },
     },

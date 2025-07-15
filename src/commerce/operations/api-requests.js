@@ -6,6 +6,7 @@
  */
 
 const { buildCommerceUrl } = require('../../core/routing/operations/commerce');
+const { MemoryCache } = require('../../files/utils/cache');
 const { validateAdminCredentials } = require('../utils/admin-auth');
 const {
   createAdminTokenRequestFunction,
@@ -84,9 +85,6 @@ async function executeAdminTokenCachedCommerceRequest(
   params,
   trace = null
 ) {
-  // Import cache from files domain
-  const { MemoryCache } = require('../../files').cache;
-
   // Validate admin credentials
   if (!validateAdminCredentials(params)) {
     throw new Error(

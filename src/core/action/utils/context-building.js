@@ -3,30 +3,45 @@
  * Utility functions for building action execution contexts
  */
 
+const response = require('../../http/responses');
+const { formatStepMessage } = require('../../utils/operations/formatting');
+
 /**
  * Build action context from initialized components
  * @param {Object} components - Initialized action components
  * @param {Object} components.config - Configuration object
- * @param {Object} components.params - Action parameters
- * @param {Object} components.traceContext - Tracing context
+ * @param {Object} components.extractedParams - Extracted action parameters
  * @param {Object} components.logger - Logger instance
- * @param {Object} components.domainCatalogs - Domain catalogs
- * @param {Object} components.response - Response utilities
+ * @param {Object} components.options - Initialization options
  * @returns {Object} Action context
  */
-function buildActionContext(components) {
-  const { config, params, traceContext, logger, domainCatalogs, response } = components;
+function buildContext(components) {
+  const { config, extractedParams, logger, options } = components;
 
   return {
     config,
-    params,
-    traceContext,
+    extractedParams,
     logger,
-    domainCatalogs,
+    options,
     response,
+    core: {
+      formatStepMessage,
+    },
   };
 }
 
+/**
+ * Build action context from initialized components (legacy name)
+ * @deprecated Use buildContext instead
+ * @param {Object} components - Initialized action components
+ * @returns {Object} Action context
+ */
+function buildActionContext(components) {
+  console.warn('buildActionContext is deprecated. Use buildContext instead.');
+  return buildContext(components);
+}
+
 module.exports = {
+  buildContext,
   buildActionContext,
 };

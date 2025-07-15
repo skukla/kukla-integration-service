@@ -6,29 +6,23 @@
 const { wrapAction } = require('../workflows/action-execution');
 
 /**
- * Creates a standardized action with common patterns
+ * Creates a standardized action with direct imports
+ * Actions use direct imports from domain operations instead of domain catalogs.
+ *
  * @param {Function} businessLogic - The core business logic function
  * @param {Object} actionOptions - Action configuration
  * @param {string} actionOptions.actionName - Name of the action
- * @param {Array<string>} [actionOptions.domains] - Domain catalogs to import
  * @param {boolean} [actionOptions.withTracing] - Enable tracing
  * @param {boolean} [actionOptions.withLogger] - Enable logging
  * @param {string} [actionOptions.description] - Action description
  * @returns {Object} Action module with main function
  */
 function createAction(businessLogic, actionOptions = {}) {
-  const {
-    actionName,
-    domains = [],
-    withTracing = false,
-    withLogger = false,
-    description = '',
-  } = actionOptions;
+  const { actionName, withTracing = false, withLogger = false, description = '' } = actionOptions;
 
   const main = async (params) => {
     return wrapAction(businessLogic, params, {
       actionName,
-      domains,
       withTracing,
       withLogger,
     });
@@ -40,7 +34,6 @@ function createAction(businessLogic, actionOptions = {}) {
     meta: {
       name: actionName,
       description,
-      domains,
       withTracing,
       withLogger,
     },

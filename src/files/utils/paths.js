@@ -19,6 +19,38 @@ function removePublicPrefix(fileName, storageDirectory = 'public/') {
 }
 
 /**
+ * Build storage file path with proper concatenation
+ * Eliminates duplication of path building logic across the files domain.
+ *
+ * @param {string} fileName - Base filename
+ * @param {string} storageDirectory - Storage directory path
+ * @param {string} [prefix] - Optional prefix (for S3)
+ * @returns {string} Complete file path
+ */
+function buildStorageFilePath(fileName, storageDirectory, prefix = '') {
+  const directory = storageDirectory || '';
+
+  if (prefix) {
+    return `${prefix}${directory}${fileName}`;
+  }
+
+  return `${directory}${fileName}`;
+}
+
+/**
+ * Ensure file path starts with storage directory
+ * Utility to handle both full paths and filename-only scenarios.
+ *
+ * @param {string} fileName - File name or path
+ * @param {string} storageDirectory - Storage directory path
+ * @returns {string} Full file path
+ */
+function ensureStorageDirectoryPath(fileName, storageDirectory) {
+  if (fileName.startsWith(storageDirectory)) return fileName;
+  return `${storageDirectory}${fileName}`;
+}
+
+/**
  * Add storage directory prefix to filename if not already present
  * @param {string} fileName - File name
  * @param {string} [storageDirectory='public/'] - Storage directory prefix to add
@@ -147,4 +179,6 @@ module.exports = {
   getFilename,
   getExtension,
   changeExtension,
+  buildStorageFilePath,
+  ensureStorageDirectoryPath,
 };
