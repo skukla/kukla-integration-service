@@ -6,7 +6,7 @@
  */
 
 const { getAuthToken } = require('./admin-auth');
-const { http } = require('../../core/http/client');
+const { buildHeaders, request } = require('../../core/http/client');
 const { buildCommerceUrl } = require('../../core/routing/operations/commerce');
 
 // ============================================================================
@@ -66,7 +66,7 @@ function createAdminTokenHeaders(adminToken, additionalHeaders = {}) {
   }
 
   return {
-    ...http.buildHeaders(),
+    ...buildHeaders(),
     'Content-Type': 'application/json',
     Authorization: `Bearer ${adminToken}`,
     ...additionalHeaders,
@@ -311,7 +311,7 @@ function createAdminTokenRequestFunction(config, params, trace = null) {
         url: fullUrl,
       });
 
-      return http.request(fullUrl, requestOptions);
+      return request(fullUrl, requestOptions);
     };
 
     try {

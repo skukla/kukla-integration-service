@@ -15,6 +15,7 @@ This pattern provides optimal solutions for each specific integration need.
 ## Quick Start
 
 ### For Users (Frontend/Browser)
+
 ```javascript
 // Always use action-based download URLs
 const { generateFileAccessUrl } = require('../src/files/utils/access-patterns');
@@ -24,6 +25,7 @@ const userAccess = await generateFileAccessUrl('products.csv', 'user', config, p
 ```
 
 ### For Adobe Target (Stable URLs)
+
 ```javascript
 // Use action URLs for stable, never-changing URLs
 const adobeTargetAccess = await generateFileAccessUrl('products.csv', 'adobeTarget', config, params);
@@ -31,6 +33,7 @@ const adobeTargetAccess = await generateFileAccessUrl('products.csv', 'adobeTarg
 ```
 
 ### For Other Systems (Programmatic Updates)
+
 ```javascript
 // Use presigned URLs for systems that can handle URL changes
 const apiAccess = await generateFileAccessUrl('products.csv', 'salesforce', config, params);
@@ -38,6 +41,7 @@ const apiAccess = await generateFileAccessUrl('products.csv', 'salesforce', conf
 ```
 
 ### For Adobe I/O Runtime Actions
+
 ```javascript
 // Use internal URLs for performance within Adobe I/O Runtime
 const internalAccess = await generateFileAccessUrl('products.csv', 'internal', config, params, {
@@ -95,6 +99,7 @@ const result = await generateFileAccessUrl(fileName, useCase, config, params, op
 ```
 
 **Parameters:**
+
 - `fileName` (string): Name of the file
 - `useCase` (string): 'user', 'system', 'api', 'internal'
 - `config` (Object): Configuration object
@@ -102,6 +107,7 @@ const result = await generateFileAccessUrl(fileName, useCase, config, params, op
 - `options` (Object, optional): Additional options for presigned URLs
 
 **Returns:**
+
 ```javascript
 {
   success: true,
@@ -127,6 +133,7 @@ const result = await generateSystemPresignedUrl(fileName, config, params, option
 ```
 
 **Options:**
+
 - `expiresIn` (number): Expiration time in seconds (default: 3600)
 - `urlType` (string): 'external' or 'internal' (default: 'external')
 - `permissions` (string): 'r', 'rw', 'rwd' (default: 'r')
@@ -150,11 +157,13 @@ const presignedUrl = await files.generatePresignURL(fileName, {
 ### URL Types
 
 #### External URLs (CDN-based)
+
 - Accessible from anywhere
 - Optimized for external systems
 - Best for Adobe Target, APIs, public access
 
 #### Internal URLs (Direct storage)
+
 - Only work within Adobe I/O Runtime
 - No CDN overhead
 - Best for action-to-action data transfer
@@ -170,6 +179,7 @@ node test-presigned-urls.js
 ```
 
 This tests:
+
 - External URL generation with various permissions
 - Internal URL generation for runtime access
 - Error handling and edge cases
@@ -187,7 +197,7 @@ The test suite covers:
 
 ### Sample Test Output
 
-```
+```text
 🧪 Testing Adobe I/O Files SDK generatePresignURL functionality...
 
 ✅ Adobe I/O Files SDK initialized successfully
@@ -249,6 +259,7 @@ if (result.success) {
 #### **Weekly URL Update Process**
 
 1. **Generate New URL** (every 7 days):
+
    ```bash
    # Test the action to get current URL
    npm run test:action get-products
@@ -318,6 +329,7 @@ if (result.success) {
 ### Adobe Target Configuration
 
 The `adobeTarget` use case automatically:
+
 - **Uses 48-hour expiration** (2 days) providing safety buffer for 24-hour refresh
 - **External CDN URLs** for optimal performance
 - **Read-only permissions** for security
@@ -379,11 +391,13 @@ await processDataInAnotherAction(internalAccess.url);
 ### From Action-Only Pattern
 
 **Before** (action-only):
+
 ```javascript
 const downloadUrl = buildFileDownloadUrl(fileName, config);
 ```
 
 **After** (dual access pattern):
+
 ```javascript
 // For users
 const userAccess = await generateFileAccessUrl(fileName, 'user', config, params);
@@ -406,22 +420,26 @@ const presignedUrl = systemAccess.url;
 ### Common Issues
 
 **Presigned URLs not working:**
+
 ```bash
 # Test native support
 node test-presigned-urls.js
 ```
 
 **Wrong URL type returned:**
+
 - Check `useCase` parameter matches intended use
 - Verify configuration in `config/domains/files.js`
 
 **Expiry issues:**
+
 - External URLs: Check `expiresAt` field
 - Action URLs: Never expire (use for users)
 
 ### Debug Information
 
 Enable debug logging:
+
 ```javascript
 const result = await generateFileAccessUrl(fileName, useCase, config, params);
 console.log('Access result:', result.metadata);
@@ -475,4 +493,4 @@ node test-presigned-urls.js
 
 # Test action integration
 npm run test:action get-products
-``` 
+```
