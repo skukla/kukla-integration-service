@@ -5,7 +5,7 @@
  * Contains RECS-specific CSV formatting and generation logic.
  */
 
-const { generateCsv } = require('../../files');
+const { generateCsv } = require('../../files/utils/csv');
 const { mapProductToCsvRow } = require('../operations/transformation');
 
 /**
