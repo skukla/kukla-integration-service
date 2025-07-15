@@ -12,8 +12,10 @@ const {
   ListObjectsV2Command,
 } = require('@aws-sdk/client-s3');
 
-const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
+const { buildStorageFilePath, ensureStorageDirectoryPath } = require('./paths');
+const { buildFileDownloadUrl } = require('./url-building');
 const { formatFileSize, formatDate } = require('../../core/utils/operations/formatting');
+const { generatePresignedUrl } = require('../operations/presigned-urls');
 
 /**
  * Creates the write method for App Builder storage
@@ -27,24 +29,38 @@ function createAppBuilderWriteMethod(files, config) {
   return async function write(fileName, content) {
     // Store files in configured directory for organization and accessibility
     const storageDirectory = config.storage.directory;
-    const fullFileName = `${storageDirectory}${fileName}`;
+    const fullFileName = buildStorageFilePath(fileName, storageDirectory);
     await files.write(fullFileName, content);
     const properties = await files.getProperties(fullFileName);
 
     // Generate action-based download URL for consistent interface across providers
-    const actionUrl =
-      buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fileName)}`;
+    const actionUrl = buildFileDownloadUrl(fileName, config);
+
+    // Generate presigned URL for public access
+    let presignedUrlResult = null;
+    if (config.storage.presignedUrls.enabled) {
+      try {
+        const storage = { provider: 'app-builder', client: files };
+        presignedUrlResult = await generatePresignedUrl(storage, fileName, config, {
+          expiresIn: config.storage.presignedUrls.expiration.short,
+        });
+      } catch (error) {
+        console.warn('Failed to generate presigned URL:', error.message);
+      }
+    }
 
     return {
       fileName: fullFileName, // Return the full path for consistency
-      url: actionUrl, // Use action URL instead of direct file URL
+      url: actionUrl, // Use action URL for fallback
       downloadUrl: actionUrl, // Use action URL for downloads
+      presignedUrl: presignedUrlResult?.success ? presignedUrlResult.presignedUrl : null,
       properties: {
         name: fileName, // But keep the original name in properties
         size: content.length,
         lastModified: properties.lastModified,
         contentType: properties.contentType || 'text/csv',
         internalUrl: properties.url, // Keep the original URL for internal reference
+        presigned: presignedUrlResult, // Include full presigned URL info
       },
     };
   };
@@ -62,7 +78,6 @@ function createAppBuilderListMethod(files, config) {
   return async function list(directory = null) {
     const storageDirectory = config.storage.directory;
     const listDirectory = directory || storageDirectory;
-    // Both app-builder and S3 now use configured directory prefix for unified organization
     const fileList = await files.list();
     const filteredFiles = fileList.filter((file) => file.name.startsWith(listDirectory));
 
@@ -115,9 +130,7 @@ function createAppBuilderStorageWrapper(files, config) {
 
     async read(fileName) {
       // Handle both full path and filename-only
-      const fullPath = fileName.startsWith(storageDirectory)
-        ? fileName
-        : `${storageDirectory}${fileName}`;
+      const fullPath = ensureStorageDirectoryPath(fileName, storageDirectory);
       return await files.read(fullPath);
     },
 
@@ -160,9 +173,7 @@ function createS3WriteMethod(s3Client, s3Config, config) {
   return async function write(fileName, content) {
     // Include both prefix and storage directory in the key
     const storageDirectory = config.storage.directory || '';
-    const fullPath = s3Config.prefix
-      ? `${s3Config.prefix}${storageDirectory}${fileName}`
-      : `${storageDirectory}${fileName}`;
+    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
 
     const command = new PutObjectCommand({
       Bucket: s3Config.bucket,
@@ -174,13 +185,31 @@ function createS3WriteMethod(s3Client, s3Config, config) {
     await s3Client.send(command);
 
     // Generate action-based download URL for consistent interface across providers
-    const actionUrl =
-      buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fileName)}`;
+    const actionUrl = buildFileDownloadUrl(fileName, config);
+
+    // Generate presigned URL for public access
+    let presignedUrlResult = null;
+    if (config.storage.presignedUrls.enabled) {
+      try {
+        const storage = {
+          provider: 's3',
+          client: s3Client,
+          bucket: s3Config.bucket,
+          prefix: s3Config.prefix,
+        };
+        presignedUrlResult = await generatePresignedUrl(storage, fileName, config, {
+          expiresIn: config.storage.presignedUrls.expiration.short,
+        });
+      } catch (error) {
+        console.warn('Failed to generate presigned URL:', error.message);
+      }
+    }
 
     return {
       fileName: fullPath, // Return the full path including storage directory
-      url: actionUrl,
-      downloadUrl: actionUrl,
+      url: actionUrl, // Use action URL for fallback
+      downloadUrl: actionUrl, // Use action URL for downloads
+      presignedUrl: presignedUrlResult?.success ? presignedUrlResult.presignedUrl : null,
       properties: {
         name: fileName,
         size: content.length,
@@ -188,6 +217,7 @@ function createS3WriteMethod(s3Client, s3Config, config) {
         contentType: 'text/csv',
         bucket: s3Config.bucket, // Include bucket name for storage display
         directory: storageDirectory, // Include directory for proper display
+        presigned: presignedUrlResult, // Include full presigned URL info
       },
     };
   };
@@ -205,7 +235,7 @@ function createS3ListMethod(s3Client, s3Config, config) {
   return async function list() {
     // Include both prefix and storage directory in the list prefix
     const storageDirectory = config.storage.directory || '';
-    const fullPrefix = s3Config.prefix ? `${s3Config.prefix}${storageDirectory}` : storageDirectory;
+    const fullPrefix = buildStorageFilePath('', storageDirectory, s3Config.prefix);
 
     const command = new ListObjectsV2Command({
       Bucket: s3Config.bucket,
@@ -250,9 +280,7 @@ function createS3StorageWrapper(s3Client, s3Config, config) {
 
     async read(fileName) {
       // Include both prefix and storage directory in the key
-      const fullPath = s3Config.prefix
-        ? `${s3Config.prefix}${storageDirectory}${fileName}`
-        : `${storageDirectory}${fileName}`;
+      const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
       const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
         Key: fullPath,
@@ -268,9 +296,7 @@ function createS3StorageWrapper(s3Client, s3Config, config) {
 
     async delete(fileName) {
       // Include both prefix and storage directory in the key
-      const fullPath = s3Config.prefix
-        ? `${s3Config.prefix}${storageDirectory}${fileName}`
-        : `${storageDirectory}${fileName}`;
+      const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
       const command = new DeleteObjectCommand({
         Bucket: s3Config.bucket,
         Key: fullPath,
@@ -283,9 +309,7 @@ function createS3StorageWrapper(s3Client, s3Config, config) {
 
     async getProperties(fileName) {
       // Include both prefix and storage directory in the key
-      const fullPath = s3Config.prefix
-        ? `${s3Config.prefix}${storageDirectory}${fileName}`
-        : `${storageDirectory}${fileName}`;
+      const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
       const command = new GetObjectCommand({
         Bucket: s3Config.bucket,
         Key: fullPath,

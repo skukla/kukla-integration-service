@@ -5,10 +5,17 @@
  * Contains operations that create publicly accessible URLs with expiration times.
  */
 
-const { GetObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-
-const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
+const { buildStorageFilePath } = require('../utils/paths');
+const {
+  createS3PresignedUrl,
+  createAppBuilderPresignedUrl,
+  supportsPresignedUrls,
+} = require('../utils/presigned-url-providers');
+const {
+  createS3PresignedUrlResponse,
+  createAppBuilderPresignedUrlResponse,
+  createPresignedUrlErrorResponse,
+} = require('../utils/response-factories');
 
 /**
  * Generate S3 presigned URL for file access
@@ -24,50 +31,31 @@ const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
  * @returns {Promise<Object>} Presigned URL result with expiration info
  */
 async function generateS3PresignedUrl(s3Client, s3Config, fileName, config, options = {}) {
-  const { expiresIn = config.storage.presignedUrls.expiration.s3, operation = 'download' } =
+  const { expiresIn = config.storage.presignedUrls.expiration.short, operation = 'download' } =
     options;
 
   try {
-    // Build the full S3 key path
+    // Build the full S3 key path using utility
     const storageDirectory = config.storage.directory || '';
-    const fullPath = s3Config.prefix
-      ? `${s3Config.prefix}${storageDirectory}${fileName}`
-      : `${storageDirectory}${fileName}`;
+    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
 
-    // Create the S3 command for the operation
-    const command = new GetObjectCommand({
-      Bucket: s3Config.bucket,
-      Key: fullPath,
-    });
+    // Generate presigned URL using utility
+    const presignedUrl = await createS3PresignedUrl(s3Client, s3Config.bucket, fullPath, expiresIn);
 
-    // Generate presigned URL
-    const presignedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn,
-      signableHeaders: new Set(['host']),
-    });
-
-    // Calculate expiration timestamp
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
-
-    return {
-      success: true,
+    // Create standardized S3 response
+    return createS3PresignedUrlResponse(
       presignedUrl,
-      expiresIn,
-      expiresAt: expiresAt.toISOString(),
-      provider: 's3',
       operation,
-      bucket: s3Config.bucket,
-      key: fullPath,
-    };
+      expiresIn,
+      s3Config.bucket,
+      fullPath
+    );
   } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: `S3 presigned URL generation failed: ${error.message}`,
-        type: 'S3_PRESIGNED_URL_ERROR',
-        operation,
-      },
-    };
+    return createPresignedUrlErrorResponse(
+      `S3 presigned URL generation failed: ${error.message}`,
+      'S3_PRESIGNED_URL_ERROR',
+      operation
+    );
   }
 }
 
@@ -81,72 +69,41 @@ async function generateS3PresignedUrl(s3Client, s3Config, fileName, config, opti
  * @param {Object} [options] - Presigned URL options
  * @param {number} [options.expiresIn] - Expiration time in seconds
  * @param {string} [options.operation] - Operation type (download, upload)
+ * @param {string} [options.urlType] - URL type: 'external' (CDN) or 'internal' (direct storage)
+ * @param {string} [options.permissions] - Permissions: 'r', 'rw', 'rwd'
  * @returns {Promise<Object>} Presigned URL result with expiration info
  */
 async function generateAppBuilderPresignedUrl(files, fileName, config, options = {}) {
-  const { expiresIn = config.storage.presignedUrls.expiration.appBuilder, operation = 'download' } =
-    options;
+  const {
+    expiresIn = config.storage.presignedUrls.expiration.short,
+    operation = 'download',
+    urlType = 'external',
+    permissions = 'r',
+  } = options;
 
   try {
-    // For App Builder, check if the files SDK supports presigned URLs
-    // If not, fall back to action-based URL with expiration tracking
+    // Check if the files SDK supports presigned URLs
+    if (!supportsPresignedUrls(files)) {
+      throw new Error('App Builder Files SDK does not support presigned URLs');
+    }
+
     const storageDirectory = config.storage.directory;
-    const fullFileName = `${storageDirectory}${fileName}`;
+    const fullFileName = buildStorageFilePath(fileName, storageDirectory);
 
-    // Try to get presigned URL from Files SDK (if supported)
-    let presignedUrl;
-    let usedFallback = false;
+    // Generate presigned URL using native SDK method
+    const presignedUrl = await createAppBuilderPresignedUrl(files, fullFileName, expiresIn, {
+      urlType,
+      permissions,
+    });
 
-    // Check if Files SDK has a presigned URL method
-    if (typeof files.getPresignedUrl === 'function') {
-      try {
-        presignedUrl = await files.getPresignedUrl(fullFileName, { expiresIn });
-      } catch (presignedError) {
-        // Fall back to action URL if presigned URL generation fails
-        usedFallback = true;
-      }
-    } else {
-      // Files SDK doesn't support presigned URLs, use fallback
-      usedFallback = true;
-    }
-
-    if (usedFallback && config.storage.presignedUrls.appBuilder.fallbackToAction) {
-      // Generate action-based URL with expiration timestamp
-      const actionUrl =
-        buildRuntimeUrl('download-file', null, config) +
-        `?fileName=${encodeURIComponent(fileName)}`;
-
-      // Add expiration timestamp to the URL
-      const expiresAt = new Date(Date.now() + expiresIn * 1000);
-      presignedUrl = `${actionUrl}&expires=${expiresAt.getTime()}`;
-    }
-
-    if (!presignedUrl) {
-      throw new Error('Unable to generate presigned URL and fallback is disabled');
-    }
-
-    // Calculate expiration timestamp
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
-
-    return {
-      success: true,
-      presignedUrl,
-      expiresIn,
-      expiresAt: expiresAt.toISOString(),
-      provider: 'app-builder',
-      operation,
-      fallbackUsed: usedFallback,
-      fileName: fullFileName,
-    };
+    // Create standardized App Builder response
+    return createAppBuilderPresignedUrlResponse(presignedUrl, operation, expiresIn, fullFileName);
   } catch (error) {
-    return {
-      success: false,
-      error: {
-        message: `App Builder presigned URL generation failed: ${error.message}`,
-        type: 'APP_BUILDER_PRESIGNED_URL_ERROR',
-        operation,
-      },
-    };
+    return createPresignedUrlErrorResponse(
+      `App Builder presigned URL generation failed: ${error.message}`,
+      'APP_BUILDER_PRESIGNED_URL_ERROR',
+      operation
+    );
   }
 }
 
@@ -175,7 +132,7 @@ async function generatePresignedUrl(storage, fileName, config, options = {}) {
     case 's3':
       return await generateS3PresignedUrl(
         storage.client,
-        { bucket: storage.bucket, prefix: storage.prefix, region: config.storage.s3.region },
+        { bucket: storage.bucket, prefix: storage.prefix },
         fileName,
         config,
         options
@@ -203,17 +160,8 @@ async function generatePresignedUrl(storage, fileName, config, options = {}) {
  * @returns {Object} Validation result
  */
 function validatePresignedUrlExpiration(expiresAt) {
-  const now = new Date();
-  const expiration = new Date(expiresAt);
-  const isExpired = now >= expiration;
-  const timeRemaining = Math.max(0, expiration.getTime() - now.getTime());
-
-  return {
-    isExpired,
-    timeRemaining, // milliseconds
-    timeRemainingSeconds: Math.floor(timeRemaining / 1000),
-    expiresAt,
-  };
+  const { validateExpiration } = require('../utils/expiration');
+  return validateExpiration(expiresAt);
 }
 
 module.exports = {
