@@ -15,7 +15,7 @@ async function deleteFileBusinessLogic(context) {
   const { files, core, config, extractedParams } = context;
   const steps = [];
 
-  // Step 1: Validate input
+  // Step 1: Input has been validated in the action factory
   steps.push(core.formatStepMessage('validate-input', 'success'));
 
   // Step 2: Delete file using files domain
