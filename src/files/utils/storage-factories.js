@@ -15,6 +15,7 @@ const {
 const { buildStorageFilePath, ensureStorageDirectoryPath } = require('./paths');
 const { buildFileDownloadUrl } = require('./url-building');
 const { formatFileSize, formatDate } = require('../../core/utils/operations/formatting');
+const { updateContentOnly } = require('../operations/content-only');
 const { generatePresignedUrl } = require('../operations/presigned-urls');
 
 /**
@@ -141,6 +142,8 @@ function createAppBuilderStorageWrapper(files, config) {
 
     write: createAppBuilderWriteMethod(files, config),
 
+    writeContentOnly: createWriteContentOnlyMethod({ provider: 'app-builder', client: files }),
+
     async read(fileName) {
       // Handle both full path and filename-only
       const fullPath = ensureStorageDirectoryPath(fileName, storageDirectory);
@@ -170,6 +173,19 @@ function createAppBuilderStorageWrapper(files, config) {
         contentType: properties.contentType || 'application/octet-stream',
       };
     },
+  };
+}
+
+/**
+ * Creates the writeContentOnly method for any storage provider
+ * Pure function factory that creates content-only write method implementation.
+ *
+ * @param {Object} storage - Storage wrapper configuration
+ * @returns {Function} WriteContentOnly method implementation
+ */
+function createWriteContentOnlyMethod(storage) {
+  return async function writeContentOnly(fileName, content, config) {
+    return await updateContentOnly(storage, fileName, content, config);
   };
 }
 
@@ -304,6 +320,13 @@ function createS3StorageWrapper(s3Client, s3Config, config) {
 
     write: createS3WriteMethod(s3Client, s3Config, config),
 
+    writeContentOnly: createWriteContentOnlyMethod({
+      provider: 's3',
+      client: s3Client,
+      bucket: s3Config.bucket,
+      prefix: s3Config.prefix,
+    }),
+
     async read(fileName) {
       // Include both prefix and storage directory in the key
       const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
@@ -366,4 +389,5 @@ module.exports = {
   createS3WriteMethod,
   createS3ListMethod,
   createS3StorageWrapper,
+  createWriteContentOnlyMethod,
 };
