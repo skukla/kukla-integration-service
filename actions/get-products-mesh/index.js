@@ -54,6 +54,7 @@ async function getProductsMeshBusinessLogic(context) {
       provider: storageResult.provider,
       location: storageResult.fileName,
       properties: storageResult.properties,
+      management: storageResult.management,
     },
     performance: meshData.performance,
   };
