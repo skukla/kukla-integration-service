@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "parent_id": { "type": "integer" },
+          "level": { "type": "integer" },
+          "is_active": { "type": "boolean" },
+          "position": { "type": "integer" },
+          "product_count": { "type": "integer" }
+        }
+      }
+    },
+    "total_count": { "type": "integer" }
+  }
+}
