@@ -8,7 +8,7 @@ const { Transform } = require('stream');
 
 const csvWriter = require('csv-writer');
 
-const { compression } = require('../../core/http');
+const compression = require('../../core/http/compression');
 
 /**
  * Gets CSV configuration from the main config

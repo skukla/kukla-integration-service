@@ -5,7 +5,7 @@
  * Contains operations that coordinate file system interactions.
  */
 
-const { formatFileSize, formatDate } = require('../../core').utils;
+const { formatFileSize, formatDate } = require('../../core/utils/operations/formatting');
 const {
   createFileError,
   getContentType,
