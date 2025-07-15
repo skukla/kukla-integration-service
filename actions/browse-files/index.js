@@ -1,69 +1,42 @@
 /**
- * Browse files action for managing product export files
+ * Browse Files Action - File system exploration for Adobe I/O Files
  * @module browse-files
  */
 
-const { createAction } = require('../../src/core/action');
-const {
-  generateFileBrowserUI,
-  generateDeleteModal,
-  generateErrorResponse,
-} = require('../../src/htmx/workflows/file-browser');
+// Use direct import from action factory operation - DDD compliant
+const { createAction } = require('../../src/core/action/operations/action-factory');
 
 /**
  * Business logic for browse-files action
  * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Action response
+ * @returns {Promise<Object>} Response object
  */
 async function browseFilesBusinessLogic(context) {
-  const { config, extractedParams, webActionParams, logger } = context;
+  const { files, core, config, extractedParams } = context;
+  const steps = [];
 
-  // Merge parameters for proper handling
-  const allActionParams = { ...webActionParams, ...extractedParams };
+  // Step 1: Validate input
+  steps.push(core.formatStepMessage('validate-input', 'success'));
 
-  logger.info('Browse files request:', {
-    method: allActionParams.__ow_method,
-    modal: allActionParams.modal,
-    fileName: allActionParams.fileName,
-  });
+  // Step 2: Browse files using files domain
+  const fileList = await files.browseFiles(extractedParams, config);
+  steps.push(core.formatStepMessage('browse-files', 'success', { count: fileList.length }));
 
-  // Route based on HTTP method
-  switch (allActionParams.__ow_method) {
-    case 'get':
-      // Handle modal requests
-      if (allActionParams.modal === 'delete' && allActionParams.fileName) {
-        // Use HTMX workflow for delete modal
-        return generateDeleteModal(allActionParams.fileName);
-      }
-
-      // Generate file browser UI using domain workflow
-      return await generateFileBrowserUI(config, extractedParams);
-
-    default:
-      logger.error('Method not allowed:', { method: allActionParams.__ow_method });
-      return generateErrorResponse('Method not allowed', 'Request routing');
-  }
+  return core.success(
+    {
+      files: fileList,
+      steps,
+    },
+    'File browsing completed successfully',
+    {}
+  );
 }
 
-/**
- * Business logic with error handling
- */
-async function browseFilesWithErrorHandling(context) {
-  try {
-    return await browseFilesBusinessLogic(context);
-  } catch (error) {
-    const { logger } = context;
-    logger.error('Error in browse-files:', error);
-    return generateErrorResponse(error.message, 'File browsing');
-  }
-}
-
-// Create action with framework - clean orchestrator pattern using domain workflows!
-module.exports = createAction(browseFilesWithErrorHandling, {
+// Create action with framework - all boilerplate eliminated!
+module.exports = createAction(browseFilesBusinessLogic, {
   actionName: 'browse-files',
-  domains: ['files', 'htmx'],
+  domains: ['files'],
   withTracing: false,
-  withLogger: true,
-  logLevel: 'info',
-  description: 'Browse and manage files with HTMX interface using domain workflows',
+  withLogger: false,
+  description: 'Browse files in Adobe I/O Files storage',
 });

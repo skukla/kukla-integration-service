@@ -1,91 +1,65 @@
 /**
- * Main action for exporting Adobe Commerce product data via API Mesh
+ * Main action for exporting Adobe Commerce product data using API Mesh
  * @module get-products-mesh
- * @updated Force redeploy to fix errorResponse bug
  */
 
-const { createAction } = require('../../src/core/action');
-const { exportCsvWithStorage } = require('../../src/files/workflows/file-management');
-const { exportMeshProducts } = require('../../src/products/workflows/mesh-export');
+// Use direct import from action factory operation - DDD compliant
+const { createAction } = require('../../src/core/action/operations/action-factory');
 
 /**
  * Business logic for get-products-mesh action
  * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Action response
+ * @returns {Promise<Object>} Response object
  */
 async function getProductsMeshBusinessLogic(context) {
-  const { extractedParams, webActionParams, config, trace, core } = context;
+  const { products, files, core, config, extractedParams } = context;
   const steps = [];
 
-  // Merge parameters for format detection
-  const allActionParams = { ...webActionParams, ...extractedParams };
-  const format = allActionParams.format || 'csv';
+  // Step 1: Validate input
+  steps.push(core.formatStepMessage('validate-input', 'success'));
 
-  // Step 1: Validate mesh configuration and credentials
-  steps.push(core.formatStepMessage('validate-mesh', 'success'));
+  // Step 2: Fetch products using API Mesh
+  const productData = await products.fetchProductsFromMesh(extractedParams, config);
+  steps.push(
+    core.formatStepMessage('fetch-products-mesh', 'success', { count: productData.length })
+  );
 
-  // Step 2-4: Export products via mesh
-  const includeCSV = format !== 'json';
-  const exportResult = await exportMeshProducts(extractedParams, config, trace, includeCSV);
-  const { meshData, builtProducts, csvData, productCount } = exportResult;
+  // Step 3: Build products with proper transformation
+  const builtProducts = await products.buildProducts(productData, config);
+  steps.push(core.formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
-  // Step 2: Fetch products from mesh
-  steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: productCount }));
+  // Step 4: Create CSV
+  const csvData = await products.createCsv(builtProducts, config);
+  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.length }));
 
-  // Step 3: Transform products
-  steps.push(core.formatStepMessage('build-products', 'success', { count: productCount }));
+  // Step 5: Store CSV using files domain
+  const storageResult = await files.storeCsv(csvData, extractedParams);
 
-  // Step 4: Generate CSV
-  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
+  if (!storageResult.stored) {
+    throw new Error(
+      `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`
+    );
+  }
 
-  // Step 5: Store CSV using file workflow
-  const storageResult = await exportCsvWithStorage(csvData.content, config, extractedParams);
-  steps.push(core.formatStepMessage('store-csv', 'success', { info: storageResult }));
+  steps.push(core.formatStepMessage('store-csv', 'success', { location: storageResult.location }));
 
-  // Calculate total duration for performance metrics
-  const endTime = Date.now();
-  const totalDuration = endTime - trace.startTime;
-
-  // Return CSV export response with performance metrics
   return core.success(
     {
-      steps,
+      message: 'Product export completed successfully',
       downloadUrl: storageResult.downloadUrl,
-      performance: {
-        // Include mesh performance metrics
-        ...(meshData.performance || { method: 'API Mesh (No Data)', processedProducts: 0 }),
-        // Add total duration
-        duration: totalDuration,
-        durationFormatted: `${(totalDuration / 1000).toFixed(1)}s`,
-        // Override method to ensure consistency
-        method: 'API Mesh',
-      },
+      steps,
       storage: storageResult.storage,
-      // Add debugging information
-      debug: {
-        meshDataReceived: !!meshData,
-        meshDataKeys: meshData ? Object.keys(meshData) : [],
-        productCount: productCount,
-        builtProductsCount: builtProducts ? builtProducts.length : 0,
-        rawMeshSample: meshData
-          ? JSON.stringify(meshData).substring(0, 500) + '...'
-          : 'No mesh data',
-        timestamp: new Date().toISOString(),
-      },
-      // Include debug information from mesh response
-      ...(meshData.debug && { meshDebug: meshData.debug }),
     },
     'Product export completed successfully',
     {}
   );
 }
 
-// Create action with framework - clean orchestrator pattern using domain workflows!
+// Create action with framework - all boilerplate eliminated!
 module.exports = createAction(getProductsMeshBusinessLogic, {
   actionName: 'get-products-mesh',
   domains: ['products', 'files'],
-  withTracing: true, // Mesh actions need performance tracing
+  withTracing: false,
   withLogger: false,
-  description: 'Export Adobe Commerce product data via API Mesh to CSV using domain workflows',
+  description: 'Export Adobe Commerce product data to CSV using API Mesh',
 });
-// Force rebuild Mon Jul 14 13:49:42 EDT 2025

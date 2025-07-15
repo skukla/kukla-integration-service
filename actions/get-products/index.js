@@ -3,8 +3,8 @@
  * @module get-products
  */
 
-// Use action framework to eliminate duplication
-const { createAction } = require('../../src/core/action');
+// Use direct import from action factory operation - DDD compliant
+const { createAction } = require('../../src/core/action/operations/action-factory');
 
 /**
  * Business logic for get-products action
@@ -28,25 +28,25 @@ async function getProductsBusinessLogic(context) {
 
   // Step 4: Create CSV
   const csvData = await products.createCsv(builtProducts, config);
-  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.stats.originalSize }));
+  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.length }));
 
   // Step 5: Store CSV using files domain
-  const storageResult = await files.storeCsv(csvData.content, config, extractedParams);
-  steps.push(core.formatStepMessage('store-csv', 'success', { info: storageResult }));
+  const storageResult = await files.storeCsv(csvData, extractedParams);
 
-  // Return success response using core utilities
+  if (!storageResult.stored) {
+    throw new Error(
+      `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`
+    );
+  }
+
+  steps.push(core.formatStepMessage('store-csv', 'success', { location: storageResult.location }));
+
   return core.success(
     {
-      steps,
-      storage: storageResult,
+      message: 'Product export completed successfully',
       downloadUrl: storageResult.downloadUrl,
-      performance: {
-        method: 'Commerce REST API',
-        processedProducts: builtProducts.length,
-        totalApiCalls: Math.ceil(builtProducts.length / 25) + 1,
-        inventoryApiCalls: builtProducts.length,
-        categoriesApiCalls: 1,
-      },
+      steps,
+      storage: storageResult.storage,
     },
     'Product export completed successfully',
     {}

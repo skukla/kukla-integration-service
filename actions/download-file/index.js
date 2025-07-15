@@ -1,10 +1,11 @@
 /**
- * Download file action for retrieving files from storage
+ * Download File Action - File download functionality
  * @module download-file
  * @description Handles secure file downloads from Adobe I/O Files storage using domain workflows
  */
 
-const { createAction } = require('../../src/core/action');
+// Use direct import from action factory operation - DDD compliant
+const { createAction } = require('../../src/core/action/operations/action-factory');
 const { downloadFileWorkflow } = require('../../src/files/workflows/file-management');
 
 /**
@@ -14,33 +15,48 @@ const { downloadFileWorkflow } = require('../../src/files/workflows/file-managem
  */
 async function downloadFileBusinessLogic(context) {
   const { core, config, extractedParams, webActionParams, logger } = context;
+  const steps = [];
+
+  // Step 1: Validate input
+  steps.push(core.formatStepMessage('validate-input', 'success'));
 
   // Merge raw web action params with processed extracted params for file operations
-  const allActionParams = { ...webActionParams, ...extractedParams };
+  const mergedParams = { ...webActionParams, ...extractedParams };
 
   try {
     // Validate required parameters
-    const missingInputs = core.checkMissingParams(allActionParams, ['fileName']);
+    const missingInputs = core.checkMissingParams(mergedParams, ['fileName']);
     if (missingInputs) {
       logger.error('Missing required inputs:', { missingInputs });
       throw new Error(missingInputs);
     }
 
-    logger.info('Starting download request:', { fileName: allActionParams.fileName });
+    logger.info('Starting download request:', { fileName: mergedParams.fileName });
 
     // Use domain workflow for complete download process
-    const downloadResponse = await downloadFileWorkflow(
-      allActionParams.fileName,
+    const downloadResponse = await downloadFileWorkflow({
+      params: mergedParams,
       config,
-      extractedParams
-    );
+      logger,
+    });
 
     logger.info('Download completed successfully:', {
-      fileName: allActionParams.fileName,
+      fileName: mergedParams.fileName,
       statusCode: downloadResponse.statusCode,
     });
 
-    return downloadResponse;
+    steps.push(
+      core.formatStepMessage('download-file', 'success', { size: downloadResponse.fileData.size })
+    );
+
+    return core.success(
+      {
+        fileData: downloadResponse.fileData,
+        steps,
+      },
+      'File download completed successfully',
+      {}
+    );
   } catch (error) {
     logger.error('Error in download-file action:', error);
 
@@ -49,7 +65,7 @@ async function downloadFileBusinessLogic(context) {
   }
 }
 
-// Create action with framework - clean orchestrator pattern using domain workflows!
+// Create action with framework
 module.exports = createAction(downloadFileBusinessLogic, {
   actionName: 'download-file',
   domains: ['files'],
