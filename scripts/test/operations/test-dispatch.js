@@ -10,45 +10,63 @@ const { testOrchestrationWorkflow, listTestSuites } = require('../workflows/test
 
 /**
  * Dispatch test execution based on test type
- * @param {string} testType - Type of test to run
- * @param {string} target - Target action/endpoint/suite
+ * @param {string} testType - Type of test to run ('action', 'api', 'performance', 'suite')
+ * @param {string} target - Target action/endpoint/suite name
  * @param {Object} options - Test options
  * @returns {Promise<Object>} Test result
  */
 async function dispatchTest(testType, target, options = {}) {
-  const { params = {}, isProd = false, rawOutput = false, failFast = false } = options;
+  const {
+    params = {},
+    isProd = false,
+    rawOutput = false,
+    failFast = false,
+    list = false,
+  } = options;
 
   switch (testType) {
     case 'action':
+      // Action testing - standardized --action format
       return await actionTestingWorkflow(target, { params, rawOutput, isProd });
 
-    case 'api':
-      return await apiTestingWorkflow(target, { params, isProd });
+    case 'api': {
+      // API testing - standardized --type=api --action format
+      const apiAction = target || params.action || 'get-products';
+      return await apiTestingWorkflow(apiAction, { params, isProd });
+    }
 
     case 'performance':
     case 'perf': {
-      if (target === 'list') {
+      // Performance testing - standardized --type=performance format
+      if (list) {
         listScenarios();
-        return { success: true, listed: true };
+        return { listed: true };
       }
-      const scenario = process.argv[4] || 'quick';
-      return await performanceTestingWorkflow(target, scenario, { params, isProd });
+
+      const perfAction = target || params.action || 'get-products';
+      const scenario = params.scenario || 'quick';
+      return await performanceTestingWorkflow(perfAction, scenario, { isProd });
     }
 
-    case 'suite':
-    case 'orchestration': {
-      if (target === 'list') {
+    case 'suite': {
+      // Suite testing - standardized --type=suite format
+      if (list) {
         listTestSuites();
-        return { success: true, listed: true };
+        return { listed: true };
       }
-      const suiteName = target || 'smoke';
-      return await testOrchestrationWorkflow(suiteName, { params, isProd, failFast });
+
+      const suiteName = target || params.name || 'smoke';
+      return await testOrchestrationWorkflow(suiteName, { isProd, failFast });
     }
 
     default: {
-      // For non-action test types (api, perf, suite) that use positional arguments
-      const actionName = testType; // First arg is action name for these test types
-      return await actionTestingWorkflow(actionName, { params, rawOutput, isProd });
+      // Fallback for legacy positional arguments or unknown test types
+      if (testType && !['action', 'api', 'performance', 'perf', 'suite'].includes(testType)) {
+        // Treat unknown testType as action name for backward compatibility
+        return await actionTestingWorkflow(testType, { params, rawOutput, isProd });
+      }
+
+      throw new Error(`Unknown test type: ${testType}`);
     }
   }
 }

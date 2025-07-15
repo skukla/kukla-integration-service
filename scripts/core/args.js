@@ -18,33 +18,66 @@ function parseDeployArgs(args) {
 
 /**
  * Parse command line arguments for test scripts
+ * Supports GNU-style flags (--action=value, --type=api) and legacy key=value format
  * @param {Array<string>} args - Process arguments
  * @returns {Object} Parsed arguments
  */
 function parseTestArgs(args) {
-  // Parse parameters in key=value format
-  const paramArgs = args.filter((arg) => arg.includes('=') && !arg.startsWith('--'));
   const params = {};
-  paramArgs.forEach((param) => {
-    const [key, ...valueParts] = param.split('=');
-    const value = valueParts.join('='); // Handle values that contain '='
+  let actionName = null;
+  let testType = null;
 
-    try {
-      params[key] = JSON.parse(value);
-    } catch {
-      params[key] = value;
+  // Parse all arguments
+  args.forEach((arg) => {
+    if (arg.startsWith('--')) {
+      // GNU-style flags: --action=get-products, --type=api, --use-case=adobeTarget
+      if (arg.includes('=')) {
+        const [flag, ...valueParts] = arg.substring(2).split('=');
+        const value = valueParts.join('=');
+
+        // Convert kebab-case to camelCase for internal consistency
+        const key = flag.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+
+        try {
+          params[key] = JSON.parse(value);
+        } catch {
+          params[key] = value;
+        }
+
+        // Special handling for specific parameters
+        if (key === 'action') {
+          actionName = value;
+        } else if (key === 'type') {
+          testType = value;
+        }
+      }
+    } else if (arg.includes('=') && !arg.startsWith('--')) {
+      // Legacy key=value format: action=get-products
+      const [key, ...valueParts] = arg.split('=');
+      const value = valueParts.join('=');
+
+      try {
+        params[key] = JSON.parse(value);
+      } catch {
+        params[key] = value;
+      }
+
+      // Special handling for action parameter
+      if (key === 'action') {
+        actionName = value;
+      }
     }
   });
-
-  const actionName = params.action;
 
   return {
     help: args.includes('--help'),
     actionName,
+    testType,
     params,
     raw: args.includes('--raw'),
     prod: args.includes('--prod'),
     failFast: args.includes('--fail-fast'),
+    list: args.includes('--list'),
   };
 }
 
@@ -80,43 +113,9 @@ Options:
  * Display help message for test commands
  */
 function showTestHelp() {
-  console.log(`
-Usage: npm run test:action [key=value ...] [options]
-       npm run test:api <endpoint> [key=value ...] [options]
-       npm run test:perf <action> [scenario] [options]
-       npm run test:suite [suite] [options]
-
-Test Types:
-  test:action   Test individual App Builder actions
-  test:api      Test API endpoints directly
-  test:perf     Performance testing with scenarios
-  test:suite    Run test suites (smoke/regression/performance)
-
-Options:
-  --help        Show this help message
-  --raw         Output raw JSON response only (action tests)
-  --prod        Run tests against production environment
-  --fail-fast   Stop on first failure (suite tests)
-
-Parameters (key=value format):
-  action        Action name to test (REQUIRED)
-  useCase       Access pattern for presigned URLs ('adobeTarget', 'user', 'system')
-                - adobeTarget: 7-day expiration for Adobe Target integration
-                - user: Action URLs (never expire, default for users)
-                - system: 48-hour expiration for external systems
-
-Examples:
-  npm run test:action action=get-products
-  npm run test:action action=get-products useCase=adobeTarget
-  npm run test:action action=delete-file fileName=products.csv
-
-Other commands:
-  npm run test:api get-products
-  npm run test:perf get-products baseline
-  npm run test:perf list
-  npm run test:suite smoke
-  npm run test:suite list
-  `);
+  console.log(
+    '\nUsage: npm run test:action [flags] [options]\n       npm run test:<action> [options]                       (specialized shortcuts)\n       npm run test:api <endpoint> [flags] [options]\n       npm run test:perf <action> [scenario] [options]\n       npm run test:suite [suite] [options]\n\nTest Types:\n  test:action            Test individual App Builder actions (generic)\n  test:<action>          Test specific action (specialized shortcuts)\n  test:api               Test API endpoints directly\n  test:perf              Performance testing with scenarios\n  test:suite             Run test suites (smoke/regression/performance)\n\nSpecialized Action Shortcuts:\n  test:get-products                Test get-products with default settings\n  test:get-products:target         Test get-products with Adobe Target (7-day expiration)\n  test:get-products:system         Test get-products with system access (48-hour expiration)\n  test:get-products-mesh           Test get-products-mesh with default settings\n  test:get-products-mesh:target    Test get-products-mesh with Adobe Target\n\nGeneric Action Testing:\n  npm run test:action --action=get-products\n  npm run test:action --action=get-products --use-case=adobeTarget\n  npm run test:action --action=get-products-mesh --use-case=system\n\nOptions:\n  --help                 Show this help message\n  --raw                  Output raw JSON response only (action tests)\n  --prod                 Run tests against production environment\n  --fail-fast            Stop on first failure (suite tests)\n\nFlags (GNU-style):\n  --action=<name>        Action name to test (REQUIRED for generic test:action)\n  --use-case=<type>      Access pattern for presigned URLs:\n                           adobeTarget (7 days), system (48 hours), user (action URLs)\n  --environment=<env>    Environment (staging/production)\n  --timeout=<seconds>    Request timeout override\n\nLegacy Format (still supported):\n  action=<name>          Same as --action=<name>\n  useCase=<type>         Same as --use-case=<type>\n\nExamples:\n  npm run test:get-products:target\n  npm run test:action --action=get-products --use-case=adobeTarget\n  npm run test:action action=get-products useCase=system\n'
+  );
 }
 
 /**

@@ -22,67 +22,51 @@ async function main() {
     return;
   }
 
-  // For test:action commands, require action=<name> format
-  if (args.actionName) {
-    // Action testing - use standardized action=<name> format
-    const result = await dispatchTest('action', args.actionName, {
-      params: args.params,
-      isProd: args.prod,
-      rawOutput: args.raw,
-      failFast: args.failFast,
-    });
+  let testType, target;
 
-    if (result.listed) {
-      return;
-    }
-
-    if (!result.success) {
-      process.exit(1);
-    }
-    return;
+  // Handle standardized --type flag format
+  if (args.testType) {
+    testType = args.testType;
+    target = args.actionName || args.params.scenario || args.params.name;
+  }
+  // Handle action testing with --action flag
+  else if (args.actionName) {
+    testType = 'action';
+    target = args.actionName;
+  }
+  // Fallback to legacy positional arguments for compatibility
+  else {
+    testType = process.argv[2];
+    target = process.argv[3];
   }
 
   // Check if this looks like an action test with wrong format
-  const firstArg = process.argv[2];
-  const knownTestTypes = ['api', 'perf', 'performance', 'suite', 'orchestration'];
-
-  if (firstArg && !knownTestTypes.includes(firstArg)) {
-    // This looks like someone tried to use the old positional format
-    console.log(format.error('Invalid format. Action tests require action=<name> format.'));
-    console.log('');
-    console.log('Usage: npm run test:action action=<action> [options]');
-    console.log('');
-    console.log('Examples:');
-    console.log('  npm run test:action action=get-products');
-    console.log('  npm run test:action action=get-products useCase=adobeTarget');
-    console.log('');
-    console.log(`Did you mean: npm run test:action action=${firstArg}?`);
-    process.exit(1);
+  if (!testType && !args.actionName && process.argv[2] && !process.argv[2].startsWith('--')) {
+    console.log(format.error('✖ Invalid format. Action tests require --action=<name> format.'));
+    console.log('\nUsage: npm run test:action --action=<action> [options]');
+    console.log('\nExamples:');
+    console.log('  npm run test:action -- --action=get-products');
+    console.log('  npm run test:action -- --action=get-products --use-case=adobeTarget');
+    console.log('\nDid you mean: npm run test:action -- --action=' + process.argv[2] + '?');
+    return;
   }
 
-  // For other test types (api, perf, suite), use process.argv pattern
-  const testType = firstArg;
-  const target = process.argv[3];
-
-  // Validate required arguments for non-action tests
-  if (!testType) {
-    console.log(format.error('Action name is required'));
-    console.log('Usage: npm run test:action action=<action> [options]');
-    console.log('');
-    console.log('Examples:');
-    console.log('  npm run test:action action=get-products');
-    console.log('  npm run test:action action=get-products useCase=adobeTarget');
-    process.exit(1);
+  // Validate required arguments
+  if (!testType && !target) {
+    console.log(format.error('Test type or action name is required'));
+    showTestHelp();
+    return;
   }
 
+  // Dispatch to appropriate test workflow
   const result = await dispatchTest(testType, target, {
     params: args.params,
     isProd: args.prod,
     rawOutput: args.raw,
     failFast: args.failFast,
+    list: args.list,
   });
 
-  // Handle list operations that don't need success check
   if (result.listed) {
     return;
   }
