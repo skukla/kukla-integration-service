@@ -3,26 +3,28 @@
  * Operations for filtering and processing action parameters
  */
 
-const { parameters } = require('../../core/utils');
+const {
+  filterActionParameters: filterParams,
+  extractParameters: extractParams,
+} = require('../../core/utils/parameters');
 
 /**
- * Filter action parameters for Adobe I/O Runtime
- * Removes system/reserved properties that shouldn't be sent to actions
+ * Filter action parameters to remove test-specific keys
  * @param {Object} params - Raw parameters object
  * @returns {Object} Filtered parameters safe for action execution
  */
 function filterActionParameters(params) {
-  return parameters.filterActionParameters(params);
+  return filterParams(params);
 }
 
 /**
- * Extract test-specific parameters from action parameters
- * @param {Object} params - Action parameters
+ * Extract test-specific parameters
+ * @param {Object} params - Raw parameters object
  * @returns {Object} Test-specific parameters
  */
 function extractTestParameters(params) {
   const testKeys = ['DEBUG', 'VERBOSE', 'TIMEOUT'];
-  return parameters.extractParameters(params, testKeys);
+  return extractParams(params, testKeys);
 }
 
 module.exports = {

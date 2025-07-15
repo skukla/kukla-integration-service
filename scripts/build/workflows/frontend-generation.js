@@ -6,7 +6,7 @@
 
 const path = require('path');
 
-const { configGeneration } = require('../operations');
+const { loadConfigWithEnvironment, writeConfigFile } = require('../operations/config-generation');
 
 /**
  * Generate frontend configuration
@@ -26,7 +26,7 @@ async function generateFrontendConfig(options = {}) {
     }
 
     // Load configuration with proper environment detection
-    const { config, env } = await configGeneration.loadConfigWithEnvironment(useSpinners);
+    const { config, env } = await loadConfigWithEnvironment(useSpinners);
 
     // Generate and write frontend configuration
     const frontendConfig = {
@@ -43,7 +43,7 @@ async function generateFrontendConfig(options = {}) {
         maxExecutionTime: config.performance.maxExecutionTime,
       },
     };
-    await configGeneration.writeConfigFile(
+    await writeConfigFile(
       path.join(outputDir, 'config.js'),
       frontendConfig,
       'Generating frontend config...',
@@ -59,7 +59,7 @@ async function generateFrontendConfig(options = {}) {
         namespace: config.runtime.namespace,
       },
     };
-    await configGeneration.writeConfigFile(
+    await writeConfigFile(
       path.join(outputDir, 'urls.js'),
       urlConfig,
       'Generating URL configuration...',

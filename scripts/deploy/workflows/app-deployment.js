@@ -8,7 +8,7 @@ const { appDeploymentStep } = require('./steps/app-deployment');
 const { buildProcessStep } = require('./steps/build-process');
 const { meshUpdateStep } = require('./steps/mesh-update');
 const { getEnvironmentString } = require('../../core/utils/environment');
-const { appDeploymentOutput } = require('../operations');
+const { appDeploymentOutput } = require('../operations/app-deployment-output');
 
 /**
  * App deployment workflow

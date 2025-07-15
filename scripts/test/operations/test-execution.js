@@ -5,7 +5,8 @@
 
 const { isSuccessfulResponse } = require('./response-handling');
 const { buildActionUrl } = require('./url-building');
-const { http, parameters } = require('../../core/utils');
+const { makeJsonPostRequest } = require('../../core/utils/http');
+const { filterActionParameters } = require('../../core/utils/parameters');
 
 /**
  * Execute action test - Clean operation for Light DDD pattern
@@ -50,9 +51,9 @@ async function executeRawTest(actionName, params, isProd = false) {
  * @returns {Promise<Object>} Test result
  */
 async function testAction(actionUrl, params) {
-  const actionParams = parameters.filterActionParameters(params);
+  const actionParams = filterActionParameters(params);
 
-  return await http.makeJsonPostRequest(actionUrl, actionParams);
+  return await makeJsonPostRequest(actionUrl, actionParams);
 }
 
 module.exports = {
