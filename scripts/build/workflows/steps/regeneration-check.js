@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 
-const { hash } = require('../../../core/operations');
+const { calculateFileHash, calculateObjectHash } = require('../../../core/operations/hash');
 
 /**
  * Check if mesh resolver regeneration is needed
@@ -31,8 +31,8 @@ function regenerationCheckStep(paths, meshConfig, options = {}) {
 
   try {
     // Step 1: Calculate current hashes using core utilities
-    const currentTemplateHash = hash.calculateFileHash(templatePath);
-    const currentConfigHash = hash.calculateObjectHash(meshConfig);
+    const currentTemplateHash = calculateFileHash(templatePath);
+    const currentConfigHash = calculateObjectHash(meshConfig);
 
     // Step 2: Read existing resolver file to check metadata
     const resolverContent = fs.readFileSync(resolverPath, 'utf8');
@@ -62,6 +62,6 @@ function regenerationCheckStep(paths, meshConfig, options = {}) {
 
 module.exports = {
   regenerationCheckStep,
-  calculateFileHash: hash.calculateFileHash,
-  calculateObjectHash: hash.calculateObjectHash,
+  calculateFileHash,
+  calculateObjectHash,
 }; 

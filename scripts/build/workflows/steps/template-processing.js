@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { hash } = require('../../../core/operations');
+const { calculateFileHash, calculateObjectHash } = require('../../../core/operations/hash');
 
 /**
  * Process mesh resolver template and generate final resolver
@@ -31,12 +31,12 @@ function templateProcessingStep(params) {
     const templateContent = fs.readFileSync(templatePath, 'utf8');
 
     // Step 3: Calculate hashes to determine if regeneration is needed
-    const templateHash = hash.calculateFileHash(templatePath);
+    const templateHash = calculateFileHash(templatePath);
     
     // Remove timestamp from config hash calculation (it changes every build)
     const stableConfig = { ...meshConfig };
     delete stableConfig.timestamp;
-    const configHash = hash.calculateObjectHash(stableConfig);
+    const configHash = calculateObjectHash(stableConfig);
 
     // Step 4: Check if resolver exists and is up to date
     let needsRegeneration = true;

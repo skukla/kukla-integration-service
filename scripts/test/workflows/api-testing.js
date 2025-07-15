@@ -5,8 +5,8 @@
  */
 
 const format = require('../../core/formatting');
-const { response: responseUtils } = require('../../core/utils');
 const { getEnvironmentString } = require('../../core/utils/environment');
+const { formatStorageInfo } = require('../../core/utils/response');
 const { buildActionUrl } = require('../operations/url-building');
 
 /**
@@ -50,7 +50,7 @@ async function apiTestingWorkflow(endpoint, options = {}) {
 
     // Step 4: Display storage info if available (aligned with action testing)
     if (responseBody && responseBody.storage) {
-      const storageInfo = responseUtils.formatStorageInfo(responseBody.storage);
+      const storageInfo = formatStorageInfo(responseBody.storage);
       console.log(format.storage(storageInfo));
     }
     console.log();

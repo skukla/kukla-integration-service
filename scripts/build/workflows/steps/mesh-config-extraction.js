@@ -3,7 +3,7 @@
  * Pure orchestrator for mesh configuration extraction
  */
 
-const { fileOperations } = require('../../../core/operations');
+const { writeJsonFile } = require('../../../core/operations/file-operations');
 const meshConfigProcessing = require('../../operations/mesh-config-processing');
 
 /**
@@ -28,7 +28,7 @@ async function meshConfigExtractionStep(options) {
     const processedConfig = meshConfigProcessing.buildMeshConfig(meshConfigModule, config);
 
     // Step 3: Write generated mesh.json
-    fileOperations.writeJsonFile(outputPath, processedConfig);
+    writeJsonFile(outputPath, processedConfig);
 
     return {
       success: true,
