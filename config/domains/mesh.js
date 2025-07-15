@@ -22,6 +22,15 @@ function buildMeshConfig(params = {}) {
   return {
     endpoint,
     apiKey,
+    batching: {
+      // Display limits for category queries
+      categoryDisplayLimit: 10,
+      // Batch thresholds (when to use batch vs individual calls)
+      thresholds: {
+        categories: 1, // Use batch for 1 or more categories
+        inventory: 1, // Use batch for 1 or more SKUs
+      },
+    },
   };
 }
 

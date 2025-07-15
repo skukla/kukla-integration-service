@@ -14,9 +14,14 @@
               {
                 "type": "Query",
                 "field": "products_list",
-                "path": "/products?searchCriteria[pageSize]=200",
+                "path": "/products?searchCriteria[pageSize]={args.pageSize}",
                 "method": "GET",
-                "responseSchema": "./samples/json-schema/products-response.json"
+                "argTypeMap": {
+                  "pageSize": {
+                    "type": "integer"
+                  }
+                },
+                "responseSchema": "./src/mesh/schema/products-response.json"
               }
             ]
           }
@@ -42,7 +47,19 @@
                     "type": "integer"
                   }
                 },
-                "responseSchema": "./samples/json-schema/categories-response.json"
+                "responseSchema": "./src/mesh/schema/categories-response.json"
+              },
+              {
+                "type": "Query",
+                "field": "categories_batch",
+                "path": "/categories?searchCriteria[pageSize]=20&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in",
+                "method": "GET",
+                "argTypeMap": {
+                  "categoryIds": {
+                    "type": "string"
+                  }
+                },
+                "responseSchema": "./src/mesh/schema/categories-response.json"
               }
             ]
           }
@@ -61,15 +78,34 @@
               {
                 "type": "Query",
                 "field": "inventory_items",
-                "path": "/inventory/source-items?searchCriteria[pageSize]=200",
+                "path": "/inventory/source-items?searchCriteria[pageSize]=50",
                 "method": "GET",
-                "responseSchema": "./samples/json-schema/inventory-response.json"
+                "responseSchema": "./src/mesh/schema/inventory-response.json"
+              },
+              {
+                "type": "Query",
+                "field": "inventory_batch",
+                "path": "/inventory/source-items?searchCriteria[pageSize]=50&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in&searchCriteria[current_page]=1",
+                "method": "GET",
+                "argTypeMap": {
+                  "skus": {
+                    "type": "string"
+                  }
+                },
+                "responseSchema": "./src/mesh/schema/inventory-response.json"
               }
             ]
           }
         }
       }
     ],
-    "additionalTypeDefs": ""
+    "additionalResolvers": [
+      "./mesh-resolvers.js"
+    ],
+    "additionalTypeDefs": "type EnrichedProduct {\n  sku: String!\n  name: String\n  price: Float\n  qty: Int\n  categories: [ProductCategory]\n  media_gallery_entries: [MediaGalleryEntry]\n  inventory: ProductInventory\n}\ntype BasicProduct {\n  sku: String!\n  name: String\n  price: Float\n  status: Int\n  type_id: String\n  created_at: String\n  updated_at: String\n}\ntype ProductCategory {\n  id: Int\n  name: String\n}\ntype MediaGalleryEntry {\n  file: String\n  url: String\n  position: Int\n  types: [String]\n}\ntype ProductInventory {\n  qty: Int\n  is_in_stock: Boolean\n}\ntype DebugInfo {\n  contextKeys: [String]\n  hasProducts: Boolean\n  hasCategories: Boolean\n  hasInventory: Boolean\n  hasInjector: Boolean\n  hasHeaders: Boolean\n  timestamp: String\n}\ntype BatchOptimizations {\n  categoriesBatched: Boolean\n  inventoryBatched: Boolean\n  apiCallsReduced: Int\n}\ntype EnrichedProductsResponse {\n  products: [EnrichedProduct]\n  total_count: Int\n  message: String\n  status: String\n  performance: PerformanceMetrics\n  debug: DebugInfo\n}\ntype BasicProductsResponse {\n  products: [BasicProduct]\n  total_count: Int\n  message: String\n}\ntype CategoriesResponse {\n  categories: [ProductCategory]\n  total_count: Int\n  message: String\n}\ntype PerformanceMetrics {\n  processedProducts: Int\n  apiCalls: Int\n  method: String\n  executionTime: Int\n  totalTime: Int\n  productFetch: Int\n  dataExtraction: Int\n  parallelFetch: Int\n  dataEnrichment: Int\n  productsApiCalls: Int\n  categoriesApiCalls: Int\n  inventoryApiCalls: Int\n  totalApiCalls: Int\n  uniqueCategories: Int\n  productCount: Int\n  skuCount: Int\n  clientCalls: Int\n  dataSourcesUnified: Int\n  queryConsolidation: Int\n  cacheHitRate: Float\n  categoriesCached: Int\n  categoriesFetched: Int\n  operationComplexity: String\n  dataFreshness: String\n  clientComplexity: String\n  apiOrchestration: String\n  parallelization: String\n  meshOptimizations: String\n  batchOptimizations: BatchOptimizations\n}\nextend type Query {\n  mesh_products_enriched(pageSize: Int): EnrichedProductsResponse\n  mesh_products_basic: BasicProductsResponse\n  mesh_categories(categoryIds: [Int]): CategoriesResponse\n}",
+    "responseConfig": {
+      "cache": true,
+      "includeHTTPDetails": true
+    }
   }
 }

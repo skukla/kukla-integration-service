@@ -1,9 +1,23 @@
+const fs = require('fs');
+const path = require('path');
+
 const { loadConfig } = require('./config');
 
 // Load configuration to get dynamic values
 const config = loadConfig();
 
+// Load external GraphQL schema file
+const enrichedProductsSchema = fs.readFileSync(
+  path.join(__dirname, 'src/mesh/schema/enriched-products.graphql'),
+  'utf8'
+);
+
 module.exports = {
+  // Enhanced response configuration with native mesh features
+  responseConfig: {
+    cache: true,
+    includeHTTPDetails: true, // Include HTTP response details for debugging and monitoring
+  },
   sources: [
     {
       name: 'Products',
@@ -18,8 +32,13 @@ module.exports = {
             {
               type: 'Query',
               field: 'products_list',
-              path: `/products?searchCriteria[pageSize]=${config.products.pagination.pageSize}`,
+              path: '/products?searchCriteria[pageSize]={args.pageSize}',
               method: 'GET',
+              argTypeMap: {
+                pageSize: {
+                  type: 'integer',
+                },
+              },
               responseSchema: './src/mesh/schema/products-response.json',
             },
           ],
@@ -48,6 +67,19 @@ module.exports = {
               },
               responseSchema: './src/mesh/schema/categories-response.json',
             },
+            // Add batch category endpoint for better performance
+            {
+              type: 'Query',
+              field: 'categories_batch',
+              path: `/categories?searchCriteria[pageSize]=${config.commerce.batching.categories}&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in`,
+              method: 'GET',
+              argTypeMap: {
+                categoryIds: {
+                  type: 'string',
+                },
+              },
+              responseSchema: './src/mesh/schema/categories-response.json',
+            },
           ],
         },
       },
@@ -65,8 +97,21 @@ module.exports = {
             {
               type: 'Query',
               field: 'inventory_items',
-              path: '/inventory/source-items?searchCriteria[pageSize]=200',
+              path: `/inventory/source-items?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}`,
               method: 'GET',
+              responseSchema: './src/mesh/schema/inventory-response.json',
+            },
+            // Add batch inventory endpoint for better performance
+            {
+              type: 'Query',
+              field: 'inventory_batch',
+              path: `/inventory/source-items?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in&searchCriteria[current_page]=1`,
+              method: 'GET',
+              argTypeMap: {
+                skus: {
+                  type: 'string',
+                },
+              },
               responseSchema: './src/mesh/schema/inventory-response.json',
             },
           ],
@@ -74,4 +119,7 @@ module.exports = {
       },
     },
   ],
+  // External GraphQL schema file for custom resolver types
+  additionalTypeDefs: enrichedProductsSchema,
+  additionalResolvers: ['./mesh-resolvers.js'],
 };

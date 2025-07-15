@@ -112,9 +112,25 @@ function processTemplate(templateContent, config) {
     '{{{ENVIRONMENT}}}': config.environment,
     '{{{COMMERCE_PRODUCT_FIELDS}}}': config.products.fields.export.join(','), // Use products config for Commerce API requests
     '{{{MESH_CACHE_TTL}}}': config.performance.caching.categories.meshTtl,
+    // Batch configuration
+    '{{{INVENTORY_BATCH_SIZE}}}': config.performance.batching.inventoryBatchSize,
+    '{{{CATEGORY_BATCH_SIZE}}}': config.commerce.batching.categories,
+    '{{{MAX_CATEGORIES_DISPLAY}}}': config.mesh.batching.categoryDisplayLimit,
+    '{{{CATEGORY_BATCH_THRESHOLD}}}': config.mesh.batching.thresholds.categories,
+    '{{{INVENTORY_BATCH_THRESHOLD}}}': config.mesh.batching.thresholds.inventory,
+    // API paths
+    '{{{COMMERCE_PRODUCTS_PATH}}}': config.commerce.paths.products,
+    '{{{COMMERCE_CATEGORIES_PATH}}}': config.commerce.paths.categories,
+    '{{{COMMERCE_INVENTORY_PATH}}}': config.commerce.paths.stockItems,
   };
 
   Object.entries(replacements).forEach(([placeholder, value]) => {
+    // Handle comment-based format FIRST: replace "NUMBER /* {{{VAR}}} */" with just the value (remove comment entirely)
+    const escapedPlaceholder = placeholder.replace(/[{}]/g, '\\$&');
+    const commentPattern = `\\d+\\s*\\/\\*\\s*${escapedPlaceholder}\\s*\\*\\/`;
+    processed = processed.replace(new RegExp(commentPattern, 'g'), value);
+    
+    // Handle original format {{{VAR}}} for any remaining instances
     processed = processed.replace(new RegExp(placeholder, 'g'), value);
   });
 
