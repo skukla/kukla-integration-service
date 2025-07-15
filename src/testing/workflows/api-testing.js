@@ -4,6 +4,7 @@
  */
 
 const { validation, execution, formatting } = require('../operations');
+const { formatApiTestingErrorResponse } = require('../operations/error-handling');
 const { endpoints } = require('../utils');
 
 /**
@@ -29,12 +30,7 @@ async function apiTestingWorkflow(endpoint, options = {}) {
     // Step 3: Format response
     return formatting.formatTestResponse(testResult, 'api', 'api', endpoint);
   } catch (error) {
-    return {
-      success: false,
-      endpoint,
-      error: error.message,
-      message: `API testing failed: ${error.message}`,
-    };
+    return formatApiTestingErrorResponse(error, endpoint);
   }
 }
 

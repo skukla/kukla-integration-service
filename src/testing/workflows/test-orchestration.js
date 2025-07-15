@@ -4,6 +4,7 @@
  */
 
 const { validation, execution, formatting } = require('../operations');
+const { formatOrchestrationErrorResponse } = require('../operations/error-handling');
 
 /**
  * Test orchestration workflow - clean orchestrator
@@ -49,11 +50,7 @@ async function testOrchestrationWorkflow(options = {}) {
     // Step 5: Format final response (calls operation)
     return formatting.formatTestResponse(result, command, command, target);
   } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      message: `Test orchestration failed: ${error.message}`,
-    };
+    return formatOrchestrationErrorResponse(error, 'test-orchestration');
   }
 }
 

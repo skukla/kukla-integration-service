@@ -264,6 +264,188 @@ function handleDataProcessingError(error, context = {}) {
   };
 }
 
+/**
+ * Analyzes enrichment needs based on product data and options
+ * @param {Array<Object>} products - Product data
+ * @param {Object} options - Enrichment options
+ * @returns {Object} Enrichment requirements
+ */
+function analyzeEnrichmentNeeds(products, options) {
+  const needs = {
+    categoryIds: new Set(),
+    skus: new Set(),
+    requiresCategories: options.includeCategories !== false,
+    requiresInventory: options.includeInventory !== false,
+  };
+
+  products.forEach((product) => {
+    // Collect SKUs for inventory
+    if (product.sku && needs.requiresInventory) {
+      needs.skus.add(product.sku);
+    }
+
+    // Collect category IDs
+    if (needs.requiresCategories) {
+      extractCategoryIds([product]).forEach((id) => needs.categoryIds.add(id));
+    }
+  });
+
+  return {
+    categoryIds: Array.from(needs.categoryIds),
+    skus: Array.from(needs.skus),
+    requiresCategories: needs.requiresCategories,
+    requiresInventory: needs.requiresInventory,
+  };
+}
+
+/**
+ * Fetches additional data needed for enrichment
+ * @param {Object} needs - Enrichment needs analysis
+ * @param {Object} config - Configuration object
+ * @param {Object} actionParams - Action parameters
+ * @param {Object} [trace] - Optional trace context
+ * @returns {Promise<Object>} Additional data
+ */
+async function fetchAdditionalData(needs, config, actionParams, trace) {
+  const { orchestrateCategoryRequests, orchestrateInventoryRequests } = require('./api-requests');
+
+  const fetchPromises = [];
+
+  // Fetch categories if needed
+  if (needs.requiresCategories && needs.categoryIds.length > 0) {
+    fetchPromises.push(
+      orchestrateCategoryRequests(needs.categoryIds, config, actionParams, trace)
+        .then((categories) => ({ type: 'categories', data: categories }))
+        .catch(() => ({ type: 'categories', data: [] }))
+    );
+  }
+
+  // Fetch inventory if needed
+  if (needs.requiresInventory && needs.skus.length > 0) {
+    fetchPromises.push(
+      orchestrateInventoryRequests(needs.skus, config, actionParams, trace)
+        .then((inventory) => ({ type: 'inventory', data: inventory }))
+        .catch(() => ({ type: 'inventory', data: [] }))
+    );
+  }
+
+  const results = await Promise.all(fetchPromises);
+
+  // Process results into maps
+  const additionalData = {
+    categoryMap: {},
+    inventoryMap: {},
+  };
+
+  results.forEach((result) => {
+    if (result.type === 'categories') {
+      const processed = orchestrateDataProcessing({ categories: result.data }, config);
+      additionalData.categoryMap = processed.processing?.categoryProcessing || {};
+    } else if (result.type === 'inventory') {
+      const processed = orchestrateDataProcessing({ inventory: result.data }, config);
+      additionalData.inventoryMap = processed.processing?.inventoryProcessing || {};
+    }
+  });
+
+  return additionalData;
+}
+
+/**
+ * Extracts category IDs from products
+ * @param {Array<Object>} products - Product data
+ * @returns {Array<string>} Category IDs
+ */
+function extractCategoryIds(products) {
+  const categoryIds = new Set();
+
+  products.forEach((product) => {
+    if (Array.isArray(product.categories)) {
+      product.categories.forEach((category) => {
+        if (category.id) {
+          categoryIds.add(String(category.id));
+        } else if (typeof category === 'string' || typeof category === 'number') {
+          categoryIds.add(String(category));
+        }
+      });
+    }
+  });
+
+  return Array.from(categoryIds);
+}
+
+/**
+ * Extracts SKUs from products
+ * @param {Array<Object>} products - Product data
+ * @returns {Array<string>} Product SKUs
+ */
+function extractProductSkus(products) {
+  return products
+    .map((product) => product.sku)
+    .filter(Boolean)
+    .map(String);
+}
+
+/**
+ * Builds media URL from media entry
+ * @param {Object} entry - Media gallery entry
+ * @param {Object} config - Configuration object
+ * @returns {string} Media URL
+ */
+function buildMediaUrl(entry, config) {
+  if (entry.url) {
+    return entry.url;
+  }
+
+  if (entry.file) {
+    const baseMediaUrl = config.commerce.mediaBaseUrl || config.commerce.baseUrl;
+    return `${baseMediaUrl}/media/catalog/product${entry.file}`;
+  }
+
+  return null;
+}
+
+/**
+ * Processes media enrichment for products
+ * @param {Array<Object>} products - Product data
+ * @param {Object} config - Configuration object
+ * @returns {Object} Media enrichment result
+ */
+function processMediaEnrichment(products, config) {
+  let mediaEnriched = 0;
+
+  const enrichedProducts = products.map((product) => {
+    if (product.media_gallery_entries && Array.isArray(product.media_gallery_entries)) {
+      // Process media gallery entries
+      const processedMedia = product.media_gallery_entries.map((entry) => ({
+        ...entry,
+        processed_url: entry.url || entry.file ? buildMediaUrl(entry, config) : null,
+        alt_text: entry.label || product.name || '',
+        position: entry.position || 0,
+      }));
+
+      if (processedMedia.length > 0) {
+        mediaEnriched++;
+      }
+
+      return {
+        ...product,
+        media_gallery_entries: processedMedia,
+        images: processedMedia.filter((media) => media.processed_url),
+      };
+    }
+
+    return product;
+  });
+
+  return {
+    enrichedProducts,
+    mediaStats: {
+      totalProducts: products.length,
+      productsEnriched: mediaEnriched,
+    },
+  };
+}
+
 module.exports = {
   processProductBatch,
   processInventoryData,
@@ -271,4 +453,10 @@ module.exports = {
   enrichProductData,
   orchestrateDataProcessing,
   handleDataProcessingError,
+  analyzeEnrichmentNeeds,
+  fetchAdditionalData,
+  extractCategoryIds,
+  extractProductSkus,
+  buildMediaUrl,
+  processMediaEnrichment,
 };
