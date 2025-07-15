@@ -154,9 +154,44 @@ async function addCompression(response, options = {}) {
   }
 }
 
+/**
+ * Compresses buffer content using gzip
+ * @param {Buffer} buffer - Buffer to compress
+ * @returns {Promise<Buffer>} Compressed buffer
+ */
+async function compress(buffer) {
+  if (!Buffer.isBuffer(buffer)) {
+    throw new Error('Input must be a Buffer');
+  }
+
+  // Use gzip compression by default
+  return gzip(buffer);
+}
+
+/**
+ * Gets compression statistics
+ * @param {Buffer} originalBuffer - Original buffer
+ * @param {Buffer} compressedBuffer - Compressed buffer
+ * @returns {Object} Compression statistics
+ */
+function getCompressionStats(originalBuffer, compressedBuffer) {
+  const originalSize = originalBuffer.length;
+  const compressedSize = compressedBuffer.length;
+  const savingsPercent = ((originalSize - compressedSize) / originalSize) * 100;
+
+  return {
+    originalSize,
+    compressedSize,
+    savingsPercent: Math.round(savingsPercent * 100) / 100,
+    compressionRatio: Math.round((originalSize / compressedSize) * 100) / 100,
+  };
+}
+
 module.exports = {
   CompressionConfig,
   shouldCompress,
   getCompressionMethod,
   addCompression,
+  compress,
+  getCompressionStats,
 };
