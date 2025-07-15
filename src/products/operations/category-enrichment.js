@@ -7,6 +7,7 @@
 
 const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
 const { extractCategoryIds } = require('../utils/category');
+const { getCategoryIds } = require('../utils/data');
 
 /**
  * Fetch category data from Commerce API in batches
@@ -97,7 +98,7 @@ async function fetchCategoryData(categoryIds, config, params, trace = null) {
 function enrichProductsWithCategories(products, categoryMap) {
   return products.map((product) => ({
     ...product,
-    categories: extractCategoryIds(product)
+    categories: getCategoryIds(product)
       .map((id) => categoryMap[String(id)])
       .filter(Boolean),
   }));
@@ -115,7 +116,7 @@ function enrichProductsWithCategories(products, categoryMap) {
  */
 async function enrichWithCategories(products, config, params, trace = null) {
   if (!Array.isArray(products) || products.length === 0) {
-    return products;
+    return products || [];
   }
 
   try {

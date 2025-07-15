@@ -15,6 +15,11 @@
 function extractCategoryIds(products) {
   const categoryIds = new Set();
 
+  // Add type checking to prevent forEach errors
+  if (!products || !Array.isArray(products)) {
+    return categoryIds;
+  }
+
   products.forEach((product) => {
     if (product.categories) {
       product.categories.forEach((cat) => {

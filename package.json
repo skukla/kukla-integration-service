@@ -49,6 +49,7 @@
     "test:get-products": "node scripts/test.js --action=get-products",
     "test:get-products:target": "node scripts/test.js --action=get-products --use-case=adobeTarget",
     "test:get-products-mesh": "node scripts/test.js --action=get-products-mesh",
+    "test:get-products-mesh:target": "node scripts/test.js --action=get-products-mesh --use-case=adobeTarget",
     "test:perf": "node scripts/test.js --type=performance --action=get-products --scenario=quick",
     "test:perf:list": "node scripts/test.js --type=performance --list",
     "test:suite": "node scripts/test.js --type=suite",
