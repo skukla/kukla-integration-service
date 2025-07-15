@@ -4,7 +4,7 @@
  * @description Handles secure file downloads from Adobe I/O Files storage using domain workflows
  */
 
-const { createAction } = require('../../src/core');
+const { createAction } = require('../../src/core/action');
 const { downloadFileWorkflow } = require('../../src/files/workflows/file-management');
 
 /**

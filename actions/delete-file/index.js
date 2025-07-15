@@ -3,7 +3,7 @@
  * @module delete-file
  */
 
-const { createAction } = require('../../src/core');
+const { createAction } = require('../../src/core/action');
 const { deleteStoredFile } = require('../../src/files/workflows/file-management');
 const { generateFileDeletionResponse } = require('../../src/htmx/workflows/file-browser');
 
