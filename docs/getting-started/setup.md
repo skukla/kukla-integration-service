@@ -249,7 +249,7 @@ npm run deploy:prod
 ```bash
 # Test backend actions (auto-loads Commerce config and credentials)
 npm run test:action get-products        # REST API export method
-npm run test:action get-products-mesh   # API Mesh export method (True Mesh)
+npm run test:action get-products-mesh   # API Mesh export method (JsonSchema)
 
 # Test file operations
 npm run test:action download-file
@@ -267,11 +267,12 @@ npm run test:action upload-file
 ```text
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
-│   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # True Mesh Pattern resolvers
+│   ├── mesh.json                  # API Mesh configuration (generated)
+│   ├── mesh.config.js             # Mesh configuration source (JsonSchema)
+│   └── src/mesh/schema/           # JSON Schema response definitions
 ├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
 │   ├── get-products/              # REST API product export
-│   ├── get-products-mesh/         # API Mesh product export
+│   ├── get-products-mesh/         # API Mesh product export (JsonSchema)
 │   ├── download-file/             # File download operations
 │   ├── delete-file/               # File deletion operations
 │   └── browse-files/              # HTMX file browser interface
@@ -285,7 +286,7 @@ kukla-integration-service/
 └── 📚 docs/                       # This comprehensive documentation
 ```
 
-> **New Features**: API Mesh integration with True Mesh pattern for GraphQL consolidation. See [API Mesh Integration Guide](../development/api-mesh-integration.md) for details.
+> **New Features**: API Mesh integration with JsonSchema sources pattern for GraphQL consolidation. See [API Mesh Integration Guide](../development/api-mesh-integration.md) for details.
 
 ## Development Best Practices
 

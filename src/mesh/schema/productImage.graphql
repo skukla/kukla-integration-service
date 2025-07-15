@@ -1,6 +1,0 @@
-type ProductImage {
-  filename: String
-  url: String
-  position: Int
-  roles: [String]
-}

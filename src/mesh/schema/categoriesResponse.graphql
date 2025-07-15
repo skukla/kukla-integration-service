@@ -1,6 +1,0 @@
-type CategoriesResponse {
-  categories: JSON
-  total_count: Int
-  message: String
-  status: String
-}

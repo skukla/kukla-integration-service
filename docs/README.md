@@ -16,13 +16,13 @@ docs/
 │   ├── testing.md              # Testing strategies and npm scripts
 │   ├── frontend.md             # Practical HTMX development patterns
 │   ├── design-system.md        # Visual design language and components
-│   ├── api-mesh-integration.md # API Mesh with True Mesh pattern
+│   ├── api-mesh-integration.md # API Mesh with JsonSchema sources pattern
 │   ├── configuration.md        # Configuration system and patterns
 │   └── schemas.md              # Schema validation system
 ├── architecture/
 │   ├── adobe-app-builder.md    # App Builder platform guide
 │   ├── htmx-integration.md     # HTMX frontend patterns
-│   ├── true-mesh-pattern.md    # True Mesh architecture pattern
+│   ├── true-mesh-pattern.md    # JsonSchema sources architecture pattern
 │   ├── project-structure.md    # Comprehensive project file structure
 │   └── commerce-integration.md # Adobe Commerce API integration
 └── deployment/
@@ -50,12 +50,12 @@ docs/
 
 - **[Adobe App Builder](architecture/adobe-app-builder.md)** - Platform overview and serverless patterns
 - **[HTMX Integration](architecture/htmx-integration.md)** - Progressive enhancement and UI patterns
-- **[True Mesh Pattern](architecture/true-mesh-pattern.md)** - API Mesh integration architecture
+- **[JsonSchema Sources Pattern](architecture/true-mesh-pattern.md)** - API Mesh integration architecture
 - **[Commerce Integration](architecture/commerce-integration.md)** - API integration and data flow
 
 ### Integration Patterns
 
-- **[API Mesh Integration](development/api-mesh-integration.md)** - True Mesh pattern for GraphQL consolidation
+- **[API Mesh Integration](development/api-mesh-integration.md)** - JsonSchema sources pattern for GraphQL consolidation
 - **[Schema Validation](development/schemas.md)** - Build-time validation and quality assurance
 
 ## 🎯 Common Tasks
@@ -67,8 +67,8 @@ docs/
 | Update UI             | [Frontend Development](development/frontend.md)                      | `web-src/`, `src/htmx/`                 |
 | Style components      | [Design System](development/design-system.md)                        | `web-src/src/css/`                      |
 | Commerce API work     | [Commerce Integration](architecture/commerce-integration.md)         | `src/commerce/`                         |
-| API Mesh integration  | [API Mesh Integration](development/api-mesh-integration.md)          | `mesh-resolvers.js`, `mesh.json`       |
-| True Mesh pattern     | [True Mesh Pattern](architecture/true-mesh-pattern.md)              | `mesh-resolvers.js`                     |
+| API Mesh integration  | [API Mesh Integration](development/api-mesh-integration.md)          | `mesh.config.js`, `mesh.json`          |
+| JsonSchema sources    | [JsonSchema Sources Pattern](architecture/true-mesh-pattern.md)     | `mesh.config.js`, `src/mesh/schema/` |
 | Configuration setup   | [Configuration Guide](development/configuration.md)                 | `config/`, `.env`, `app.config.yaml`   |
 | Deploy changes        | [Deployment Guide](deployment/environments.md)                       | `npm run deploy`, `npm run deploy:prod` |
 | Test actions          | [Testing Guide](development/testing.md)                              | `npm run test:action`                   |

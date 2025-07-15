@@ -106,11 +106,12 @@ For a comprehensive overview of the project file structure, see the [**Project S
 ```text
 kukla-integration-service/
 ├── 🌐 API Mesh Integration
-│   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # True Mesh Pattern resolvers
+│   ├── mesh.json                  # API Mesh configuration (generated)
+│   ├── mesh.config.js             # Mesh configuration source (JsonSchema)
+│   └── src/mesh/schema/           # JSON Schema response definitions
 ├── ⚙️ actions/                    # Adobe I/O Runtime serverless functions
 │   ├── get-products/              # REST API product export
-│   ├── get-products-mesh/         # API Mesh product export
+│   ├── get-products-mesh/         # API Mesh product export (JsonSchema)
 │   ├── download-file/             # File download operations
 │   ├── delete-file/               # File deletion operations
 │   └── browse-files/              # HTMX file browser interface
@@ -126,7 +127,7 @@ kukla-integration-service/
 
 **Key Architecture Features:**
 
-- **True Mesh Pattern**: API Mesh consolidates data from multiple Commerce APIs into single GraphQL query
+- **JsonSchema Sources**: API Mesh consolidates data from multiple Commerce APIs into single GraphQL query
 - **Domain-Driven Design**: Actions use hierarchical domain workflows from `src/`
 - **Configuration System**: Environment-aware with schema validation
 - **Progressive Enhancement**: HTMX-first frontend with minimal JavaScript

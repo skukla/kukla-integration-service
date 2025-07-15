@@ -32,12 +32,13 @@ kukla-integration-service/
 │       └── pre-commit             # Pre-commit linting and formatting
 │
 ├── 🌐 API Mesh Integration
-│   ├── mesh.json                  # API Mesh configuration
-│   └── mesh-resolvers.js          # Custom GraphQL resolvers (True Mesh)
+│   ├── mesh.json                  # API Mesh configuration (generated)
+│   ├── mesh.config.js             # Mesh configuration source (JsonSchema)
+│   └── src/mesh/schema/           # JSON Schema response definitions
 │
 ├── ⚙️ Actions (Adobe I/O Runtime)
 │   ├── get-products/              # REST API product export
-│   ├── get-products-mesh/         # API Mesh product export
+│   ├── get-products-mesh/         # API Mesh product export (JsonSchema)
 │   ├── download-file/             # File download operations
 │   ├── delete-file/               # File deletion operations
 │   └── browse-files/              # HTMX file browser interface
@@ -78,7 +79,7 @@ actions/
 │       ├── storeCsv.js           # File storage
 │       └── validateInput.js      # Input validation
 │
-├── get-products-mesh/            # Product export via API Mesh (True Mesh)
+├── get-products-mesh/            # Product export via API Mesh (JsonSchema)
 │   └── index.js                  # Main action (uses domain workflows from src/)
 │
 ├── download-file/                # File download functionality
@@ -96,7 +97,7 @@ actions/
 - **Domain-Driven Design**: Actions use hierarchical domain workflows from `src/`
 - **Step Functions**: Reusable functions in `/steps/` directories (legacy pattern)
 - **Workflow Integration**: Modern actions use domain workflows (products/, files/, htmx/)
-- **True Mesh**: API Mesh actions use embedded resolvers to consolidate Commerce APIs
+- **JsonSchema Sources**: API Mesh actions use JsonSchema sources with admin token auth
 - **Response Structure**: Consistent response format with steps, storage, and download URLs
 
 ## Source Code (`src/`)
@@ -149,7 +150,7 @@ src/
 - **Modular Design**: Each domain has its own directory
 - **Configuration System**: Environment-aware with schema validation
 - **Storage Abstraction**: Provider-agnostic file operations
-- **True Mesh Support**: URL management for Commerce API consolidation
+- **JsonSchema Sources**: URL management for Commerce API consolidation
 
 ## Frontend Assets (`web-src/`)
 
@@ -270,16 +271,17 @@ scripts/
 ## API Mesh Integration
 
 ```text
-mesh.json                         # API Mesh configuration
-mesh-resolvers.js                 # True Mesh Pattern resolvers (auto-generated)
+mesh.json                         # API Mesh configuration (generated)
+mesh.config.js                    # Mesh configuration source (JsonSchema)
+src/mesh/schema/                  # JSON Schema response definitions
 ```
 
 ### API Mesh Architecture
 
-- **True Mesh Pattern**: Resolvers consolidate data from multiple Commerce APIs
+- **JsonSchema Sources**: Native mesh sources with admin token authentication
 - **Performance**: Consolidates 200+ API calls into single GraphQL query
+- **Declarative Config**: Schema-driven configuration instead of custom code
 - **Perfect Parity**: Identical CSV output from REST and mesh methods
-- **Template Literal Workaround**: String concatenation for compatibility
 
 ## Documentation (`docs/`)
 
@@ -297,7 +299,7 @@ docs/
 │   ├── testing.md                # Testing strategies and tools
 │   ├── frontend.md               # HTMX frontend development
 │   ├── design-system.md          # UI design system and components
-│   ├── api-mesh-integration.md   # API Mesh True Mesh pattern
+│   ├── api-mesh-integration.md   # API Mesh JsonSchema sources pattern
 │   ├── configuration.md          # Configuration system guide
 │   ├── url-management.md         # URL building patterns
 │   └── schemas.md                # Schema validation system
@@ -305,7 +307,7 @@ docs/
 ├── architecture/                 # Architectural patterns and decisions
 │   ├── adobe-app-builder.md      # App Builder platform guide
 │   ├── htmx-integration.md       # HTMX frontend architecture
-│   ├── true-mesh-pattern.md    # True Mesh architecture pattern
+│   ├── true-mesh-pattern.md      # JsonSchema sources architecture pattern
 │   ├── project-structure.md      # This document
 │   └── commerce-integration.md   # Commerce API integration
 │
@@ -366,7 +368,7 @@ docs/
 ### 5. **Performance Optimization**
 
 - API Mesh consolidates 200+ Commerce calls to 1 GraphQL query
-- True Mesh consolidates 200+ API calls into single GraphQL query
+- JsonSchema sources consolidate 200+ API calls into single GraphQL query
 - Intelligent caching and compression
 - Efficient file operations
 
