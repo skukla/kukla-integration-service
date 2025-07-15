@@ -5,7 +5,7 @@
  * Consolidates the HTMX response generation and UI logic.
  */
 
-const { formatFileSize } = require('../../core/utils');
+const { formatFileSize } = require('../../core/utils/operations/formatting');
 const { listCsvFiles } = require('../../files/workflows/file-management');
 
 /**

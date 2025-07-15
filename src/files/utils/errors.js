@@ -5,7 +5,9 @@
  * Contains utilities for creating, validating, and transforming file errors.
  */
 
-const { FileErrorType } = require('../../core/errors');
+const {
+  storage: { FileErrorType },
+} = require('../../core/errors');
 
 /**
  * Creates a file operation error object
