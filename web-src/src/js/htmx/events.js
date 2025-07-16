@@ -16,6 +16,14 @@ const EVENT_CONFIG = {
   FILE_LIST: '#file-list',
 };
 
+// Track if we're currently doing initial page setup
+let isInitialPageSetup = true;
+
+// Export function to let file browser clear the flag
+export function clearInitialPageSetup() {
+  isInitialPageSetup = false;
+}
+
 /**
  * Initialize all HTMX event listeners
  */
@@ -51,6 +59,12 @@ export function initializeHtmxEvents() {
  */
 function handleBeforeRequest(event) {
   const target = event.detail.elt;
+
+  // Skip loading states during initial page setup
+  if (isInitialPageSetup) {
+    return; // Don't add loading states during initial page setup
+  }
+
   const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
 
   // Add loading state
@@ -69,7 +83,7 @@ function handleBeforeRequest(event) {
  * @param {Event} event - HTMX event
  * @param {HTMLElement} target - Target element
  * @param {string} loadingClass - Loading class name
- * @returns {boolean} True if delete button was handled
+ * @returns {boolean} False to allow normal HTMX processing
  */
 function handleDeleteButtonAfterRequest(event, target, loadingClass) {
   if (!target.classList.contains('delete-confirm-button')) {
@@ -89,15 +103,19 @@ function handleDeleteButtonAfterRequest(event, target, loadingClass) {
     // Store success message for later use in swap handler
     const successMessage = target.getAttribute('data-success-message');
     if (successMessage) {
-      window._deleteSuccessMessage = successMessage;
-      window._deleteButtonTarget = target;
+      // Close modal immediately since request was successful
+      const modalContainer = document.getElementById('modal-container');
+      if (modalContainer && modalContainer.querySelector('.delete-confirm-button')) {
+        hideModal();
+        showNotification(successMessage, 'success');
+      }
     }
   } else {
     // For failed requests, show error immediately since no swap will happen
     showNotification('Failed to delete file', 'error');
   }
 
-  // Don't prevent HTMX from doing its normal content swap
+  // Don't interfere with HTMX processing - let it handle the swap
   return false;
 }
 
@@ -239,59 +257,16 @@ function handleBeforeSwap(event) {
 }
 
 /**
- * Clean up delete button loading state
- * @param {HTMLElement} target - Delete button target
- */
-function cleanupDeleteButtonState(target) {
-  const loadingClass = target.getAttribute('data-loading-class') || EVENT_CONFIG.LOADING_CLASS;
-
-  target.classList.remove(loadingClass);
-
-  // Restore original text
-  if (target.dataset.originalText) {
-    target.innerText = target.dataset.originalText;
-    delete target.dataset.originalText;
-  }
-}
-
-/**
- * Handle delete modal cleanup after table content update
- * @param {HTMLElement} modalContainer - Modal container element
- */
-function handleDeleteModalCleanup(modalContainer) {
-  const isDeleteModal = modalContainer && modalContainer.querySelector('.delete-confirm-button');
-
-  if (isDeleteModal) {
-    // Clean up the delete button loading state
-    if (window._deleteButtonTarget) {
-      cleanupDeleteButtonState(window._deleteButtonTarget);
-      // Clean up the reference
-      delete window._deleteButtonTarget;
-    }
-
-    // Close the modal immediately for a smooth transition
-    hideModal();
-
-    // Show the success message immediately
-    if (window._deleteSuccessMessage) {
-      showNotification(window._deleteSuccessMessage, 'success');
-      delete window._deleteSuccessMessage;
-    }
-  }
-}
-
-/**
  * Handle file list updates after delete operation
  * @param {Event} event - HTMX event
  */
 function handleFileListUpdate(event) {
-  if (!event.detail.target.classList.contains('table-content')) {
+  // Only handle if this is actually the table-content being updated
+  if (!event.detail.target || !event.detail.target.classList.contains('table-content')) {
     return;
   }
 
-  // Check if the modal is currently open with delete content
-  const modalContainer = document.getElementById('modal-container');
-  handleDeleteModalCleanup(modalContainer);
+  // Modal closing is now handled in handleDeleteButtonAfterRequest for better timing
 }
 
 /**
