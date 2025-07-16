@@ -20,17 +20,19 @@
           "max_sale_qty": { "type": "number" },
           "use_config_max_sale_qty": { "type": "boolean" },
           "is_decimal_divided": { "type": "boolean" },
-          "stock_id": { "type": "integer" },
-          "extension_attributes": {
-            "type": "object",
-            "properties": {
-              "is_in_stock": { "type": "boolean" },
-              "qty": { "type": "number" }
-            }
-          }
+          "stock_id": { "type": "integer" }
         }
       }
     },
+    "search_criteria": {
+      "type": "object",
+      "properties": {
+        "filter_groups": { "type": "array" },
+        "page_size": { "type": "integer" },
+        "current_page": { "type": "integer" }
+      }
+    },
     "total_count": { "type": "integer" }
-  }
+  },
+  "required": ["items"]
 }
