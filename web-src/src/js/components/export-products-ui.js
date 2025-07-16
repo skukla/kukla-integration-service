@@ -112,17 +112,24 @@ function handleExportError(message, methodName) {
 
 /**
  * Create API Mesh metrics HTML
+ * @param {number} clientCalls - Number of client API calls (should be 1 for mesh)
+ * @param {number} internalApiCalls - Number of internal Commerce API calls made by mesh
+ * @param {Object} performance - Performance object with detailed metrics
  * @returns {string} HTML for API Mesh metrics
  */
-function createApiMeshMetrics() {
+function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
+  const productsApiCalls = performance.productsApiCalls || 1;
+  const categoriesApiCalls = performance.categoriesApiCalls || 0;
+  const inventoryApiCalls = performance.inventoryApiCalls || 0;
+
   return `
     <div class="notification-metrics-grid">
       <div class="notification-metric">
-        <span class="metric-value">1</span>
+        <span class="metric-value">${clientCalls}</span>
         <span class="metric-label">Client API Calls</span>
       </div>
       <div class="notification-metric highlight">
-        <span class="metric-value">1</span>
+        <span class="metric-value">${internalApiCalls}</span>
         <span class="metric-label">API Endpoints</span>
       </div>
     </div>
@@ -133,8 +140,16 @@ function createApiMeshMetrics() {
       </button>
       <div class="endpoints-list">
         <div class="endpoint-item">
-          <span class="endpoint-method">GraphQL</span>
-          <span class="endpoint-url">Single unified endpoint</span>
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">Products API (${productsApiCalls} calls)</span>
+        </div>
+        <div class="endpoint-item">
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">Categories API (${categoriesApiCalls} calls)</span>
+        </div>
+        <div class="endpoint-item">
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">Inventory API (${inventoryApiCalls} calls)</span>
         </div>
       </div>
     </div>
@@ -189,14 +204,19 @@ function createRestApiMetrics(apiCalls, dataSources) {
  */
 function createSuccessNotificationContent(response) {
   const performance = response.performance || {};
-  const productCount = performance.processedProducts || performance.totalProducts || 0;
+  const productCount =
+    performance.processedProducts || performance.totalProducts || performance.productCount || 0;
   const apiCalls = performance.apiCalls || 1;
   const method = performance.method || 'Export';
   const isApiMesh = method === 'API Mesh';
 
   // Build metrics HTML based on method type
   const metricsHTML = isApiMesh
-    ? createApiMeshMetrics()
+    ? createApiMeshMetrics(
+        performance.clientCalls || 1,
+        performance.dataSourcesUnified || performance.totalApiCalls || 1,
+        performance
+      )
     : createRestApiMetrics(apiCalls, performance.dataSourcesUnified || 3);
 
   return `
