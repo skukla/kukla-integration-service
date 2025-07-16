@@ -4,6 +4,7 @@
  */
 
 import { getActionUrl } from '../../core/url/index.js';
+import { clearInitialPageSetup } from '../../htmx/events.js';
 import { showModal, hideModal } from '../components/modal/index.js';
 import { showNotification } from '../components/notifications/index.js';
 
@@ -27,6 +28,30 @@ export function initializeFileBrowser() {
   initializeDragAndDrop(container);
   initializeUploadForm();
   initializeDeleteHandlers();
+
+  // Manually load initial file list (without loading overlays)
+  const fileListElement = document.querySelector('.table-content[data-component="file-list"]');
+  if (fileListElement && window.htmx) {
+    // Use HTMX to load the initial file list
+    window.htmx
+      .ajax('GET', getActionUrl('browse-files'), {
+        target: '.table-content',
+        swap: 'innerHTML',
+      })
+      .then(() => {
+        // Clear the initial page setup flag to enable loading states for user actions
+        clearInitialPageSetup();
+        return undefined;
+      })
+      .catch((error) => {
+        // Clear the initial page setup flag even if load fails
+        clearInitialPageSetup();
+        console.warn('Initial file list load failed:', error);
+      });
+  } else {
+    // If no file list element or HTMX, still clear the flag
+    clearInitialPageSetup();
+  }
 }
 
 /**
@@ -39,119 +64,102 @@ function initializeDragAndDrop(container) {
     container.classList.add(FILE_BROWSER_CONFIG.DRAG_ACTIVE_CLASS);
   });
 
-  container.addEventListener('dragleave', () => {
-    container.classList.remove(FILE_BROWSER_CONFIG.DRAG_ACTIVE_CLASS);
+  container.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    if (e.relatedTarget === null || !container.contains(e.relatedTarget)) {
+      container.classList.remove(FILE_BROWSER_CONFIG.DRAG_ACTIVE_CLASS);
+    }
   });
 
   container.addEventListener('drop', (e) => {
     e.preventDefault();
     container.classList.remove(FILE_BROWSER_CONFIG.DRAG_ACTIVE_CLASS);
 
-    const files = Array.from(e.dataTransfer.files);
+    const files = e.dataTransfer.files;
     if (files.length > 0) {
-      handleFileUpload(files);
+      handleFileUpload(files[0]);
     }
   });
 }
 
 /**
- * Initialize upload form handler
+ * Initialize upload form
  */
 function initializeUploadForm() {
   const uploadForm = document.getElementById(FILE_BROWSER_CONFIG.UPLOAD_FORM_ID);
-  if (!uploadForm) return;
+  if (!uploadForm) {
+    return;
+  }
 
-  uploadForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fileInput = uploadForm.querySelector('input[type="file"]');
-    if (fileInput && fileInput.files.length > 0) {
-      handleFileUpload(Array.from(fileInput.files));
-    }
-  });
+  const fileInput = uploadForm.querySelector('input[type="file"]');
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files[0]);
+      }
+    });
+  }
 }
 
 /**
  * Handle file upload
- * @param {File[]} files - Array of files to upload
+ * @param {File} file - File to upload
  */
-async function handleFileUpload(files) {
-  for (const file of files) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(getActionUrl('upload-file'), {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
-      }
-
-      showNotification(`${file.name} uploaded successfully`, 'success');
-      document.body.dispatchEvent(new Event('fileUploaded'));
-    } catch (error) {
-      showNotification(`Failed to upload ${file.name}: ${error.message}`, 'error');
-    }
+function handleFileUpload(file) {
+  // Validate file type
+  if (!file.name.endsWith('.csv')) {
+    showNotification('Only CSV files are allowed', 'error');
+    return;
   }
+
+  // Create form data
+  const formData = new FormData();
+  formData.append('file', file);
+
+  // Upload the file using fetch
+  fetch(getActionUrl('upload-file'), {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((result) => {
+      handleFileOperationResult(result, 'upload');
+      if (result.success) {
+        refreshFileList();
+      }
+      return result;
+    })
+    .catch((error) => {
+      showNotification(`Upload failed: ${error.message}`, 'error');
+    });
 }
 
 /**
- * Initialize event handlers for delete buttons and modal actions
+ * Initialize delete handlers
  */
 function initializeDeleteHandlers() {
-  document.body.addEventListener('click', (event) => {
-    const target = event.target.closest('[data-action="delete"]');
-    if (target) {
-      event.preventDefault();
-      handleDeleteButtonClick(target);
-    }
-
-    // Remove conflicting delete confirmation handler - HTMX handles this
-    // const deleteConfirmButton = event.target.closest('[data-delete-url]');
-    // if (deleteConfirmButton) {
-    //   event.preventDefault();
-    //   handleDeleteConfirmation(deleteConfirmButton);
-    // }
-
-    const modalCloseButton = event.target.closest('.modal-close');
-    if (modalCloseButton) {
-      event.preventDefault();
-      hideModal();
+  document.addEventListener('click', (e) => {
+    if (e.target.matches('[data-action="delete"]')) {
+      e.preventDefault();
+      const fileName = e.target.dataset.fileName;
+      const filePath = e.target.dataset.filePath;
+      if (fileName && filePath) {
+        createDeleteModal(fileName, filePath);
+      }
     }
   });
 }
 
 /**
- * Handle delete button click - creates modal instantly
- * @param {HTMLElement} button - The delete button element
- */
-function handleDeleteButtonClick(button) {
-  const fileName = button.getAttribute('data-file-name');
-  const filePath = button.getAttribute('data-file-path');
-
-  if (!fileName || !filePath) {
-    return;
-  }
-
-  createDeleteModal(fileName, filePath);
-}
-
-/**
- * Create and show delete confirmation modal
- * @param {string} fileName - Name of the file to delete
+ * Generate modal content HTML
+ * @param {string} fileName - Name of the file
  * @param {string} filePath - Full path of the file
+ * @returns {string} Modal HTML content
  */
-function createDeleteModal(fileName, filePath) {
-  const modalContainer = document.getElementById('modal-container');
-  if (!modalContainer) {
-    return;
-  }
-
+function generateModalContent(fileName, filePath) {
   const deleteUrl = getActionUrl('delete-file', { fileName: filePath });
 
-  modalContainer.innerHTML = `
+  return `
     <div class="modal-content">
         <h2>Delete File</h2>
         <div class="modal-body">
@@ -170,7 +178,7 @@ function createDeleteModal(fileName, filePath) {
                         data-loading-class="is-loading"
                         data-success-message="File deleted successfully"
                         data-file-name="${fileName}"
-                        hx-delete="${deleteUrl}"
+                        hx-post="${deleteUrl}"
                         hx-target=".table-content"
                         hx-swap="innerHTML"
                         hx-trigger="click"
@@ -181,6 +189,20 @@ function createDeleteModal(fileName, filePath) {
         </div>
     </div>
   `;
+}
+
+/**
+ * Create and show delete confirmation modal
+ * @param {string} fileName - Name of the file to delete
+ * @param {string} filePath - Full path of the file
+ */
+function createDeleteModal(fileName, filePath) {
+  const modalContainer = document.getElementById('modal-container');
+  if (!modalContainer) {
+    return;
+  }
+
+  modalContainer.innerHTML = generateModalContent(fileName, filePath);
 
   const closeButton = modalContainer.querySelector('.modal-close');
   if (closeButton) {
@@ -197,8 +219,6 @@ function createDeleteModal(fileName, filePath) {
     window.htmx.process(modalContainer);
   }
 }
-
-// handleDeleteConfirmation removed - HTMX handles delete confirmation via hx-delete attribute
 
 /**
  * Refresh the file list
@@ -218,7 +238,6 @@ export function refreshFileList() {
 export function handleFileOperationResult(result, operation = 'operation') {
   if (result.success) {
     showNotification(`File ${operation} completed successfully`, 'success');
-    refreshFileList();
   } else {
     const message = result.error?.message || `File ${operation} failed`;
     showNotification(message, 'error');

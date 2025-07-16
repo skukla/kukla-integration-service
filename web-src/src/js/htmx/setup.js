@@ -8,7 +8,7 @@ import { initializeDownloadHandlers } from '../ui/downloads/index.js';
 const COMPONENT_CONFIG = {
   'file-list': {
     'hx-get': () => getActionUrl('browse-files'),
-    'hx-trigger': 'load once', // Only load once on initial page load
+    'hx-trigger': 'never', // DISABLED: Was 'load once' - preventing interference with delete operations
     'hx-swap': 'innerHTML',
     'hx-indicator': '#content-loader',
     'hx-disable-preserve-focus': 'true',
@@ -45,7 +45,7 @@ const COMPONENT_CONFIG = {
 // HTMX configuration
 const HTMX_CONFIG = {
   timeout: getTimeout(), // From performance configuration
-  historyCacheSize: 10, // Keep last 10 pages in cache
+  historyCacheSize: 0, // DISABLE CACHE - force real HTTP requests
   defaultSwapStyle: 'innerHTML', // Default swap style
   defaultSettleDelay: 0, // No settle delay for immediate feedback
   defaultSwapDelay: 0, // No delay for immediate response
@@ -53,7 +53,9 @@ const HTMX_CONFIG = {
   globalViewTransitions: false, // Disable view transitions to prevent overlay effects
   allowScriptTags: false, // Security: don't allow script tags
   allowEval: false, // Security: don't allow eval
-  methodsThatUseUrlParams: ['get'], // Only GET uses URL params
+  methodsThatUseUrlParams: ['get', 'post'], // Allow both GET and POST to use URL params
+  getCacheBusterParam: false, // Disable automatic cache busting
+  refreshOnHistoryMiss: false, // Don't refresh on cache miss
   // Progressive loading configuration
   progressiveLoadDelay: 100, // Delay before checking for more content
   loadingClass: 'is-loading', // Class for loading indicators

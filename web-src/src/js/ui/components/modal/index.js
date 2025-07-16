@@ -153,7 +153,17 @@ function focusFirstElement() {
  * @param {Event} event - HTMX afterSwap event
  */
 export function handleModalContentSwap(event) {
-  if (event.detail.target.id === MODAL_CONFIG.CONTAINER_ID) {
+  // Only show modal if:
+  // 1. Content is being swapped into the modal container
+  // 2. The content contains actual modal content (not just initialization)
+  // 3. The swap is intentional (has modal-specific attributes)
+  if (
+    event.detail.target.id === MODAL_CONFIG.CONTAINER_ID &&
+    event.detail.target.innerHTML.trim() &&
+    (event.detail.target.querySelector('.modal-header') ||
+      event.detail.target.querySelector('.modal-content') ||
+      event.detail.target.querySelector('.modal-footer'))
+  ) {
     showModal();
   }
 }
@@ -229,6 +239,14 @@ export function initializeModal() {
     container.className = MODAL_CONFIG.MODAL_CLASS;
     document.body.appendChild(container);
   }
+
+  // Set up event delegation for modal close buttons
+  document.body.addEventListener('click', (event) => {
+    if (event.target.closest('[data-modal-close="true"]')) {
+      event.preventDefault();
+      hideModal();
+    }
+  });
 
   // Set up HTMX event listeners
   document.body.addEventListener('htmx:afterSwap', handleModalContentSwap);
