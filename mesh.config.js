@@ -97,22 +97,27 @@ module.exports = {
             {
               type: 'Query',
               field: 'inventory_items',
-              path: `/inventory/source-items?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}`,
+              path: '/stockItems/{args.sku}',
               method: 'GET',
-              responseSchema: './src/mesh/schema/inv-batch-response.json',
+              argTypeMap: {
+                sku: {
+                  type: 'string',
+                },
+              },
+              responseSchema: './src/mesh/schema/stock-item-response.json',
             },
             // Add batch inventory endpoint for better performance
             {
               type: 'Query',
               field: 'inventory_batch',
-              path: `/inventory/source-items?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in&searchCriteria[current_page]=1`,
+              path: `/stockItems?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in`,
               method: 'GET',
               argTypeMap: {
                 skus: {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/inv-batch-response.json',
+              responseSchema: './src/mesh/schema/inv-batch-resp.json',
             },
           ],
         },

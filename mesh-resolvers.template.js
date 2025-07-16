@@ -125,6 +125,8 @@ async function fetchProducts(context, info, pageSize = 100) {
  * Fetches categories with batch endpoint for better performance
  */
 async function fetchCategories(context, info, categoryIds) {
+  const result = { categoryMap: new Map(), apiCallsMade: 0, batched: false };
+
   // Use batch endpoint if available and we have multiple categories
   if (categoryIds.length >= 1 /* {{{CATEGORY_BATCH_THRESHOLD}}} */) {
     try {
@@ -141,13 +143,15 @@ async function fetchCategories(context, info, categoryIds) {
         }`,
       });
 
-      const categoryMap = new Map();
       if (batchResponse?.items) {
         batchResponse.items.forEach((category) => {
-          categoryMap.set(category.id, category);
+          result.categoryMap.set(category.id, category);
         });
       }
-      return categoryMap;
+
+      result.apiCallsMade = 1;
+      result.batched = true;
+      return result;
     } catch (error) {
       console.warn('Batch categories failed, falling back to individual calls:', error.message);
       // Fall back to individual calls if batch fails
@@ -169,22 +173,24 @@ async function fetchCategories(context, info, categoryIds) {
   );
 
   const responses = await Promise.allSettled(categoryPromises);
-  const categoryMap = new Map();
 
-  responses.forEach((result, index) => {
-    if (result.status === 'fulfilled' && result.value) {
+  responses.forEach((response, index) => {
+    if (response.status === 'fulfilled' && response.value) {
       const categoryId = categoryIds[index];
-      categoryMap.set(categoryId, result.value);
+      result.categoryMap.set(categoryId, response.value);
+      result.apiCallsMade++;
     }
   });
 
-  return categoryMap;
+  return result;
 }
 
 /**
- * Fetches inventory with batch endpoint for better performance
+ * Fetches inventory using batch calls when possible, individual calls as fallback
  */
 async function fetchInventory(context, info, skus) {
+  const result = { inventoryMap: new Map(), apiCallsMade: 0, batched: false };
+
   // Use batch endpoint if available and we have multiple SKUs
   if (skus.length >= 1 /* {{{INVENTORY_BATCH_THRESHOLD}}} */) {
     try {
@@ -202,20 +208,25 @@ async function fetchInventory(context, info, skus) {
         }`,
       });
 
-      const inventoryMap = new Map();
       if (batchResponse?.items) {
         batchResponse.items.forEach((item) => {
-          inventoryMap.set(item.sku, item);
+          result.inventoryMap.set(item.sku, {
+            qty: item.qty || 0,
+            is_in_stock: item.is_in_stock || false,
+          });
         });
       }
-      return inventoryMap;
+
+      result.apiCallsMade = 1;
+      result.batched = true;
+      return result;
     } catch (error) {
       console.warn('Batch inventory failed, falling back to individual calls:', error.message);
       // Fall back to individual calls if batch fails
     }
   }
 
-  // Fallback to individual calls for single items or if batch fails
+  // Fallback to individual stockItems calls
   const inventoryPromises = skus.map((sku) =>
     context.Inventory.Query.inventory_items({
       root: {},
@@ -231,16 +242,19 @@ async function fetchInventory(context, info, skus) {
   );
 
   const responses = await Promise.allSettled(inventoryPromises);
-  const inventoryMap = new Map();
 
-  responses.forEach((result, index) => {
-    if (result.status === 'fulfilled' && result.value) {
+  responses.forEach((response, index) => {
+    if (response.status === 'fulfilled' && response.value) {
       const sku = skus[index];
-      inventoryMap.set(sku, result.value);
+      result.inventoryMap.set(sku, {
+        qty: response.value.qty || 0,
+        is_in_stock: response.value.is_in_stock || false,
+      });
+      result.apiCallsMade++;
     }
   });
 
-  return inventoryMap;
+  return result;
 }
 
 /**
@@ -285,40 +299,41 @@ function calculatePerformance(
   const endTime = Date.now();
   const totalTime = endTime - startTime;
 
-  // Calculate actual API calls based on batch optimization
-  const categoriesApiCalls = batchInfo.categoriesBatched ? 1 : categoryCount;
-  const inventoryApiCalls = batchInfo.inventoryBatched ? 1 : inventoryCount;
+  // Use actual API calls made (not assumptions)
+  const categoriesApiCalls = batchInfo.categoriesApiCalls || 0;
+  const inventoryApiCalls = batchInfo.inventoryApiCalls || 0;
   const totalApiCalls = 1 + categoriesApiCalls + inventoryApiCalls;
 
   return {
     processedProducts: productCount,
-    apiCalls: totalApiCalls,
-    method: 'API Mesh Custom Resolver (Native + Batch Optimized)',
+    apiCalls: 1, // CLIENT API CALLS - Single GraphQL query to mesh
+    method: 'API Mesh', // Must match frontend detection logic
     executionTime: totalTime,
     totalTime: totalTime,
     productsApiCalls: 1,
     categoriesApiCalls: categoriesApiCalls,
     inventoryApiCalls: inventoryApiCalls,
-    totalApiCalls: totalApiCalls,
+    totalApiCalls: totalApiCalls, // INTERNAL API CALLS - Commerce API calls made by mesh
     uniqueCategories: categoryCount,
     productCount: productCount,
     clientCalls: 1,
+    dataSourcesUnified: totalApiCalls, // API ENDPOINTS - Total internal calls for frontend display
     // Enhanced cache and batch metrics
     cacheHitRate: 0.0, // Native caching will populate this
     categoriesCached: 0, // Categories served from cache
     categoriesFetched: categoryCount,
     dataFreshness: 'Live', // Will show 'Cached' when cache is hit
     meshOptimizations: [
-      'Native Caching Enabled',
+      'Single GraphQL Query',
       batchInfo.categoriesBatched ? 'Categories Batched' : 'Categories Individual',
-      batchInfo.inventoryBatched ? 'Inventory Batched' : 'Inventory Individual',
+      batchInfo.inventoryBatched ? 'Inventory Batched' : 'Inventory Individual (per-SKU calls)',
     ].join(', '),
     batchOptimizations: {
       categoriesBatched: batchInfo.categoriesBatched || false,
-      inventoryBatched: batchInfo.inventoryBatched || false,
+      inventoryBatched: batchInfo.inventoryBatched || false, // Can now be batched!
       apiCallsReduced: Math.max(
         0,
-        categoryCount + inventoryCount - categoriesApiCalls - inventoryApiCalls
+        categoryCount - categoriesApiCalls + (inventoryCount - inventoryApiCalls) // Both categories and inventory can be optimized
       ),
     },
   };
@@ -360,25 +375,31 @@ module.exports = {
             const categoryIdsArray = Array.from(categoryIds);
             const skusArray = skus;
 
-            const [categoryMap, inventoryMap] = await Promise.all([
+            const [categoryResult, inventoryResult] = await Promise.all([
               fetchCategories(context, info, categoryIdsArray),
               fetchInventory(context, info, skusArray),
             ]);
 
             // Step 4: Enrich products
-            const enrichedProducts = enrichProducts(products, categoryMap, inventoryMap);
+            const enrichedProducts = enrichProducts(
+              products,
+              categoryResult.categoryMap,
+              inventoryResult.inventoryMap
+            );
 
-            // Step 5: Calculate performance with batch optimization info
+            // Step 5: Calculate performance with actual API call data
             const batchInfo = {
-              categoriesBatched: categoryIdsArray.length >= 1 /* {{{CATEGORY_BATCH_THRESHOLD}}} */, // Batch used for multiple categories
-              inventoryBatched: skusArray.length >= 1 /* {{{INVENTORY_BATCH_THRESHOLD}}} */, // Batch used for multiple SKUs
+              categoriesBatched: categoryResult.batched,
+              inventoryBatched: inventoryResult.batched,
+              categoriesApiCalls: categoryResult.apiCallsMade,
+              inventoryApiCalls: inventoryResult.apiCallsMade,
             };
 
             const performance = calculatePerformance(
               startTime,
               enrichedProducts.length,
-              categoryMap.size,
-              inventoryMap.size,
+              categoryResult.categoryMap.size,
+              inventoryResult.inventoryMap.size,
               batchInfo
             );
 
@@ -482,8 +503,8 @@ module.exports = {
               ); // Limit to first N for performance
             }
 
-            const categoryMap = await fetchCategories(context, info, categoryIds);
-            const categories = Array.from(categoryMap.values());
+            const categoryResult = await fetchCategories(context, info, categoryIds);
+            const categories = Array.from(categoryResult.categoryMap.values());
 
             return {
               categories: categories,
