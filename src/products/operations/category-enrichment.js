@@ -61,6 +61,11 @@ async function fetchCategoryData(categoryIds, config, params, trace = null) {
             trace
           );
 
+          // Track API call for performance metrics
+          if (trace && trace.performanceTracker) {
+            trace.performanceTracker.incrementApiCall('categories');
+          }
+
           if (response.body) {
             categoryMap[categoryId] = {
               id: response.body.id,

@@ -47,6 +47,11 @@ async function fetchInventoryData(skus, config, params, trace = null) {
             trace
           );
 
+          // Track API call for performance metrics
+          if (trace && trace.performanceTracker) {
+            trace.performanceTracker.incrementApiCall('inventory');
+          }
+
           if (response.body) {
             inventoryMap[sku] = {
               qty: response.body.qty || 0,

@@ -22,8 +22,15 @@ async function getProductsBusinessLogic(context) {
   steps.push(core.formatStepMessage('validate-input', 'success'));
 
   try {
-    // Step 2: Fetch and enrich products using domain functions
-    const productData = await fetchAndEnrichProducts(extractedParams, config);
+    // Step 2: Fetch and enrich products using domain functions with performance tracking
+    const enrichmentResult = await fetchAndEnrichProducts(
+      extractedParams,
+      config,
+      'create-performance-tracker'
+    );
+    const productData = enrichmentResult.products || enrichmentResult; // Handle both formats
+    const performanceData = enrichmentResult.performance || {};
+
     steps.push(
       core.formatStepMessage('fetch-and-enrich', 'success', { count: productData.length })
     );
@@ -64,6 +71,9 @@ async function getProductsBusinessLogic(context) {
         management: storageResult.management,
       },
       performance: {
+        // Include comprehensive performance data from enrichment
+        ...performanceData,
+        // Add CSV and storage specific metrics
         productCount: builtProducts.length,
         csvSize: csvData.content.length,
         storage: storageResult.provider,
