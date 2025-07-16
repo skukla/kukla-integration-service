@@ -15,11 +15,9 @@ const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
  */
 function generateEmptyFileListHTML() {
   return `
-      <div class="table-row no-files">
-        <div class="table-cell" colspan="4" style="text-align: center; padding: var(--spacing-lg);">
-          <p>No exported files found.</p>
-          <p class="text-muted">Use the export buttons above to create CSV files.</p>
-        </div>
+      <div class="empty-state">
+        <h2>No exported files found</h2>
+        <p>Use the export buttons above to create CSV files.</p>
       </div>
     `;
 }
@@ -33,8 +31,10 @@ function generateEmptyFileListHTML() {
  * @returns {string} HTML string for file row
  */
 function generateFileRowHTML(file, config) {
+  // Use the full path for both download and delete to ensure consistency
+  const fullPath = file.fullPath || file.name;
   const downloadUrl =
-    buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(file.name)}`;
+    buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
 
   return `
         <div class="table-row">
@@ -58,7 +58,7 @@ function generateFileRowHTML(file, config) {
               <button class="btn btn-sm btn-danger btn-outline"
                       data-action="delete"
                       data-file-name="${file.name}"
-                      data-file-path="${file.fullPath || file.name}"
+                      data-file-path="${fullPath}"
                       title="Delete ${file.name}">
                 Delete
               </button>

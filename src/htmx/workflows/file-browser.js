@@ -46,7 +46,7 @@ async function generateFileBrowserUI(config, params) {
 }
 
 /**
- * File deletion success workflow
+ * Generate HTMX response after file deletion
  * Pure orchestration workflow that delegates to operations layer.
  *
  * @param {string} deletedFileName - Name of the deleted file
@@ -56,7 +56,7 @@ async function generateFileBrowserUI(config, params) {
  */
 async function generateFileDeletionResponse(deletedFileName, config, params) {
   try {
-    // Step 1: Get updated file list
+    // Step 1: Get updated file list (S3 provides strong consistency for all operations)
     const files = await listCsvFiles(config, params);
 
     // Step 2: Generate updated file browser HTML
