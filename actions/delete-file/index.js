@@ -17,6 +17,13 @@ async function deleteFileBusinessLogic(context) {
   const { config, extractedParams } = context;
 
   try {
+    // Validate fileName parameter
+    if (!extractedParams.fileName) {
+      // If no fileName, return current file list
+      const { generateFileBrowserUI } = require('../../src/htmx/workflows/file-browser');
+      return await generateFileBrowserUI(config, extractedParams);
+    }
+
     // Step 1: Delete file from storage
     await deleteStoredFile(extractedParams.fileName, config, extractedParams);
 
