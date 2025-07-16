@@ -12,11 +12,6 @@ function normalizeParams(params) {
   const normalized = {};
   const paramMap = {
     commerce_url: 'COMMERCE_BASE_URL',
-    commerce_consumer_key: 'COMMERCE_CONSUMER_KEY',
-    commerce_consumer_secret: 'COMMERCE_CONSUMER_SECRET',
-    commerce_access_token: 'COMMERCE_ACCESS_TOKEN',
-    commerce_access_token_secret: 'COMMERCE_ACCESS_TOKEN_SECRET',
-    // Additional Commerce credential mappings
     commerce_admin_username: 'COMMERCE_ADMIN_USERNAME',
     commerce_admin_password: 'COMMERCE_ADMIN_PASSWORD',
   };
@@ -62,22 +57,10 @@ function extractActionParams(params) {
     }
   }
 
-  // Handle OAuth credentials passed via headers (for HTTP bridge pattern)
+  // Handle Commerce admin credentials passed via headers
   if (params.__ow_headers) {
     const headers = params.__ow_headers;
-    if (headers['x-commerce-consumer-key']) {
-      headerParams.COMMERCE_CONSUMER_KEY = headers['x-commerce-consumer-key'];
-    }
-    if (headers['x-commerce-consumer-secret']) {
-      headerParams.COMMERCE_CONSUMER_SECRET = headers['x-commerce-consumer-secret'];
-    }
-    if (headers['x-commerce-access-token']) {
-      headerParams.COMMERCE_ACCESS_TOKEN = headers['x-commerce-access-token'];
-    }
-    if (headers['x-commerce-access-token-secret']) {
-      headerParams.COMMERCE_ACCESS_TOKEN_SECRET = headers['x-commerce-access-token-secret'];
-    }
-    // Commerce credential headers for HTTP bridge pattern
+    // Commerce admin credential headers for HTTP bridge pattern
     if (headers['x-commerce-username']) {
       headerParams.COMMERCE_ADMIN_USERNAME = headers['x-commerce-username'];
     }
@@ -92,7 +75,7 @@ function extractActionParams(params) {
     delete cleanParams[key];
   });
 
-  // Merge and normalize parameters (query params take precedence, then headers for OAuth credentials)
+  // Merge and normalize parameters (query params take precedence, then headers for admin credentials)
   return normalizeParams({ ...cleanParams, ...bodyParams, ...queryParams, ...headerParams });
 }
 
