@@ -29,14 +29,16 @@ async function exportProducts(params, config, trace = null) {
   const builtProducts = await buildProducts(enrichedProducts, config);
 
   // Step 3: Generate CSV
-  const csvResult = await convertToCSV(builtProducts);
+  const csvResult = await convertToCSV(builtProducts, config);
 
-  return {
+  const result = {
     productCount: builtProducts.length,
     csvSize: csvResult.length,
     csvContent: csvResult,
     products: builtProducts,
   };
+
+  return result;
 }
 
 /**

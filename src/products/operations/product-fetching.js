@@ -89,10 +89,12 @@ async function fetchProducts(params, config, trace = null) {
   try {
     const allProducts = [];
     const { pageSize, maxPages } = getPaginationConfig(config);
+
     let currentPage = 1;
 
     do {
       const apiUrl = buildProductsApiUrl(pageSize, currentPage, config);
+
       const response = await executeAdminTokenCommerceRequest(
         apiUrl,
         { method: 'GET' },
