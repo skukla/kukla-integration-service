@@ -23,9 +23,7 @@ async function getProductsMeshBusinessLogic(context) {
 
   // Step 2: Fetch products from API Mesh
   const meshData = await fetchEnrichedProductsFromMesh(config, extractedParams);
-  steps.push(
-    core.formatStepMessage('fetch-from-mesh', 'success', { count: meshData.products.length })
-  );
+  steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: meshData.products.length }));
 
   // Step 3: Build products with proper transformation
   const builtProducts = await buildProducts(meshData.products, config);
