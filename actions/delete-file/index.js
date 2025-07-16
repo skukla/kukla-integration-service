@@ -4,7 +4,7 @@
  */
 
 const { createAction } = require('../../src/core/action/operations/action-factory');
-const { deleteStoredFile } = require('../../src/files/workflows/file-management');
+const { deleteStoredFile } = require('../../src/files/operations/storage-operations');
 const { generateFileDeletionResponse } = require('../../src/htmx/workflows/file-browser');
 
 /**

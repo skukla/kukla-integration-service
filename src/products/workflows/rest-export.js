@@ -1,61 +1,55 @@
 /**
- * REST API Export Workflow
+ * Products REST Export Workflows
  *
- * High-level orchestration for REST API-based product export process.
- * This workflow composes multiple business operations for REST API data sources.
+ * Product export workflows using Commerce REST API
  */
 
-const { storeCsvFile } = require('../../files/workflows/file-management');
+const { storeCsvFile } = require('../../files/operations/storage-operations');
 const { fetchAndEnrichProducts } = require('../operations/enrichment');
 const { buildProducts } = require('../operations/transformation');
 const { convertToCSV } = require('../utils/csv');
 
+// === EXPORT WORKFLOWS ===
+
 /**
  * Complete product export workflow
- *
- * Orchestrates the full process from fetching to CSV generation.
- * This is the main entry point for product export operations.
- *
+ * Used by: exportProductsWithStorage, exportProductsWithStorageAndFallback functions
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object
- * @param {Object} trace - Trace context
+ * @param {Object} [trace=null] - Trace context
  * @returns {Promise<Object>} Export result with CSV info
  */
 async function exportProducts(params, config, trace = null) {
-  // Step 1: Fetch and enrich products
+  // Step 1: Fetch and enrich products from Commerce API
   const enrichedProducts = await fetchAndEnrichProducts(params, config, trace);
 
-  // Step 2: Transform to standard format
+  // Step 2: Transform products for export format
   const builtProducts = await buildProducts(enrichedProducts, config);
 
-  // Step 3: Generate CSV
+  // Step 3: Convert to CSV format
   const csvResult = await convertToCSV(builtProducts, config);
 
-  const result = {
+  return {
     productCount: builtProducts.length,
     csvSize: csvResult.length,
     csvContent: csvResult,
     products: builtProducts,
   };
-
-  return result;
 }
 
 /**
- * Complete product export pipeline with storage
- *
- * Full workflow that includes file storage.
- *
+ * Product export pipeline with storage
+ * Used by: Available for actions needing simple storage without error handling
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object
- * @param {Object} trace - Trace context
+ * @param {Object} [trace=null] - Trace context
  * @returns {Promise<Object>} Export result with storage info
  */
 async function exportProductsWithStorage(params, config, trace = null) {
-  // Step 1-3: Export products to CSV
+  // Step 1: Execute complete product export workflow
   const exportResult = await exportProducts(params, config, trace);
 
-  // Step 4: Store file
+  // Step 2: Store CSV file with configured storage provider
   const storageResult = await storeCsvFile(exportResult.csvContent, config, params);
 
   return {
@@ -65,48 +59,19 @@ async function exportProductsWithStorage(params, config, trace = null) {
 }
 
 /**
- * Complete product transformation pipeline
- * Composition function that combines product building and CSV generation.
- *
- * @param {Object[]} products - Raw product data from Adobe Commerce
- * @returns {Promise<Object>} CSV generation result with transformed products
- * @throws {Error} If transformation or CSV generation fails
- */
-async function buildProductCsv(products) {
-  try {
-    // Transform products first
-    const builtProducts = await buildProducts(products);
-
-    // Generate CSV from transformed products
-    const csvResult = await convertToCSV(builtProducts);
-
-    return {
-      csvSize: csvResult.length,
-      csvContent: csvResult,
-      products: builtProducts,
-    };
-  } catch (error) {
-    throw new Error(`Product CSV transformation failed: ${error.message}`);
-  }
-}
-
-/**
- * Complete product export workflow with storage and comprehensive error handling
- *
- * Full workflow that includes storage with fallback handling for when storage fails.
- * Provides comprehensive response data for action-level response building.
- *
+ * Complete product export workflow with storage and error handling
+ * Used by: get-products action
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object
  * @param {Object} core - Core utilities for step messaging
- * @param {Object} trace - Trace context
+ * @param {Object} [trace=null] - Trace context
  * @returns {Promise<Object>} Complete export result with storage info and steps
  */
 async function exportProductsWithStorageAndFallback(params, config, core, trace = null) {
   const steps = [];
 
   try {
-    // Step 1: Export products to CSV
+    // Step 1: Execute complete product export workflow
     const exportResult = await exportProducts(params, config, trace);
 
     steps.push(
@@ -119,7 +84,7 @@ async function exportProductsWithStorageAndFallback(params, config, core, trace 
 
     steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
 
-    // Step 2: Attempt storage
+    // Step 2: Store CSV file with error handling
     let storageResult;
     try {
       storageResult = await storeCsvFile(exportResult.csvContent, config, params, undefined, {
@@ -133,7 +98,6 @@ async function exportProductsWithStorageAndFallback(params, config, core, trace 
         })
       );
 
-      // Return successful storage result
       return {
         success: true,
         exportResult,
@@ -148,7 +112,6 @@ async function exportProductsWithStorageAndFallback(params, config, core, trace 
         })
       );
 
-      // Return fallback result with CSV content
       return {
         success: true,
         exportResult,
@@ -163,9 +126,35 @@ async function exportProductsWithStorageAndFallback(params, config, core, trace 
   }
 }
 
+// === UTILITY WORKFLOWS ===
+
+/**
+ * Product transformation pipeline
+ * Used by: Available for direct product-to-CSV transformation workflows
+ * @param {Object[]} products - Raw product data from Adobe Commerce
+ * @returns {Promise<Object>} CSV generation result with transformed products
+ */
+async function buildProductCsv(products) {
+  try {
+    const builtProducts = await buildProducts(products);
+    const csvResult = await convertToCSV(builtProducts);
+
+    return {
+      csvSize: csvResult.length,
+      csvContent: csvResult,
+      products: builtProducts,
+    };
+  } catch (error) {
+    throw new Error(`Product CSV transformation failed: ${error.message}`);
+  }
+}
+
 module.exports = {
+  // Main export workflows
   exportProducts,
   exportProductsWithStorage,
-  buildProductCsv,
   exportProductsWithStorageAndFallback,
+
+  // Utility workflows
+  buildProductCsv,
 };

@@ -1,11 +1,10 @@
 /**
  * HTMX File Browser Workflows
  *
- * High-level orchestration for file browser UI interactions.
- * Pure orchestration following DDD patterns - delegates to operations layer.
+ * File browser UI workflows and interactions
  */
 
-const { listCsvFiles } = require('../../files/workflows/file-management');
+const { listCsvFiles } = require('../../files/operations/storage-operations');
 const {
   generateCompleteFileBrowserHTML,
   generateDeleteModalHTML,
@@ -17,26 +16,21 @@ const {
   buildModalResponse,
 } = require('../operations/response-building');
 
+// === UI WORKFLOWS ===
+
 /**
  * File browser listing workflow
- * Pure orchestration workflow that delegates to operations layer.
- *
+ * Used by: browse-files action
  * @param {Object} config - Configuration object with storage settings
  * @param {Object} params - Action parameters containing credentials
  * @returns {Promise<Object>} HTMX response with file browser UI
  */
 async function generateFileBrowserUI(config, params) {
   try {
-    // Step 1: Fetch files list
     const files = await listCsvFiles(config, params);
-
-    // Step 2: Generate complete file browser HTML
     const fileBrowserHTML = generateCompleteFileBrowserHTML(files, config);
-
-    // Step 3: Build file browser response
     return buildFileBrowserResponse(fileBrowserHTML);
   } catch (error) {
-    // Step 4: Build error response
     return buildFileOperationErrorResponse(
       'Failed to load file browser',
       'file-listing',
@@ -46,71 +40,73 @@ async function generateFileBrowserUI(config, params) {
 }
 
 /**
- * Generate HTMX response after file deletion
- * Pure orchestration workflow that delegates to operations layer.
- *
- * @param {string} deletedFileName - Name of the deleted file
+ * Delete confirmation modal workflow
+ * Used by: delete-file action (confirmation step)
+ * @param {string} fileName - Name of file to delete
  * @param {Object} config - Configuration object with storage settings
  * @param {Object} params - Action parameters containing credentials
- * @returns {Promise<Object>} HTMX response with updated file browser
+ * @returns {Promise<Object>} HTMX response with delete confirmation modal
  */
-async function generateFileDeletionResponse(deletedFileName, config, params) {
+async function generateDeleteModal(fileName, config, params) {
   try {
-    // Step 1: Get updated file list (S3 provides strong consistency for all operations)
     const files = await listCsvFiles(config, params);
-
-    // Step 2: Generate updated file browser HTML
-    const fileBrowserHTML = generateCompleteFileBrowserHTML(files, config);
-
-    // Step 3: Build file operation success response
-    return buildFileOperationSuccessResponse(
-      `File "${deletedFileName}" deleted successfully`,
-      fileBrowserHTML
-    );
+    const modalHTML = generateDeleteModalHTML(fileName, files, config);
+    return buildModalResponse(modalHTML);
   } catch (error) {
-    // Step 4: Build error response
     return buildFileOperationErrorResponse(
-      'Failed to refresh file browser after deletion',
-      'file-deletion-refresh',
-      deletedFileName
+      'Failed to generate delete confirmation',
+      'modal-generation',
+      error.message
     );
   }
 }
 
 /**
- * Delete confirmation modal workflow
- * Pure orchestration workflow that delegates to operations layer.
- *
- * @param {string} fileName - Name of the file to delete
- * @returns {Object} HTMX response with delete modal
+ * File deletion response workflow
+ * Used by: delete-file action (completion step)
+ * @param {string} fileName - Name of deleted file
+ * @param {Object} config - Configuration object with storage settings
+ * @param {Object} params - Action parameters containing credentials
+ * @returns {Promise<Object>} HTMX response with updated file browser
  */
-function generateDeleteModal(fileName) {
-  // Step 1: Generate delete modal HTML
-  const modalHTML = generateDeleteModalHTML(
-    fileName,
-    `Are you sure you want to delete ${fileName}? This action cannot be undone.`
-  );
+async function generateFileDeletionResponse(fileName, config, params) {
+  try {
+    const files = await listCsvFiles(config, params);
+    const fileBrowserHTML = generateCompleteFileBrowserHTML(files, config);
 
-  // Step 2: Build modal response
-  return buildModalResponse(modalHTML, { show: true });
+    return buildFileOperationSuccessResponse(
+      fileBrowserHTML,
+      `File "${fileName}" deleted successfully`,
+      'file-deletion'
+    );
+  } catch (error) {
+    return buildFileOperationErrorResponse(
+      'Failed to refresh file browser after deletion',
+      'post-deletion-refresh',
+      error.message
+    );
+  }
 }
 
+// === ERROR WORKFLOWS ===
+
 /**
- * Error response workflow
- * Pure orchestration workflow that delegates to operations layer.
- *
- * @param {string} errorMessage - Error message to display
- * @param {string} [operation='operation'] - Operation that failed
- * @returns {Object} HTMX response with error notification
+ * Generic error response workflow
+ * @param {string} message - Error message to display
+ * @param {string} operation - Operation that failed
+ * @param {string} [details] - Additional error details
+ * @returns {Object} HTMX error response
  */
-function generateErrorResponse(errorMessage, operation = 'operation') {
-  // Step 1: Build error response
-  return buildFileOperationErrorResponse(errorMessage, operation);
+async function generateErrorResponse(message, operation, details) {
+  return buildFileOperationErrorResponse(message, operation, details);
 }
 
 module.exports = {
+  // UI workflows
   generateFileBrowserUI,
-  generateFileDeletionResponse,
   generateDeleteModal,
+  generateFileDeletionResponse,
+
+  // Error workflows
   generateErrorResponse,
 };

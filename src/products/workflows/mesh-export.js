@@ -1,43 +1,38 @@
 /**
- * API Mesh Export Workflow
+ * Products Mesh Export Workflows
  *
- * High-level orchestration for mesh-based product export.
- * Consolidates the mesh data fetching and processing pipeline.
+ * Product export workflows using API Mesh GraphQL
  */
 
-const { storeCsvFile } = require('../../files/workflows/file-management');
+const { storeCsvFile } = require('../../files/operations/storage-operations');
 const { fetchEnrichedProductsFromMesh } = require('../operations/mesh-integration');
 const { sortProductsBySku } = require('../operations/sorting');
 const { buildProducts } = require('../operations/transformation');
 const { validateMeshInput } = require('../operations/validation');
 const { convertToCSV } = require('../utils/csv');
 
+// === EXPORT WORKFLOWS ===
+
 /**
  * Complete mesh-based product export workflow with CSV generation
- *
- * Orchestrates the full process from mesh fetching to CSV generation.
- * This workflow handles the complete mesh-specific data pipeline.
- *
+ * Used by: exportMeshProductsWithStorageAndFallback function
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object
- * @param {Object} trace - Trace context for performance monitoring
+ * @param {Object} [trace=null] - Trace context for performance monitoring
  * @param {boolean} [includeCSV=true] - Whether to generate CSV data
  * @returns {Promise<Object>} Export result with mesh data, built products, and optionally CSV
  */
 async function exportMeshProducts(params, config, trace = null, includeCSV = true) {
-  // Step 1: Validate mesh configuration and credentials
+  // Step 1: Validate mesh configuration and parameters
   await validateMeshInput(params, config);
 
-  // Step 2: Fetch enriched products from mesh
+  // Step 2: Fetch enriched products from API Mesh
   const meshData = await fetchEnrichedProductsFromMesh(config, params, trace);
 
-  // Step 3: Sort products by SKU for consistent output
+  // Step 3: Sort products and transform for export format
   meshData.products = sortProductsBySku(meshData.products);
-
-  // Step 4: Build product data using shared transformation
   const builtProducts = await buildProducts(meshData.products, config);
 
-  // Base result object
   const result = {
     meshData,
     builtProducts,
@@ -45,7 +40,7 @@ async function exportMeshProducts(params, config, trace = null, includeCSV = tru
     totalCount: meshData.total_count,
   };
 
-  // Step 5: Generate CSV if requested
+  // Step 4: Generate CSV if requested
   if (includeCSV) {
     const csvResult = await convertToCSV(builtProducts, config);
     result.csvContent = csvResult;
@@ -56,22 +51,19 @@ async function exportMeshProducts(params, config, trace = null, includeCSV = tru
 }
 
 /**
- * Complete mesh product export workflow with storage and comprehensive error handling
- *
- * Full workflow that includes storage with fallback handling for when storage fails.
- * Mirrors the pattern of exportProductsWithStorageAndFallback for mesh data.
- *
+ * Complete mesh product export workflow with storage and error handling
+ * Used by: get-products-mesh action
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Configuration object
  * @param {Object} core - Core utilities for step messaging
- * @param {Object} trace - Trace context
+ * @param {Object} [trace=null] - Trace context
  * @returns {Promise<Object>} Complete export result with storage info and steps
  */
 async function exportMeshProductsWithStorageAndFallback(params, config, core, trace = null) {
   const steps = [];
 
   try {
-    // Step 1: Export mesh products to CSV
+    // Step 1: Execute complete mesh product export workflow
     const exportResult = await exportMeshProducts(params, config, trace);
 
     steps.push(
@@ -84,7 +76,7 @@ async function exportMeshProductsWithStorageAndFallback(params, config, core, tr
 
     steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
 
-    // Step 2: Attempt storage
+    // Step 2: Store CSV file with error handling
     let storageResult;
     try {
       storageResult = await storeCsvFile(exportResult.csvContent, config, params, undefined, {
@@ -98,7 +90,6 @@ async function exportMeshProductsWithStorageAndFallback(params, config, core, tr
         })
       );
 
-      // Return successful storage result
       return {
         success: true,
         exportResult,
@@ -113,7 +104,6 @@ async function exportMeshProductsWithStorageAndFallback(params, config, core, tr
         })
       );
 
-      // Return fallback result with CSV content
       return {
         success: true,
         exportResult,
@@ -129,6 +119,7 @@ async function exportMeshProductsWithStorageAndFallback(params, config, core, tr
 }
 
 module.exports = {
+  // Main export workflows
   exportMeshProducts,
   exportMeshProductsWithStorageAndFallback,
 };

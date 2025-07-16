@@ -15,6 +15,7 @@
     "ajv-formats": "^2.1.1",
     "chalk": "^4.1.2",
     "dotenv": "^16.5.0",
+    "glob": "^10.4.5",
     "graphql": "^16.11.0",
     "lodash.merge": "^4.6.2",
     "node-fetch": "^2.7.0"
@@ -53,7 +54,13 @@
     "test:perf": "node scripts/test.js --type=performance --action=get-products --scenario=quick",
     "test:perf:list": "node scripts/test.js --type=performance --list",
     "test:suite": "node scripts/test.js --type=suite",
-    "test:suite:list": "node scripts/test.js --type=suite --list"
+    "test:suite:list": "node scripts/test.js --type=suite --list",
+    "audit": "node scripts/audit.js",
+    "audit:verbose": "node scripts/audit.js --verbose",
+    "audit:tier1": "node scripts/audit.js --tier1-only",
+    "audit:tier2": "node scripts/audit.js --tier2-only",
+    "audit:tier3": "node scripts/audit.js --tier3-only",
+    "audit:ci": "node scripts/audit.js --tier1-only"
   },
   "engines": {
     "node": ">=18"
@@ -64,7 +71,8 @@
   "lint-staged": {
     "*.{js,jsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "npm run audit:ci"
     ],
     "*.{json,yml,yaml}": [
       "prettier --write"

@@ -1,8 +1,7 @@
 /**
  * Commerce Integration Workflows
  *
- * High-level orchestration functions for complete Commerce API integration workflows.
- * Pure orchestration following DDD patterns - delegates to operations layer.
+ * Commerce API integration workflows and orchestration
  */
 
 const {
@@ -19,10 +18,10 @@ const {
   createValidationErrorResponse,
 } = require('../operations/validation');
 
+// === INTEGRATION WORKFLOWS ===
+
 /**
- * Executes a complete Commerce API integration workflow
- * Pure orchestration workflow that delegates to operations layer.
- *
+ * Complete Commerce API integration workflow
  * @param {Object} params - Workflow parameters
  * @param {Object} params.query - Query parameters for API requests
  * @param {Object} params.config - Configuration object
@@ -35,25 +34,19 @@ async function executeCommerceIntegration(params) {
   const { query, config, actionParams, trace, options = {} } = params;
 
   try {
-    // Step 1: Validate parameters
     const validationError = validateCommerceIntegrationParams(params);
     if (validationError) {
       return createValidationErrorResponse(validationError, 'commerce-integration');
     }
 
-    // Step 2: Execute product enrichment with retry handling
     const enrichmentResult = await retryWithAuthHandling(
       () => orchestrateProductEnrichment(query, config, actionParams, trace),
       { maxRetries: 2, retryDelay: 1000 }
     );
 
-    // Step 3: Process the enriched data
     const processingResult = orchestrateDataProcessing(enrichmentResult, config, options);
-
-    // Step 4: Build success response
     return buildSuccessResponse(processingResult);
   } catch (error) {
-    // Step 5: Build error response
     return buildErrorResponse(error, {
       workflow: 'commerce-integration',
       query: JSON.stringify(query),
@@ -62,9 +55,7 @@ async function executeCommerceIntegration(params) {
 }
 
 /**
- * Executes a product listing workflow
- * Pure orchestration workflow that delegates to operations layer.
- *
+ * Product listing workflow
  * @param {Object} params - Workflow parameters
  * @param {Object} params.listingParams - Product listing parameters
  * @param {number} [params.listingParams.pageSize] - Products per page
@@ -79,13 +70,11 @@ async function executeProductListing(params) {
   const { listingParams, config, actionParams, trace } = params;
 
   try {
-    // Step 1: Validate parameters
     const validationError = validateProductListingParams(params);
     if (validationError) {
       return createValidationErrorResponse(validationError, 'product-listing');
     }
 
-    // Step 2: Execute product request without full enrichment for listing
     const productResult = await orchestrateProductRequests(
       listingParams,
       config,
@@ -93,10 +82,8 @@ async function executeProductListing(params) {
       trace
     );
 
-    // Step 3: Process basic product data
     const processed = orchestrateDataProcessing({ products: productResult.items || [] }, config);
 
-    // Step 4: Build listing result
     const listingResult = {
       products: processed.products,
       pagination: {
@@ -108,10 +95,8 @@ async function executeProductListing(params) {
       resultCount: processed.products.length,
     };
 
-    // Step 5: Build success response
     return buildSuccessResponse(listingResult);
   } catch (error) {
-    // Step 6: Build error response
     return buildErrorResponse(error, {
       listingParams: JSON.stringify(listingParams),
     });
@@ -119,7 +104,7 @@ async function executeProductListing(params) {
 }
 
 /**
- * Executes a product export workflow
+ * Product export workflow
  * @param {Object} params - Workflow parameters
  * @param {Object} params.exportParams - Export parameters
  * @param {Array<string>} [params.exportParams.fields] - Fields to export
@@ -132,7 +117,6 @@ async function executeProductExport(params) {
   const { exportParams, config, actionParams, trace } = params;
 
   try {
-    // Step 1: Execute complete integration for export
     const integrationResult = await executeCommerceIntegration({
       query: exportParams,
       config,
@@ -148,7 +132,6 @@ async function executeProductExport(params) {
       return integrationResult;
     }
 
-    // Step 2: Build export result
     const exportResult = {
       exportData: integrationResult.data.products,
       exportMetadata: {
@@ -158,10 +141,8 @@ async function executeProductExport(params) {
       },
     };
 
-    // Step 3: Build success response
     return buildSuccessResponse(exportResult);
   } catch (error) {
-    // Step 4: Build error response
     return buildErrorResponse(error, {
       stage: 'product-export',
       dataType: 'product',
@@ -170,10 +151,10 @@ async function executeProductExport(params) {
   }
 }
 
+// === UTILITY WORKFLOWS ===
+
 /**
- * Executes a health check workflow for Commerce API
- * Pure orchestration workflow that delegates to operations layer.
- *
+ * Health check workflow for Commerce API
  * @param {Object} params - Workflow parameters
  * @param {Object} params.config - Configuration object
  * @param {Object} params.actionParams - Action parameters
@@ -183,13 +164,11 @@ async function executeHealthCheck(params) {
   const { config, actionParams } = params;
 
   try {
-    // Step 1: Validate parameters
     const validationError = validateHealthCheckParams(params);
     if (validationError) {
       return createValidationErrorResponse(validationError, 'health-check');
     }
 
-    // Step 2: Simple API connectivity test (fetch 1 product)
     const testResult = await orchestrateProductRequests(
       { pageSize: 1, currentPage: 1 },
       config,
@@ -198,7 +177,6 @@ async function executeHealthCheck(params) {
 
     const isHealthy = testResult && testResult.items && Array.isArray(testResult.items);
 
-    // Step 3: Build health result
     const healthResult = {
       health: isHealthy ? 'healthy' : 'degraded',
       connectivity: isHealthy ? 'connected' : 'connection_issues',
@@ -206,10 +184,8 @@ async function executeHealthCheck(params) {
       testResult: isHealthy ? 'passed' : 'failed',
     };
 
-    // Step 4: Build success response
     return buildSuccessResponse(healthResult);
   } catch (error) {
-    // Step 5: Build error response
     return buildErrorResponse(error, {
       failurePoint: 'connectivity_test',
     });
@@ -217,9 +193,9 @@ async function executeHealthCheck(params) {
 }
 
 /**
- * Handles workflow errors with comprehensive context
+ * Handle workflow errors with comprehensive context
  * @param {Error} error - Workflow error
- * @param {Object} context - Workflow context
+ * @param {Object} [context={}] - Workflow context
  * @returns {Object} Enhanced workflow error
  */
 function handleWorkflowError(error, context = {}) {
@@ -242,9 +218,12 @@ function handleWorkflowError(error, context = {}) {
 }
 
 module.exports = {
+  // Main integration workflows
   executeCommerceIntegration,
   executeProductListing,
   executeProductExport,
+
+  // Utility workflows
   executeHealthCheck,
   handleWorkflowError,
 };

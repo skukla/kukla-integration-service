@@ -4,7 +4,7 @@
  */
 
 const { createAction } = require('../../src/core/action/operations/action-factory');
-const { getCsvFiles } = require('../../src/files/workflows/file-management');
+const { fileBrowserDataWorkflow } = require('../../src/files/workflows/file-management');
 const { generateCompleteFileBrowserHTML } = require('../../src/htmx/operations/html-generation');
 const { buildHtmlResponse } = require('../../src/htmx/operations/response-building');
 
@@ -21,7 +21,7 @@ async function browseFilesBusinessLogic(context) {
   steps.push(core.formatStepMessage('validate-input', 'success'));
 
   // Step 2: Get list of CSV files from storage
-  const fileList = await getCsvFiles(config, extractedParams);
+  const fileList = await fileBrowserDataWorkflow(config, extractedParams);
   steps.push(core.formatStepMessage('browse-files', 'success', { count: fileList.length }));
 
   // Step 3: Generate HTML using the HTML generation operations
