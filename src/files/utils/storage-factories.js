@@ -1,18 +1,15 @@
 /**
  * Storage Factory Utilities
- *
- * Low-level pure functions for creating storage wrapper methods.
- * Contains factory functions that create storage provider interfaces.
  */
 
 const {
   PutObjectCommand,
+  ListObjectsV2Command,
   GetObjectCommand,
   DeleteObjectCommand,
-  ListObjectsV2Command,
 } = require('@aws-sdk/client-s3');
 
-const { buildStorageFilePath, ensureStorageDirectoryPath } = require('./paths');
+const { buildStorageFilePath } = require('./paths');
 const { buildFileDownloadUrl } = require('./url-building');
 const { formatFileSize, formatDate } = require('../../core/utils/operations/formatting');
 const { updateContentOnly } = require('../operations/content-only');
@@ -20,7 +17,7 @@ const { generatePresignedUrl } = require('../operations/presigned-urls');
 
 /**
  * Creates the write method for App Builder storage
- * Pure function factory that creates write method implementation.
+ * Pure function factory focused only on file storage.
  *
  * @param {Object} files - Files client instance
  * @param {Object} config - Configuration object
@@ -28,53 +25,32 @@ const { generatePresignedUrl } = require('../operations/presigned-urls');
  */
 function createAppBuilderWriteMethod(files, config) {
   return async function write(fileName, content, options = {}) {
-    // Store files in configured directory for organization and accessibility
+    // Store file in configured directory
     const storageDirectory = config.storage.directory;
     const fullFileName = buildStorageFilePath(fileName, storageDirectory);
     await files.write(fullFileName, content);
-    const properties = await files.getProperties(fullFileName);
 
-    // Generate action-based download URL for consistent interface across providers
+    // Get file properties and generate URLs
+    const properties = await files.getProperties(fullFileName);
     const actionUrl = buildFileDownloadUrl(fileName, config);
 
-    // Generate presigned URL for public access with dynamic expiration based on use case
-    let presignedUrlResult = null;
-    if (config.storage.presignedUrls.enabled) {
-      try {
-        const storage = { provider: 'app-builder', client: files };
+    // Handle presigned URL generation using consolidated utility
+    const storage = { provider: 'app-builder', client: files };
+    const presignedUrlResult = await generatePresignedUrl(storage, fileName, config, options);
 
-        // Determine expiration based on use case or default to short
-        let expiresIn = config.storage.presignedUrls.expiration.short;
-
-        if (options.useCase) {
-          const { getAccessMethod } = require('../utils/access-patterns');
-          const accessMethod = getAccessMethod(options.useCase, config);
-          if (accessMethod.expiresIn) {
-            expiresIn = accessMethod.expiresIn;
-          }
-        }
-
-        presignedUrlResult = await generatePresignedUrl(storage, fileName, config, {
-          expiresIn,
-          useCase: options.useCase,
-        });
-      } catch (error) {
-        console.warn('Failed to generate presigned URL:', error.message);
-      }
-    }
-
+    // Build standardized response using operations layer
     return {
-      fileName: fullFileName, // Return the full path for consistency
-      url: actionUrl, // Use action URL for fallback
-      downloadUrl: actionUrl, // Use action URL for downloads
+      fileName: fullFileName,
+      url: actionUrl,
+      downloadUrl: actionUrl,
       presignedUrl: presignedUrlResult?.success ? presignedUrlResult.presignedUrl : null,
       properties: {
-        name: fileName, // But keep the original name in properties
+        name: fileName,
         size: content.length,
         lastModified: properties.lastModified,
         contentType: properties.contentType || 'text/csv',
-        internalUrl: properties.url, // Keep the original URL for internal reference
-        presigned: presignedUrlResult, // Include full presigned URL info
+        internalUrl: properties.url,
+        presigned: presignedUrlResult,
       },
     };
   };
@@ -82,7 +58,7 @@ function createAppBuilderWriteMethod(files, config) {
 
 /**
  * Creates the list method for App Builder storage
- * Pure function factory that creates list method implementation.
+ * Pure function factory focused only on file listing.
  *
  * @param {Object} files - Files client instance
  * @param {Object} config - Configuration object
@@ -96,20 +72,19 @@ function createAppBuilderListMethod(files, config) {
     const filteredFiles = fileList.filter((file) => file.name.startsWith(listDirectory));
 
     // Get metadata for each file
-    const filesWithMetadata = await Promise.all(
+    return await Promise.all(
       filteredFiles.map(async (file) => {
         try {
           const properties = await files.getProperties(file.name);
           const content = await files.read(file.name);
           return {
-            name: file.name.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''), // Remove directory prefix for display
+            name: file.name.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''),
             fullPath: file.name,
             size: formatFileSize(content.length),
             lastModified: formatDate(properties.lastModified),
             contentType: properties.contentType || 'application/octet-stream',
           };
         } catch (error) {
-          // If we can't read file metadata, include basic info
           return {
             name: file.name.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''),
             fullPath: file.name,
@@ -120,59 +95,245 @@ function createAppBuilderListMethod(files, config) {
         }
       })
     );
-
-    return filesWithMetadata;
   };
 }
 
 /**
- * Creates the storage wrapper methods for App Builder
- * Pure function factory that creates complete App Builder storage interface.
+ * Creates the write method for S3 storage
+ * Pure function factory focused only on S3 storage.
+ *
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Full configuration object
+ * @returns {Function} Write method implementation
+ */
+function createS3WriteMethod(s3Client, s3Config, config) {
+  return async function write(fileName, content, options = {}) {
+    // Build S3 key and store file
+    const storageDirectory = config.storage.directory || '';
+    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
+
+    const command = new PutObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: fullPath,
+      Body: content,
+      ContentType: 'text/csv',
+    });
+    await s3Client.send(command);
+
+    // Generate URLs
+    const actionUrl = buildFileDownloadUrl(fileName, config);
+
+    // Handle presigned URL generation using consolidated utility
+    const storage = {
+      provider: 's3',
+      client: s3Client,
+      bucket: s3Config.bucket,
+      prefix: s3Config.prefix,
+    };
+    const presignedUrlResult = await generatePresignedUrl(storage, fileName, config, options);
+
+    // Build standardized response using operations layer
+    return {
+      fileName: fullPath,
+      url: actionUrl,
+      downloadUrl: actionUrl,
+      presignedUrl: presignedUrlResult?.success ? presignedUrlResult.presignedUrl : null,
+      properties: {
+        name: fileName,
+        size: content.length,
+        lastModified: new Date().toISOString(),
+        contentType: 'text/csv',
+        bucket: s3Config.bucket,
+        directory: storageDirectory,
+        presigned: presignedUrlResult,
+      },
+    };
+  };
+}
+
+/**
+ * Creates the list method for S3 storage
+ * Pure function factory focused only on S3 listing.
+ *
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Configuration object
+ * @returns {Function} List method implementation
+ */
+function createS3ListMethod(s3Client, s3Config, config) {
+  return async function list() {
+    const storageDirectory = config.storage.directory || '';
+    const fullPrefix = buildStorageFilePath('', storageDirectory, s3Config.prefix);
+
+    const command = new ListObjectsV2Command({
+      Bucket: s3Config.bucket,
+      Prefix: fullPrefix,
+    });
+
+    const response = await s3Client.send(command);
+    const objects = response.Contents || [];
+
+    return objects.map((obj) => ({
+      name: obj.Key.replace(fullPrefix, ''),
+      fullPath: obj.Key,
+      size: formatFileSize(obj.Size),
+      lastModified: formatDate(obj.LastModified),
+      contentType: 'text/csv',
+    }));
+  };
+}
+
+/**
+ * Creates App Builder storage wrapper
+ * Wrapper factory that creates storage interface.
  *
  * @param {Object} files - Files client instance
  * @param {Object} config - Configuration object
- * @returns {Object} Storage wrapper with methods
+ * @returns {Object} Storage wrapper interface
  */
 function createAppBuilderStorageWrapper(files, config) {
   const storageDirectory = config.storage.directory;
 
   return {
     provider: 'app-builder',
-    client: files,
-
     write: createAppBuilderWriteMethod(files, config),
-
+    list: createAppBuilderListMethod(files, config),
     writeContentOnly: createWriteContentOnlyMethod({ provider: 'app-builder', client: files }),
 
     async read(fileName) {
-      // Handle both full path and filename-only
-      const fullPath = ensureStorageDirectoryPath(fileName, storageDirectory);
+      const fullPath = fileName.startsWith(storageDirectory)
+        ? fileName
+        : `${storageDirectory}${fileName}`;
       return await files.read(fullPath);
     },
 
     async delete(fileName) {
-      // Handle both full path and filename-only
       const fullPath = fileName.startsWith(storageDirectory)
         ? fileName
         : `${storageDirectory}${fileName}`;
       await files.delete(fullPath);
     },
 
-    list: createAppBuilderListMethod(files, config),
-
     async getProperties(fileName) {
-      // Handle both full path and filename-only
       const fullPath = fileName.startsWith(storageDirectory)
         ? fileName
         : `${storageDirectory}${fileName}`;
-      const properties = await files.getProperties(fullPath);
-      return {
-        name: fileName.replace(new RegExp(`^${storageDirectory.replace('/', '\\/')}`), ''), // Return clean name
-        size: properties.size,
-        lastModified: properties.lastModified,
-        contentType: properties.contentType || 'application/octet-stream',
-      };
+      try {
+        return await files.getProperties(fullPath);
+      } catch (error) {
+        return null; // File doesn't exist
+      }
     },
+  };
+}
+
+/**
+ * Creates the read method for S3 storage
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Configuration object
+ * @returns {Function} S3 read method
+ */
+function createS3ReadMethod(s3Client, s3Config, config) {
+  return async function read(fileName) {
+    const storageDirectory = config.storage.directory || '';
+    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
+
+    const command = new GetObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: fullPath,
+    });
+
+    const response = await s3Client.send(command);
+    const chunks = [];
+    for await (const chunk of response.Body) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  };
+}
+
+/**
+ * Creates the delete method for S3 storage
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Configuration object
+ * @returns {Function} S3 delete method
+ */
+function createS3DeleteMethod(s3Client, s3Config, config) {
+  return async function deleteFile(fileName) {
+    const storageDirectory = config.storage.directory || '';
+    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
+
+    const command = new DeleteObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: fullPath,
+    });
+
+    await s3Client.send(command);
+  };
+}
+
+/**
+ * Creates the getProperties method for S3 storage
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Configuration object
+ * @returns {Function} S3 getProperties method
+ */
+function createS3GetPropertiesMethod(s3Client, s3Config, config) {
+  return async function getProperties(fileName) {
+    const storageDirectory = config.storage.directory || '';
+    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
+
+    const command = new GetObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: fullPath,
+    });
+
+    try {
+      const response = await s3Client.send(command);
+      return {
+        name: fileName,
+        size: response.ContentLength,
+        lastModified: response.LastModified.toISOString(),
+        contentType: response.ContentType,
+      };
+    } catch (error) {
+      if (error.name === 'NoSuchKey') {
+        return null; // File doesn't exist
+      }
+      throw error;
+    }
+  };
+}
+
+/**
+ * Creates S3 storage wrapper
+ * Wrapper factory that creates storage interface.
+ *
+ * @param {Object} s3Client - S3 client instance
+ * @param {Object} s3Config - S3 configuration
+ * @param {Object} config - Configuration object
+ * @returns {Object} Storage wrapper interface
+ */
+function createS3StorageWrapper(s3Client, s3Config, config) {
+  const storage = {
+    provider: 's3',
+    client: s3Client,
+    bucket: s3Config.bucket,
+    prefix: s3Config.prefix,
+  };
+
+  return {
+    provider: 's3',
+    write: createS3WriteMethod(s3Client, s3Config, config),
+    list: createS3ListMethod(s3Client, s3Config, config),
+    writeContentOnly: createWriteContentOnlyMethod(storage),
+    read: createS3ReadMethod(s3Client, s3Config, config),
+    delete: createS3DeleteMethod(s3Client, s3Config, config),
+    getProperties: createS3GetPropertiesMethod(s3Client, s3Config, config),
   };
 }
 
@@ -186,199 +347,6 @@ function createAppBuilderStorageWrapper(files, config) {
 function createWriteContentOnlyMethod(storage) {
   return async function writeContentOnly(fileName, content, config) {
     return await updateContentOnly(storage, fileName, content, config);
-  };
-}
-
-/**
- * Creates the write method for S3 storage
- * Pure function factory that creates S3 write method implementation.
- *
- * @param {Object} s3Client - S3 client instance
- * @param {Object} s3Config - S3 configuration
- * @param {Object} config - Full configuration object
- * @returns {Function} Write method implementation
- */
-function createS3WriteMethod(s3Client, s3Config, config) {
-  return async function write(fileName, content, options = {}) {
-    // Include both prefix and storage directory in the key
-    const storageDirectory = config.storage.directory || '';
-    const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
-
-    const command = new PutObjectCommand({
-      Bucket: s3Config.bucket,
-      Key: fullPath,
-      Body: content,
-      ContentType: 'text/csv',
-    });
-
-    await s3Client.send(command);
-
-    // Generate action-based download URL for consistent interface across providers
-    const actionUrl = buildFileDownloadUrl(fileName, config);
-
-    // Generate presigned URL for public access with dynamic expiration based on use case
-    let presignedUrlResult = null;
-    if (config.storage.presignedUrls.enabled) {
-      try {
-        const storage = {
-          provider: 's3',
-          client: s3Client,
-          bucket: s3Config.bucket,
-          prefix: s3Config.prefix,
-        };
-
-        // Determine expiration based on use case or default to short
-        let expiresIn = config.storage.presignedUrls.expiration.short;
-
-        if (options.useCase) {
-          const { getAccessMethod } = require('../utils/access-patterns');
-          const accessMethod = getAccessMethod(options.useCase, config);
-          if (accessMethod.expiresIn) {
-            expiresIn = accessMethod.expiresIn;
-          }
-        }
-
-        presignedUrlResult = await generatePresignedUrl(storage, fileName, config, {
-          expiresIn,
-          useCase: options.useCase,
-        });
-      } catch (error) {
-        console.warn('Failed to generate presigned URL:', error.message);
-      }
-    }
-
-    return {
-      fileName: fullPath, // Return the full path including storage directory
-      url: actionUrl, // Use action URL for fallback
-      downloadUrl: actionUrl, // Use action URL for downloads
-      presignedUrl: presignedUrlResult?.success ? presignedUrlResult.presignedUrl : null,
-      properties: {
-        name: fileName,
-        size: content.length,
-        lastModified: new Date().toISOString(),
-        contentType: 'text/csv',
-        bucket: s3Config.bucket, // Include bucket name for storage display
-        directory: storageDirectory, // Include directory for proper display
-        presigned: presignedUrlResult, // Include full presigned URL info
-      },
-    };
-  };
-}
-
-/**
- * Creates the list method for S3 storage
- * Pure function factory that creates S3 list method implementation.
- *
- * @param {Object} s3Client - S3 client instance
- * @param {Object} s3Config - S3 configuration
- * @returns {Function} List method implementation
- */
-function createS3ListMethod(s3Client, s3Config, config) {
-  return async function list() {
-    // Include both prefix and storage directory in the list prefix
-    const storageDirectory = config.storage.directory || '';
-    const fullPrefix = buildStorageFilePath('', storageDirectory, s3Config.prefix);
-
-    const command = new ListObjectsV2Command({
-      Bucket: s3Config.bucket,
-      Prefix: fullPrefix,
-    });
-
-    const response = await s3Client.send(command);
-
-    if (!response.Contents) {
-      return [];
-    }
-
-    return response.Contents.map((item) => ({
-      name: item.Key.replace(fullPrefix, ''),
-      fullPath: item.Key,
-      size: formatFileSize(item.Size),
-      lastModified: formatDate(item.LastModified),
-      contentType: 'application/octet-stream',
-    }));
-  };
-}
-
-/**
- * Creates S3 storage wrapper methods
- * Pure function factory that creates complete S3 storage interface.
- *
- * @param {Object} s3Client - S3 client instance
- * @param {Object} s3Config - S3 configuration
- * @param {Object} config - Full configuration object
- * @returns {Object} Storage wrapper with methods
- */
-function createS3StorageWrapper(s3Client, s3Config, config) {
-  const storageDirectory = config.storage.directory || '';
-
-  return {
-    provider: 's3',
-    client: s3Client,
-    bucket: s3Config.bucket,
-    prefix: s3Config.prefix || '',
-
-    write: createS3WriteMethod(s3Client, s3Config, config),
-
-    writeContentOnly: createWriteContentOnlyMethod({
-      provider: 's3',
-      client: s3Client,
-      bucket: s3Config.bucket,
-      prefix: s3Config.prefix,
-    }),
-
-    async read(fileName) {
-      // Include both prefix and storage directory in the key
-      const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
-      const command = new GetObjectCommand({
-        Bucket: s3Config.bucket,
-        Key: fullPath,
-      });
-
-      const response = await s3Client.send(command);
-      const chunks = [];
-      for await (const chunk of response.Body) {
-        chunks.push(chunk);
-      }
-      return Buffer.concat(chunks);
-    },
-
-    async delete(fileName) {
-      // Include both prefix and storage directory in the key
-      const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
-      const command = new DeleteObjectCommand({
-        Bucket: s3Config.bucket,
-        Key: fullPath,
-      });
-
-      await s3Client.send(command);
-    },
-
-    list: createS3ListMethod(s3Client, s3Config, config),
-
-    async getProperties(fileName) {
-      // Include both prefix and storage directory in the key
-      const fullPath = buildStorageFilePath(fileName, storageDirectory, s3Config.prefix);
-      const command = new GetObjectCommand({
-        Bucket: s3Config.bucket,
-        Key: fullPath,
-      });
-
-      try {
-        const response = await s3Client.send(command);
-        return {
-          name: fileName,
-          size: response.ContentLength,
-          lastModified: response.LastModified.toISOString(),
-          contentType: response.ContentType,
-        };
-      } catch (error) {
-        if (error.name === 'NoSuchKey') {
-          return null;
-        }
-        throw error;
-      }
-    },
   };
 }
 

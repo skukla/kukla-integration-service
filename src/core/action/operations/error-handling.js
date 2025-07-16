@@ -12,38 +12,26 @@ const { response } = require('../../http/responses');
  * @returns {Object} Error response
  */
 function handleActionError(error, context = {}) {
-  const { logger, traceContext } = context;
+  const { logger } = context;
 
   if (logger) {
     logger.error('Action failed', { error: error.message, stack: error.stack });
-  }
-
-  if (traceContext && !traceContext.disabled) {
-    traceContext.errors.push({
-      message: error.message,
-      timestamp: Date.now(),
-    });
   }
 
   return response.error(error);
 }
 
 /**
- * Action success handler with optional tracing
+ * Action success handler
  * @param {*} data - Success data
  * @param {Object} context - Action context
  * @returns {Object} Success response
  */
 function handleActionSuccess(data, context = {}) {
-  const { logger, traceContext } = context;
+  const { logger } = context;
 
   if (logger) {
     logger.info('Action completed successfully');
-  }
-
-  if (traceContext && !traceContext.disabled) {
-    traceContext.completedAt = Date.now();
-    traceContext.duration = traceContext.completedAt - traceContext.startTime;
   }
 
   // Check if the response is already in Adobe I/O Runtime format (for file downloads)

@@ -23,7 +23,7 @@ function buildMainConfig() {
     exportFields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
 
     storage: {
-      provider: 's3', // Storage provider choice: 's3' or 'app-builder'
+      provider: 'app-builder', // Storage provider choice: 's3' or 'app-builder'
       directory: 'public/', // Directory for file organization (used by both providers)
       s3: {
         region: 'us-east-1',

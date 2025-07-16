@@ -11,16 +11,7 @@ const {
 } = require('../operations/api-requests');
 const { retryWithAuthHandling } = require('../operations/authentication');
 const { orchestrateDataProcessing } = require('../operations/data-processing');
-const {
-  buildCommerceIntegrationSuccessResponse,
-  buildCommerceIntegrationErrorResponse,
-  buildProductListingSuccessResponse,
-  buildProductListingErrorResponse,
-  buildHealthCheckSuccessResponse,
-  buildHealthCheckErrorResponse,
-  buildExportSuccessResponse,
-  buildExportErrorResponse,
-} = require('../operations/response-building');
+const { buildSuccessResponse, buildErrorResponse } = require('../operations/response-building');
 const {
   validateCommerceIntegrationParams,
   validateProductListingParams,
@@ -60,10 +51,10 @@ async function executeCommerceIntegration(params) {
     const processingResult = orchestrateDataProcessing(enrichmentResult, config, options);
 
     // Step 4: Build success response
-    return buildCommerceIntegrationSuccessResponse(processingResult);
+    return buildSuccessResponse(processingResult);
   } catch (error) {
     // Step 5: Build error response
-    return buildCommerceIntegrationErrorResponse(error, {
+    return buildErrorResponse(error, {
       workflow: 'commerce-integration',
       query: JSON.stringify(query),
     });
@@ -103,17 +94,7 @@ async function executeProductListing(params) {
     );
 
     // Step 3: Process basic product data
-    const processingOptions = {
-      validate: false, // Skip validation for listing performance
-      includeInventory: false, // Skip inventory for listing performance
-      includeCategories: true, // Include categories for filtering
-    };
-
-    const processed = orchestrateDataProcessing(
-      { products: productResult.items || [] },
-      config,
-      processingOptions
-    );
+    const processed = orchestrateDataProcessing({ products: productResult.items || [] }, config);
 
     // Step 4: Build listing result
     const listingResult = {
@@ -128,10 +109,10 @@ async function executeProductListing(params) {
     };
 
     // Step 5: Build success response
-    return buildProductListingSuccessResponse(listingResult);
+    return buildSuccessResponse(listingResult);
   } catch (error) {
     // Step 6: Build error response
-    return buildProductListingErrorResponse(error, {
+    return buildErrorResponse(error, {
       listingParams: JSON.stringify(listingParams),
     });
   }
@@ -160,8 +141,6 @@ async function executeProductExport(params) {
       options: {
         fields: exportParams.fields,
         validate: true,
-        includeCategories: true,
-        includeInventory: true,
       },
     });
 
@@ -180,10 +159,10 @@ async function executeProductExport(params) {
     };
 
     // Step 3: Build success response
-    return buildExportSuccessResponse(exportResult);
+    return buildSuccessResponse(exportResult);
   } catch (error) {
     // Step 4: Build error response
-    return buildExportErrorResponse(error, {
+    return buildErrorResponse(error, {
       stage: 'product-export',
       dataType: 'product',
       exportParams: JSON.stringify(exportParams),
@@ -228,10 +207,10 @@ async function executeHealthCheck(params) {
     };
 
     // Step 4: Build success response
-    return buildHealthCheckSuccessResponse(healthResult);
+    return buildSuccessResponse(healthResult);
   } catch (error) {
     // Step 5: Build error response
-    return buildHealthCheckErrorResponse(error, {
+    return buildErrorResponse(error, {
       failurePoint: 'connectivity_test',
     });
   }

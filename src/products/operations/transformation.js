@@ -27,16 +27,16 @@ const DEFAULT_PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'im
  *
  * @param {Object} product - Raw product data from Adobe Commerce
  * @param {Object} categoryMap - Map of category IDs to names
- * @param {Object} config - Configuration object (optional)
+ * @param {Object} config - Configuration object (required)
  * @returns {Object} Standardized product object
  */
-function buildProductObject(product, categoryMap = {}, config = {}) {
+function buildProductObject(product, categoryMap = {}, config) {
   if (!product || typeof product !== 'object') {
     return {};
   }
 
   // Get product fields from main config (determines final CSV output fields)
-  const productFields = config.main?.exportFields || DEFAULT_PRODUCT_FIELDS;
+  const productFields = config.main.exportFields;
 
   const fieldMappings = {
     sku: () => product.sku || '',

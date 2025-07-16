@@ -7,7 +7,7 @@ const { createAction } = require('../../src/core/action/operations/action-factor
 const { storeCsvFile } = require('../../src/files/workflows/file-management');
 const { fetchEnrichedProductsFromMesh } = require('../../src/products/operations/mesh-integration');
 const { buildProducts } = require('../../src/products/operations/transformation');
-const { createCsv } = require('../../src/products/utils/csv');
+const { convertToCSV } = require('../../src/products/utils/csv');
 
 /**
  * Business logic for get-products-mesh action
@@ -29,12 +29,12 @@ async function getProductsMeshBusinessLogic(context) {
   const builtProducts = await buildProducts(meshData.products, config);
   steps.push(core.formatStepMessage('build-products', 'success', { count: builtProducts.length }));
 
-  // Step 4: Create CSV
-  const csvData = await createCsv(builtProducts, config);
-  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.content.length }));
+  // Step 4: Generate CSV
+  const csvData = await convertToCSV(builtProducts, config);
+  steps.push(core.formatStepMessage('create-csv', 'success', { size: csvData.length }));
 
   // Step 5: Store CSV file
-  const storageResult = await storeCsvFile(csvData.content, config, extractedParams, undefined, {
+  const storageResult = await storeCsvFile(csvData, config, extractedParams, undefined, {
     useCase: extractedParams.useCase,
   });
   if (!storageResult.stored) {
@@ -61,7 +61,6 @@ async function getProductsMeshBusinessLogic(context) {
 // Export the action with proper configuration
 module.exports = createAction(getProductsMeshBusinessLogic, {
   actionName: 'get-products-mesh',
-  withTracing: false,
   withLogger: false,
   description: 'Export Adobe Commerce product data to CSV using API Mesh',
 });

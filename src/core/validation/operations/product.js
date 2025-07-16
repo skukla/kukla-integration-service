@@ -16,12 +16,12 @@ const DEFAULT_PRODUCT_FIELDS = ['sku', 'name', 'price', 'qty', 'categories', 'im
  * Gets product fields with configuration support
  * Pure function that returns configured product fields.
  *
- * @param {Object} config - Configuration object
+ * @param {Object} config - Configuration object (required)
  * @returns {Array} Product fields array
  */
 function getProductFields(config) {
-  // Use main config export fields for final output, with fallback to products config
-  return config.main?.exportFields || config.products?.fields || DEFAULT_PRODUCT_FIELDS;
+  // Use main config export fields for final output
+  return config.main.exportFields;
 }
 
 /**
@@ -29,12 +29,12 @@ function getProductFields(config) {
  * Pure function that checks product data integrity.
  *
  * @param {Object} product - Product data to validate
- * @param {Object} config - Configuration object
+ * @param {Object} config - Configuration object (required)
  * @returns {Object} Validation result with any errors
  */
 function validateProduct(product, config) {
   const errors = [];
-  const VALIDATION_RULES = config.products?.validation || {};
+  const VALIDATION_RULES = config.products.validation;
 
   // Check required fields (sku and name are always required)
   if (!product.sku) {

@@ -3,11 +3,17 @@
  *
  * Mid-level business logic for standardizing error responses in testing workflows.
  * Contains operations that format consistent error responses across testing operations.
+ *
+ * Uses unified testing response patterns through testingCore utilities.
  */
+
+// Import the testing core utilities
+const { testingCore } = require('./formatting');
 
 /**
  * Format testing error response
  * Business operation that creates standardized error response for testing workflows.
+ * Uses unified testing response pattern through testingCore utilities.
  *
  * @param {Error} error - Error that occurred during testing
  * @param {string} testType - Type of test that failed
@@ -15,17 +21,15 @@
  * @returns {Object} Standardized testing error response
  */
 function formatTestingErrorResponse(error, testType, target) {
-  return {
-    success: false,
+  return testingCore.errorResponse(error, testType, target, {
     [testType === 'performance' ? 'scenario' : testType]: target,
-    error: error.message,
-    message: `${testType.charAt(0).toUpperCase() + testType.slice(1)} testing failed: ${error.message}`,
-  };
+  });
 }
 
 /**
  * Format API testing error response
  * Business operation that creates standardized error response for API testing.
+ * Uses unified testing response pattern through base formatTestingErrorResponse.
  *
  * @param {Error} error - Error that occurred during API testing
  * @param {string} endpoint - Endpoint that was being tested
@@ -38,6 +42,7 @@ function formatApiTestingErrorResponse(error, endpoint) {
 /**
  * Format performance testing error response
  * Business operation that creates standardized error response for performance testing.
+ * Uses unified testing response pattern through base formatTestingErrorResponse.
  *
  * @param {Error} error - Error that occurred during performance testing
  * @param {string} scenario - Scenario that was being tested
@@ -50,18 +55,16 @@ function formatPerformanceTestingErrorResponse(error, scenario) {
 /**
  * Format test orchestration error response
  * Business operation that creates standardized error response for test orchestration.
+ * Uses unified testing response pattern through testingCore utilities.
  *
  * @param {Error} error - Error that occurred during orchestration
  * @param {string} command - Command that was being executed
  * @returns {Object} Standardized orchestration error response
  */
 function formatOrchestrationErrorResponse(error, command) {
-  return {
-    success: false,
-    error: error.message,
+  return testingCore.errorResponse(error, 'orchestration', command, {
     message: `Test orchestration failed: ${error.message}`,
-    command,
-  };
+  });
 }
 
 module.exports = {

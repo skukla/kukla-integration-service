@@ -8,7 +8,7 @@
 const { storeCsvFile } = require('../../files/workflows/file-management');
 const { fetchAndEnrichProducts } = require('../operations/enrichment');
 const { buildProducts } = require('../operations/transformation');
-const { createCsv } = require('../utils/csv');
+const { convertToCSV } = require('../utils/csv');
 
 /**
  * Complete product export workflow
@@ -29,14 +29,13 @@ async function exportProducts(params, config, trace = null) {
   const builtProducts = await buildProducts(enrichedProducts, config);
 
   // Step 3: Generate CSV
-  const csvResult = await createCsv(builtProducts);
+  const csvResult = await convertToCSV(builtProducts);
 
   return {
     productCount: builtProducts.length,
-    csvSize: csvResult.content.length,
-    csvContent: csvResult.content,
-    stats: csvResult.stats,
-    transformedProducts: builtProducts,
+    csvSize: csvResult.length,
+    csvContent: csvResult,
+    products: builtProducts,
   };
 }
 
@@ -77,14 +76,88 @@ async function buildProductCsv(products) {
     const builtProducts = await buildProducts(products);
 
     // Generate CSV from transformed products
-    const csvResult = await createCsv(builtProducts);
+    const csvResult = await convertToCSV(builtProducts);
 
     return {
-      ...csvResult,
-      transformedProducts: builtProducts,
+      csvSize: csvResult.length,
+      csvContent: csvResult,
+      products: builtProducts,
     };
   } catch (error) {
     throw new Error(`Product CSV transformation failed: ${error.message}`);
+  }
+}
+
+/**
+ * Complete product export workflow with storage and comprehensive error handling
+ *
+ * Full workflow that includes storage with fallback handling for when storage fails.
+ * Provides comprehensive response data for action-level response building.
+ *
+ * @param {Object} params - Action parameters with OAuth credentials
+ * @param {Object} config - Configuration object
+ * @param {Object} core - Core utilities for step messaging
+ * @param {Object} trace - Trace context
+ * @returns {Promise<Object>} Complete export result with storage info and steps
+ */
+async function exportProductsWithStorageAndFallback(params, config, core, trace = null) {
+  const steps = [];
+
+  try {
+    // Step 1: Export products to CSV
+    const exportResult = await exportProducts(params, config, trace);
+
+    steps.push(
+      core.formatStepMessage('fetch-and-enrich', 'success', { count: exportResult.productCount })
+    );
+
+    steps.push(
+      core.formatStepMessage('build-products', 'success', { count: exportResult.productCount })
+    );
+
+    steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
+
+    // Step 2: Attempt storage
+    let storageResult;
+    try {
+      storageResult = await storeCsvFile(exportResult.csvContent, config, params, undefined, {
+        useCase: params.useCase,
+      });
+
+      steps.push(
+        core.formatStepMessage('store-csv', 'success', {
+          provider: storageResult.provider,
+          fileName: storageResult.fileName,
+        })
+      );
+
+      // Return successful storage result
+      return {
+        success: true,
+        exportResult,
+        storageResult,
+        steps,
+        fallback: false,
+      };
+    } catch (storageError) {
+      steps.push(
+        core.formatStepMessage('store-csv', 'warning', {
+          message: `Storage failed: ${storageError.message}`,
+        })
+      );
+
+      // Return fallback result with CSV content
+      return {
+        success: true,
+        exportResult,
+        storageError,
+        steps,
+        fallback: true,
+      };
+    }
+  } catch (error) {
+    steps.push(core.formatStepMessage('error', 'error', { message: error.message }));
+    throw error;
   }
 }
 
@@ -92,4 +165,5 @@ module.exports = {
   exportProducts,
   exportProductsWithStorage,
   buildProductCsv,
+  exportProductsWithStorageAndFallback,
 };

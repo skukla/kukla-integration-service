@@ -27,7 +27,6 @@ async function downloadFileBusinessLogic(context) {
 // Export the action with proper configuration
 module.exports = createAction(downloadFileBusinessLogic, {
   actionName: 'download-file',
-  withTracing: false,
   withLogger: false,
   description: 'Download files from storage',
 });

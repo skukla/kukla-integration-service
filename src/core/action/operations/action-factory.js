@@ -12,18 +12,16 @@ const { wrapAction } = require('../workflows/action-execution');
  * @param {Function} businessLogic - The core business logic function
  * @param {Object} actionOptions - Action configuration
  * @param {string} actionOptions.actionName - Name of the action
- * @param {boolean} [actionOptions.withTracing] - Enable tracing
  * @param {boolean} [actionOptions.withLogger] - Enable logging
  * @param {string} [actionOptions.description] - Action description
  * @returns {Object} Action module with main function
  */
 function createAction(businessLogic, actionOptions = {}) {
-  const { actionName, withTracing = false, withLogger = false, description = '' } = actionOptions;
+  const { actionName, withLogger = false, description = '' } = actionOptions;
 
   const main = async (params) => {
     return wrapAction(businessLogic, params, {
       actionName,
-      withTracing,
       withLogger,
     });
   };
@@ -34,7 +32,6 @@ function createAction(businessLogic, actionOptions = {}) {
     meta: {
       name: actionName,
       description,
-      withTracing,
       withLogger,
     },
   };

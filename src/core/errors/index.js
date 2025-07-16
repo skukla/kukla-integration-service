@@ -1,49 +1,29 @@
 /**
- * Core error types and utilities
- * @module core/errors
+ * Core Error Definitions
+ *
+ * Centralized error types and utilities for the application.
  */
 
 /**
  * File operation error types
+ * @readonly
  * @enum {string}
  */
 const FileErrorType = {
   NOT_FOUND: 'NOT_FOUND',
   PERMISSION_DENIED: 'PERMISSION_DENIED',
   ALREADY_EXISTS: 'ALREADY_EXISTS',
+  UNKNOWN: 'UNKNOWN',
   INVALID_PATH: 'INVALID_PATH',
-  UNKNOWN: 'UNKNOWN',
 };
 
 /**
- * Storage operation error types
- * @enum {string}
+ * Storage-related error definitions
  */
-const StorageErrorType = {
-  INITIALIZATION_FAILED: 'INITIALIZATION_FAILED',
-  OPERATION_FAILED: 'OPERATION_FAILED',
-  INVALID_CONFIG: 'INVALID_CONFIG',
-  UNKNOWN: 'UNKNOWN',
-};
-
-/**
- * HTTP error types
- * @enum {string}
- */
-const HttpErrorType = {
-  NETWORK_ERROR: 'NETWORK_ERROR',
-  TIMEOUT: 'TIMEOUT',
-  INVALID_RESPONSE: 'INVALID_RESPONSE',
-  RATE_LIMIT: 'RATE_LIMIT',
-  UNKNOWN: 'UNKNOWN',
+const storage = {
+  FileErrorType,
 };
 
 module.exports = {
-  storage: {
-    FileErrorType,
-    StorageErrorType,
-  },
-  http: {
-    HttpErrorType,
-  },
+  storage,
 };

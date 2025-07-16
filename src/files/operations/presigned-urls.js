@@ -5,17 +5,16 @@
  * Contains operations that create publicly accessible URLs with expiration times.
  */
 
+const {
+  buildPresignedUrlResponse,
+  buildPresignedUrlErrorResponse,
+} = require('./response-building');
 const { buildStorageFilePath } = require('../utils/paths');
 const {
   createS3PresignedUrl,
   createAppBuilderPresignedUrl,
   supportsPresignedUrls,
 } = require('../utils/presigned-url-providers');
-const {
-  createS3PresignedUrlResponse,
-  createAppBuilderPresignedUrlResponse,
-  createPresignedUrlErrorResponse,
-} = require('../utils/response-factories');
 
 /**
  * Generate S3 presigned URL for file access
@@ -42,20 +41,15 @@ async function generateS3PresignedUrl(s3Client, s3Config, fileName, config, opti
     // Generate presigned URL using utility
     const presignedUrl = await createS3PresignedUrl(s3Client, s3Config.bucket, fullPath, expiresIn);
 
-    // Create standardized S3 response
-    return createS3PresignedUrlResponse(
-      presignedUrl,
-      operation,
-      expiresIn,
-      s3Config.bucket,
-      fullPath
+    // Create standardized S3 response using operations layer
+    return buildPresignedUrlResponse(
+      { success: true, presignedUrl, expiresIn },
+      { provider: 's3', client: s3Client, bucket: s3Config.bucket },
+      { operation, bucket: s3Config.bucket, key: fullPath },
+      fileName
     );
   } catch (error) {
-    return createPresignedUrlErrorResponse(
-      `S3 presigned URL generation failed: ${error.message}`,
-      'S3_PRESIGNED_URL_ERROR',
-      operation
-    );
+    return buildPresignedUrlErrorResponse(error, { operation, provider: 's3' });
   }
 }
 
@@ -96,14 +90,15 @@ async function generateAppBuilderPresignedUrl(files, fileName, config, options =
       permissions,
     });
 
-    // Create standardized App Builder response
-    return createAppBuilderPresignedUrlResponse(presignedUrl, operation, expiresIn, fullFileName);
-  } catch (error) {
-    return createPresignedUrlErrorResponse(
-      `App Builder presigned URL generation failed: ${error.message}`,
-      'APP_BUILDER_PRESIGNED_URL_ERROR',
-      operation
+    // Create standardized App Builder response using operations layer
+    return buildPresignedUrlResponse(
+      { success: true, presignedUrl, expiresIn },
+      { provider: 'app-builder' },
+      { operation, urlType, permissions },
+      fileName
     );
+  } catch (error) {
+    return buildPresignedUrlErrorResponse(error, { operation, provider: 'app-builder' });
   }
 }
 

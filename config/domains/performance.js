@@ -63,17 +63,6 @@ function buildPerformanceConfig() {
       parallelProcessing: true, // Enable parallel processing
       preAllocateArrays: true, // Performance optimization
     },
-
-    tracing: {
-      enabled: true,
-      errorVerbosity: 'summary', // summary, detailed, minimal
-      performance: {
-        enabled: true,
-        includeMemory: true,
-        includeTimings: true,
-      },
-      timestampPrecision: 1000, // For timestamp calculations
-    },
   };
 }
 

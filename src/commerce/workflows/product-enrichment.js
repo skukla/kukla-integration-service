@@ -11,26 +11,16 @@ const {
 } = require('../operations/api-requests');
 const { retryWithAuthHandling } = require('../operations/authentication');
 const {
-  processProductBatch,
-  enrichProductData,
-  analyzeEnrichmentNeeds,
-  fetchAdditionalData,
+  transformProductBatch,
+  enrichProductsWithData,
   extractCategoryIds,
   extractProductSkus,
-  processMediaEnrichment,
-} = require('../operations/data-processing');
+  transformMediaEntries,
+} = require('../operations/data-transformation');
 const {
-  buildProductEnrichmentSuccessResponse,
-  buildEmptyProductEnrichmentResponse,
-  buildProductEnrichmentErrorResponse,
-  buildCategoryEnrichmentSuccessResponse,
-  buildEmptyCategoryEnrichmentResponse,
-  buildCategoryEnrichmentErrorResponse,
-  buildInventoryEnrichmentSuccessResponse,
-  buildEmptyInventoryEnrichmentResponse,
-  buildInventoryEnrichmentErrorResponse,
-  buildMediaEnrichmentSuccessResponse,
-  buildMediaEnrichmentErrorResponse,
+  buildSuccessResponse,
+  buildErrorResponse,
+  buildEmptyResponse,
 } = require('../operations/response-building');
 const {
   validateProductEnrichmentParams,
@@ -46,11 +36,10 @@ const {
  * @param {Object} params.config - Configuration object
  * @param {Object} params.actionParams - Action parameters
  * @param {Object} [params.trace] - Optional trace context
- * @param {Object} [params.options] - Enrichment options
  * @returns {Promise<Object>} Enriched product data
  */
 async function executeProductEnrichment(params) {
-  const { products, config, actionParams, trace, options = {} } = params;
+  const { products, config, actionParams, trace } = params;
 
   try {
     // Step 1: Validate parameters
@@ -60,36 +49,94 @@ async function executeProductEnrichment(params) {
     }
 
     // Step 2: Process base product data
-    const processedProducts = processProductBatch(products, config, options);
-
+    const processedProducts = transformProductBatch(products, config);
     if (!processedProducts.products.length) {
-      return buildEmptyProductEnrichmentResponse();
+      return buildEmptyResponse('No products found to enrich');
     }
 
-    // Step 3: Analyze enrichment requirements
-    const enrichmentNeeds = analyzeEnrichmentNeeds(processedProducts.products, options);
+    // Step 3: Fetch additional data
+    const additionalData = await fetchEnrichmentData(
+      processedProducts.products,
+      config,
+      actionParams,
+      trace
+    );
 
-    // Step 4: Fetch additional data in parallel
-    const additionalData = await fetchAdditionalData(enrichmentNeeds, config, actionParams, trace);
-
-    // Step 5: Apply enrichment
-    const enrichmentResult = enrichProductData(
+    // Step 4: Apply enrichment
+    const enrichmentResult = enrichProductsWithData(
       processedProducts.products,
       additionalData.categoryMap,
-      additionalData.inventoryMap,
-      options
+      additionalData.inventoryMap
     );
 
-    // Step 6: Build success response
-    return buildProductEnrichmentSuccessResponse(
-      enrichmentResult,
-      processedProducts.validation,
-      additionalData
+    // Step 5: Build success response
+    return buildSuccessResponse(
+      {
+        enrichedProducts: enrichmentResult.enrichedProducts,
+        enrichmentStats: enrichmentResult.enrichmentStats,
+        validation: processedProducts.validation,
+      },
+      'Products enriched successfully'
     );
   } catch (error) {
-    // Step 7: Build error response
-    return buildProductEnrichmentErrorResponse(error);
+    return buildErrorResponse(error);
   }
+}
+
+/**
+ * Fetches enrichment data (categories and inventory) in parallel
+ * Always fetches both categories and inventory when available.
+ *
+ * @param {Array<Object>} products - Product data
+ * @param {Object} config - Configuration object
+ * @param {Object} actionParams - Action parameters
+ * @param {Object} trace - Trace context
+ * @returns {Promise<Object>} Additional data maps
+ */
+async function fetchEnrichmentData(products, config, actionParams, trace) {
+  const additionalData = { categoryMap: {}, inventoryMap: {} };
+
+  // Extract what we need to fetch - simple and direct
+  const categoryIds = extractCategoryIds(products);
+  const productSkus = extractProductSkus(products);
+
+  // Fetch categories if we have category IDs
+  if (categoryIds.length > 0) {
+    try {
+      const categories = await orchestrateCategoryRequests(
+        categoryIds,
+        config,
+        actionParams,
+        trace
+      );
+      additionalData.categoryMap = categories.reduce((map, cat) => {
+        if (cat.id) map[cat.id] = cat;
+        return map;
+      }, {});
+    } catch (error) {
+      console.warn('Failed to fetch categories:', error.message);
+    }
+  }
+
+  // Fetch inventory if we have SKUs
+  if (productSkus.length > 0) {
+    try {
+      const inventory = await orchestrateInventoryRequests(
+        productSkus,
+        config,
+        actionParams,
+        trace
+      );
+      additionalData.inventoryMap = inventory.reduce((map, inv) => {
+        if (inv.product_id || inv.sku) map[inv.product_id || inv.sku] = inv;
+        return map;
+      }, {});
+    } catch (error) {
+      console.warn('Failed to fetch inventory:', error.message);
+    }
+  }
+
+  return additionalData;
 }
 
 /**
@@ -107,44 +154,40 @@ async function executeCategoryEnrichment(params) {
   const { products, config, actionParams, trace } = params;
 
   try {
-    // Step 1: Extract category IDs from products
+    // Extract category IDs - simple and direct
     const categoryIds = extractCategoryIds(products);
-
     if (!categoryIds.length) {
-      return buildEmptyCategoryEnrichmentResponse(products);
+      return buildEmptyResponse('No categories found to enrich', { products });
     }
 
-    // Step 2: Fetch category data
+    // Fetch category data
     const categoryResponses = await retryWithAuthHandling(
       () => orchestrateCategoryRequests(categoryIds, config, actionParams, trace),
       { maxRetries: 2 }
     );
 
-    // Step 3: Process category data
-    const categoryData = require('../operations/data-processing').orchestrateDataProcessing(
-      { categories: categoryResponses },
-      config,
-      { validate: false }
+    // Build category map - simple processing
+    const categoryMap = categoryResponses.reduce((map, cat) => {
+      if (cat.id) map[cat.id] = cat;
+      return map;
+    }, {});
+
+    // Apply category enrichment only
+    const enrichmentResult = enrichProductsWithData(products, categoryMap, {});
+
+    // Build response with stats
+    return buildSuccessResponse(
+      {
+        enrichedProducts: enrichmentResult.enrichedProducts,
+        categoryStats: {
+          totalCategories: categoryIds.length,
+          productsEnriched: enrichmentResult.enrichmentStats.categoriesAdded,
+        },
+      },
+      'Categories enriched successfully'
     );
-
-    // Step 4: Apply category enrichment
-    const enrichmentResult = enrichProductData(
-      products,
-      categoryData.processing.categoryProcessing || {},
-      {},
-      { includeCategories: true, includeInventory: false }
-    );
-
-    // Step 5: Build success response
-    const categoryStats = {
-      totalCategories: categoryIds.length,
-      productsEnriched: enrichmentResult.enrichmentStats.categoriesEnriched,
-    };
-
-    return buildCategoryEnrichmentSuccessResponse(enrichmentResult.enrichedProducts, categoryStats);
   } catch (error) {
-    // Step 6: Build error response
-    return buildCategoryEnrichmentErrorResponse(error);
+    return buildErrorResponse(error);
   }
 }
 
@@ -163,47 +206,40 @@ async function executeInventoryEnrichment(params) {
   const { products, config, actionParams, trace } = params;
 
   try {
-    // Step 1: Extract SKUs from products
+    // Extract SKUs - simple and direct
     const skus = extractProductSkus(products);
-
     if (!skus.length) {
-      return buildEmptyInventoryEnrichmentResponse(products);
+      return buildEmptyResponse('No SKUs found to enrich', { products });
     }
 
-    // Step 2: Fetch inventory data
+    // Fetch inventory data
     const inventoryResponses = await retryWithAuthHandling(
       () => orchestrateInventoryRequests(skus, config, actionParams, trace),
       { maxRetries: 2 }
     );
 
-    // Step 3: Process inventory data
-    const inventoryData = require('../operations/data-processing').orchestrateDataProcessing(
-      { inventory: inventoryResponses },
-      config,
-      { validate: false }
-    );
+    // Build inventory map - simple processing
+    const inventoryMap = inventoryResponses.reduce((map, inv) => {
+      if (inv.product_id || inv.sku) map[inv.product_id || inv.sku] = inv;
+      return map;
+    }, {});
 
-    // Step 4: Apply inventory enrichment
-    const enrichmentResult = enrichProductData(
-      products,
-      {},
-      inventoryData.processing.inventoryProcessing || {},
-      { includeCategories: false, includeInventory: true }
-    );
+    // Apply inventory enrichment only
+    const enrichmentResult = enrichProductsWithData(products, {}, inventoryMap);
 
-    // Step 5: Build success response
-    const inventoryStats = {
-      totalSkus: skus.length,
-      productsEnriched: enrichmentResult.enrichmentStats.inventoryEnriched,
-    };
-
-    return buildInventoryEnrichmentSuccessResponse(
-      enrichmentResult.enrichedProducts,
-      inventoryStats
+    // Build response with stats
+    return buildSuccessResponse(
+      {
+        enrichedProducts: enrichmentResult.enrichedProducts,
+        inventoryStats: {
+          totalSkus: skus.length,
+          productsEnriched: enrichmentResult.enrichmentStats.inventoryAdded,
+        },
+      },
+      'Inventory enriched successfully'
     );
   } catch (error) {
-    // Step 6: Build error response
-    return buildInventoryEnrichmentErrorResponse(error);
+    return buildErrorResponse(error);
   }
 }
 
@@ -220,17 +256,36 @@ async function executeMediaEnrichment(params) {
   const { products, config } = params;
 
   try {
-    // Step 1: Process media enrichment
-    const mediaResult = processMediaEnrichment(products, config);
+    // Process media enrichment
+    let mediaEnriched = 0;
+    const enrichedProducts = products.map((product) => {
+      if (product.media_gallery_entries && Array.isArray(product.media_gallery_entries)) {
+        const processedMedia = transformMediaEntries(product.media_gallery_entries, config);
+        if (processedMedia.length > 0) {
+          mediaEnriched++;
+        }
+        return {
+          ...product,
+          media_gallery_entries: processedMedia,
+          images: processedMedia.filter((media) => media.url),
+        };
+      }
+      return product;
+    });
 
-    // Step 2: Build success response
-    return buildMediaEnrichmentSuccessResponse(
-      mediaResult.enrichedProducts,
-      mediaResult.mediaStats
+    // Build success response
+    return buildSuccessResponse(
+      {
+        enrichedProducts,
+        mediaStats: {
+          totalProducts: products.length,
+          productsEnriched: mediaEnriched,
+        },
+      },
+      'Media enriched successfully'
     );
   } catch (error) {
-    // Step 3: Build error response
-    return buildMediaEnrichmentErrorResponse(error);
+    return buildErrorResponse(error);
   }
 }
 

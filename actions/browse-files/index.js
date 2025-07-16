@@ -6,6 +6,7 @@
 const { createAction } = require('../../src/core/action/operations/action-factory');
 const { getCsvFiles } = require('../../src/files/workflows/file-management');
 const { generateCompleteFileBrowserHTML } = require('../../src/htmx/operations/html-generation');
+const { buildHtmlResponse } = require('../../src/htmx/operations/response-building');
 
 /**
  * Business logic for browse-files action
@@ -26,21 +27,13 @@ async function browseFilesBusinessLogic(context) {
   // Step 3: Generate HTML using the HTML generation operations
   const html = generateCompleteFileBrowserHTML(fileList, config);
 
-  // Return HTML response for HTMX
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-    },
-    body: html,
-  };
+  // Step 4: Return HTML response using unified HTMX response builder
+  return buildHtmlResponse(html);
 }
 
 // Export the action with proper configuration
 module.exports = createAction(browseFilesBusinessLogic, {
   actionName: 'browse-files',
-  withTracing: false,
   withLogger: false,
   description: 'Browse files in storage',
 });

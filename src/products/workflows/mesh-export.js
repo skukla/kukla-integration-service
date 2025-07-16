@@ -9,7 +9,7 @@ const { fetchEnrichedProductsFromMesh } = require('../operations/mesh-integratio
 const { sortProductsBySku } = require('../operations/sorting');
 const { buildProducts } = require('../operations/transformation');
 const { validateMeshInput } = require('../operations/validation');
-const { createCsv } = require('../utils/csv');
+const { convertToCSV } = require('../utils/csv');
 
 /**
  * Complete mesh-based product export workflow with CSV generation
@@ -46,9 +46,9 @@ async function exportMeshProducts(params, config, trace = null, includeCSV = tru
 
   // Step 5: Generate CSV if requested
   if (includeCSV) {
-    const csvResult = await createCsv(builtProducts, config);
+    const csvResult = await convertToCSV(builtProducts, config);
     result.csvData = csvResult;
-    result.csvSize = csvResult.stats.originalSize;
+    result.csvSize = csvResult.length;
   }
 
   return result;
