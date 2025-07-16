@@ -101,6 +101,11 @@ async function fetchProducts(params, config, trace = null) {
         trace
       );
 
+      // Track API call for performance metrics
+      if (trace && trace.performanceTracker) {
+        trace.performanceTracker.incrementApiCall('products');
+      }
+
       if (response.body && response.body.items && response.body.items.length > 0) {
         allProducts.push(...response.body.items);
       }
