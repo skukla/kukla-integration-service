@@ -31,6 +31,7 @@ async function initializeAction(params, options = {}) {
     const context = await buildContext({
       config,
       extractedParams,
+      rawParams: params, // Include raw params for debugging
       logger,
       options,
     });
