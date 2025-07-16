@@ -35,6 +35,7 @@ function normalizeParams(params) {
 function extractActionParams(params) {
   let bodyParams = {};
   let headerParams = {};
+  let queryParams = {};
 
   // Handle parameters passed in __ow_body (common in web actions)
   if (params.__ow_body) {
@@ -44,6 +45,20 @@ function extractActionParams(params) {
       bodyParams = JSON.parse(bodyStr);
     } catch (error) {
       console.warn('Failed to parse body parameters:', error.message);
+    }
+  }
+
+  // Handle query parameters from __ow_query (URL query string)
+  if (params.__ow_query) {
+    try {
+      // Parse query string parameters
+      const queryString = params.__ow_query;
+      const urlParams = new URLSearchParams(queryString);
+      for (const [key, value] of urlParams) {
+        queryParams[key] = decodeURIComponent(value);
+      }
+    } catch (error) {
+      console.warn('Failed to parse query parameters:', error.message);
     }
   }
 
@@ -77,8 +92,8 @@ function extractActionParams(params) {
     delete cleanParams[key];
   });
 
-  // Merge and normalize parameters (headers take precedence for OAuth credentials)
-  return normalizeParams({ ...cleanParams, ...bodyParams, ...headerParams });
+  // Merge and normalize parameters (query params take precedence, then headers for OAuth credentials)
+  return normalizeParams({ ...cleanParams, ...bodyParams, ...queryParams, ...headerParams });
 }
 
 /**

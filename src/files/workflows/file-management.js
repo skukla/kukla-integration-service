@@ -103,8 +103,24 @@ async function deleteStoredFile(fileName, config, params) {
   const storage = await selectStorageStrategy(config.storage.provider, config, params);
 
   // Step 2: Delete file using storage wrapper
-  const cleanFileName = removePublicPrefix(fileName);
-  await storage.delete(cleanFileName);
+  // For S3, if fileName already includes the full path (prefix + directory),
+  // we need to extract just the relative part for the storage wrapper
+  let targetFileName = fileName;
+
+  // If using S3 and fileName includes the full S3 prefix, extract the relative path
+  if (storage.provider === 's3' && config.storage.s3?.prefix) {
+    const fullPrefix = config.storage.s3.prefix + (config.storage.directory || '');
+    if (fileName.startsWith(fullPrefix)) {
+      targetFileName = fileName.substring(fullPrefix.length);
+    } else {
+      // Use removePublicPrefix for backward compatibility with simple filenames
+      targetFileName = removePublicPrefix(fileName);
+    }
+  } else {
+    targetFileName = removePublicPrefix(fileName);
+  }
+
+  await storage.delete(targetFileName);
 }
 
 /**

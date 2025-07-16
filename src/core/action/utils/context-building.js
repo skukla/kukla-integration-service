@@ -11,16 +11,18 @@ const { formatStepMessage } = require('../../utils/operations/formatting');
  * @param {Object} components - Initialized action components
  * @param {Object} components.config - Configuration object
  * @param {Object} components.extractedParams - Extracted action parameters
+ * @param {Object} components.rawParams - Raw parameters from Adobe I/O Runtime
  * @param {Object} components.logger - Logger instance
  * @param {Object} components.options - Initialization options
  * @returns {Object} Action context
  */
 function buildContext(components) {
-  const { config, extractedParams, logger, options } = components;
+  const { config, extractedParams, rawParams, logger, options } = components;
 
   return {
     config,
     extractedParams,
+    rawParams,
     logger,
     options,
     response,
