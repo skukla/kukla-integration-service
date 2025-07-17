@@ -224,6 +224,16 @@ async function auditImportOrganization(filePath) {
   const content = await fs.readFile(filePath, 'utf8');
   const lines = content.split('\n');
   const issues = [];
+  const config = require('../audit.config.js');
+  const ruleOptions = config.rules.tier1.rules['import-organization'].options;
+
+  // Check if file is exempt
+  const isExemptFile = config.validation?.exemptions?.rules?.[
+    'import-organization'
+  ]?.exemptFiles?.some((file) => filePath.includes(file));
+  if (isExemptFile) {
+    return { passed: true, issues: [] };
+  }
 
   // Skip empty files or files with only comments
   const codeLines = lines.filter(
@@ -235,7 +245,6 @@ async function auditImportOrganization(filePath) {
 
   // Rule 1: All requires must be at top of file (before any other code)
   let firstRequireLine = -1;
-  let lastRequireLine = -1;
   let firstNonImportCodeLine = -1;
 
   for (let i = 0; i < lines.length; i++) {
@@ -248,7 +257,6 @@ async function auditImportOrganization(filePath) {
 
     if (line.includes('require(') && !line.startsWith('//')) {
       if (firstRequireLine === -1) firstRequireLine = i;
-      lastRequireLine = i;
     } else if (line && !line.startsWith('/**') && firstNonImportCodeLine === -1) {
       firstNonImportCodeLine = i;
     }
@@ -269,26 +277,38 @@ async function auditImportOrganization(filePath) {
   const hasCrossDomainSection = content.includes('=== CROSS-DOMAIN DEPENDENCIES ===');
 
   if (firstRequireLine > -1) {
-    // Only check if file has imports
-    if (!hasInfrastructureSection && !hasDomainSection && !hasCrossDomainSection) {
+    // Count total require statements
+    const requireCount = (content.match(/require\(/g) || []).length;
+
+    // Only require organization sections for files with multiple imports
+    if (
+      requireCount > 2 &&
+      !hasInfrastructureSection &&
+      !hasDomainSection &&
+      !hasCrossDomainSection
+    ) {
       issues.push(
         'Missing import organization sections. Must include at least one of: INFRASTRUCTURE, DOMAIN, or CROSS-DOMAIN DEPENDENCIES'
       );
     }
   }
 
-  // Rule 3: No namespace imports (const utils = require('utils'))
-  const namespaceImportPattern = /const\s+\w+\s*=\s*require\(['"][^'"]*['"]\)\s*(?:\/\/.*)?$/;
+  // Rule 3: Enhanced namespace import validation
+  const namespaceImportPattern = /const\s+(\w+)\s*=\s*require\(['"]([^'"]*)['"]\)\s*(?:\/\/.*)?$/;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (namespaceImportPattern.test(line) && !line.includes('{')) {
-      // Allow some exceptions like const fs = require('fs')
-      const allowedNamespaceImports = ['fs', 'path', 'glob', 'util'];
-      const hasAllowedException = allowedNamespaceImports.some(
-        (allowed) => line.includes(`'${allowed}'`) || line.includes(`"${allowed}"`)
-      );
+    const match = namespaceImportPattern.exec(line);
 
-      if (!hasAllowedException) {
+    if (match && !line.includes('{')) {
+      const varName = match[1];
+      const moduleName = match[2];
+
+      // Allow configured exceptions - check both variable name and module name
+      const allowedNamespaceImports = ruleOptions.allowNamespaceImports || [];
+      const isAllowedModule = allowedNamespaceImports.includes(moduleName);
+      const isAllowedVar = allowedNamespaceImports.includes(varName);
+
+      if (!isAllowedModule && !isAllowedVar) {
         issues.push(
           `Line ${i + 1}: Prefer destructured imports over namespace imports: ${line.trim()}`
         );
@@ -314,10 +334,8 @@ async function auditExportPatterns(filePath) {
 
   // Rule 1: Must use object-style exports for multiple exports
   const multipleExportPattern = /module\.exports\s*=\s*{\s*[\s\S]*?}/;
-  const singleExportPattern = /module\.exports\s*=\s*[^{]/;
 
   const hasMultipleExports = content.match(multipleExportPattern);
-  const hasSingleExport = content.match(singleExportPattern);
 
   // Rule 2: No mixed export patterns
   const exportLines = content.split('\n').filter((line) => line.includes('module.exports'));
@@ -353,7 +371,7 @@ async function auditActionFramework(filePath) {
   const issues = [];
 
   // Only audit action files
-  if (!filePath.startsWith('actions/') || !filePath.endsWith('/index.js')) {
+  if (!filePath.includes('actions/') || !filePath.endsWith('/index.js')) {
     return { passed: true, issues: [] };
   }
 
@@ -364,9 +382,34 @@ async function auditActionFramework(filePath) {
     issues.push('Action must use createAction() framework');
   }
 
-  // Rule 2: Must not export main function directly
-  if (content.includes('module.exports = { main }') || content.includes('exports.main =')) {
+  // Rule 2: Enhanced legacy pattern detection
+  const legacyMainExport = /module\.exports\s*=\s*{\s*main\s*[,}]/;
+  const legacyMainExportObject = /module\.exports\s*=\s*{\s*main\s*}/;
+  const legacyMainExportDirect = /exports\.main\s*=/;
+  const directFunctionExport = /module\.exports\s*=\s*\w+\s*;?\s*$/m;
+
+  if (
+    legacyMainExport.test(content) ||
+    legacyMainExportObject.test(content) ||
+    legacyMainExportDirect.test(content)
+  ) {
     issues.push('Action must use createAction() instead of exporting main function');
+  }
+
+  // Enhanced check for direct function exports (not createAction result)
+  if (directFunctionExport.test(content)) {
+    // Only flag if it's NOT a createAction result
+    const directExportMatch = content.match(directFunctionExport);
+    if (directExportMatch) {
+      const exportedThing = directExportMatch[0];
+      // If it's not calling createAction, it's a violation
+      if (
+        !exportedThing.includes('createAction(') &&
+        !content.match(/const\s+\w+\s*=\s*createAction\s*\(/)
+      ) {
+        issues.push('Action must use createAction() framework instead of direct function export');
+      }
+    }
   }
 
   // Rule 3: Must have actionName parameter
@@ -386,6 +429,111 @@ async function auditActionFramework(filePath) {
     if (businessLogicFunction.includes('async') || businessLogicFunction.includes('function')) {
       issues.push('Business logic should be in separate function, not inline in createAction()');
     }
+  }
+
+  // NEW RULE 6: Domain Integration Pattern - Actions should import from src/ domains
+  const domainImportPattern = /require\(['"`]\.\.\/\.\.\/src\/(\w+)\/([^'"`]+)['"`]\)/g;
+  let hasDomainImports = false;
+  let match;
+
+  while ((match = domainImportPattern.exec(content)) !== null) {
+    hasDomainImports = true;
+    const domain = match[1];
+
+    // Validate domain is valid
+    const validDomains = ['products', 'files', 'commerce', 'htmx', 'shared'];
+    if (!validDomains.includes(domain)) {
+      issues.push(
+        `Action imports from invalid domain: ${domain}. Must be one of: ${validDomains.join(', ')}`
+      );
+    }
+  }
+
+  if (!hasDomainImports && content.includes('createAction(')) {
+    issues.push(
+      'Action should import domain workflows from src/ directories (thin orchestration pattern)'
+    );
+  }
+
+  // NEW RULE 7: Business Capability Naming - Action directory should reflect user intent
+  // Extract actionName from createAction() call, not file path (for test compatibility)
+  let actionName = path.dirname(filePath).split('/').pop(); // Fallback to directory name
+  const actionNameMatch = content.match(/actionName:\s*['"`]([^'"`]+)['"`]/);
+  if (actionNameMatch) {
+    actionName = actionNameMatch[1];
+  }
+
+  const technicalNamingPatterns = [
+    /rest-api/i,
+    /graphql/i,
+    /mesh/i,
+    /fetch/i,
+    /process/i,
+    /handler/i,
+    /endpoint/i,
+  ];
+
+  const hasTechnicalNaming = technicalNamingPatterns.some((pattern) => pattern.test(actionName));
+  if (hasTechnicalNaming && !actionName.includes('mesh')) {
+    // Allow get-products-mesh as it's implementation variant
+    issues.push(
+      `Action name '${actionName}' should reflect business capability, not technical implementation`
+    );
+  }
+
+  // NEW RULE 8: Action-Domain Mapping Validation
+  const expectedMappings = {
+    'get-products': 'products/rest-export',
+    'get-products-mesh': 'products/mesh-export',
+    'browse-files': 'files/file-browser',
+    'download-file': 'files/file-download',
+    'delete-file': 'files/file-deletion',
+  };
+
+  if (expectedMappings[actionName]) {
+    const expectedImport = expectedMappings[actionName];
+    const hasExpectedImport = content.includes(`require('../../src/${expectedImport}`);
+
+    if (!hasExpectedImport) {
+      issues.push(
+        `Action '${actionName}' should import from src/${expectedImport}.js for proper domain integration`
+      );
+    }
+
+    // Also check for wrong domain imports
+    const expectedDomain = expectedImport.split('/')[0];
+    const wrongDomainPattern = new RegExp(
+      'require\\([\'"`]\\.\\./../src/(\\w+)/[^\'"`]+[\'"`]\\)',
+      'g'
+    );
+    let wrongDomainMatch;
+
+    while ((wrongDomainMatch = wrongDomainPattern.exec(content)) !== null) {
+      const importedDomain = wrongDomainMatch[1];
+      if (importedDomain !== expectedDomain && importedDomain !== 'shared') {
+        issues.push(
+          `Action '${actionName}' should import from ${expectedDomain} domain, not ${importedDomain} domain`
+        );
+      }
+    }
+  }
+
+  // NEW RULE 9: Action JSDoc Documentation
+  const hasActionJSDoc = /\/\*\*[\s\S]*?Business capability:[\s\S]*?\*\//.test(content);
+  if (!hasActionJSDoc) {
+    issues.push(
+      'Action should have JSDoc with "Business capability:" description explaining what business use case it serves'
+    );
+  }
+
+  // NEW RULE 10: Import Organization in Actions
+  const hasInfrastructureSection = content.includes('=== INFRASTRUCTURE DEPENDENCIES ===');
+  const hasDomainSection = content.includes('=== DOMAIN DEPENDENCIES ===');
+
+  if (!hasInfrastructureSection && !hasDomainSection) {
+    issues.push(
+      'Action should follow three-tier import organization pattern (INFRASTRUCTURE DEPENDENCIES, DOMAIN DEPENDENCIES)'
+    );
   }
 
   return { passed: issues.length === 0, issues };
@@ -430,55 +578,206 @@ async function auditNamingConventions(filePath) {
 }
 
 /**
- * Audit JSDoc documentation presence and quality
- * Validates function documentation and "Used by:" comments
+ * Helper function to check if function is too short for JSDoc requirement
+ */
+function isFunctionTooShort(content, functionStart, minLength) {
+  const functionEnd = content.indexOf('}', functionStart);
+  if (functionEnd === -1) return false;
+
+  const functionContent = content.substring(functionStart, functionEnd);
+  const lineCount = functionContent.split('\n').length;
+  return lineCount < minLength;
+}
+
+/**
+ * Validate JSDoc tags for required compliance
+ * @purpose Check if function JSDoc contains required tags (@purpose, @usedBy)
+ * @param {string} content - File content
+ * @param {number} functionStart - Function start position
+ * @param {string} functionName - Function name
+ * @param {Object} ruleOptions - Rule configuration options
+ * @param {Array} issues - Issues array to populate
+ * @usedBy auditJSDocDocumentation function in audit.js
+ */
+function validateJSDocTags(content, functionStart, functionName, ruleOptions, issues) {
+  const beforeFunction = content.substring(0, functionStart);
+  const jsdocStart = beforeFunction.lastIndexOf('/**');
+
+  if (jsdocStart === -1) {
+    // No JSDoc block found - this should have been caught earlier
+    return;
+  }
+
+  const jsdocBlock = content.substring(jsdocStart, functionStart);
+
+  // Check for required tags - ensure proper detection
+  if (ruleOptions.requiredTags?.includes('purpose')) {
+    if (!jsdocBlock.includes('@purpose')) {
+      issues.push(`Function '${functionName}' missing required @purpose tag in JSDoc`);
+    }
+  }
+
+  if (ruleOptions.requiredTags?.includes('usedBy')) {
+    if (!jsdocBlock.includes('@usedBy')) {
+      issues.push(`Function '${functionName}' missing required @usedBy tag in JSDoc`);
+    }
+  }
+
+  // Validate @usedBy patterns if present
+  if (jsdocBlock.includes('@usedBy') && ruleOptions.usedByPatterns) {
+    const usedByMatch = jsdocBlock.match(/@usedBy\s+(.+)/);
+    if (usedByMatch) {
+      const usedByValue = usedByMatch[1].trim();
+      const isValidActive = ruleOptions.usedByPatterns.activeUsage.test(usedByValue);
+      const isValidUnused = ruleOptions.usedByPatterns.unused.test(usedByValue);
+
+      if (!isValidActive && !isValidUnused) {
+        issues.push(`Function '${functionName}' has invalid @usedBy format: ${usedByValue}`);
+      }
+    }
+  }
+}
+
+/**
+ * Audit JSDoc documentation compliance
+ * @purpose Validate functions have proper JSDoc with required tags
+ * @param {string} filePath - Path to file being audited
+ * @returns {Promise<Object>} Audit result with passed status and issues
+ * @usedBy executeTier1Audits function in audit.js
  */
 async function auditJSDocDocumentation(filePath) {
   const content = await fs.readFile(filePath, 'utf8');
   const issues = [];
+  const config = require('../audit.config.js');
+  const ruleOptions = config.rules.tier1.rules['jsdoc-documentation'].options;
 
-  // Find all function declarations
-  const functionPattern =
-    /(?:\/\*\*[\s\S]*?\*\/\s*)?(async\s+)?function\s+(\w+)|(?:\/\*\*[\s\S]*?\*\/\s*)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?(?:function|\()/g;
-  let match;
+  // Check if file is exempt
+  const isExemptFile = ruleOptions.exemptFiles?.some((pattern) =>
+    filePath.includes(pattern.replace('**/', '').replace('*', ''))
+  );
+  if (isExemptFile) {
+    return { passed: true, issues: [] };
+  }
 
-  while ((match = functionPattern.exec(content)) !== null) {
-    const functionName = match[2] || match[3];
+  // Enhanced function detection - catch all function patterns
+  const functionPatterns = [
+    // Regular function declarations (without optional JSDoc prefix)
+    /(async\s+)?function\s+(\w+)/g,
+    // Arrow function assignments (without optional JSDoc prefix)
+    /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?(?:\([^)]*\)\s*=>\s*{|\([^)]*\)\s*=>)/g,
+    // Function expression assignments (without optional JSDoc prefix)
+    /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function/g,
+  ];
+
+  let allMatches = [];
+
+  for (const pattern of functionPatterns) {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const functionName = match[2] || match[3] || match[1];
+      if (functionName && !['module', 'require', 'exports'].includes(functionName)) {
+        allMatches.push({
+          name: functionName,
+          index: match.index,
+          fullMatch: match[0],
+        });
+      }
+    }
+  }
+
+  // Process each function
+  for (const func of allMatches) {
+    const functionName = func.name;
+    const functionStart = func.index;
 
     // Skip certain utility functions that don't need documentation
     if (['module', 'require', 'exports'].includes(functionName)) {
       continue;
     }
 
+    // Check exemption patterns for functions that don't need JSDoc
+    const isExemptFunction = ruleOptions.exemptFunctionPatterns?.some((pattern) =>
+      pattern.test(functionName)
+    );
+    if (isExemptFunction) {
+      continue;
+    }
+
+    // Check if this is a nested async function (should be exempt)
+    const surroundingCode = content.substring(
+      Math.max(0, functionStart - 200),
+      functionStart + 200
+    );
+
+    // Enhanced nested function detection
+    const isNestedInMap = /\.map\s*\(\s*async\s*\([^)]*\)\s*=>/s.test(surroundingCode);
+    const isNestedInPromiseAll = /Promise\.all\s*\(\s*[^)]*\.map\s*\(\s*async/s.test(
+      surroundingCode
+    );
+    const isNestedInFilter = /\.filter\s*\(\s*async\s*\([^)]*\)\s*=>/s.test(surroundingCode);
+    const isNestedInForEach = /\.forEach\s*\(\s*async\s*\([^)]*\)\s*=>/s.test(surroundingCode);
+
+    if (isNestedInMap || isNestedInPromiseAll || isNestedInFilter || isNestedInForEach) {
+      continue;
+    }
+
     // Check if function has JSDoc comment immediately before it
-    const functionStart = match.index;
     const beforeFunction = content.substring(0, functionStart);
-    const hasJSDoc = beforeFunction.trim().endsWith('*/');
+    const jsdocPattern = /\/\*\*[\s\S]*?\*\/\s*$/;
+    const hasJSDoc = jsdocPattern.test(beforeFunction);
 
     if (!hasJSDoc) {
-      issues.push(`Function '${functionName}' missing JSDoc documentation`);
-    } else {
-      // Check for "Used by:" comment in JSDoc
-      const jsdocStart = beforeFunction.lastIndexOf('/**');
-      if (jsdocStart > -1) {
-        const jsdocBlock = content.substring(jsdocStart, functionStart);
+      // Only require JSDoc for functions longer than minimum length
+      const shouldSkipShortFunction =
+        ruleOptions.minFunctionLengthForJSDoc &&
+        isFunctionTooShort(content, functionStart, ruleOptions.minFunctionLengthForJSDoc);
 
-        // Workflow functions should have "Used by:" comments
-        const isWorkflowFunction =
-          jsdocBlock.includes('workflow') ||
-          jsdocBlock.includes('Used by:') ||
-          functionName.includes('workflow') ||
-          functionName.includes('process') ||
-          functionName.includes('handle');
-
-        if (isWorkflowFunction && !jsdocBlock.includes('Used by:')) {
-          issues.push(`Workflow function '${functionName}' should include "Used by:" in JSDoc`);
-        }
+      if (shouldSkipShortFunction) {
+        continue;
       }
+      issues.push(`Function '${functionName}' missing JSDoc documentation`);
+      continue;
     }
+
+    // Validate JSDoc tags
+    validateJSDocTags(content, functionStart, functionName, ruleOptions, issues);
   }
 
   return { passed: issues.length === 0, issues };
+}
+
+/**
+ * Validate workflow step comments for sequential numbering
+ * @purpose Helper function to validate step comment patterns and numbering
+ * @param {string} functionName - Name of the function being validated
+ * @param {string} functionBody - Function body content
+ * @param {number} asyncCalls - Number of async calls in function
+ * @param {Array} issues - Issues array to populate
+ * @usedBy auditStepComments function in audit.js
+ */
+function validateWorkflowStepComments(functionName, functionBody, asyncCalls, issues) {
+  const hasStepComments = /\/\/\s*Step\s+\d+:/i.test(functionBody);
+
+  if (!hasStepComments) {
+    issues.push(
+      `Workflow function '${functionName}' with ${asyncCalls} async calls should include "Step N:" comments`
+    );
+    return;
+  }
+
+  // Validate step numbering
+  const stepMatches = functionBody.match(/\/\/\s*Step\s+(\d+):/gi) || [];
+  const stepNumbers = stepMatches.map((step) => parseInt(step.match(/\d+/)[0]));
+
+  // Check for sequential numbering
+  for (let i = 0; i < stepNumbers.length; i++) {
+    if (stepNumbers[i] !== i + 1) {
+      issues.push(
+        `Function '${functionName}' has non-sequential step numbering: found Step ${stepNumbers[i]}, expected Step ${i + 1}`
+      );
+      break;
+    }
+  }
 }
 
 /**
@@ -502,27 +801,7 @@ async function auditStepComments(filePath) {
 
     // Workflow functions should have step comments if they have multiple async calls
     if (asyncCalls >= 2) {
-      const hasStepComments = /\/\/\s*Step\s+\d+:/i.test(functionBody);
-
-      if (!hasStepComments) {
-        issues.push(
-          `Workflow function '${functionName}' with ${asyncCalls} async calls should include "Step N:" comments`
-        );
-      } else {
-        // Validate step numbering
-        const stepMatches = functionBody.match(/\/\/\s*Step\s+(\d+):/gi) || [];
-        const stepNumbers = stepMatches.map((step) => parseInt(step.match(/\d+/)[0]));
-
-        // Check for sequential numbering
-        for (let i = 0; i < stepNumbers.length; i++) {
-          if (stepNumbers[i] !== i + 1) {
-            issues.push(
-              `Function '${functionName}' has non-sequential step numbering: found Step ${stepNumbers[i]}, expected Step ${i + 1}`
-            );
-            break;
-          }
-        }
-      }
+      validateWorkflowStepComments(functionName, functionBody, asyncCalls, issues);
     }
   }
 
@@ -1276,6 +1555,7 @@ module.exports = {
   auditJSDocDocumentation,
   auditStepComments,
   auditFileHeaders,
+  auditConfigurationPatterns,
   auditFeatureConfigurationBoundaries,
   auditOperationConfigurationUsage,
   auditConfigurationDocumentation,

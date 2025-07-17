@@ -56,6 +56,7 @@
     "test:suite": "node scripts/test.js --type=suite",
     "test:suite:list": "node scripts/test.js --type=suite --list",
     "audit": "node scripts/audit.js",
+    "audit:test": "node scripts/audit-test-suite.js",
     "audit:verbose": "node scripts/audit.js --verbose",
     "audit:tier1": "node scripts/audit.js --tier1-only",
     "audit:tier2": "node scripts/audit.js --tier2-only",

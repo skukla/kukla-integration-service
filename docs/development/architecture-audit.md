@@ -26,6 +26,7 @@ npm run audit:tier3
 ## Three-Tier Audit System
 
 ### Tier 1: High Reliability (CI/CD Gate) ⚡
+
 **90-100% accurate | Build fails on violations**
 
 These rules are **enforced** and will fail your build/commit if violated:
@@ -35,13 +36,14 @@ These rules are **enforced** and will fail your build/commit if violated:
 - **Export Patterns** - Proper module.exports structure and grouping
 - **Action Framework Compliance** - createAction() usage, no manual main() exports
 - **Naming Conventions** - camelCase functions, kebab-case files
-- **JSDoc Documentation** - Function documentation, "Used by:" comments
+- **JSDoc Documentation** - Function documentation, @usedBy tags
 - **Step Comments** - Workflow functions have "Step N:" patterns
 - **File Headers** - Descriptive comments for large files
 
 **Use Case:** Pre-commit hooks, CI/CD pipelines, build gates
 
 ### Tier 2: Pattern Detection (Warnings) 🎯
+
 **70-90% accurate | Reports issues but doesn't fail builds**
 
 These rules identify potential problems and guide improvements:
@@ -55,6 +57,7 @@ These rules identify potential problems and guide improvements:
 **Use Case:** Code review guidance, quality monitoring, technical debt tracking
 
 ### Tier 3: Manual Review Flags (Guidance) 🚨
+
 **Guidance only | Identifies areas for human review**
 
 These rules flag areas that require human judgment:
@@ -79,6 +82,7 @@ git commit -m "feature: add new functionality"
 ```
 
 **Bypass for emergencies:**
+
 ```bash
 git commit --no-verify -m "hotfix: emergency fix"
 ```
@@ -98,6 +102,7 @@ npm run audit:tier1     # Quick gate check
 **VS Code Integration (Recommended):**
 
 Add to `.vscode/tasks.json`:
+
 ```json
 {
   "label": "Architecture Audit",
@@ -113,11 +118,13 @@ Add to `.vscode/tasks.json`:
 ```
 
 **Keyboard Shortcut:**
+
 - `Cmd/Ctrl + Shift + P` → "Tasks: Run Task" → "Architecture Audit"
 
 ### 4. CI/CD Pipeline Integration
 
 **GitHub Actions Example:**
+
 ```yaml
 - name: Architecture Audit
   run: |
@@ -127,6 +134,7 @@ Add to `.vscode/tasks.json`:
 ```
 
 **Jenkins Example:**
+
 ```groovy
 stage('Architecture Audit') {
   steps {
@@ -202,6 +210,7 @@ module.exports = {
 ### Team-Specific Settings
 
 **For Strict Teams:**
+
 ```javascript
 // Fail builds on Tier 2 warnings
 rules: {
@@ -212,6 +221,7 @@ rules: {
 ```
 
 **For Legacy Codebases:**
+
 ```javascript
 // Gradual adoption approach
 rules: {
@@ -231,17 +241,20 @@ rules: {
 ## Output Formats
 
 ### Console Output (Default)
+
 ```bash
 npm run audit
 # → Colorized console output with summaries and details
 ```
 
 ### JSON Output (for tools)
+
 ```bash
 npm run audit -- --format=json > audit-results.json
 ```
 
 ### Verbose Output (detailed analysis)
+
 ```bash
 npm run audit:verbose
 # → Shows file statistics, performance metrics, and detailed rule explanations
@@ -250,6 +263,7 @@ npm run audit:verbose
 ## Understanding Audit Results
 
 ### Exit Codes
+
 - `0` - Success (all checks passed)
 - `1` - Tier 1 failures (build should fail)
 - `2` - Audit execution error
@@ -257,7 +271,8 @@ npm run audit:verbose
 ### Reading Reports
 
 **Summary Section:**
-```
+
+```text
 📊 ARCHITECTURE AUDIT REPORT
 ════════════════════════════════════════════════════════════════════════════════
 
@@ -274,7 +289,8 @@ npm run audit:verbose
 ```
 
 **Detailed Issues:**
-```
+
+```text
 📋 DETAILED ISSUES
 
 ❌ import-organization (3 files)
@@ -290,6 +306,7 @@ npm run audit:verbose
 ## Best Practices
 
 ### 1. Run Audits Regularly
+
 ```bash
 # Daily development workflow
 npm run audit:tier1    # Quick check
@@ -298,11 +315,13 @@ git commit             # Automatic Tier 1 check
 ```
 
 ### 2. Address Issues by Priority
+
 1. **Fix Tier 1 issues immediately** (build blockers)
 2. **Plan Tier 2 fixes** (code quality improvements)
 3. **Review Tier 3 flags** (architectural considerations)
 
 ### 3. Use Audit Results for Planning
+
 - **Technical Debt:** Track Tier 2 warnings over time
 - **Architecture Reviews:** Use Tier 3 flags for discussion points
 - **Code Quality Metrics:** Monitor overall pass rates
@@ -310,18 +329,21 @@ git commit             # Automatic Tier 1 check
 ### 4. Team Adoption Strategy
 
 **Week 1-2: Enable Tier 1 Rules Gradually**
+
 ```bash
 # Start with just file structure and imports
 npm run audit:tier1 -- --rules=file-structure,import-organization
 ```
 
 **Week 3-4: Add Documentation Rules**
+
 ```bash
 # Add JSDoc and step comments
 npm run audit:tier1 -- --rules=jsdoc-documentation,step-comments
 ```
 
 **Week 5+: Full Tier 1 Enforcement**
+
 ```bash
 # Enable all Tier 1 rules
 npm run audit:tier1
@@ -332,6 +354,7 @@ npm run audit:tier1
 ### Common Issues
 
 **1. "All require() statements must be at the top"**
+
 ```javascript
 // ❌ WRONG: Inline require
 function someFunction() {
@@ -347,6 +370,7 @@ function someFunction() {
 ```
 
 **2. "Missing import organization sections"**
+
 ```javascript
 // ❌ WRONG: No section headers
 const fs = require('fs');
@@ -361,6 +385,7 @@ const { createAction } = require('../shared/action');
 ```
 
 **3. "Action must use createAction() framework"**
+
 ```javascript
 // ❌ WRONG: Manual main export
 async function main(params) {
@@ -384,6 +409,7 @@ module.exports = createAction(businessLogic, {
 ### Performance Issues
 
 **Slow audit execution:**
+
 ```bash
 # Run only on changed files
 npm run audit:tier1 -- --changed-only
@@ -398,6 +424,7 @@ npm run audit:tier1 -- --parallel
 ### False Positives
 
 **Temporarily disable specific rules:**
+
 ```javascript
 // At the top of problematic files
 /* eslint-disable audit/rule-name */
@@ -443,6 +470,7 @@ module.exports = {
 ### Integration with Other Tools
 
 **ESLint Integration:**
+
 ```javascript
 // .eslintrc.js
 module.exports = {
@@ -454,6 +482,7 @@ module.exports = {
 ```
 
 **VS Code Extension:**
+
 ```json
 // .vscode/settings.json
 {
@@ -468,12 +497,14 @@ module.exports = {
 ### From Manual Reviews to Automated Audits
 
 **Phase 1: Assessment (Week 1)**
+
 ```bash
 npm run audit -- --report-only
 # Generate baseline report, don't fail builds
 ```
 
 **Phase 2: Gradual Enforcement (Weeks 2-4)**
+
 ```bash
 # Enable rules incrementally
 npm run audit:tier1 -- --rules=file-structure
@@ -482,6 +513,7 @@ npm run audit:tier1 -- --rules=file-structure,imports,exports
 ```
 
 **Phase 3: Full Enforcement (Week 5+)**
+
 ```bash
 # Enable pre-commit hooks
 npm run audit:tier1  # Full Tier 1 enforcement
@@ -490,17 +522,20 @@ npm run audit:tier1  # Full Tier 1 enforcement
 ### From Legacy Architecture to Feature-First DDD
 
 **1. Run Assessment:**
+
 ```bash
 npm run audit:tier3
 # Identify cross-domain dependencies and abstraction opportunities
 ```
 
 **2. Plan Refactoring:**
+
 - Use Tier 3 flags to identify files for refactoring
 - Prioritize by cognitive load and complexity scores
 - Plan domain boundary consolidation
 
 **3. Execute Incrementally:**
+
 - Refactor one domain at a time
 - Enable Tier 1 rules for refactored domains
 - Keep legacy domains temporarily excluded
@@ -536,4 +571,4 @@ The audit system is designed to evolve with the team's needs. Please provide fee
 - **Usability:** CLI experience and integration points
 - **Coverage:** Missing architectural patterns or standards
 
-**Remember:** The audit system exists to **support** development, not hinder it. All rules and configurations should make development more efficient and maintainable. 
+**Remember:** The audit system exists to **support** development, not hinder it. All rules and configurations should make development more efficient and maintainable.
