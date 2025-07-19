@@ -16,6 +16,7 @@ const { buildMeshConfig } = require('./domains/mesh');
 const { buildPerformanceConfig } = require('./domains/performance');
 const { buildProductsConfig } = require('./domains/products');
 const { buildRuntimeConfig } = require('./domains/runtime');
+const { buildScriptsConfig } = require('./domains/scripts');
 const { buildTestingConfig } = require('./domains/testing');
 const { buildUiConfig } = require('./domains/ui');
 
@@ -75,6 +76,7 @@ function loadConfig(params = {}, isProd = false) {
   const runtimeConfig = buildRuntimeConfig(params, isProd);
   const meshConfig = buildMeshConfig(params);
   const performanceConfig = buildPerformanceConfig(); // Self-contained
+  const scriptsConfig = buildScriptsConfig(params, isProd); // Scripts configuration
   const testingConfig = buildTestingConfig(params, mainConfig); // Needs expected product count
   const uiConfig = buildUiConfig();
 
@@ -101,6 +103,7 @@ function loadConfig(params = {}, isProd = false) {
     runtime: runtimeConfig,
     mesh: meshConfig,
     performance: performanceConfig,
+    scripts: scriptsConfig,
     testing: testingConfig,
 
     // 🎨 FRONTEND DOMAIN

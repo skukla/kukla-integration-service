@@ -1,41 +1,39 @@
 /**
- * Main action for exporting Adobe Commerce product data via API Mesh
- * @module get-products-mesh
+ * Product Mesh Export Action
+ * Business capability: Export Adobe Commerce product data as CSV using API Mesh
  */
 
-const { createAction } = require('../../src/core/action/operations/action-factory');
-const { buildProductExportResponse } = require('../../src/products/operations/response-building');
-const {
-  exportMeshProductsWithStorageAndFallback,
-} = require('../../src/products/workflows/mesh-export');
+const { exportMeshProductsWithStorageAndFallback } = require('../../src/products/mesh-export');
+const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
- * Business logic for get-products-mesh action
- * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Response object
+ * Product mesh export business logic
+ * @purpose Execute complete product export workflow with API Mesh integration
+ * @param {Object} context - Initialized action context with config and parameters
+ * @returns {Promise<Object>} Export result with CSV data and metadata
+ * @usedBy Adobe App Builder frontend, external API consumers
+ * @config mesh.endpoint, mesh.apiKey, commerce.credentials, storage.provider, products.fields
  */
 async function getProductsMeshBusinessLogic(context) {
   const { core, config, extractedParams } = context;
-  const steps = [];
 
-  // Step 1: Input has been validated in the action factory
-  steps.push(core.formatStepMessage('validate-input', 'success'));
-
-  // Step 2: Execute the complete mesh product export workflow (mirrors get-products pattern)
-  const workflowResult = await exportMeshProductsWithStorageAndFallback(
+  // Step 1: Execute complete mesh product export workflow with storage and fallback
+  const exportResult = await exportMeshProductsWithStorageAndFallback(
     extractedParams,
     config,
     core
   );
 
-  // Step 3: Combine validation step with workflow steps
-  workflowResult.steps = [...steps, ...workflowResult.steps];
-
-  // Step 4: Build response using the same pattern as get-products
-  return buildProductExportResponse(workflowResult);
+  // Step 2: Return export result with success message
+  return {
+    message: 'Product export completed successfully',
+    steps: [
+      core.formatStepMessage('mesh-export', 'success', 'CSV generated via API Mesh and stored'),
+    ],
+    ...exportResult,
+  };
 }
 
-// Export the action with proper configuration
 module.exports = createAction(getProductsMeshBusinessLogic, {
   actionName: 'get-products-mesh',
   withLogger: false,

@@ -1,35 +1,31 @@
 /**
- * Action for deleting files from storage
- * @module delete-file
+ * File Deletion Action
+ * Business capability: Delete files with comprehensive validation
  */
 
-const { createAction } = require('../../src/core/action/operations/action-factory');
-const { deleteStoredFile } = require('../../src/files/operations/storage-operations');
-const { generateFileDeletionResponse } = require('../../src/htmx/workflows/file-browser');
+const { deleteFileWithValidation } = require('../../src/files/file-deletion');
+const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
- * Business logic for delete-file action
- * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} HTMX response object
+ * File deletion business logic
+ * @purpose Execute file deletion workflow with comprehensive validation
+ * @param {Object} context - Initialized action context with config and parameters
+ * @returns {Promise<Object>} Deletion result with success confirmation
+ * @usedBy Adobe App Builder frontend
+ * @config storage.provider, files.protectedPatterns, storage.directory
  */
 async function deleteFileBusinessLogic(context) {
   const { config, extractedParams } = context;
 
-  // Validate fileName parameter
+  // Step 1: Validate fileName parameter
   if (!extractedParams.fileName) {
-    // If no fileName, return current file list
-    const { generateFileBrowserUI } = require('../../src/htmx/workflows/file-browser');
-    return await generateFileBrowserUI(config, extractedParams);
+    throw new Error('fileName parameter is required');
   }
 
-  // Step 1: Delete file from storage
-  await deleteStoredFile(extractedParams.fileName, config, extractedParams);
-
-  // Step 2: Generate updated file browser HTML response for HTMX
-  return await generateFileDeletionResponse(extractedParams.fileName, config, extractedParams);
+  // Step 2: Execute validated file deletion
+  return await deleteFileWithValidation(extractedParams.fileName, config, extractedParams);
 }
 
-// Export the action with proper configuration
 module.exports = createAction(deleteFileBusinessLogic, {
   actionName: 'delete-file',
   withLogger: false,

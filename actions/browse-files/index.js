@@ -1,37 +1,25 @@
 /**
- * Action for browsing and listing CSV files in storage
- * @module browse-files
+ * File Browser Action
+ * Business capability: Browse and list CSV files with interactive UI generation
  */
 
-const { createAction } = require('../../src/core/action/operations/action-factory');
-const { fileBrowserDataWorkflow } = require('../../src/files/workflows/file-management');
-const { generateCompleteFileBrowserHTML } = require('../../src/htmx/operations/html-generation');
-const { buildHtmlResponse } = require('../../src/htmx/operations/response-building');
+const { browseCsvFilesWithMetadata } = require('../../src/files/file-browser');
+const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
- * Business logic for browse-files action
- * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Response object
+ * File browsing business logic
+ * @purpose Browse and list CSV files with comprehensive metadata
+ * @param {Object} context - Initialized action context with config and parameters
+ * @returns {Promise<Object>} File listing with metadata for UI consumption
+ * @usedBy Adobe App Builder frontend via HTMX
+ * @config storage.provider, storage.directory, files.extensions.csv
  */
 async function browseFilesBusinessLogic(context) {
-  const { core, config, extractedParams } = context;
-  const steps = [];
+  const { config, extractedParams } = context;
 
-  // Step 1: Input has been validated in the action factory
-  steps.push(core.formatStepMessage('validate-input', 'success'));
-
-  // Step 2: Get list of CSV files from storage
-  const fileList = await fileBrowserDataWorkflow(config, extractedParams);
-  steps.push(core.formatStepMessage('browse-files', 'success', { count: fileList.length }));
-
-  // Step 3: Generate HTML using the HTML generation operations
-  const html = generateCompleteFileBrowserHTML(fileList, config);
-
-  // Step 4: Return HTML response using unified HTMX response builder
-  return buildHtmlResponse(html);
+  return await browseCsvFilesWithMetadata(config, extractedParams);
 }
 
-// Export the action with proper configuration
 module.exports = createAction(browseFilesBusinessLogic, {
   actionName: 'browse-files',
   withLogger: false,

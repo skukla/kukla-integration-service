@@ -1,195 +1,1158 @@
-# Adobe App Builder - Kukla Integration Service
+# Adobe App Builder - Comprehensive Architecture Standards
 
-## Project Overview
+## Purpose
 
-This is an Adobe App Builder application that integrates with Adobe Commerce for product data management and file operations. The project uses a staging-first development approach with HTMX for frontend interactions.
+This document consolidates all architectural standards for the Adobe App Builder Commerce integration application. It serves as the single source of truth for development patterns, replacing and superseding all other architectural documentation.
 
-## Architecture & Technology Stack
+**Sources Consolidated:**
 
-- **Platform**: Adobe App Builder (Node.js serverless)
-- **Frontend**: HTMX with vanilla JavaScript
-- **Backend**: Adobe I/O Runtime actions
-- **Commerce**: Adobe Commerce integration
-- **File Storage**: Adobe I/O Files SDK
-- **Build Tool**: Adobe I/O CLI
-- **Deployment**: Staging and Production workspaces
+- ✅ REFACTORING-STANDARDS.md (1,563 lines) - Core principles and action framework
+- ✅ SCRIPTS-REFACTORING-PLAN.md (199 lines) - Feature-First DDD for scripts  
+- ✅ ARCHITECTURE-MIGRATION-PLAN.md (442 lines) - Implementation status and guidelines
 
-## Code Style & Standards
+---
 
-- Use ES6+ JavaScript features
-- Follow Adobe's coding standards
-- Use async/await for promises
-- Prefer functional programming patterns
-- Use JSDoc for function documentation
-- Follow the existing project structure
+## Communication Standards
 
-### Configuration Approach
+### Response Style
 
-**CRITICAL: Trust the Configuration System**
+- **Prefer concise, direct responses** - Get to the point quickly without unnecessary elaboration
+- **Focus on actionable information** - Provide what's needed to move forward
+- **Use clear, structured formatting** - Bullet points, headers, and code examples for clarity
+- **Minimize redundant explanations** - Assume technical competence and avoid over-explaining
 
-Use clean, direct object access for configuration:
+---
 
-```javascript
-// ✅ CORRECT: Clean and readable
-const config = loadConfig(params);
-const timeout = config.commerce.api.timeout;
-const { pageSize, maxPages } = config.commerce.product.pagination;
-const fields = config.commerce.product.fields;
+## Core Architecture Principles
 
-// ❌ WRONG: Verbose with defensive fallbacks
-const timeout = config.commerce?.api?.timeout || 30000;
-const pageSize = config.commerce?.product?.pagination?.pageSize || 100;
+### 1. **Clarity Over Cleverness**
+
+- Code should be immediately understandable by someone unfamiliar with it
+- No "clever" solutions that require deep knowledge to understand
+- **Test**: Can a new developer understand this function in 60 seconds?
+
+### 2. **Practical Over Perfect**
+
+- Favor working, clear code over architectural purity
+- No rigid rules that make code harder to understand
+- **Test**: Does this change make the code easier to work with?
+
+### 3. **Consistency Over Creativity**
+
+- Same patterns used throughout the application
+- No special cases or unique approaches
+- **Test**: Could this pattern be applied to similar functions?
+
+### 4. **Functional Composition Over Object Inheritance**
+
+- Use pure functions that compose well together
+- Favor functional composition over class hierarchies
+- **Test**: Is this function pure with clear input/output contracts?
+
+### 5. **Discoverability First**
+
+- Optimize for finding existing functionality quickly
+- Use direct imports with clear domain organization
+- **Test**: Can developers find this functionality in under 30 seconds?
+
+### 6. **Strategic Duplication Over Abstraction**
+
+- **Cognitive Load > Code Deduplication**: When forced to choose between eliminating duplication and reducing cognitive load, choose cognitive load reduction
+- Small amounts of strategic duplication that improve domain clarity are preferable to complex shared abstractions
+- **Test**: Does this abstraction reduce mental overhead or just eliminate duplication?
+
+#### Duplication Guidelines
+
+**✅ Prefer Duplication When:**
+
+- Utility is 2-10 lines and used in only 1-2 domains
+- Logic is domain-specific (even if partially similar to other domains)
+- Shared abstraction would require jumping between files to understand
+
+**❌ Prefer Abstraction When:**
+
+- Complex logic (30+ lines) used across multiple domains
+- True shared infrastructure (formatting, environment, spinners)
+- Business logic that's identical across domains
+
+---
+
+## Universal Feature-First Architecture
+
+### CRITICAL: Feature-First Organization Everywhere
+
+**ALL code in this repository follows identical Feature-First DDD organization, regardless of location.**
+
+**Universal Principle:** Whether in `src/`, `actions/`, or `scripts/`, every directory uses Feature-First organization with complete business capabilities in single files or organized sub-modules.
+
+#### **No Architecture Exceptions**
+
+- ✅ **`src/` domains** - Feature-First organization (products, files, commerce, htmx, testing)
+- ✅ **`actions/` capabilities** - Feature-First organization (thin orchestration, domain delegation)
+- ✅ **`scripts/` operations** - Feature-First organization (deployment, monitoring, auditing)
+- ✅ **`shared/` infrastructure** - Feature-First organization (action framework, HTTP utilities)
+
+#### **Shared vs Domain Classification**
+
+**Primary Domains (`src/`):**
+- **Products** - Product export, transformation, enrichment capabilities
+- **Files** - File management, storage, browser capabilities  
+- **Commerce** - Commerce API integration, authentication capabilities
+- **HTMX** - UI generation, modal interaction, notification capabilities
+- **Testing** - Test execution, validation, performance measurement capabilities
+
+**Infrastructure (`shared/`):**
+- **Action Framework** - Action creation, context building, error handling
+- **HTTP Utilities** - Request/response handling, parameter extraction
+- **Validation** - Cross-domain validation rules and utilities
+- **Utils** - Universal async, formatting, caching utilities
+
+**Scripts (`scripts/`):**
+- **Operational Capabilities** - Deployment, monitoring, auditing, testing workflows
+
+#### **Migration Benefits**
+
+**Cognitive Consistency:**
+- ✅ **Same mental model** - Identical organization patterns across all code contexts
+- ✅ **No context switching** - Same Feature-First approach whether building features or scripts
+- ✅ **Predictable structure** - Progressive disclosure (workflows → operations → utilities) everywhere
+
+**Development Efficiency:**
+- ✅ **Unified standards** - Same code quality, ESLint rules, and patterns across all directories
+- ✅ **Easy maintenance** - Same debugging and modification patterns everywhere
+- ✅ **Clear ownership** - Same responsibility boundaries and documentation standards
+
+---
+
+## Domain Structure Standards: DDD + Feature-First
+
+### CRITICAL: Domain Boundaries + Feature Cohesion
+
+**Domain boundaries remain sacred** (DDD principle), but **features are organized for cognitive efficiency** within each domain.
+
+**Core Principle:** Each file represents a **complete business capability** with composite → atomic organization internally.
+
+### Main Application (`src/`)
+
+```text
+src/
+├── products/                   # Product domain (DDD bounded context)
+│   ├── rest-export.js         # Feature CORE (workflows + operations)
+│   ├── rest-export/           # Feature SUB-MODULES (when >400 lines)
+│   │   ├── enrichment.js      # Enrichment utilities (category/inventory)
+│   │   ├── transformation.js  # Product transformation utilities
+│   │   ├── csv-generation.js  # CSV generation utilities
+│   │   └── validation.js      # REST-specific validation
+│   ├── mesh-export.js         # Feature CORE (workflows + operations)
+│   ├── mesh-export/           # Feature SUB-MODULES (when >400 lines)
+│   │   ├── graphql.js         # GraphQL query utilities
+│   │   ├── mesh-requests.js   # Mesh API utilities
+│   │   └── validation.js      # Mesh-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
+│       ├── csv-generation.js  # Cross-feature CSV utilities
+│       ├── data-validation.js # Cross-feature validation
+│       ├── image-processing.js # Cross-feature image utilities
+│       └── errors.js          # Domain-specific error handling
+├── files/                     # File operations domain (DDD bounded context)
+│   ├── csv-export.js          # Feature CORE (workflows + operations)
+│   ├── csv-export/            # Feature SUB-MODULES (when >400 lines)
+│   │   ├── storage-strategies.js # Storage selection utilities
+│   │   ├── url-generation.js  # Presigned URL utilities
+│   │   ├── metadata.js        # File metadata processing
+│   │   └── validation.js      # CSV-specific validation
+│   ├── file-browser.js        # Feature CORE (workflows + operations)
+│   ├── file-browser/          # Feature SUB-MODULES (when >400 lines)
+│   │   ├── ui-generation.js   # HTML generation utilities
+│   │   ├── navigation.js      # Directory navigation utilities
+│   │   ├── filtering.js       # File filtering utilities
+│   │   └── validation.js      # Browser-specific validation
+│   ├── file-download.js       # Feature CORE (workflows + operations)
+│   ├── file-download/         # Feature SUB-MODULES (when >400 lines)
+│   │   ├── url-generation.js  # Download URL utilities
+│   │   ├── access-control.js  # Download permission utilities
+│   │   └── validation.js      # Download-specific validation
+│   ├── file-deletion.js       # Feature CORE (workflows + operations)
+│   ├── file-deletion/         # Feature SUB-MODULES (when >400 lines)
+│   │   ├── confirmation.js    # Deletion confirmation utilities
+│   │   ├── cleanup.js         # File cleanup utilities
+│   │   └── validation.js      # Deletion-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
+│       ├── storage-strategies.js # Cross-feature storage selection
+│       ├── presigned-urls.js  # Cross-feature URL generation
+│       ├── path-utilities.js  # Cross-feature path processing
+│       └── errors.js          # Domain-specific error handling
+├── htmx/                      # HTMX domain (DDD bounded context)
+│   ├── file-browser-ui.js     # Feature CORE (workflows + operations)
+│   ├── file-browser-ui/       # Feature SUB-MODULES (when >400 lines)
+│   │   ├── html-generation.js # HTML component utilities
+│   │   ├── table-generation.js # File table utilities
+│   │   ├── modal-generation.js # Modal HTML utilities
+│   │   └── validation.js      # UI-specific validation
+│   ├── modal-interactions.js  # Feature CORE (workflows + operations)
+│   ├── modal-interactions/    # Feature SUB-MODULES (when >400 lines)
+│   │   ├── confirmation-modals.js # Confirmation modal utilities
+│   │   ├── form-modals.js     # Form modal utilities
+│   │   ├── response-handling.js # Modal response utilities
+│   │   └── validation.js      # Modal-specific validation
+│   ├── notification-system.js # Feature CORE (workflows + operations)
+│   ├── notification-system/   # Feature SUB-MODULES (when >400 lines)
+│   │   ├── toast-generation.js # Toast notification utilities
+│   │   ├── alert-generation.js # Alert notification utilities
+│   │   ├── progress-indicators.js # Progress display utilities
+│   │   └── validation.js      # Notification-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
+│       ├── html-generation.js # Cross-feature HTML utilities
+│       ├── response-building.js # Cross-feature HTMX responses
+│       └── errors.js          # Domain-specific error handling
+├── commerce/                  # Commerce integration domain (DDD bounded context)
+│   ├── product-fetching.js    # Feature CORE (workflows + operations)
+│   ├── product-fetching/      # Feature SUB-MODULES (when >400 lines)
+│   │   ├── api-requests.js    # Commerce API utilities
+│   │   ├── pagination.js      # Product pagination utilities
+│   │   ├── filtering.js       # Product filtering utilities
+│   │   └── validation.js      # Fetching-specific validation
+│   ├── category-enrichment.js # Feature CORE (workflows + operations)
+│   ├── category-enrichment/   # Feature SUB-MODULES (when >400 lines)
+│   │   ├── category-mapping.js # Category mapping utilities
+│   │   ├── hierarchy-building.js # Category hierarchy utilities
+│   │   ├── data-enrichment.js # Category data utilities
+│   │   └── validation.js      # Category-specific validation
+│   ├── inventory-enrichment.js # Feature CORE (workflows + operations)
+│   ├── inventory-enrichment/  # Feature SUB-MODULES (when >400 lines)
+│   │   ├── stock-fetching.js  # Stock data utilities
+│   │   ├── availability-calc.js # Availability calculation utilities
+│   │   ├── batch-processing.js # Inventory batch utilities
+│   │   └── validation.js      # Inventory-specific validation
+│   ├── admin-token-auth.js    # Feature CORE (workflows + operations)
+│   ├── admin-token-auth/      # Feature SUB-MODULES (when >400 lines)
+│   │   ├── token-management.js # Token lifecycle utilities
+│   │   ├── credential-validation.js # Credential validation utilities
+│   │   ├── session-handling.js # Session management utilities
+│   │   └── validation.js      # Auth-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
+│       ├── api-client.js      # Cross-feature API client
+│       ├── request-batching.js # Cross-feature batching
+│       └── errors.js          # Domain-specific error handling
+└── testing/                   # Testing domain (DDD bounded context)
+    ├── action-testing.js      # Feature CORE (workflows + operations)
+    ├── action-testing/        # Feature SUB-MODULES (when >400 lines)
+    │   ├── execution.js       # Action test execution utilities
+    │   ├── validation.js      # Action test validation utilities
+    │   └── formatting.js      # Action test formatting utilities
+    ├── api-testing.js         # Feature CORE (workflows + operations)
+    ├── api-testing/           # Feature SUB-MODULES (when >400 lines)
+    │   ├── endpoint-testing.js # API endpoint testing utilities
+    │   ├── response-validation.js # API response validation utilities
+    │   └── performance-measurement.js # API performance utilities
+    ├── performance-testing.js # Feature CORE (workflows + operations)
+    ├── performance-testing/   # Feature SUB-MODULES (when >400 lines)
+    │   ├── scenario-execution.js # Performance scenario utilities
+    │   ├── metrics-collection.js # Performance metrics utilities
+    │   ├── baseline-comparison.js # Performance baseline utilities
+    │   └── reporting.js       # Performance reporting utilities
+    ├── test-orchestration.js  # Feature CORE (workflows + operations)
+    ├── test-orchestration/    # Feature SUB-MODULES (when >400 lines)
+    │   ├── suite-management.js # Test suite management utilities
+    │   ├── parallel-execution.js # Parallel test execution utilities
+    │   └── result-aggregation.js # Test result aggregation utilities
+    └── shared/                # Only truly shared utilities (3+ features)
+        ├── test-utilities.js  # Cross-feature test utilities
+        ├── assertion-helpers.js # Cross-feature assertion utilities
+        └── errors.js          # Domain-specific error handling
+└── shared/                    # Cross-domain infrastructure utilities (NOT business domains)
+    ├── action/               # Action framework infrastructure
+    │   ├── action-factory.js # Complete action framework capability
+    │   ├── context-building.js # Action context utilities
+    │   ├── error-handling.js # Action error utilities
+    │   ├── initialization.js # Action setup utilities
+    │   └── logger-setup.js   # Action logging utilities
+    ├── errors.js             # Error handling infrastructure (single file)
+    ├── http/                 # HTTP client infrastructure
+    │   ├── client.js         # HTTP client utilities
+    │   ├── responses.js      # HTTP response utilities
+    │   ├── config.js         # HTTP configuration utilities
+    │   ├── params.js         # HTTP parameter utilities
+    │   └── request.js        # HTTP request utilities
+    ├── routing/              # URL management infrastructure
+    │   ├── runtime.js        # Runtime URL building
+    │   └── commerce.js       # Commerce URL building
+    ├── validation/           # Validation infrastructure
+    │   ├── parameters.js     # Parameter validation
+    │   ├── product.js        # Product validation
+    │   └── types.js          # Validation type utilities
+    └── utils/                # Universal utilities
+        ├── async.js          # Universal async utilities
+        ├── cache.js          # Universal caching utilities
+        ├── formatting.js     # Universal formatting utilities
+        └── graphql.js        # Universal GraphQL utilities
 ```
 
-**Rules:**
+### Feature Organization Principles
 
-- NO optional chaining (`?.`) in business logic
-- NO fallback values (`|| defaultValue`) in business logic
-- Defaults belong in config files, not scattered through code
-- Trust your configuration system to provide complete data
+**CRITICAL: Features represent complete business capabilities that users can understand and interact with directly.**
 
-## Project Structure Rules
+#### **1. Feature Core + Sub-modules Pattern**
 
-- **actions/**: Backend serverless functions
-  - `backend/`: API endpoints and data processing
-  - `frontend/`: HTMX response handlers
-- **src/**: Shared utilities and core logic
-  - `core/`: Common utilities
-  - `htmx/`: HTMX-specific helpers
-  - `commerce/`: Adobe Commerce integration
-- **web-src/**: Frontend static assets
-- **config/**: Environment and schema configurations
-- **docs/**: Comprehensive documentation
+**When feature files exceed 400 lines, use Feature Core + Sub-modules:**
+
+- **Feature Core** (200-400 lines): Business workflows + feature operations only
+- **Sub-modules** (50-150 lines): Related utility categories (enrichment, transformation, validation)
+
+**Sub-module Rules:**
+- Create when utility category has 5+ functions and 50+ lines
+- Sub-modules import from utils, not sibling sub-modules
+- External imports still use feature core, not sub-modules directly
+
+```javascript
+// Feature Core Pattern
+const { enrichWithCategories } = require('./rest-export/enrichment');
+
+// === BUSINESS WORKFLOWS ===
+async function exportProducts(params, config) {
+  // Coordinates sub-modules
+}
+
+module.exports = { exportProducts }; // Main feature interface
+```
+
+#### **2. User-Centric Feature Definition**
+
+Features should align with **user mental models** and **business capabilities**:
+
+```javascript
+// ✅ CORRECT: User-focused features
+products/rest-export.js         # "Export products via REST API"
+products/mesh-export.js         # "Export products via API Mesh"  
+files/file-browser.js           # "Browse and select files"
+files/csv-export.js             # "Export data as CSV file"
+commerce/product-fetching.js    # "Fetch products from Commerce"
+
+// ❌ WRONG: Technical implementation features
+products/api-layer.js           # Technical abstraction
+products/data-processor.js      # Implementation detail
+files/storage-abstraction.js    # Infrastructure concern
+```
+
+#### **3. Complete Feature Cohesion**
+
+**Each feature file contains everything needed to understand and maintain that capability:**
+
+```javascript
+/**
+ * Products REST Export
+ * Complete product export capability via Commerce REST API
+ */
+
+// === BUSINESS WORKFLOWS === (What actions use)
+async function exportProducts(params, config) {
+  // Step 1: Validate export parameters
+  // Step 2: Fetch and enrich products  
+  // Step 3: Transform for export
+  // Step 4: Generate CSV
+  // Step 5: Store file
+}
+
+// === FEATURE OPERATIONS === (Coordination logic)
+async function fetchAndEnrichProducts(params, config) { }
+async function transformProductData(products, config) { }
+async function generateProductCsv(products, config) { }
+
+// === FEATURE UTILITIES === (Building blocks)
+function validateProductFields(fields) { }
+function formatProductPrice(price, currency) { }
+function buildProductImageUrl(product, config) { }
+
+**Export Organization Rules:**
+
+```javascript
+// ✅ CORRECT: Files with ≤5 exports and clear sections - NO export comments needed
+module.exports = {
+  exportProductsWithStorageAndFallback,  // Most comprehensive first
+  exportProducts,
+  fetchAndEnrichProducts,
+  transformProductData,
+  validateProductFields,
+};
+
+// ✅ CORRECT: Files with 6+ exports or unclear organization - USE export comments
+module.exports = {
+  // Business workflows (main exports that actions import)
+  exportProducts,
+  processProducts,
+  validateProducts,
+  
+  // Feature operations (coordination functions)
+  fetchAndEnrichProducts,
+  transformProductData,
+  enrichWithCategories,
+  enrichWithInventory,
+  
+  // Feature utilities (building blocks)
+  validateProductFields,
+  formatProductPrice,
+  buildProductImageUrl,
+};
+```
+
+**Section Header Standards:**
+
+```javascript
+// ✅ CORRECT: Simple, readable section headers
+// Business Workflows
+// Feature Operations
+// Feature Utilities
+
+// ❌ WRONG: "Shouty" triple-equals format (visual noise)
+// === BUSINESS WORKFLOWS ===
+// === FEATURE OPERATIONS ===
+
+// ❌ WRONG: Redundant export header (module.exports is clear enough)
+// === EXPORTS ORGANIZATION ===
+module.exports = { };
+```
+
+#### **4. Progressive Disclosure Pattern**
+
+**Features follow complexity hierarchy from MOST COMPREHENSIVE to most detailed:**
+
+**CRITICAL: Within each section, most comprehensive functions come FIRST:**
+
+1. **Business Workflows** (Composite) - Complete user-facing capabilities
+   - **Order**: Most comprehensive workflow → Supporting workflows
+2. **Feature Operations** (Coordination) - Multi-step business logic coordination  
+   - **Order**: Higher-level coordination → Lower-level coordination
+3. **Feature Utilities** (Atomic) - Simple, focused building blocks
+   - **Order**: Most complex utilities → Simple utilities
+
+```javascript
+// Business Workflows
+async function exportProductsWithStorageAndFallback(params, config, core) {
+  // MOST comprehensive - entry point for actions
+  const exportResult = await exportProducts(params, config);
+  // ... storage handling
+}
+
+async function exportProducts(params, config) {
+  // LESS comprehensive - called by above
+  // ... core export logic
+}
+
+// Reading from top to bottom:
+// 1. Understand WHAT the feature does (most comprehensive first)
+// 2. Understand HOW it coordinates (supporting functions)  
+// 3. Understand building blocks (utilities)
+```
+
+#### **5. Domain Boundary Respect**
+
+**Features respect DDD domain boundaries while providing complete capabilities:**
+
+```text
+✅ CORRECT Domain Organization:
+src/products/       # Product domain
+├── rest-export.js  # Complete export via REST
+├── mesh-export.js  # Complete export via Mesh
+└── shared/         # Cross-feature utilities
+
+✅ CORRECT Cross-Domain Usage:
+products/rest-export.js can import from:
+- files/csv-export.js (cross-domain interface)
+- shared/http/client.js (infrastructure)
+- ./shared/validation.js (domain utilities)
+
+❌ WRONG: Domain bleeding
+products/rest-export.js importing:
+- files/operations/file-handling.js (internal implementation)
+- commerce/utils/api-helpers.js (domain internals)
+```
+
+#### **6. Shared Function Strategy**
+
+**Only extract to shared/ when truly used by 3+ features:**
+
+```javascript
+// === THREE-TIER DECISION TREE ===
+
+// Tier 1: src/shared/ (3+ domains use it)
+const { formatStepMessage } = require('../../shared/utils/formatting');
+
+// Tier 2: domain/shared/ (3+ features in domain use it)  
+const { validateProductData } = require('./shared/validation');
+
+// Tier 3: Keep in feature file (1-2 features use it)
+function validateExportFields(fields) { /* feature-specific logic */ }
+```
+
+#### **7. Import Transparency**
+
+**All dependencies visible at top of file for cognitive efficiency:**
+
+```javascript
+// All dependencies at top of file - grouping is obvious from paths
+const { response } = require('../../shared/http/responses');
+const { validateProducts } = require('./shared/validation');
+const { storeCsvFile } = require('../files/csv-export');
+```
+
+#### **8. Feature Testing Independence**
+
+**Each feature should be testable independently:**
+
+```javascript
+// ✅ CORRECT: Feature accepts any valid config
+async function exportProducts(params, config) {
+  const timeout = config.commerce.api.timeout; // Trust config
+  const baseUrl = config.commerce.baseUrl;     // Trust config
+}
+
+// ✅ CORRECT: Feature test with mock config
+const mockConfig = {
+  commerce: { api: { timeout: 5000 }, baseUrl: 'test-url' },
+  products: { fields: ['sku', 'name'] }
+};
+
+await exportProducts(testParams, mockConfig);
+```
+
+#### **9. Business Logic Concentration**
+
+**Features concentrate related business logic for maintainability:**
+
+```javascript
+// ✅ CORRECT: Related product export logic in one file
+products/rest-export.js:
+- Product fetching logic
+- Product enrichment logic  
+- CSV generation logic
+- Export validation logic
+- Error handling for export
+
+// ❌ WRONG: Scattered across multiple files
+products/fetching/operations/get-products.js
+products/enrichment/operations/add-categories.js  
+products/export/operations/csv-generation.js
+products/validation/operations/export-validation.js
+```
+
+#### **10. Clear Feature Contracts**
+
+**Features provide clear interfaces with explicit contracts:**
+
+```javascript
+/**
+ * Products REST Export
+ * 
+ * @purpose Export product data as CSV using Commerce REST API
+ * @param {Object} params - Export parameters (filters, pagination, etc.)
+ * @param {Object} config - Complete application configuration
+ * @returns {Promise<Object>} Export result with CSV data and metadata
+ * @throws {Error} When Commerce API is unavailable or data is invalid
+ * 
+ * @usedBy get-products action
+ * @config commerce.baseUrl, commerce.api.timeout, products.fields
+ * 
+ * @example
+ * const result = await exportProducts(
+ *   { limit: 100, category: 'electronics' },
+ *   config
+ * );
+ * // Returns: { csvData: '...', productCount: 87, fileSize: '15KB' }
+ */
+async function exportProducts(params, config) {
+  // Implementation
+}
+```
+
+#### **11. Evolutionary Design**
+
+**Features can evolve without breaking architectural boundaries:**
+
+```javascript
+// ✅ CORRECT: Feature evolution within boundaries
+products/rest-export.js:
+// Version 1: Basic product export
+// Version 2: + Category enrichment  
+// Version 3: + Image processing
+// Version 4: + Performance optimization
+
+// Domain boundary preserved, feature becomes more comprehensive
+
+// ❌ WRONG: Feature evolution breaks boundaries
+products/rest-export.js → 
+products/rest-export-with-files.js →
+products/rest-export-with-files-and-commerce.js
+// Domain bleeding, unclear responsibilities
+```
+
+---
+
+## Configuration Standards: User Preferences & Application Settings
+
+### CRITICAL: Complete Configuration Architecture
+
+**Configuration encompasses both infrastructure settings AND user preferences/application settings.**
+
+### **Infrastructure Configuration (Already Covered)**
+
+#### **Environment & Domain Configuration**
+
+- ✅ Clean object access patterns (`config.commerce.baseUrl`)
+- ✅ Dependency injection through function parameters
+- ✅ No optional chaining with fallbacks in business logic
+- ✅ Environment-specific overrides in config builders
+
+#### **Feature Configuration Integration**
+
+- ✅ Features receive complete config objects
+- ✅ Config boundaries respected in Feature-First architecture
+- ✅ Configuration testing with mock objects
+
+### **User Preferences & Application Settings (NEW)**
+
+#### **1. User Preference Architecture**
+
+**User preferences should follow the same Feature-First DDD patterns:**
+
+```javascript
+// === USER PREFERENCES ORGANIZATION ===
+
+config/user-preferences/
+├── ui-preferences.js          # Complete UI preference management
+├── export-preferences.js     # Complete export preference management  
+├── notification-preferences.js # Complete notification preference management
+└── shared/
+    ├── preference-storage.js  # Cross-feature preference storage
+    ├── preference-validation.js # Cross-feature validation
+    └── preference-defaults.js  # Cross-feature default management
+```
+
+#### **2. User Preference Integration Pattern**
+
+**User preferences integrate with infrastructure config:**
+
+```javascript
+// === COMPLETE CONFIGURATION OBJECT ===
+function loadCompleteConfig(params, userPreferences = {}) {
+  const infrastructureConfig = loadConfig(params);
+  
+  return {
+    // Infrastructure configuration (environment-based)
+    ...infrastructureConfig,
+    
+    // User preferences (user-specific)
+    userPreferences: {
+      ui: buildUiPreferences(userPreferences.ui),
+      export: buildExportPreferences(userPreferences.export),
+      notifications: buildNotificationPreferences(userPreferences.notifications)
+    }
+  };
+}
+```
+
+#### **3. Feature-Level Preference Usage**
+
+**Features use both infrastructure config and user preferences:**
+
+```javascript
+// === PRODUCTS REST EXPORT WITH PREFERENCES ===
+async function exportProducts(params, config) {
+  // Infrastructure configuration (trusted system)
+  const { commerce, products } = config;
+  const apiTimeout = commerce.api.timeout;
+  const defaultFields = products.fields;
+  
+  // User preferences (optional customization)
+  const { userPreferences } = config;
+  const preferredFields = userPreferences.export.fields || defaultFields;
+  const preferredFormat = userPreferences.export.format || 'csv';
+  const includeImages = userPreferences.export.includeImages || false;
+  
+  // Step 1: Fetch products with user-preferred fields
+  const products = await fetchProducts(params, {
+    fields: preferredFields,
+    timeout: apiTimeout
+  });
+  
+  // Step 2: Apply user export preferences
+  const exportOptions = {
+    format: preferredFormat,
+    includeImages: includeImages,
+    headers: userPreferences.export.customHeaders || []
+  };
+  
+  return await processExport(products, exportOptions);
+}
+```
+
+#### **4. User Preference Categories**
+
+**Organize preferences by user-facing capabilities:**
+
+```javascript
+// === UI PREFERENCES ===
+const uiPreferences = {
+  theme: 'dark' | 'light' | 'auto',
+  language: 'en' | 'es' | 'fr',
+  itemsPerPage: 25 | 50 | 100,
+  defaultView: 'grid' | 'list',
+  showTutorials: boolean,
+  compactMode: boolean
+};
+
+// === EXPORT PREFERENCES ===
+const exportPreferences = {
+  defaultFormat: 'csv' | 'xlsx' | 'json',
+  fields: ['sku', 'name', 'price', 'category'],
+  includeImages: boolean,
+  includeInventory: boolean,
+  customHeaders: string[],
+  emailNotification: boolean,
+  autoDownload: boolean
+};
+
+// === NOTIFICATION PREFERENCES ===
+const notificationPreferences = {
+  exportComplete: boolean,
+  errorAlerts: boolean,
+  systemUpdates: boolean,
+  emailNotifications: boolean,
+  browserNotifications: boolean,
+  notificationSound: boolean
+};
+```
+
+#### **5. Preference Storage Strategy**
+
+**User preferences stored separately from infrastructure config:**
+
+```javascript
+// === PREFERENCE STORAGE PATTERNS ===
+
+// Browser storage for UI preferences
+const uiPreferences = {
+  storage: 'localStorage',
+  key: 'adobe-app-builder-ui-preferences',
+  encryption: false // UI preferences not sensitive
+};
+
+// User profile storage for export preferences  
+const exportPreferences = {
+  storage: 'userProfile',
+  key: 'export-preferences',
+  encryption: false // Export preferences not sensitive
+};
+
+// Secure storage for notification preferences
+const notificationPreferences = {
+  storage: 'secureUserProfile', 
+  key: 'notification-preferences',
+  encryption: true // May contain email/contact info
+};
+```
+
+#### **6. Feature Toggle Architecture**
+
+**Application settings and feature toggles follow domain organization:**
+
+```javascript
+// === APPLICATION FEATURE TOGGLES ===
+
+config/features/
+├── product-features.js        # Product domain feature toggles
+├── file-features.js           # File domain feature toggles
+├── commerce-features.js       # Commerce domain feature toggles
+└── shared/
+    ├── feature-detection.js   # Cross-domain feature detection
+    └── feature-validation.js  # Cross-domain feature validation
+
+// === FEATURE USAGE IN WORKFLOWS ===
+async function exportProducts(params, config) {
+  const { features } = config;
+  
+  // Check feature availability before using
+  if (features.products.meshExport.enabled) {
+    return await exportViaApiMesh(params, config);
+  }
+  
+  if (features.products.bulkExport.enabled && params.bulkMode) {
+    return await exportInBulk(params, config);
+  }
+  
+  // Default export method
+  return await exportViaRestApi(params, config);
+}
+```
+
+#### **7. Configuration Validation for Preferences**
+
+**User preferences validated with same rigor as infrastructure config:**
+
+```javascript
+// === PREFERENCE VALIDATION SCHEMA ===
+
+// config/schema/user-preferences.schema.js
+const userPreferencesSchema = {
+  ui: {
+    theme: { type: 'string', enum: ['dark', 'light', 'auto'], default: 'auto' },
+    language: { type: 'string', enum: ['en', 'es', 'fr'], default: 'en' },
+    itemsPerPage: { type: 'number', enum: [25, 50, 100], default: 50 }
+  },
+  export: {
+    defaultFormat: { type: 'string', enum: ['csv', 'xlsx', 'json'], default: 'csv' },
+    fields: { type: 'array', items: { type: 'string' }, default: ['sku', 'name'] },
+    includeImages: { type: 'boolean', default: false }
+  },
+  notifications: {
+    exportComplete: { type: 'boolean', default: true },
+    errorAlerts: { type: 'boolean', default: true },
+    emailNotifications: { type: 'boolean', default: false }
+  }
+};
+
+// === PREFERENCE VALIDATION INTEGRATION ===
+function validateUserPreferences(preferences, schema) {
+  return validateAgainstSchema(preferences, schema, {
+    allowDefaults: true,
+    strict: false, // User preferences more flexible than infrastructure
+    sanitize: true // Clean user input
+  });
+}
+```
+
+#### **8. Frontend Configuration Generation for Preferences**
+
+**User preferences included in frontend configuration build:**
+
+```javascript
+// === FRONTEND CONFIGURATION WITH PREFERENCES ===
+
+// scripts/build/operations/config-generation.js
+function generateFrontendConfig(environment, userPreferences = {}) {
+  const infraConfig = loadConfig({}, environment === 'production');
+  
+  return {
+    // Infrastructure (public only)
+    runtime: {
+      url: infraConfig.runtime.url,
+      namespace: infraConfig.runtime.namespace
+    },
+    
+    // User preferences (all client-side safe)
+    userPreferences: {
+      ui: userPreferences.ui || getDefaultUiPreferences(),
+      export: sanitizeExportPreferences(userPreferences.export),
+      notifications: sanitizeNotificationPreferences(userPreferences.notifications)
+    },
+    
+    // Feature toggles (public features only)
+    features: {
+      products: infraConfig.features.products.publicFeatures,
+      files: infraConfig.features.files.publicFeatures
+    }
+  };
+}
+```
+
+### **Configuration Architecture Benefits**
+
+#### **Complete User Experience**
+
+- ✅ **Infrastructure config** - System behavior and integrations
+- ✅ **User preferences** - Personalized experience and workflows
+- ✅ **Feature toggles** - Application capabilities and feature availability
+- ✅ **Unified access** - Single config object contains all settings
+
+#### **Feature-First Integration**
+
+- ✅ **Domain organization** - Preferences organized by business domain
+- ✅ **Feature cohesion** - Related preferences grouped with business features
+- ✅ **Clean contracts** - Features receive complete config with preferences
+- ✅ **Testing support** - Mock preferences for comprehensive feature testing
+
+#### **Maintainable Architecture**
+
+- ✅ **Separation of concerns** - Infrastructure vs user vs feature settings
+- ✅ **Validation consistency** - Same schema validation approach for all config
+- ✅ **Frontend integration** - Secure preference inclusion in generated frontend config
+- ✅ **Storage strategy** - Appropriate storage for different preference types
+
+---
+
+## Scripts Architecture Standards
+
+### Feature-First DDD for Scripts
+
+**CRITICAL: Scripts use Feature-First DDD organization for maximum cognitive efficiency:**
+
+Scripts represent complete operational capabilities that users invoke directly, making them perfect candidates for Feature-First organization. Each script file contains everything needed to understand and maintain that specific capability.
+
+#### The Scripts Problem
+
+**Traditional Layer-First Organization:**
+
+- File jumping required to understand complete script workflows
+- Context switching between workflows, operations, and utilities
+- Feature fragmentation across multiple files
+- Cognitive overhead to trace script execution flow
+
+**Feature-First Solution:**
+
+- Complete script capability in single file
+- Progressive disclosure: main workflow → operations → utilities
+- No file jumping required for script understanding
+- Clear script ownership and maintenance boundaries
+
+#### Scripts Feature-First Pattern
+
+**Each script feature file follows this structure:**
+
+```javascript
+// scripts/deployment/app-deployment.js
+
+/**
+ * Deployment - App Deployment
+ * Complete app deployment capability with all supporting functions
+ */
+
+// All dependencies at top - external vs internal is obvious from paths
+const { executeScriptWithExit } = require('../shared/execution/script-framework');
+const { parseArgs } = require('../shared/cli/args');
+const { detectEnvironment } = require('./shared/environment-detection');
+const { formatDeploymentOutput } = require('./shared/output-formatting');
+
+// === MAIN SCRIPT WORKFLOW === (What users invoke)
+async function deployApp(options = {}) {
+  // Step 1: Environment setup
+  const environment = detectEnvironment(options);
+  await displayDeploymentStart(environment);
+  
+  // Step 2: Build process  
+  const buildResult = await executeBuildProcess(environment);
+  if (!buildResult.success) throw new Error(buildResult.error);
+  
+  // Step 3: Deploy application
+  await displayAppDeployment();
+  const deployResult = await executeAppDeployment(options);
+  
+  // Step 4: Display results
+  await displayDeploymentResults(deployResult);
+  return deployResult;
+}
+
+// === SCRIPT OPERATIONS === (Coordinate script steps)
+async function executeBuildProcess(environment) {
+  // Build coordination logic
+}
+
+async function executeAppDeployment(options) {
+  // App deployment coordination logic  
+}
+
+// === SCRIPT UTILITIES === (Building blocks for this script)
+function detectEnvironment(options) {
+  // Environment detection logic
+}
+
+async function displayDeploymentStart(environment) {
+  // Output formatting logic
+}
+
+// Entry point for CLI usage
+if (require.main === module) {
+  executeScriptWithExit('app-deployment', async () => {
+    const args = parseArgs(process.argv.slice(2));
+    return await deployApp(args);
+  });
+}
+
+module.exports = { deployApp };
+```
+
+#### Scripts vs Application Code Differences
+
+**1. CLI Entry Point Integration:**
+
+```javascript
+// Each script includes CLI integration pattern
+if (require.main === module) {
+  // CLI entry point with argument parsing
+}
+```
+
+**2. Operational Domain Boundaries:**
+
+- `deployment/` - Everything related to deploying the application
+- `testing/` - Everything related to testing the application  
+- `monitoring/` - Everything related to monitoring the application
+- `development/` - Everything related to development tooling
+
+**3. Enhanced Shared Infrastructure:**
+Scripts have more cross-cutting concerns requiring robust shared infrastructure:
+
+- CLI argument parsing (universal need)
+- Output formatting (consistent visual experience)
+- Script execution framework (error handling, exit codes)
+- Environment detection (staging vs production)
+
+### Scripts Development Standards
+
+**CRITICAL: Feature-First with Domain Boundaries**
+
+1. **Complete Features in Single Files** - Each script represents one complete operational capability
+2. **Progressive Disclosure** - Main workflow → operations → utilities within each file
+3. **Domain Boundaries Respected** - Deployment, testing, monitoring, development domains
+4. **Shared Infrastructure Separated** - CLI, execution, and universal utilities in `shared/`
+5. **Direct Imports Always** - No namespace imports, explicit dependencies
+6. **CLI Integration Pattern** - Consistent entry point pattern across all scripts
+
+### Scripts File Organization Rules
+
+**Required Section Pattern:**
+
+```javascript
+// === MAIN SCRIPT WORKFLOW === (What users invoke from CLI)
+// === SCRIPT OPERATIONS === (Coordinate multiple script steps)  
+// === SCRIPT UTILITIES === (Building blocks for this specific script)
+```
+
+**JSDoc Requirements:**
+
+```javascript
+/**
+ * [Domain] [Script Name]
+ * 
+ * @description Complete [capability description] with all supporting functions
+ * @param {Object} options - Script execution options
+ * @returns {Promise<Object>} Script execution result
+ * 
+ * @usedBy npm run [script-name] (CLI integration)
+ */
+```
+
+**Export Pattern:**
+
+```javascript
+module.exports = { 
+  mainScriptFunction, // Primary export for programmatic use
+  // Secondary functions only if needed by other scripts
+};
+```
+
+### Migration Benefits
+
+**Cognitive Load Optimization:**
+
+- ✅ **Complete script understanding** in single file
+- ✅ **No file jumping** to understand deployment/testing process  
+- ✅ **Progressive disclosure** within each script
+- ✅ **Predictable script structure** across all operational domains
+
+**Maintained Code Quality:**
+
+- ✅ **DDD domain boundaries** preserved (deployment vs testing vs monitoring)
+- ✅ **Shared infrastructure** properly separated
+- ✅ **CLI consistency** across all scripts
+- ✅ **Clear script ownership** for maintenance
+
+**Developer Experience:**
+
+- ✅ **Easy script debugging** - trace complete logic in one file
+- ✅ **Consistent patterns** - same structure for all scripts
+- ✅ **Clear modification points** - know exactly where to change functionality
+
+---
+
+## Testing Standards
+
+### Action Testing
+
+```bash
+# Test individual actions
+npm run test:get-products:target
+npm run test:get-products-mesh:target
+
+# Deploy and test
+npm run deploy
+```
+
+### Framework Integration
+
+- **Always test framework integration** after changes
+- **Deploy to verify** - Adobe I/O Runtime behavior differs from local
+- **Preserve functionality** - No existing features can break
+
+---
 
 ## Development Guidelines
 
-### Always Start with Context
+### Creating New Actions
 
-Before implementing any feature:
+1. **Use direct imports** - Import complete feature functions from domain files
+2. **Follow createAction pattern** - Use the established framework
+3. **Keep actions thin** - 50-80 lines maximum
+4. **No custom error handling** - Let framework handle all errors
+5. **Use step-based workflow** - Consistent messaging patterns
+6. **Import complete capabilities** - Use main workflow functions from feature files
 
-1. Check existing utilities in `src/core/` first
-2. Review similar patterns in `actions/backend/` or `actions/frontend/`
-3. Consult relevant documentation in `docs/`
-4. Verify the configuration system in `config/`
+### Creating New Domain Functions
 
-### Adobe App Builder Specific
+1. **Follow Feature-First organization** - Complete capabilities in single files
+2. **Use direct imports** - Import specific dependencies  
+3. **Single responsibility** - Each function does one thing well
+4. **Pure functions** - Clear input/output contracts
+5. **Domain-specific** - Business logic stays in appropriate domain
+6. **Progressive disclosure** - Workflows → operations → utilities within each file
 
-- All backend code goes in `actions/` as Adobe I/O Runtime functions
-- Use Adobe I/O SDK features (@adobe/aio-sdk)
-- Leverage Adobe I/O Files for file operations
-- Use environment-specific configurations from `config/environments/`
-- Follow staging-first development workflow
+### Audit Script Maintenance
 
-### Command Line Operations
+1. **Self-validation required** - Run `npm run audit` after any changes to audit.js or audit.config.js
+2. **Validate audit rules** - Ensure new rules work correctly and don't create false positives
+3. **Test audit accuracy** - Verify audit results against known compliance state
+4. **Update baseline** - Regenerate audit-baseline.txt if legitimate changes affect results
 
-**CRITICAL: Always Prefer npm Scripts**
+### Safe Architectural Transformation
 
-Use npm scripts instead of direct CLI commands for consistency and integration:
+#### **CRITICAL: Consolidate-Then-Remove Pattern**
 
-```bash
-# ✅ CORRECT: Use npm scripts
-npm run deploy          # Deploy to staging
-npm run deploy:prod     # Deploy to production
-npm run deploy:mesh     # Update API Mesh
-npm run test:action     # Test individual actions
-npm run build:config    # Generate frontend configuration
+**When refactoring from layer-first to Feature-First architecture, ALWAYS use the "Consolidate THEN Remove" pattern:**
 
-# ❌ WRONG: Direct CLI commands
-aio app deploy
-aio api-mesh update mesh.json
-aio rt activation logs
-```
+1. **CONSOLIDATE Phase** - Build new Feature-First files alongside existing layer-first structure
+2. **VALIDATE Phase** - Test new files in isolation, update imports atomically, deploy and test complete system
+3. **CLEANUP Phase** - Remove old directories only after confirming new system works completely
 
-**npm Scripts Benefits:**
+**Never remove existing working structure until new structure is validated and all imports are switched.**
 
-- **Consistency**: Same commands work across environments
-- **Integration**: Automatically handles build steps and validation
-- **Documentation**: Scripts are self-documenting in package.json
-- **Workflow**: Integrates with IDE and CI/CD systems
+#### **Transformation Safety Rules**
 
-### Command Line Operations
+- ✅ **Build alongside existing** - Never modify working files during consolidation
+- ✅ **Deploy first, test, then proceed** - Always verify deployment before cleanup
+- ✅ **Atomic import switching** - Update ALL imports simultaneously in one commit
+- ✅ **Complete validation** - Test all actions work with new architecture before removing old structure
+- ❌ **Never remove before validate** - Prevents broken intermediate states
+- ❌ **Never partial migration** - Avoid mixed architecture states
 
-**CRITICAL: Always Prefer npm Scripts**
-
-Use npm scripts instead of direct CLI commands for consistency and integration:
+#### **Validation Commands Pattern**
 
 ```bash
-# ✅ CORRECT: Use npm scripts
-npm run deploy          # Deploy to staging
-npm run deploy:prod     # Deploy to production
-npm run deploy:mesh     # Update API Mesh
-npm run test:action     # Test individual actions
-npm run build:config    # Generate frontend configuration
+# Phase 1: Test new structure in isolation
+node -e "require('./src/domain/feature-file.js')"
+npm run lint src/domain/feature-file.js
 
-# ❌ WRONG: Direct CLI commands
-aio app deploy
-aio api-mesh update mesh.json
-aio rt activation logs
+# Phase 2: Deploy and test complete system  
+npm run deploy
+npm run test:action action-name
+
+# Phase 3: Remove old structure only after validation
+rm -rf src/domain/operations/ src/domain/utils/
+
+# Phase 4: Confirm cleanup success
+find src/ -name "operations" -o -name "utils" -type d
+npm run audit | grep "feature-first-file-organization"
 ```
 
-**npm Scripts Benefits:**
+---
 
-- **Consistency**: Same commands work across environments
-- **Integration**: Automatically handles build steps and validation
-- **Documentation**: Scripts are self-documenting in package.json
-- **Workflow**: Integrates with IDE and CI/CD systems
-
-### HTMX Integration
-
-- Use HTMX attributes for dynamic UI updates
-- Keep JavaScript minimal and progressive enhancement focused
-- Use the established HTMX utilities in `src/htmx/`
-- Ensure graceful fallbacks when JavaScript is disabled
-
-### Commerce Integration
-
-**CRITICAL: OAuth 1.0 Authentication**
-
-All Commerce API calls use OAuth 1.0 authentication with HMAC-SHA256 signatures:
-
-```javascript
-// ✅ CORRECT: Use makeCommerceRequest for OAuth authentication
-const { makeCommerceRequest } = require('../../../src/commerce/api/integration');
-
-const response = await makeCommerceRequest('/products', {
-  method: 'GET',
-}, params); // params contains OAuth credentials
-
-// ✅ CORRECT: OAuth credentials in app.config.yaml inputs
-COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
-COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
-COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
-COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
-
-// ❌ WRONG: Don't create custom OAuth implementations
-// ❌ WRONG: Don't test authentication separately - let API calls validate
-```
-
-**OAuth Implementation Rules:**
-
-- **Always use `makeCommerceRequest()`** for Commerce API calls
-- **Never implement custom OAuth** - use the established `createOAuthHeader()` function
-- **No pre-authentication testing** - OAuth validation happens during actual API calls
-- **Parameter extraction** - Use `extractActionParams()` to get OAuth credentials from action parameters
-- **URL handling** - Use `buildCommerceUrl()` for proper Commerce API URL construction
-- **Signature generation** - Follows Postman-style base URL parsing for HMAC-SHA256 signatures
-
-**Required OAuth Credentials:**
-
-All actions that call Commerce APIs must have these inputs in `app.config.yaml`:
-
-- `COMMERCE_CONSUMER_KEY`
-- `COMMERCE_CONSUMER_SECRET`
-- `COMMERCE_ACCESS_TOKEN`
-- `COMMERCE_ACCESS_TOKEN_SECRET`
-
-**Commerce Integration Guidelines:**
-
-- Use the established Commerce utilities in `src/commerce/`
-- Handle Commerce API rate limits appropriately
-- Validate product data according to Commerce schemas
-- Use proper error handling for Commerce API calls
-- Always use OAuth 1.0 for authentication (no legacy admin token auth)
+## Advanced Patterns
 
 ### API Mesh Integration
 
@@ -204,1233 +1167,831 @@ const message = 'Successfully fetched ' + count + ' products';
 
 // ❌ WRONG: Template literals not fully supported in API Mesh
 const inventoryUrl = `https://example.com/rest/V1/stockItems/${sku}`;
-const message = `Successfully fetched ${count} products`;
 ```
 
-**CRITICAL: Storage Dependency Pattern**
+### Commerce Integration
 
-Always use `storeCsv()` function with correct parameters to avoid circular dependency issues:
+**CRITICAL: Admin Token Authentication**
+
+All Commerce API calls use admin token authentication as the standard practice:
 
 ```javascript
-// ✅ CORRECT: Use storeCsv function (handles storage initialization internally)
-const storeCsv = require('../get-products/steps/storeCsv');
+// ✅ CORRECT: Use executeAdminTokenCommerceRequest for admin token authentication
+const { executeAdminTokenCommerceRequest } = require('../../../src/commerce/operations/api-requests');
 
-const storageResult = await storeCsv(csvData, actionParams);
-
-// Check for storage errors
-if (!storageResult.stored) {
-  throw new Error(`Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`);
-}
-
-// ❌ WRONG: Manual storage initialization in actions
-const { initializeStorage } = require('../../../src/core/storage');
-const storage = await initializeStorage(config, actionParams); // Circular dependency!
-
-// ❌ WRONG: Incorrect storeCsv parameters
-await storeCsv(csvData, config, storage); // Wrong - 3 params instead of 2
+const response = await executeAdminTokenCommerceRequest('/products', {
+  method: 'GET',
+}, config, params); // No trace parameter
 ```
 
-**Storage Error Handling Rules:**
+**Required Admin Token Configuration:**
+All actions calling Commerce APIs must have these inputs:
 
-- **Always check `storageResult.stored`** - Don't assume storage succeeded
-- **Use proper error messages** - Include specific error details when storage fails
-- **Let storeCsv handle initialization** - Don't manually initialize storage in actions
-- **Correct function signature** - `storeCsv(csvData, actionParams)` only (2 parameters)
-- **Test script display** - Storage errors show as "Storage Failed" not "ERROR"
+- `COMMERCE_BASE_URL` - Commerce instance URL
+- `COMMERCE_ADMIN_USERNAME` - Admin user username  
+- `COMMERCE_ADMIN_PASSWORD` - Admin user password
 
-**API Mesh Patterns:**
+**Authentication Flow:**
 
-- Use `mesh.json` for API Mesh configuration with CommonJS format resolvers
-- Custom resolvers in `mesh-resolvers.js` to consolidate multiple data sources
-- Enhanced resolvers bridge gaps between Commerce REST API and Catalog Service
-- **True Mesh Pattern**: Mesh resolvers consolidate data from multiple Commerce APIs into single GraphQL query
-- Pass OAuth credentials via admin token headers (`x-commerce-admin-token`) for mesh authentication
-- Pass Catalog Service credentials via custom headers (`x-catalog-*`)
-- Catalog Service authentication requires Commerce instance endpoint, not sandbox
-- API Mesh consolidates 200+ API calls into single GraphQL queries
-- Enhanced resolvers expose hidden/disabled products not visible in Catalog Service
+1. Admin token is obtained using username/password
+2. Token is cached and reused for subsequent requests
+3. Token is automatically refreshed when expired
 
-**API Mesh Limitations:**
+### Code Quality Standards
 
-- External GraphQL schema files not supported in `additionalTypeDefs` (unlike `additionalResolvers`)
-- Type definitions must be inline in `mesh.json` as string array for better readability
-- Keep external `.graphql` files for documentation but reference inline definitions
+**CRITICAL: ESLint Compliance (NEW)**
 
-**Required Configuration:**
-
-- Mesh endpoint and API key in environment configuration
-- Catalog Service credentials in `.env` and `app.config.yaml`
-- Commerce authentication token passed to mesh resolvers
-- Environment-specific mesh configuration (staging/production)
-
-### Error Handling
-
-- Use consistent error response formats
-- Log errors appropriately for debugging
-- Provide user-friendly error messages
-- Follow the error handling patterns in existing code
-
-### Performance
-
-- Use caching where appropriate
-- Optimize Commerce API calls
-- Consider file size limits for Adobe I/O Files
-- Use compression for large responses
-
-### Testing
-
-- Use the existing test scripts (`npm run test:action`)
-- Test actions individually before integration
-- Use unified performance testing framework (npm run test:perf:*) for optimization and analysis
-- Test in staging environment before production
-
-### Performance Testing Framework
-
-**CRITICAL: Use Unified Framework for All Performance Testing**
-
-Always use the comprehensive performance framework instead of creating ad-hoc scripts:
-
-```bash
-# Preferred: Use unified framework
-npm run test:perf:list      # List scenarios
-npm run test:perf:compare   # REST vs Mesh comparison
-npm run test:perf:mesh      # Detailed analysis
-npm run test:perf:batch     # Batch optimization
-
-# WRONG: Don't create separate performance scripts
-# node scripts/test-mesh-custom.js  # Avoid this pattern
-```
-
-**Performance Testing Rules:**
-
-- **Use existing scenarios**: 8 comprehensive scenarios available (baselines, comparison, analysis, batching)
-- **Extend framework**: Add new scenarios to `src/core/testing/performance/scenarios.js` instead of new scripts
-- **Baseline tracking**: Framework automatically manages historical performance baselines
-- **Clean output**: Professional reporting with proper success/failure detection
-- **Error handling**: Framework includes comprehensive error recovery and validation
-
-## Code Quality
-
-- Use ESLint and Prettier (already configured)
-- Write clear, self-documenting code
-- Add JSDoc comments for public functions
-- Use meaningful variable and function names
-- Handle edge cases and errors gracefully
-
-## Frontend UI & Design System Compliance
-
-### CRITICAL: Design System First Approach (Recent Implementation)
-
-**Always use established design system tokens and patterns for UI components:**
-
-#### Design System Compliance Pattern
-
-```css
-/* ✅ CORRECT: Use design system tokens */
-.btn-export {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-tight);
-  border-radius: var(--border-radius-sm);
-  opacity: var(--opacity-70);
-  transition: all var(--transition-quick) var(--transition-ease);
-}
-
-/* ❌ WRONG: Hardcoded values */
-.btn-export {
-  padding: 8px 12px;
-  font-size: 14px; 
-  line-height: 1.2;
-  border-radius: 4px;
-  opacity: 0.7;
-  transition: all 0.2s ease;
-}
-```
-
-**Component Inheritance Pattern:**
-
-```css
-/* ✅ CORRECT: Extend base design system components */
-.btn-export-primary {
-  @extend .btn; /* Inherit from design system base */
-  @extend .btn-primary; /* Inherit design system variant */
-  /* Only add component-specific customizations */
-}
-
-/* ❌ WRONG: Recreate entire button from scratch */
-.btn-export-primary {
-  /* 50+ lines of duplicated button styles */
-}
-```
-
-### Loading States & Content Visibility
-
-**CRITICAL: Complete Content Hiding During Loading**
-
-Loading states must hide ALL content including icons, text, and subtitles:
-
-```css
-/* ✅ CORRECT: Complete content hiding */
-.btn.is-loading * {
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-.btn.is-loading::before {
-  visibility: hidden !important; /* Hide icon pseudo-elements */
-}
-
-/* ❌ WRONG: Partial hiding that leaves content visible */
-.btn.is-loading .btn-text {
-  display: none; /* Text hidden but icons/subtitles still show */
-}
-```
-
-**Design System Integration Rules:**
-
-- **Use design tokens**: Always reference `--token-name` instead of hardcoded values
-- **Extend base components**: Build on `.btn`, `.card`, etc. established patterns  
-- **Maintain accessibility**: Follow design system focus, contrast, and motion patterns
-- **Performance optimize**: Use design system `contain`, `will-change`, `touch-action` patterns
-- **Responsive behavior**: Use design system breakpoints and touch targets
-- **Loading consistency**: Follow established loading state hiding patterns
-
-**Recent Export Button Implementation:**
-
-- **Layout**: Compact horizontal with emoji icons (⚡ REST API, 🔗 API Mesh)
-- **Tokens**: Full design system token compliance for all properties
-- **Loading**: Complete content hiding with centered spinner
-- **Accessibility**: Proper focus states, high contrast support, reduced motion
-- **Inheritance**: Proper extension of base `.btn` design system patterns
-
-## Security
-
-- Never commit credentials or secrets
-- Use environment variables for sensitive data
-- Validate all inputs
-- Follow Adobe's security best practices
-- Use the security guidelines in `docs/security.md`
-
-## Deployment
-
-- Use `npm run deploy` for development deployment (includes automatic mesh updates)
-- Use `npm run deploy` for reliable staging deployment (includes mesh updates)
-- Use `npm run deploy:prod` for production
-- Always test in staging before production deployment
-
-### Enhanced npm Scripts (Recent Implementation)
-
-**CRITICAL: Development vs Production Optimization**
-
-Different retry and timeout settings for development vs production:
-
-```bash
-# ✅ Development: npm run deploy
-# - Automatic mesh updates when resolvers change
-# - Optimized for staging environment
-# - Fast iteration with helpful URL output
-
-# ✅ Production: npm run deploy:prod  
-# - Production-robust deployment
-# - Multi-environment support
-# - Same helpful URL format for consistency
-```
-
-**Recent Benefits Added:**
-
-- **Automatic mesh updates**: Both scripts detect resolver changes and update mesh
-- **Preserved URL output**: Both scripts show helpful individual action URLs
-- **Consistent developer experience**: Same workflow regardless of command used
-- **Environment optimization**: Different timeouts for dev vs production needs
-
-## Context-Aware Development
-
-When helping with this project:
-
-1. **Reference actual files**: Always check what exists in the current directory structure
-2. **Follow established patterns**: Use the same coding style and architecture patterns found in existing files
-3. **Maintain consistency**: Keep the same error handling, logging, and response formats
-4. **Use existing utilities**: Don't recreate functionality that already exists in `src/core/`
-5. **Update documentation**: When adding features, update relevant docs in `docs/`
-
-## Memory Substitutes (Manual Context)
-
-Since automatic memories aren't available, use these manual techniques:
-
-- **Reference previous solutions**: "Like the pattern in actions/backend/get-products.js..."
-- **Point to documentation**: "Following the security guidelines in docs/security.md..."
-- **Use project structure**: "Create a new utility in src/core/ that can be shared..."
-- **Include version context**: "This is an Adobe App Builder project using staging-first development..."
-
-## Action Architecture & DRY Principles
-
-### CRITICAL: Reuse Step Functions
-
-**NEVER** recreate functionality that exists in step functions. Always reuse established patterns:
+All functions must pass ESLint validation without warnings:
 
 ```javascript
-// ✅ CORRECT: Reuse existing step functions
-const buildProducts = require('../get-products/steps/buildProducts');
-const createCsv = require('../get-products/steps/createCsv');
-const storeCsv = require('../get-products/steps/storeCsv');
-const validateInput = require('../get-products/steps/validateInput');
+// ✅ CORRECT: ESLint compliant function
+async function executeRequest(url, options, config, params) { // ≤5 parameters
+  if (!url) throw new Error('URL required'); // Simple complexity
+  return await makeRequest(url, options, config, params);
+}
 
-// Use formatStepMessage for consistent messaging
-const { formatStepMessage } = require('../../../src/core/utils');
-
-// ❌ WRONG: Recreating CSV generation, file storage, step messaging manually
+// ❌ WRONG: ESLint violations
+async function executeRequest(url, options, config, params, trace, ttl) { // >5 parameters
+  // Complex nested logic with high cyclomatic complexity
+}
 ```
 
-### Action Structure Pattern
+**ESLint Requirements:**
+- **max-params**: ≤5 parameters per function
+- **complexity**: ≤10 cyclomatic complexity
+- **no-unused-vars**: All imports and variables must be used
 
-All backend actions should follow this consistent structure:
-
-1. **Import shared step functions** from `/steps/` directories
-2. **Extract and validate parameters** with `extractActionParams()`
-3. **Use consistent step messaging** with `formatStepMessage()`
-4. **Reuse transformation logic** (`buildProducts`, `createCsv`, `storeCsv`)
-5. **Only create new logic** for data fetching (e.g., `fetchProductsFromMesh`)
-
-### Step Function Guidelines
-
-**Always Reuse:**
-
-- `validateInput()` - Input validation
-- `buildProducts()` - Product data transformation  
-- `createCsv()` - CSV generation with proper headers
-- `storeCsv()` - File storage logic
-- `formatStepMessage()` - Consistent step messaging
-- `response.success/error()` - Response formatting
-
-**Only Create New:**
-
-- Data fetching functions (e.g., `fetchProductsFromMesh` vs `fetchAndEnrichProducts`)
-- Source-specific transformations
-
-### Parity Requirements
-
-Actions that serve the same purpose (e.g., `get-products` vs `get-products-mesh`) must have:
-
-- ✅ **Identical step messages** - Same success/error formatting
-- ✅ **Identical CSV structure** - Same headers, filename, download URLs
-- ✅ **Identical response format** - Same storage, performance, message fields
-- ✅ **Shared business logic** - Reuse transformations, validations, file operations
-
-## When Making Changes
-
-1. **Check existing step functions** in `actions/*/steps/` before creating new ones
-2. **Reuse shared utilities** in `src/core/` before creating new ones
-3. Follow the configuration system for new settings
-4. Update documentation when adding features
-5. Test with the provided test scripts
-6. Use staging environment for development
-7. Consider HTMX patterns for UI interactions
-8. **Maintain architectural consistency** across similar actions
-
-## Configuration Management
-
-The application uses a sophisticated configuration system across backend and frontend with consistent patterns and security considerations.
-
-### Backend Configuration
-
-Use `loadConfig(params)` and the configuration override system:
-
+**Parameter Consolidation Strategies:**
 ```javascript
-const { loadConfig } = require('../../config');
+// ✅ CORRECT: Consolidate related parameters into options object
+async function executeRequest(url, requestOptions, config, params) {
+  const { ttl = 300, method = 'GET', ...options } = requestOptions;
+}
 
-// Load complete configuration
-const config = loadConfig(params);
-
-// Configuration is automatically overridden from:
-// 1. Action parameters (params.VARIABLE_NAME)
-// 2. Environment variables (process.env.VARIABLE_NAME)
-// 3. Environment config defaults
+// ❌ WRONG: Too many individual parameters
+async function executeRequest(url, method, ttl, options, config, params) {
+}
 ```
 
-### Configuration Override Pattern
+### Monitoring and Observability Standards
 
-Use the `configOverrides` mapping in `config/index.js`:
+**CRITICAL: No Over-Architected Monitoring (NEW)**
+
+Trace and monitoring parameters have been removed as over-engineering:
 
 ```javascript
-const configOverrides = {
-  'commerce.baseUrl': 'COMMERCE_BASE_URL',
-  'commerce.credentials.username': 'COMMERCE_ADMIN_USERNAME'
+// ✅ CORRECT: Clean function signatures without trace
+async function executeRequest(url, options, config, params) {
+  return await makeRequest(url, options, config, params);
+}
+
+// ❌ WRONG: Over-architected monitoring parameters
+async function executeRequest(url, options, config, params, trace = null) {
+  if (trace?.incrementApiCalls) trace.incrementApiCalls(); // Over-engineering
+}
+```
+
+**Monitoring Policy:**
+- **No trace parameters** - Remove from all function signatures
+- **No monitoring injection** - Monitoring should be infrastructure concern, not business logic
+- **Simple logging** - Use console.warn/error for important events only
+- **Performance focus** - Optimize for actual business needs, not theoretical monitoring
+
+### Step Comments Standards (REFINED)
+
+**CRITICAL: Workflow Step Comments vs Regular Comments**
+
+Convert meaningful regular comments to step comments in business workflows:
+
+```javascript
+// ✅ CORRECT: Step comments in workflows
+async function processExport(data, config) {
+  // Step 1: Validate input parameters
+  validateExportData(data, config);
+  
+  // Step 2: Transform data for export
+  const transformed = await transformData(data, config);
+  
+  // Step 3: Generate and store file
+  return await storeExportFile(transformed, config);
+}
+
+// ✅ CORRECT: Regular comments for implementation details
+function buildApiUrl(baseUrl, endpoint) {
+  // Handle both absolute and relative URLs
+  return endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+}
+
+// ❌ WRONG: Regular comments for workflow steps
+async function processExport(data, config) {
+  // Validate input parameters
+  validateExportData(data, config);
+  
+  // Transform data for export
+  const transformed = await transformData(data, config);
+}
+```
+
+**Step Comment Rules:**
+- **Use in workflows**: Functions that orchestrate multiple operations
+- **Sequential operations**: When there are multiple logical steps
+- **Business processes**: User-facing capabilities with clear phases
+- **Don't use for**: Single operations, utilities, implementation details
+
+### Configuration Over Constants (NEW)
+
+**CRITICAL: Use Configuration Instead of Hardcoded Constants**
+
+Always use configuration values instead of hardcoded constants:
+
+```javascript
+// ✅ CORRECT: Use configuration values
+async function buildProducts(products, config) {
+  const exportFields = config.main.exportFields; // From configuration
+  const categoryMap = config.categoryMap || {};
+  
+  return products.map(product => 
+    buildProductObject(product, categoryMap, config)
+  );
+}
+
+// ❌ WRONG: Hardcoded constants
+const DEFAULT_PRODUCT_FIELDS = ['sku', 'name', 'price']; // Should be in config
+
+async function buildProducts(products, config = {}) {
+  const exportFields = config.main?.exportFields || DEFAULT_PRODUCT_FIELDS; // Fallback pattern
+}
+```
+
+**Configuration Requirements:**
+- **Required config parameter** - Don't make configuration optional
+- **No fallback constants** - Force proper dependency injection
+- **Validation** - Ensure required configuration is provided
+- **Error messages** - Clear errors when configuration is missing
+
+**Configuration Validation Pattern:**
+```javascript
+function validateRequiredConfig(config, requiredPath) {
+  if (!config || !config.main || !config.main.exportFields) {
+    throw new Error(`Configuration with ${requiredPath} is required`);
+  }
+}
+```
+
+---
+
+## Compliance Checklist
+
+### Universal Feature-First Standards
+
+**CRITICAL: These standards apply to ALL code - `src/`, `actions/`, `scripts/`, and `shared/`**
+
+- [ ] **Feature-First organization** - Complete business capabilities in single files or sub-modules
+- [ ] **Progressive disclosure** - Business workflows → Feature operations → Feature utilities
+- [ ] **Domain boundaries respected** - Clear separation between domains and infrastructure
+- [ ] **Direct imports** - No namespace imports, explicit dependencies
+- [ ] **ESLint compliance** - Max 5 parameters, complexity ≤10, no unused variables
+- [ ] **Configuration over constants** - Use config values, not hardcoded fallbacks
+- [ ] **Step comments in workflows** - "Step 1:", "Step 2:" for business processes only
+- [ ] **Export organization** - ≤5 exports = no comments; 6+ exports = use export comments
+- [ ] **Function organization** - Most comprehensive functions FIRST within each section
+- [ ] **JSDoc documentation** - @purpose, @usedBy, clear contracts for all functions
+
+### Domain-Specific Standards
+
+#### Action Standards (actions/)
+
+- [ ] Uses `createAction()` framework
+- [ ] Clean orchestrator pattern (50-80 lines)
+- [ ] Import organization: All dependencies at top of file - grouping is obvious from paths
+- [ ] Step comments only for multiple logical steps (no "Step 1:" for single operations)
+- [ ] Step-based workflow with `formatStepMessage()` when appropriate
+- [ ] No custom error handling
+- [ ] Consistent response structure
+
+#### Primary Domain Standards (src/products/, src/files/, src/commerce/, src/htmx/, src/testing/)
+
+- [ ] **Complete feature files** - Business workflows + operations + utilities in single files
+- [ ] **Sub-modules when needed** - For files >400 lines, organize into feature/sub-modules/
+- [ ] **Domain shared/** - Only truly shared utilities used by 3+ features within domain
+- [ ] **Cross-domain imports** - Only from other domain interfaces and shared infrastructure
+- [ ] **Feature cohesion** - Related business logic concentrated in appropriate features
+
+#### Infrastructure Standards (src/shared/)
+
+- [ ] **Cross-domain utilities only** - NOT business domains (action framework, HTTP, validation, utils)
+- [ ] **Universal applicability** - Used by multiple primary domains
+- [ ] **Technical focus** - Infrastructure concerns, not business logic
+- [ ] **Flat organization** - Simple directory structure appropriate to complexity
+
+#### Scripts Standards (scripts/)
+
+- [ ] **Operational capabilities** - Complete deployment, monitoring, auditing workflows
+- [ ] **CLI integration pattern** - Consistent entry points and argument parsing
+- [ ] **Feature-First organization** - Same patterns as src/ domains
+- [ ] **Shared infrastructure** - Common CLI utilities in `scripts/shared/`
+
+### Configuration Standards
+
+- [ ] Clean object access (no `?.` with fallbacks)
+- [ ] No `||` operator patterns in business logic
+- [ ] Defaults in configuration structure only
+- [ ] Environment overrides in config builders only
+- [ ] Features receive complete config object as parameter
+- [ ] Features extract only needed config sections internally
+- [ ] No configuration loading within features
+- [ ] No configuration modification within features
+- [ ] Operations receive targeted config sections only
+- [ ] Config-agnostic feature implementation for testing
+- [ ] Configuration requirements documented in feature JSDoc
+- [ ] **Required configuration validation** - Validate config presence, don't use fallbacks
+- [ ] **No hardcoded constants** - All defaults come from configuration files
+
+---
+
+## Migration from Legacy Patterns
+
+### If You See References To
+
+1. **Domain catalogs** (`src/products/index.js`) - These don't exist, use direct imports
+2. **Domain injection** (`const { products } = context`) - Not implemented, use direct imports
+3. **Action lib/ directories** - Deprecated, use domain workflows instead
+4. **Layer-first scripts** (`scripts/deploy/workflows/`, `scripts/test/operations/`) - Deprecated, use Feature-First organization
+5. **Scripts/core directory** (`scripts/core/`) - Moved to `scripts/shared/`
+6. **Namespace imports** in scripts - Use direct imports instead
+
+### Current Reality
+
+- ✅ **Direct imports throughout** - Working and implemented
+- ✅ **Action framework** - createAction() implemented and working
+- ✅ **Feature-First DDD scripts** - Complete capabilities in single files for cognitive efficiency
+- ✅ **Operational domain boundaries** - Deployment, testing, monitoring, development domains
+- ✅ **Strategic duplication** - Better than complex abstractions
+
+---
+
+## Success Metrics Achieved
+
+### Code Quality
+
+- **Zero duplication** across actions (216 lines eliminated)
+- **Consistent patterns** (100% compliance)
+- **Average action size**: 46 lines (down from 123 lines)
+- **Boilerplate eliminated**: 15-25 lines per action
+
+### Developer Experience
+
+- **Predictable structure** in every action
+- **Self-documenting** business logic flows
+- **Easy maintenance** through consistent patterns
+- **Fast development** with framework templates
+
+### Architecture Quality
+
+- **Direct import clarity** - Dependencies immediately obvious
+- **Action framework consistency** - All actions follow the same pattern
+- **Feature-First DDD organization** - Complete capabilities with domain boundaries
+- **Strategic duplication** - Better maintainability than complex abstractions
+- **Configuration integration** - Clean dependency injection through Feature-first architecture
+- **Domain configuration composition** - Each domain manages its own configuration concerns
+- **Config-agnostic features** - Features work with any valid configuration structure
+
+---
+
+This architecture successfully implements:
+
+- ✅ **Direct import clarity** - Dependencies are immediately obvious
+- ✅ **Action framework consistency** - All actions follow the same pattern
+- ✅ **Feature-First DDD organization** - Complete capabilities with domain boundaries
+- ✅ **Strategic duplication** - Better maintainability than complex abstractions
+- ✅ **Configuration trust** - Clean access patterns without defensive fallbacks
+- ✅ **Error handling delegation** - Framework handles all infrastructure concerns
+The foundation supports rapid, consistent development while maintaining high code quality and clear architectural boundaries. All principles have been validated through successful implementation across 5 actions and the Feature-First DDD scripts architecture.
+
+### Unified Architecture Benefits
+
+**Feature-First DDD Application + Scripts provides:**
+
+✅ **Cognitive Consistency** - Same mental model for both application code and operational scripts  
+✅ **Complete Feature Understanding** - No file jumping required for any capability  
+✅ **Domain Boundary Preservation** - DDD principles maintained across all code contexts  
+✅ **Progressive Disclosure** - Composite → atomic organization in both applications and scripts  
+✅ **Operational Efficiency** - Scripts represent complete user capabilities, perfectly aligned with Feature-First approach
+
+## Response Building Standards
+
+**CRITICAL: Unified Response Building Patterns**
+
+All backend operations must use standardized response building patterns to eliminate duplication and ensure consistency across the entire application.
+
+### **Core Response Foundation**
+
+**ALWAYS use the core response utilities as the foundation:**
+
+```javascript
+const { response } = require('../../shared/http/responses');
+
+// ✅ CORRECT: Use core response patterns
+return response.success(data, message, metadata);
+return response.error(error, context);
+return response.badRequest(message, context);
+return response.exportSuccess(data, message, metadata);
+return response.jsonData(data, message, metadata);
+```
+
+**Core Response Rules:**
+
+- **Foundation First**: Core `response` utilities are the single source of truth
+- **No Direct Construction**: Never manually construct `{ statusCode, headers, body }` responses
+- **Domain Wrappers Only**: Domain-specific builders should be thin wrappers around core functions
+- **Consistent Metadata**: Use `options.steps` for step information, not scattered patterns
+
+### **Domain Response Patterns**
+
+**Create domain-specific response builders as thin wrappers:**
+
+```javascript
+// ✅ CORRECT: Domain wrapper pattern
+function buildSuccessResponse(data, message = 'Operation completed successfully', metadata = {}) {
+  return response.success(data, message, metadata);
+}
+
+function buildErrorResponse(error, context = {}) {
+  return response.error(error, context);
+}
+
+// ❌ WRONG: Recreating core functionality
+function buildSuccessResponse(data, message) {
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ success: true, message, ...data })
+  };
+}
+```
+
+### **Storage Response Consolidation**
+
+**CRITICAL: Single Storage Response Builder**
+
+Use only one storage response builder across the entire application:
+
+```javascript
+// ✅ CORRECT: Use consolidated storage response builder
+const { buildStorageResponse } = require('../operations/response-building');
+
+// Standard signature for all storage operations
+const storageResponse = buildStorageResponse(storageResult, storage, config);
+
+// ❌ WRONG: Multiple competing storage response builders
+// Don't use: presigned-url-manager.js buildStorageResponse
+// Don't use: response-factories.js createAppBuilderPresignedUrlResponse
+// Don't use: Manual response construction
+```
+
+**Storage Response Rules:**
+
+- **Single Source**: Only `src/files/operations/response-building.js` exports storage response builders
+- **Standard Signature**: `buildStorageResponse(storageResult, storage, config)` - never change this
+- **Deprecate Duplicates**: Remove competing builders in utils directories
+- **Workflow Integration**: All storage workflows must use the operations layer builder
+
+### **Response Building Layer Architecture**
+
+**CRITICAL: Response building uses layer-first organization (infrastructure concern) while business logic uses Feature-First organization (business concern).**
+
+**Why Layer-First for Responses:**
+
+- **Infrastructure Concern**: Response building is technical formatting, not business logic
+- **Cross-Feature Consistency**: All features need identical response structure
+- **Single Source of Truth**: HTTP response contracts must be universal
+- **Separation of Concerns**: Response formatting ≠ business capability
+
+**Follow strict layering for response building:**
+
+```text
+┌─────────────────────────────────────────┐
+│ Actions Layer                           │
+│ - Uses workflow response builders       │
+│ - Never constructs responses directly   │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│ Workflows Layer                         │
+│ - Uses operations response builders     │
+│ - Orchestrates multiple operations      │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│ Operations Layer                        │
+│ - Domain-specific response builders     │
+│ - Thin wrappers around core functions   │
+└─────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────┐
+│ Core Layer                              │
+│ - response.success/error/badRequest     │
+│ - Single source of truth                │
+└─────────────────────────────────────────┘
+```
+
+**Integration with Feature-First Organization:**
+
+```javascript
+/**
+ * Files CSV Export
+ * Feature-First file demonstrating integration with layer-first response building
+ */
+
+// All dependencies at top - core and domain layers clear from paths
+const { response } = require('../../shared/http/responses'); // Core layer
+const { buildStorageResponse } = require('./shared/response-building'); // Operations layer
+
+// === BUSINESS WORKFLOWS ===
+async function exportProductsAsCsv(products, config) {
+  try {
+    // Business logic in Feature-First organization
+    const csvData = transformProductsToCsv(products, config);
+    const storageResult = await storeCsvData(csvData, config);
+    
+    // Response building through layer-first infrastructure
+    return buildStorageResponse(storageResult, storage, config); // Uses Core layer
+    
+  } catch (error) {
+    // Error handling returns response through infrastructure
+    return response.error(error, { feature: 'csv-export' });
+  }
+}
+```
+
+**Key Integration Principle:** Business logic (Feature-First) orchestrates capabilities, response building (Layer-First) formats output consistently.
+
+### **Elimination of Response Building Duplication**
+
+**Remove these patterns immediately:**
+
+```javascript
+// ❌ WRONG: Multiple response builders with same purpose
+buildStorageResponse()        // operations/response-building.js
+buildStorageResponse()        // utils/presigned-url-manager.js (REMOVE)
+createAppBuilderPresignedUrlResponse()  // utils/response-factories.js (REMOVE)
+createS3PresignedUrlResponse()         // utils/response-factories.js (REMOVE)
+
+// ❌ WRONG: Manual response construction in utilities
+return {
+  statusCode: 200,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data)
 };
 
-// Automatically creates nested objects and applies overrides
-applyConfigOverrides(config, params, configOverrides);
-```
-
-### Configuration Rules
-
-- **Backend**: Use `loadConfig(params)` for complete configuration
-- **Frontend**: Use specialized functions like `getCommerceConfig()`
-- **Security**: Never include credentials in frontend configuration
-- **Environment**: Configuration automatically detects staging vs production
-- **Build process**: Frontend config regenerated on each build/deploy
-- **Legacy**: Old `urlConfig` imports should use new `core/config.js`
-
-### Configuration Generation
-
-Frontend configuration is automatically generated during build from backend config:
-
-- **Build integration**: `npm run build:config` generates frontend config
-- **Security**: Sensitive credentials excluded from frontend
-- **Environment-specific**: Generated config matches build environment
-- **Auto-generated**: File at `web-src/src/config/generated/config.js`
-
-## URL Management
-
-The application uses a consistent URL management system across backend and frontend contexts:
-
-### CRITICAL: Frontend URL Generation Issues (Recent Fix)
-
-**Frontend actions served from static domain must use absolute URLs to reach runtime domain:**
-
-#### The Problem Pattern
-
-```javascript
-// ❌ WRONG: Relative URLs fail when static and runtime domains differ
-// Frontend: https://285361-namespace-stage.adobeio-static.net
-// Actions:  https://285361-namespace-stage.adobeioruntime.net
-const actionUrl = '/api/browse-files'; // 404 - tries static domain
-```
-
-#### The Solution Pattern
-
-```javascript
-// ✅ CORRECT: Absolute URLs with proper domain detection
-const config = getConfig();
-const actionUrl = `${config.runtime.url}/api/v1/web/${config.runtime.namespace}/${actionName}`;
-```
-
-**Root Cause Resolution:**
-
-1. **Configuration Missing**: Added `runtime.url` override in `config/index.js`
-2. **Environment Detection**: Fixed frontend generation to pass detected environment
-3. **URL Format**: Removed incorrect version suffixes from package names
-4. **Domain Separation**: Frontend (static) vs Actions (runtime) domains
-
-**Critical Fix Pattern:**
-
-- Always use absolute URLs for HTMX frontend actions
-- Frontend generation must detect environment for proper URL building
-- Configuration system must include runtime URL overrides
-- Never assume relative URLs work across Adobe I/O domain boundaries
-
-### Backend URL Building
-
-Use `src/core/routing/index.js` which re-exports from `src/core/url/index.js`:
-
-```javascript
-const { buildRuntimeUrl, buildCommerceUrl } = require('../../src/core/routing');
-
-// Runtime action URLs
-const actionUrl = buildRuntimeUrl('get-products', null, params);
-
-// Commerce API URLs
-const commerceUrl = buildCommerceUrl(config.commerce.baseUrl, 'products');
-```
-
-### Frontend URL Building
-
-Use `web-src/src/js/core/url.js` directly:
-
-```javascript
-import { getActionUrl, getDownloadUrl, buildDownloadUrl } from '../core/url.js';
-
-// Action URLs
-const browseUrl = getActionUrl('browse-files');
-
-// File URLs
-const downloadUrl = getDownloadUrl('products.csv', '/exports/');
-```
-
-### URL Management Rules
-
-- **Backend**: Always use `buildRuntimeUrl()` for action URLs
-- **Frontend**: Always use `getActionUrl()` for action URLs
-- **Commerce**: Always use `buildCommerceUrl()` for Commerce API URLs
-- **Parameters**: Use the built-in parameter encoding, don't encode manually
-- **Environment**: URL building automatically detects staging vs production
-- **HTMX**: System handles relative vs absolute URLs automatically
-
-### Key Functions
-
-**Backend:**
-
-- `buildRuntimeUrl(action, customBaseUrl, params)` - Build action URLs
-- `buildCommerceUrl(baseUrl, path, pathParams)` - Build Commerce URLs
-- `buildActionUrl(config, action, options)` - Core URL building (internal)
-
-**Frontend:**
-
-- `getActionUrl(action, params)` - Get action URL with parameters
-- `getDownloadUrl(fileName, path)` - Get file download URL
-- `buildDownloadUrl(filePath)` - Build encoded download URL
-- `getConfig()` - Get URL configuration for debugging
-
-## Schema Validation System
-
-### Build-Time Quality Assurance
-
-The project uses schema validation as **build tooling** that provides development-time validation without runtime overhead:
-
-- **Build Integration**: Automatically validates configuration before deployment
-- **Fail Fast**: Catches configuration errors before they reach production  
-- **Zero Runtime Impact**: Production actions use fast `loadConfig()` without validation
-- **Smart Output**: Concise for builds, detailed for development
-
-### Schema Components
-
-- **Core Configuration Schema** (`config/schema/core.schema.js`): Validates main configuration structure
-- **API Action Schemas** (`config/schema/api.schema.js`): Validates request/response for each action
-- **Frontend Configuration Schema**: Validates generated frontend configuration with security filtering
-
-### Build Integration (Automatic)
-
-Schema validation is **automatically integrated** into all build and deployment commands:
-
-- **npm run build** - Validates before building
-- **npm run start** - Validates before quick deployment  
-- **npm run deploy** - Validates before staging deployment
-- **npm run deploy:prod** - Validates before production deployment
-
-### Output Modes
-
-- **Build Integration**: `npm run validate` - Concise output ("✅ Schema validation passed")
-- **Development**: `npm run test:schemas` - Detailed diagnostics  
-- **Failure**: Always shows detailed error messages regardless of mode
-
-### Usage Patterns
-
-```javascript
-// Runtime: Fast loading without validation (recommended)
-const config = loadConfig(params);
-
-// Development: Validated loading (warns only)
-const config = loadValidatedConfig(params);
-
-// Testing: Strict validation
-const { validateActionParams } = require('../src/core/validation');
-validateActionParams('get-products', params, { strict: true });
-```
-
-### Validation Flow
-
-```
-npm run deploy
-├── npm run validate (schema validation - concise)
-├── npm run build:config (frontend generation)
-└── aio app deploy (deployment)
-```
-
-### Build Failure Handling
-
-When validation fails, build stops with detailed errors:
-
-```
-❌ Schema validation failed (1/4 tests failed)
-❌ Configuration validation failed: errorVerbosity must be equal to one of the allowed values
-```
-
-## Common Patterns
-
-- Configuration: Use the schema-validated config system
-- File Operations: Use Adobe I/O Files SDK through existing utilities
-- Commerce API: Use established Commerce integration patterns
-- Frontend Updates: Use HTMX for dynamic content
-- Error Responses: Use consistent error formatting
-- Logging: Use appropriate log levels and formatting
-- URL Building: Use the established URL management functions
-- API Mesh: Always use True Mesh pattern with embedded resolvers
-- **CRITICAL - Data Transformation**: NEVER transform data in mesh resolvers - always use buildProducts step
-- **CRITICAL - Mesh Actions**: NEVER skip buildProducts step - always use it for consistency  
-- **CRITICAL - Raw Data**: Mesh resolvers should return raw consolidated data, not transformed data
-
-## Dependencies
-
-- Prefer using existing dependencies over adding new ones
-- Use Adobe SDK features when available
-- Keep dependencies updated and secure
-- Document any new dependency requirements
-
-## Conversation Context Helpers
-
-To help maintain context across conversations:
-
-- Always mention this is an "Adobe App Builder Commerce integration project"
-- Reference the staging-first development workflow when discussing deployment
-- Point to existing documentation when relevant
-- Use the project structure terminology consistently
-- Reference the existing test scripts when discussing testing
-
-## Adobe I/O Runtime Parameter Handling
-
-### CRITICAL: Environment Variables vs Action Parameters
-
-**NEVER** access credentials or configuration via `process.env` in Adobe I/O Runtime actions. Adobe I/O Runtime uses a specific pattern:
-
-#### The Correct Pattern
-
-1. **Local `.env` file**: `AWS_ACCESS_KEY_ID=your_key`
-2. **`app.config.yaml` inputs**: `AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID`
-3. **Action function**: Access via `params.AWS_ACCESS_KEY_ID`
-
-#### How It Works
-
-```javascript
-// ✅ CORRECT: Use action parameters
-async function main(params) {
-  const accessKey = params.AWS_ACCESS_KEY_ID; // From app.config.yaml inputs
-  const username = params.COMMERCE_ADMIN_USERNAME; // From app.config.yaml inputs
-}
-
-// ❌ WRONG: Don't use process.env in actions
-async function main(params) {
-  const accessKey = process.env.AWS_ACCESS_KEY_ID; // Will be undefined!
+// ❌ WRONG: Domain-specific response construction
+function buildCustomResponse(data) {
+  return {
+    success: true,
+    customField: data,
+    // ... manual construction
+  };
 }
 ```
 
-#### Required Steps for New Credentials
+### **Response Building Testing Standards**
 
-1. Add to `.env`: `NEW_CREDENTIAL=value`
-2. Add to `app.config.yaml` inputs: `NEW_CREDENTIAL: $NEW_CREDENTIAL`
-3. Access in action: `params.NEW_CREDENTIAL`
-4. Use `extractActionParams()` from `src/core/http/client` to process parameters
-
-#### Why This Matters
-
-- Adobe I/O Runtime passes inputs as action parameters, not environment variables
-- The `extractActionParams()` function normalizes and processes these parameters
-- Environment variables work locally but fail in deployed actions
-- This pattern ensures consistency with existing Commerce credential handling
-
-#### Examples in Codebase
-
-- Commerce credentials: `params.COMMERCE_ADMIN_USERNAME` (working)
-- AWS credentials: `params.AWS_ACCESS_KEY_ID` (working)
-- Any new credentials should follow this same pattern
-
-## Commerce Configuration Pattern
-
-### CRITICAL: Commerce URL vs Credentials Source
-
-**NEVER** manually specify Commerce URLs or mix configuration sources. Follow this established pattern:
-
-#### The Configuration Split
-
-1. **Commerce URL**: Always from environment configuration (`config/environments/staging.js` or `production.js`)
-
-   - Path: `config.commerce.baseUrl`
-   - Loaded via: `loadConfig(params)`
-   - Example: `https://citisignal-com774.adobedemo.com`
-
-2. **Commerce Credentials**: Always from `.env` file
-   - `COMMERCE_ADMIN_USERNAME=admin`
-   - `COMMERCE_ADMIN_PASSWORD=password`
-   - Passed via `app.config.yaml` inputs to actions
-
-#### How Actions Handle This
+**Test response builders through the operations layer:**
 
 ```javascript
-// ✅ CORRECT: Commerce configuration pattern
-async function main(params) {
-  const config = loadConfig(params);
-  const commerceUrl = config.commerce.baseUrl; // From environment config
-  const username = params.COMMERCE_ADMIN_USERNAME; // From .env via params
-  const password = params.COMMERCE_ADMIN_PASSWORD; // From .env via params
-}
+// ✅ CORRECT: Test operations layer response builders
+const { buildStorageResponse } = require('../src/files/operations/response-building');
+const testResponse = buildStorageResponse(mockStorageResult, mockStorage, mockConfig);
+
+// ❌ WRONG: Test utility layer response builders
+// const { buildStorageResponse } = require('../src/files/utils/presigned-url-manager');
 ```
 
-#### Test Script Auto-Loading
+### **Documentation Requirements**
 
-The `test-action.js` script automatically handles both:
+**Document response building patterns:**
 
-- Loads Commerce URL from environment configuration
-- Loads credentials from `.env` file
-- No manual parameter specification needed for get-products
+- **Function Purpose**: What type of response does each builder create
+- **Standard Signature**: Exact parameters and their types  
+- **Usage Context**: When to use each builder (actions vs workflows vs operations)
+- **Migration Notes**: How to update from deprecated patterns
 
-#### Why This Pattern
+### Adobe I/O Runtime Actions (`actions/`)
 
-- **Environment separation**: URLs differ between staging/production
-- **Security**: Credentials stay in `.env`, never in code
-- **Consistency**: Same pattern across all Commerce integrations
-- **Auto-detection**: Environment determines the correct URL
+**CRITICAL: Actions represent business capabilities and must align with Feature-First DDD principles.**
 
-## Action Response Structure
+Actions are the **entry points** for Adobe App Builder applications and serve as the **application layer** in DDD architecture. Each action orchestrates domain workflows to fulfill specific business use cases.
 
-### CRITICAL: Test Script Integration
-
-Actions should return structured responses for proper `test-action.js` display:
-
-#### Required Response Fields
-
-```javascript
-// ✅ CORRECT: Action response structure
-return response.success({
-  message: 'Operation completed successfully',
-  steps: [
-    'Step 1: What was accomplished',
-    'Step 2: Include specific data types (e.g., "category and inventory data")',
-    'Step 3: Show counts and sizes',
-  ],
-  downloadUrl: 'https://...', // For file operations
-  storage: {
-    provider: 'app-builder' | 's3',
-    location: 'file/path',
-    properties: {
-      /* file details */
-    },
-  },
-});
+```text
+actions/
+├── get-products/              # Product export business capability
+│   └── index.js              # REST API product export action (uses products/rest-export.js)
+├── get-products-mesh/         # Product export business capability (alternative implementation)
+│   └── index.js              # API Mesh product export action (uses products/mesh-export.js)
+├── browse-files/              # File management business capability
+│   └── index.js              # File browsing action (uses files/file-browser.js)
+├── download-file/             # File management business capability
+│   └── index.js              # File download action (uses files/file-download.js)
+└── delete-file/               # File management business capability
+    └── index.js              # File deletion action (uses files/file-deletion.js)
 ```
 
-#### What Test Script Shows
+#### Action Organization Principles
 
-- **Storage Provider**: `📦 Storage: S3 (bucket-name)` or `📦 Storage: APP-BUILDER (Adobe I/O Files)`
-- **Download URL**: Direct link for file operations
-- **Numbered Steps**: All execution steps with specific details
-- **No Parameters**: Clean output without parameter clutter
-- **No Redundant Stats**: Steps contain all necessary information
+**1. Business Capability Alignment**
 
-#### Step Message Guidelines
+- Each action represents a **complete business use case**
+- Action names reflect **user intent**, not technical implementation
+- Actions **orchestrate domain workflows**, not implement business logic directly
 
-- Be specific about data types: "category and inventory data"
-- Include counts: "119 products"
-- Show file sizes: "15.45 KB"
-- Use `formatStepMessage()` function for consistency
+**2. Domain Integration Pattern**
 
-## Tracing Module Pattern
+- Actions **import and use domain workflows** from `src/`
+- Actions **do not contain business logic** - they delegate to domain features
+- Actions serve as **thin orchestration layer** between HTTP requests and domain logic
 
-### CRITICAL: Dynamic Configuration Loading
-
-**NEVER** use undefined global constants in tracing. Always use dynamic configuration:
-
-#### The Correct Pattern
+**3. createAction() Framework (MANDATORY)**
+All actions must use the unified action framework:
 
 ```javascript
-// ✅ CORRECT: Dynamic tracing configuration
-function createTraceContext(actionName, params) {
-  const tracingConfig = getTracingConfig(params);
-  const trace = {
-    config: tracingConfig, // Store for later use
-    // ... other trace properties
+// actions/get-products/index.js
+
+/**
+ * Product Export Action
+ * Business capability: Export product data as CSV with multiple implementation options
+ */
+
+// All dependencies at top - framework and domain imports clear from paths
+const { createAction } = require('../../src/shared/action/action-factory');
+const { exportProducts } = require('../../src/products/rest-export');
+
+// === ACTION BUSINESS LOGIC ===
+async function productExportBusinessLogic(context) {
+  const { config, extractedParams } = context;
+  
+  // Step 1: Execute domain workflow
+  const exportResult = await exportProducts(extractedParams, config);
+  
+  return {
+    message: 'Product export completed successfully',
+    steps: [
+      core.formatStepMessage('product-export', 'success', 'CSV generated and stored')
+    ],
+    downloadUrl: exportResult.downloadUrl,
+    storage: exportResult.storage,
+    productCount: exportResult.productCount
   };
 }
 
-// ✅ CORRECT: Use stored config
-if (context.config.performance.enabled) {
-  // performance tracking
+// === ACTION FRAMEWORK INTEGRATION ===
+module.exports = createAction(productExportBusinessLogic, {
+  actionName: 'get-products',
+  description: 'Export product data as CSV using REST API'
+});
+```
+
+#### Action to Domain Mapping
+
+**Product Domain Actions:**
+
+- `get-products/` → `src/products/rest-export.js`
+- `get-products-mesh/` → `src/products/mesh-export.js`
+
+**File Domain Actions:**
+
+- `browse-files/` → `src/files/file-browser.js`
+- `download-file/` → `src/files/file-download.js`  
+- `delete-file/` → `src/files/file-deletion.js`
+
+#### Action Architecture Rules
+
+**✅ CORRECT Action Patterns:**
+
+```javascript
+// Thin orchestration - delegates to domain
+async function actionLogic(context) {
+  const result = await domainWorkflow(context.extractedParams, context.config);
+  return formatActionResponse(result);
 }
+
+// Uses createAction framework
+module.exports = createAction(actionLogic, { actionName: 'action-name' });
+
+// Clear business capability naming
+// get-products, browse-files, download-file
 ```
 
-#### Configuration Source
-
-- Path: `config.app.monitoring.tracing`
-- Loaded via: `getTracingConfig(params)`
-- Always pass params for proper environment detection
-
-### When to Use Validation
-
-- **Always**: In test scripts and development tools (`npm run test:schemas`)
-- **Optional**: In production actions (use `loadValidatedConfig()` for warnings)
-- **Required**: For frontend configuration generation (automatic validation)
-
-## Debugging & Troubleshooting
-
-### CRITICAL: Handling Unloggable 500 Errors
-
-When an Adobe I/O Runtime action returns a `500 Internal Server Error` but produces **no logs** (`aio rt activation logs <id>` is empty), it indicates a catastrophic, pre-initialization failure. Standard debugging is ineffective. Follow this protocol:
-
-1. **Inject "Blast" Logging**:
-    - Add a unique `TRACE_ID` constant to the top of the failing action file (e.g., `const TRACE_ID = 'DIAGNOSTIC_TRACE_...'`).
-    - Prepend this `TRACE_ID` to aggressive `console.log` statements at every critical execution step (module load, function entry, before/after API calls).
-    - **Crucially**, modify the final `catch (error)` block to return a custom JSON object, NOT the standard response handler. This ensures a traceable response even if the logging system fails.
-
-    ```javascript
-    // ✅ CORRECT: Custom error response for diagnostics
-    } catch (error) {
-      console.error(`${TRACE_ID}: MAIN_CATCH_BLOCK_ERROR`, error);
-      return {
-        statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          error_source: 'my-failing-action',
-          trace_id: TRACE_ID,
-          original_error: {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-          },
-        }),
-      };
-    }
-    ```
-
-2. **Inspect the Browser Network Response**:
-    - After deploying the "blast-logged" action, trigger it from the UI.
-    - Open the browser's developer tools, go to the Network tab, and inspect the response body of the failed 500 request.
-    - If you see the `trace_id` in the JSON response, your code **is** being deployed and executed. The `original_error` object will contain the true root cause.
-
-3. **Validate the Entire Build Pipeline**:
-    - The error may not be in the action code itself, but in a file that generates it.
-    - In our case, `mesh-resolvers.template.js` was generating an incorrect `mesh-resolvers.js` file, causing an authentication mismatch.
-    - Always inspect templates, generators, and configuration files (`config/environments/*.js`) as potential root causes.
-
-4. **The "Scorched Earth" Solution (Last Resort)**:
-    - If an action is irrecoverably broken and unloggable, there may be corrupted state on the platform.
-    - Comment out the entire action definition in `app.config.yaml`.
-    - Run `npm run deploy`. This will delete the action from the runtime.
-    - Uncomment the action definition in `app.config.yaml`.
-    - Run `npm run deploy` again. This will re-provision the action from a clean state.
-
-### CRITICAL: `process.env` Causes Catastrophic Failures
-
-Reinforcing a core principle: **NEVER use `process.env` in any code that runs on Adobe I/O Runtime**.
-
-- **Symptom**: A `500 Internal Server Error` with no logs.
-- **Cause**: A configuration file (`config/environments/staging.js`) used `apiKey: process.env.MESH_API_KEY`. In the deployed action, `process.env.MESH_API_KEY` was `undefined`, which caused the underlying `fetch` to crash the entire Node.js runtime before logging could initialize.
-- **Solution**: Always pass secrets and configuration as action parameters via `.env` -> `app.config.yaml` -> `params`. The code should then reference `params.MY_VARIABLE`.
-
-## Mesh Resolver Development Workflow
-
-### CRITICAL: Template-First Development Pattern
-
-**ALWAYS** follow this exact workflow when modifying mesh resolvers:
-
-```bash
-# ✅ CORRECT: Complete mesh update workflow
-1. Edit mesh-resolvers.template.js (NEVER edit mesh-resolvers.js directly)
-2. Use npm run deploy for complete workflow
-3. Test changes: npm run test:action get-products-mesh
-
-# ❌ WRONG: Partial workflow that bypasses proper mesh updates
-# npm run build:mesh-resolver  # Only regenerates, doesn't deploy!
-# npm run deploy:mesh          # Only updates mesh, doesn't deploy app!
-```
-
-**Mesh Resolver Development Rules:**
-
-- **Template First**: Always edit `mesh-resolvers.template.js`, never `mesh-resolvers.js`
-- **Complete Workflow**: Use `npm run deploy` for development (build → regenerate → deploy → mesh update)
-- **Production**: Use `npm run deploy:prod` + `npm run deploy:mesh:prod` for production deployment
-- **Smart Mesh Updates**: Scripts use proper status polling instead of sending multiple update commands
-- **Test**: Always test mesh changes with `npm run test:action get-products-mesh`
-
-**Mesh Update Logic (Improved Pattern):**
-
-- **Single Update Command**: Send mesh update command only once per attempt
-- **Status Polling**: Poll mesh status every 30s until completion (max 3 minutes for dev, 10 minutes for prod)
-- **Proper Retries**: Only retry if there's an actual error, not just "in progress" status
-- **No Redundant Updates**: Never send multiple update commands simultaneously
-
-**Template Substitution Patterns:**
+**❌ WRONG Action Patterns:**
 
 ```javascript
-// ✅ CORRECT: Use template variables for environment-specific values
-const commerceUrl = '{{{COMMERCE_BASE_URL}}}' + '/rest/V1/products';
+// Fat actions with business logic
+async function main(params) {
+  const products = await fetch('/api/products'); // Business logic in action
+  const csv = products.map(p => transform(p));    // Transformation in action
+  return storeFile(csv);                          // Storage logic in action
+}
 
-// ❌ WRONG: Hardcoded values that won't work across environments
-const commerceUrl = 'https://staging.example.com/rest/V1/products';
+// Legacy main export pattern
+module.exports = { main };
+
+// Technical naming
+// fetch-data, process-files, store-results
 ```
 
-**Why This Matters:**
+#### Action File Structure Standards
 
-- `mesh-resolvers.js` is auto-generated from `mesh-resolvers.template.js`
-- Direct edits to `mesh-resolvers.js` are lost on regeneration
-- Template ensures environment-specific configuration substitution
-- Deployment updates the mesh with new resolver code
-- Testing validates resolver changes work correctly
-
-## API Mesh Integration Patterns
-
-### CRITICAL: Data Transformation Separation
-
-**NEVER** perform data transformation in mesh resolvers. Always maintain strict separation of concerns:
+**Each action file must follow this exact pattern:**
 
 ```javascript
-// ✅ CORRECT: Mesh resolver returns RAW consolidated data
-// mesh-resolvers.js
-const enrichedProduct = {
-  ...product,
-  qty: inventory.qty,
-  categories: categoryObjects, // Raw category objects with id/name
-  media_gallery_entries: product.media_gallery_entries, // Raw media data
-  inventory: { qty: inventory.qty, is_in_stock: inventory.is_in_stock }
-};
+/**
+ * [Business Capability] Action
+ * Business capability: [Clear description of what business use case this serves]
+ */
 
-// ✅ CORRECT: Action uses buildProducts step for transformation
-// actions/backend/get-products-mesh/index.js
-const builtProducts = await buildProducts(enrichedProducts, config);
+const { createAction } = require('../../src/shared/action/action-factory');
+const { domainWorkflow } = require('../../src/domain/feature-file');
 
-// ❌ WRONG: Mesh resolver doing transformation
-enrichedProduct.images = product.media_gallery_entries.map(transformImageEntry);
-enrichedProduct.categories = categoryObjects.map(cat => cat.name);
+async function actionBusinessLogic(context) {
+  // Step comments only when there are genuinely multiple logical steps
+  // Single operations don't need "Step 1:" comments
+  
+  return {
+    message: 'Success message',
+    steps: [...],
+    ...domainResult
+  };
+}
 
-// ❌ WRONG: Action skipping buildProducts
-const builtProducts = enrichedProducts; // Skips transformation!
+module.exports = createAction(actionBusinessLogic, {
+  actionName: 'action-directory-name',
+  description: 'Business capability description'
+});
 ```
 
-**Transformation Responsibility Rules:**
+#### Action Integration with app.config.yaml
 
-- **Mesh Resolver**: ONLY consolidate raw data from multiple APIs
-- **buildProducts Step**: ALWAYS handle data transformation (categories, images, etc.)
-- **Actions**: NEVER skip buildProducts step - always use it for consistency
-- **Raw Data**: Mesh should return data in same format as Commerce API responses
-
-**Why This Matters:**
-
-- **Code Reuse**: Same transformation logic used by REST API and Mesh methods
-- **Consistency**: Identical CSV output guaranteed through shared transformation
-- **Maintainability**: Single source of truth for business logic
-- **Testing**: One transformation path to test and debug
-
-### CRITICAL: True Mesh Pattern (Current Implementation)
-
-**Our API Mesh implementation uses embedded custom resolvers that consolidate multiple Commerce API calls into a single GraphQL query:**
-
-#### The True Mesh Architecture
-
-```javascript
-// ✅ CORRECT: True Mesh Pattern with embedded resolvers
-// mesh-resolvers.js (auto-generated from template)
-module.exports = {
-  resolvers: {
-    Query: {
-      mesh_products_enriched: {
-        resolve: async (parent, args, context) => {
-          // Get admin token from headers
-          const adminToken = context.headers['x-commerce-admin-token'];
-          
-          // Step 1: Fetch all products from Commerce API
-          const allProducts = await fetchAllProductsFromSource(context, pageSize, maxPages);
-          
-          // Step 2: Extract category IDs and SKUs
-          const categoryIds = new Set();
-          const skus = [];
-          // ... extraction logic
-          
-          // Step 3: Fetch category and inventory data in parallel
-          const [categoryMap, inventoryMap] = await Promise.all([
-            fetchCategoriesFromSource(context, Array.from(categoryIds)),
-            fetchInventoryFromSource(context, skus),
-          ]);
-          
-          // Step 4: Return RAW consolidated data (no transformation)
-          const enrichedProducts = allProducts.map((product) => ({
-            ...product,
-            qty: inventory.qty,
-            categories: categoryObjects, // Raw objects with id/name
-            // Keep media_gallery_entries as-is for buildProducts
-          }));
-          
-          return { products: enrichedProducts, total_count: enrichedProducts.length };
-        },
-      },
-    },
-  },
-};
-```
-
-#### Why True Mesh Pattern
-
-**✅ Benefits:**
-
-- **Consolidates 200+ API calls** into single GraphQL query
-- **True unified schema** - single endpoint for all product data
-- **Configuration integration** - uses project's configuration system
-- **Template generation** - auto-generated with environment-specific settings
-- **Raw data consolidation** - lets buildProducts handle transformation
-- **Perfect API Mesh integration** - leverages full GraphQL Mesh capabilities
-
-**✅ Architecture:**
-
-- **Mesh Resolver**: Consolidates raw data from multiple Commerce APIs
-- **App Builder Action**: Calls mesh → Uses buildProducts → Generates CSV
-- **Single GraphQL Query**: Replaces hundreds of REST API calls
-- **Configuration Driven**: Environment-specific batch sizes and endpoints
-
-#### API Mesh Constraints
-
-**Critical Limitations:**
-
-- Cannot import Node.js modules (`require()` fails)
-- Cannot access `src/` utilities directly
-- Must use embedded configuration or HTTP calls
-- Template literals not fully supported (use string concatenation)
-
-### CRITICAL: Data Transformation Separation
-
-**NEVER** perform data transformation in mesh resolvers. Always maintain strict separation of concerns:
-
-```javascript
-// ✅ CORRECT: Mesh resolver returns RAW consolidated data
-// mesh-resolvers.js
-const enrichedProduct = {
-  ...product,
-  qty: inventory.qty,
-  categories: categoryObjects, // Raw category objects with id/name
-  media_gallery_entries: product.media_gallery_entries, // Raw media data
-  inventory: { qty: inventory.qty, is_in_stock: inventory.is_in_stock }
-};
-
-// ✅ CORRECT: Action uses buildProducts step for transformation
-// actions/backend/get-products-mesh/index.js
-const builtProducts = await buildProducts(enrichedProducts, config);
-
-// ❌ WRONG: Mesh resolver doing transformation
-enrichedProduct.images = product.media_gallery_entries.map(transformImageEntry);
-enrichedProduct.categories = categoryObjects.map(cat => cat.name);
-
-// ❌ WRONG: Action skipping buildProducts
-const builtProducts = enrichedProducts; // Skips transformation!
-```
-
-**Transformation Responsibility Rules:**
-
-- **Mesh Resolver**: ONLY consolidate raw data from multiple APIs
-- **buildProducts Step**: ALWAYS handle data transformation (categories, images, etc.)
-- **Actions**: NEVER skip buildProducts step - always use it for consistency
-- **Raw Data**: Mesh should return data in same format as Commerce API responses
-
-**Why This Matters:**
-
-- **Code Reuse**: Same transformation logic used by REST API and Mesh methods
-- **Consistency**: Identical CSV output guaranteed through shared transformation
-- **Maintainability**: Single source of truth for business logic
-- **Testing**: One transformation path to test and debug
-
-## Common Patterns
-
-- Configuration: Use the schema-validated config system
-- File Operations: Use Adobe I/O Files SDK through existing utilities
-- Commerce API: Use established Commerce integration patterns
-- Frontend Updates: Use HTMX for dynamic content
-- Error Responses: Use consistent error formatting
-- Logging: Use appropriate log levels and formatting
-- URL Building: Use the established URL management functions
-- API Mesh: Always use True Mesh pattern with embedded resolvers
-- **CRITICAL - Data Transformation**: NEVER transform data in mesh resolvers - always use buildProducts step
-- **CRITICAL - Mesh Actions**: NEVER skip buildProducts step - always use it for consistency  
-- **CRITICAL - Raw Data**: Mesh resolvers should return raw consolidated data, not transformed data
-
-## Git Hooks and Code Quality
-
-### Husky Pre-Commit Hooks
-
-The project uses **Husky v9.1.7** for automated code quality enforcement via git hooks:
-
-- **Pre-commit hook**: Runs `npx lint-staged` on every commit
-- **Automatic formatting**: ESLint + Prettier for JavaScript, Prettier for JSON/YAML, markdownlint + Prettier for Markdown
-- **Git stash backup**: Automatically backs up original state before applying fixes
-- **Auto-application**: Fixes are automatically applied and included in the commit
-
-### Husky v9 Migration Notes
-
-- **Deprecated command**: `npx husky install` shows deprecation warning but still works
-- **Modern command**: Use `npx husky init` for new setups
-- **Current setup**: Fully functional despite deprecation warning
-- **No action needed**: Existing configuration continues to work perfectly
-
-## Recent Implementation Updates
-
-### OAuth 1.0 Authentication (Implemented)
-
-**CRITICAL: All Commerce API calls now use OAuth 1.0 authentication**
-
-The project has been fully migrated to OAuth 1.0 authentication with HMAC-SHA256 signatures:
-
-```javascript
-// ✅ CORRECT: OAuth implementation pattern
-const { makeCommerceRequest } = require('../../../src/commerce/api/integration');
-
-// OAuth credentials automatically extracted from action parameters
-const response = await makeCommerceRequest('/products', {
-  method: 'GET',
-}, params);
-```
-
-**Key Implementation Details:**
-
-- **Core function**: `makeCommerceRequest()` handles all OAuth authentication automatically
-- **Signature generation**: `createOAuthHeader()` implements proper HMAC-SHA256 with Postman-style URL parsing
-- **Parameter handling**: `extractActionParams()` extracts OAuth credentials from Adobe I/O Runtime parameters
-- **No pre-testing**: Authentication validation happens during actual API calls (no redundant auth tests)
-- **Batch support**: `batchCommerceRequests()` for multiple authenticated API calls
-
-**Required Configuration:**
-
-All Commerce actions must have these OAuth credentials in `app.config.yaml`:
+Actions must be properly configured in `app.config.yaml`:
 
 ```yaml
-COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
-COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
-COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
-COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
+# Each action represents a business capability
+get-products:
+  function: actions/get-products/index.js
+  web: 'yes'
+  runtime: nodejs:18
+  inputs:
+    # Domain-specific configuration
+    COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+    # ... other required inputs
+
+get-products-mesh:
+  function: actions/get-products-mesh/index.js
+  web: 'yes'  
+  runtime: nodejs:18
+  # Same inputs as get-products (same business capability, different implementation)
 ```
 
-**Migration Complete:**
+#### Action Naming Conventions
 
-- ✅ All actions updated to use OAuth authentication
-- ✅ Legacy admin token authentication removed
-- ✅ Test scripts updated for OAuth credential handling
-- ✅ Mesh resolvers updated for OAuth credential passing
+**Business Capability Based Naming:**
 
-### Storage Error Handling (Fixed)
+- ✅ `get-products` - Clear business intent
+- ✅ `browse-files` - User-focused action
+- ✅ `download-file` - Specific business operation
 
-**CRITICAL: Storage error handling has been standardized**
+**Avoid Technical Implementation Naming:**
 
-Fixed storage display issues and error handling across all actions:
+- ❌ `rest-api-fetch` - Implementation detail
+- ❌ `mesh-graphql-query` - Technical approach  
+- ❌ `csv-processor` - Technical function
 
-```javascript
-// ✅ CORRECT: Storage error handling pattern
-const storageResult = await storeCsv(csvData, actionParams);
+#### Action Error Handling
 
-// Always check for storage errors
-if (!storageResult.stored) {
-  throw new Error(`Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`);
-}
-```
-
-**Key Fixes:**
-
-- **Function signature**: `storeCsv(csvData, actionParams)` - exactly 2 parameters
-- **Error checking**: Always verify `storageResult.stored` before proceeding
-- **Error display**: Test scripts show "Storage Failed" instead of "ERROR"
-- **No manual initialization**: Let `storeCsv()` handle storage initialization internally
-- **Consistent responses**: All actions return proper storage provider information
-
-**Storage Rules:**
-
-- **Never manually initialize storage** in actions - use `storeCsv()` function
-- **Always check storage results** - Don't assume storage operations succeed
-- **Proper error messages** - Include specific error details when storage fails
-- **Test script integration** - Storage provider correctly displayed in test output
-
-### Validation Simplification (Cleaned Up)
-
-**CRITICAL: Authentication validation has been simplified**
-
-Removed redundant authentication testing to improve performance:
+Actions use the framework's built-in error handling:
 
 ```javascript
-// ✅ CORRECT: Simple parameter validation (no auth testing)
-async function validateInput(params, config) {
-  // Validate OAuth credentials are present
-  checkMissingParams(params, ['COMMERCE_CONSUMER_KEY', 'COMMERCE_CONSUMER_SECRET', 
-                              'COMMERCE_ACCESS_TOKEN', 'COMMERCE_ACCESS_TOKEN_SECRET']);
+// Framework handles all error scenarios automatically
+async function actionLogic(context) {
+  // Business logic that may throw errors
+  const result = await domainWorkflow(params, config);
   
-  // OAuth credentials will be validated when the first API call is made
+  // Framework converts errors to proper HTTP responses
+  return result;
 }
 
-// ❌ WRONG: Separate authentication testing (removed)
-// await testOAuthAuthentication(params); // Redundant with actual API calls
+// No manual try/catch blocks needed
+// No custom error response building required
 ```
 
-**Validation Changes:**
+#### Action Code Style Rules
 
-- **No pre-authentication testing** - OAuth validation happens during actual API calls
-- **Parameter presence only** - Validate credentials exist, don't test them separately
-- **Performance improvement** - Eliminates unnecessary API calls during validation
-- **Simpler error handling** - Authentication errors come from actual Commerce API calls
-- **Removed modules**: Deleted `actions/backend/get-products/lib/auth.js` (no longer needed)
-
-**Benefits:**
-
-- ✅ Faster action execution (no redundant API calls)
-- ✅ Simpler codebase (less authentication testing code)
-- ✅ Better error messages (from actual Commerce API responses)
-- ✅ Consistent with production patterns (validate during use, not before)
-
-## File Recreation Strategy
-
-### CRITICAL: Heredoc Pattern for Reliable File Creation
-
-When edit tools fail or produce incomplete results, use heredoc pattern:
-cat > path/to/file.js << 'EOF'
-// Complete file content here
-EOF
-
-Use heredoc when: edit tools fail, multiple search_replace attempts fail, complex changes needed.
-Benefits: Guarantees complete file replacement, works reliably, eliminates edit tool inconsistencies.
-
-## Recent Implementation Patterns (Successfully Applied)
-
-### Git Workflow for Feature Implementation
-
-**CRITICAL: Clean Branch Strategy for UI/UX Improvements**
-
-Recent successful pattern for implementing UI improvements:
-
-1. **Create descriptive feature branch**: `fix/csv-output-fixes` (covers scope of changes)
-2. **Incremental commits with specific focus**:
-   - `fix: resolve browse-files 404 error with absolute URLs` - Single problem focus
-   - `feat: enhance npm scripts with improved URL output and automatic mesh updates` - Enhancement focus
-   - `feat: implement compact horizontal export buttons with design system compliance` - UI focus
-
-3. **Fast-forward merge strategy**:
-   - Rebase feature branch on master before merge
-   - Use fast-forward merge to maintain clean history
-   - Delete feature branch after successful merge
-
-### UI Implementation Success Pattern
-
-**Proven approach for component improvements:**
-
-1. **Start with problem analysis**: Identify specific UX issues (404 errors, loading states)
-2. **Design system first**: Always check existing patterns before creating new ones  
-3. **Multiple design options**: Create variations for user selection when UI is subjective
-4. **User feedback integration**: Let user choose preferred design before final implementation
-5. **Clean up unused code**: Remove alternative implementations after user selection
-6. **Design system audit**: Ensure full compliance with established tokens and patterns
-
-### Configuration and URL Issues Resolution
-
-**Systematic approach to Adobe I/O Runtime URL problems:**
-
-1. **Domain analysis**: Identify static vs runtime domain separation
-2. **Configuration gaps**: Add missing overrides (`runtime.url` in config system)
-3. **Environment detection**: Fix generation scripts to pass proper environment
-4. **URL format validation**: Remove incorrect suffixes and ensure proper formatting
-5. **Frontend generation integration**: Update scripts to handle environment-specific URLs
-
-**Key Success Factors:**
-
-- **Incremental changes**: Each commit solves one specific problem
-- **Thorough testing**: Deploy and verify each change works independently  
-- **Clean documentation**: Comprehensive commit messages with problem/solution clarity
-- **User-centered approach**: Multiple options when design is subjective, user final choice
-- **Design system compliance**: Always audit against established patterns
-
-### API Mesh `additionalTypeDefs` Constraint
-
-**CRITICAL: `additionalTypeDefs` must be a single line.**
-
-The `mesh.json` configuration file requires that all `additionalTypeDefs` be provided as a single-line string within a string array. Multi-line formats or arrays of multiple strings will cause parsing errors during mesh deployment.
+**Import Organization:**
 
 ```javascript
-// ✅ CORRECT: All types in a single-line string
-"additionalTypeDefs": [
-  "type Product { sku: String } type Category { id: Int } extend type Query { my_query: [Product] }"
-]
+// ✅ CORRECT: Simple actions (≤3 imports) - No section comments
+const { createAction } = require('../../src/shared/action/action-factory');
+const { deleteFileWithValidation } = require('../../src/files/file-deletion');
+const { generateDeleteConfirmationModal } = require('../../src/htmx/modal-interactions');
 
-// ❌ WRONG: Multi-line strings not supported
-"additionalTypeDefs": [
-  `type Product {
-     sku: String
-   }`
-]
+// ✅ CORRECT: Complex actions (4+ imports) - Use section comments for clarity
+// === INFRASTRUCTURE DEPENDENCIES ===
+const { createAction } = require('../../src/shared/action/action-factory');
+const { response } = require('../../src/shared/http/responses');
 
-// ❌ WRONG: Multiple strings in the array not supported
-"additionalTypeDefs": [
-  "type Product { sku: String }",
-  "type Category { id: Int }",
-  "extend type Query { my_query: [Product] }"
-]
+// === DOMAIN DEPENDENCIES ===
+const { deleteFileWithValidation } = require('../../src/files/file-deletion');
+const { generateDeleteConfirmationModal } = require('../../src/htmx/modal-interactions');
+const { generateCompleteFileBrowserUI } = require('../../src/htmx/file-browser-ui');
+
+// === CROSS-DOMAIN DEPENDENCIES ===
+const { storeCsvFile } = require('../files/csv-export');
 ```
 
-**Rule:**
-- When editing `mesh.json`, ensure the `additionalTypeDefs` value is a single-line string.
-- Do not reformat the type definitions into multiple lines for readability.
-- Add new types or fields by modifying the existing single-line string.
+**Step Comments:**
+
+```javascript
+// ✅ CORRECT: Multiple meaningful steps - Use step comments
+async function deleteFileBusinessLogic(context) {
+  const { config, extractedParams } = context;
+
+  // Step 1: Check if this is a confirmation request or file browser refresh
+  if (!extractedParams.fileName) {
+    return await generateCompleteFileBrowserUI(config, extractedParams);
+  }
+
+  // Step 2: Generate delete confirmation modal 
+  if (!extractedParams.confirmed) {
+    return await generateDeleteConfirmationModal(extractedParams.fileName, config, extractedParams);
+  }
+
+  // Step 3: Execute validated file deletion
+  const deletionResult = await deleteFileWithValidation(
+    extractedParams.fileName,
+    config,
+    extractedParams
+  );
+
+  return deletionResult;
+}
+
+// ✅ CORRECT: Single operation - No step comment needed
+async function browseFilesBusinessLogic(context) {
+  const { config, extractedParams } = context;
+
+  return await generateCompleteFileBrowserUI(config, extractedParams);
+}
+```
+
+---
+
+This comprehensive architecture provides a **complete foundation** for Feature-First DDD development in Adobe App Builder applications, successfully balancing:
+
+- ✅ **Domain-Driven Design** - Proper bounded contexts and domain separation
+- ✅ **Feature-First Organization** - Complete business capabilities in single files  
+- ✅ **Cognitive Efficiency** - Progressive disclosure and no file jumping required
+- ✅ **Clean Configuration** - Dependency injection with trusted configuration patterns
+- ✅ **Three-Tiered Sharing** - Strategic code reuse without over-abstraction
+- ✅ **Action Framework Integration** - Consistent thin orchestration layer
+- ✅ **Adobe I/O Runtime Compliance** - Platform-specific patterns and best practices
+- ✅ **Comprehensive Documentation** - Complete contracts and usage examples
+
+## Conclusion
+
+This comprehensive architecture provides a **complete foundation** for Feature-First DDD development in Adobe App Builder applications, successfully balancing:
+
+- ✅ **Domain-Driven Design** - Proper bounded contexts and domain separation
+- ✅ **Feature-First Organization** - Complete business capabilities in single files
+- ✅ **Cognitive Efficiency** - Progressive disclosure and no file jumping required
+- ✅ **Clean Configuration** - Dependency injection with trusted configuration patterns
+- ✅ **Three-Tiered Sharing** - Strategic code reuse without over-abstraction
+- ✅ **Action Framework Integration** - Consistent thin orchestration layer
+- ✅ **Adobe I/O Runtime Compliance** - Platform-specific patterns and best practices
+- ✅ **Comprehensive Documentation** - Complete contracts and usage examples
+
+### **Architecture Validation**
+
+The architecture has been validated through:
+
+- **Successful Implementation** - 5 production actions using createAction() framework
+- **Comprehensive Audit System** - 100% accurate validation rules for architectural compliance
+- **Real-World Deployment** - Adobe I/O Runtime staging and production environments
+- **Performance Testing** - Consistent performance patterns across REST and API Mesh implementations
+
+### **Development Benefits**
+
+**Code Quality:**
+
+- Zero duplication across actions (216 lines eliminated)
+- Consistent patterns (100% compliance via audit system)
+- Average action size: 46 lines (down from 123 lines)
+- Boilerplate eliminated: 15-25 lines per action
+**Developer Experience:**
+- Predictable structure in every file
+- Self-documenting business logic flows
+- Easy maintenance through consistent patterns
+- Fast development with framework templates
+**Architecture Quality:**
+- Direct import clarity - Dependencies immediately obvious
+- Feature-First DDD organization - Complete capabilities with domain boundaries
+- Strategic duplication - Better maintainability than complex abstractions
+- Configuration integration - Clean dependency injection patterns
+All principles support rapid, consistent development while maintaining high code quality and clear architectural boundaries suitable for enterprise Adobe Commerce integration applications.

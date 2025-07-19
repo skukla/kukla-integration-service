@@ -66,6 +66,58 @@ This document consolidates all architectural standards for the Adobe App Builder
 
 ---
 
+## Universal Feature-First Architecture
+
+### CRITICAL: Feature-First Organization Everywhere
+
+**ALL code in this repository follows identical Feature-First DDD organization, regardless of location.**
+
+**Universal Principle:** Whether in `src/`, `actions/`, or `scripts/`, every directory uses Feature-First organization with complete business capabilities in single files or organized sub-modules.
+
+#### **No Architecture Exceptions**
+
+- ✅ **`src/` domains** - Feature-First organization (products, files, commerce, htmx, testing)
+- ✅ **`actions/` capabilities** - Feature-First organization (thin orchestration, domain delegation)
+- ✅ **`scripts/` operations** - Feature-First organization (deployment, monitoring, auditing)
+- ✅ **`shared/` infrastructure** - Feature-First organization (action framework, HTTP utilities)
+
+#### **Shared vs Domain Classification**
+
+**Primary Domains (`src/`):**
+
+- **Products** - Product export, transformation, enrichment capabilities
+- **Files** - File management, storage, browser capabilities  
+- **Commerce** - Commerce API integration, authentication capabilities
+- **HTMX** - UI generation, modal interaction, notification capabilities
+- **Testing** - Test execution, validation, performance measurement capabilities
+
+**Infrastructure (`shared/`):**
+
+- **Action Framework** - Action creation, context building, error handling
+- **HTTP Utilities** - Request/response handling, parameter extraction
+- **Validation** - Cross-domain validation rules and utilities
+- **Utils** - Universal async, formatting, caching utilities
+
+**Scripts (`scripts/`):**
+
+- **Operational Capabilities** - Deployment, monitoring, auditing, testing workflows
+
+#### **Migration Benefits**
+
+**Cognitive Consistency:**
+
+- ✅ **Same mental model** - Identical organization patterns across all code contexts
+- ✅ **No context switching** - Same Feature-First approach whether building features or scripts
+- ✅ **Predictable structure** - Progressive disclosure (workflows → operations → utilities) everywhere
+
+**Development Efficiency:**
+
+- ✅ **Unified standards** - Same code quality, ESLint rules, and patterns across all directories
+- ✅ **Easy maintenance** - Same debugging and modification patterns everywhere
+- ✅ **Clear ownership** - Same responsibility boundaries and documentation standards
+
+---
+
 ## Domain Structure Standards: DDD + Feature-First
 
 ### CRITICAL: Domain Boundaries + Feature Cohesion
@@ -79,70 +131,154 @@ This document consolidates all architectural standards for the Adobe App Builder
 ```text
 src/
 ├── products/                   # Product domain (DDD bounded context)
-│   ├── rest-export.js         # Complete REST API export feature
-│   ├── mesh-export.js         # Complete API Mesh export feature  
-│   ├── product-enrichment.js  # Complete product enrichment feature
-│   └── shared/                # Only truly shared utilities
+│   ├── rest-export.js         # Feature CORE (workflows + operations)
+│   ├── rest-export/           # Feature SUB-MODULES (when >400 lines)
+│   │   ├── enrichment.js      # Enrichment utilities (category/inventory)
+│   │   ├── transformation.js  # Product transformation utilities
+│   │   ├── csv-generation.js  # CSV generation utilities
+│   │   └── validation.js      # REST-specific validation
+│   ├── mesh-export.js         # Feature CORE (workflows + operations)
+│   ├── mesh-export/           # Feature SUB-MODULES (when >400 lines)
+│   │   ├── graphql.js         # GraphQL query utilities
+│   │   ├── mesh-requests.js   # Mesh API utilities
+│   │   └── validation.js      # Mesh-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
 │       ├── csv-generation.js  # Cross-feature CSV utilities
 │       ├── data-validation.js # Cross-feature validation
 │       ├── image-processing.js # Cross-feature image utilities
 │       └── errors.js          # Domain-specific error handling
 ├── files/                     # File operations domain (DDD bounded context)
-│   ├── csv-export.js          # Complete CSV export capability
-│   ├── file-browser.js        # Complete file browsing capability
-│   ├── file-download.js       # Complete file download capability
-│   ├── file-deletion.js       # Complete file deletion capability
-│   └── shared/                # Only truly shared utilities
+│   ├── csv-export.js          # Feature CORE (workflows + operations)
+│   ├── csv-export/            # Feature SUB-MODULES (when >400 lines)
+│   │   ├── storage-strategies.js # Storage selection utilities
+│   │   ├── url-generation.js  # Presigned URL utilities
+│   │   ├── metadata.js        # File metadata processing
+│   │   └── validation.js      # CSV-specific validation
+│   ├── file-browser.js        # Feature CORE (workflows + operations)
+│   ├── file-browser/          # Feature SUB-MODULES (when >400 lines)
+│   │   ├── ui-generation.js   # HTML generation utilities
+│   │   ├── navigation.js      # Directory navigation utilities
+│   │   ├── filtering.js       # File filtering utilities
+│   │   └── validation.js      # Browser-specific validation
+│   ├── file-download.js       # Feature CORE (workflows + operations)
+│   ├── file-download/         # Feature SUB-MODULES (when >400 lines)
+│   │   ├── url-generation.js  # Download URL utilities
+│   │   ├── access-control.js  # Download permission utilities
+│   │   └── validation.js      # Download-specific validation
+│   ├── file-deletion.js       # Feature CORE (workflows + operations)
+│   ├── file-deletion/         # Feature SUB-MODULES (when >400 lines)
+│   │   ├── confirmation.js    # Deletion confirmation utilities
+│   │   ├── cleanup.js         # File cleanup utilities
+│   │   └── validation.js      # Deletion-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
 │       ├── storage-strategies.js # Cross-feature storage selection
 │       ├── presigned-urls.js  # Cross-feature URL generation
 │       ├── path-utilities.js  # Cross-feature path processing
 │       └── errors.js          # Domain-specific error handling
 ├── htmx/                      # HTMX domain (DDD bounded context)
-│   ├── file-browser-ui.js     # Complete file browser UI feature
-│   ├── modal-interactions.js  # Complete modal interaction feature
-│   ├── notification-system.js # Complete notification feature
-│   └── shared/                # Only truly shared utilities
+│   ├── file-browser-ui.js     # Feature CORE (workflows + operations)
+│   ├── file-browser-ui/       # Feature SUB-MODULES (when >400 lines)
+│   │   ├── html-generation.js # HTML component utilities
+│   │   ├── table-generation.js # File table utilities
+│   │   ├── modal-generation.js # Modal HTML utilities
+│   │   └── validation.js      # UI-specific validation
+│   ├── modal-interactions.js  # Feature CORE (workflows + operations)
+│   ├── modal-interactions/    # Feature SUB-MODULES (when >400 lines)
+│   │   ├── confirmation-modals.js # Confirmation modal utilities
+│   │   ├── form-modals.js     # Form modal utilities
+│   │   ├── response-handling.js # Modal response utilities
+│   │   └── validation.js      # Modal-specific validation
+│   ├── notification-system.js # Feature CORE (workflows + operations)
+│   ├── notification-system/   # Feature SUB-MODULES (when >400 lines)
+│   │   ├── toast-generation.js # Toast notification utilities
+│   │   ├── alert-generation.js # Alert notification utilities
+│   │   ├── progress-indicators.js # Progress display utilities
+│   │   └── validation.js      # Notification-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
 │       ├── html-generation.js # Cross-feature HTML utilities
 │       ├── response-building.js # Cross-feature HTMX responses
 │       └── errors.js          # Domain-specific error handling
 ├── commerce/                  # Commerce integration domain (DDD bounded context)
-│   ├── product-fetching.js    # Complete product fetching feature
-│   ├── category-enrichment.js # Complete category enrichment feature
-│   ├── inventory-enrichment.js # Complete inventory enrichment feature
-│   ├── admin-token-auth.js    # Complete admin token authentication feature
-│   └── shared/                # Only truly shared utilities
+│   ├── product-fetching.js    # Feature CORE (workflows + operations)
+│   ├── product-fetching/      # Feature SUB-MODULES (when >400 lines)
+│   │   ├── api-requests.js    # Commerce API utilities
+│   │   ├── pagination.js      # Product pagination utilities
+│   │   ├── filtering.js       # Product filtering utilities
+│   │   └── validation.js      # Fetching-specific validation
+│   ├── category-enrichment.js # Feature CORE (workflows + operations)
+│   ├── category-enrichment/   # Feature SUB-MODULES (when >400 lines)
+│   │   ├── category-mapping.js # Category mapping utilities
+│   │   ├── hierarchy-building.js # Category hierarchy utilities
+│   │   ├── data-enrichment.js # Category data utilities
+│   │   └── validation.js      # Category-specific validation
+│   ├── inventory-enrichment.js # Feature CORE (workflows + operations)
+│   ├── inventory-enrichment/  # Feature SUB-MODULES (when >400 lines)
+│   │   ├── stock-fetching.js  # Stock data utilities
+│   │   ├── availability-calc.js # Availability calculation utilities
+│   │   ├── batch-processing.js # Inventory batch utilities
+│   │   └── validation.js      # Inventory-specific validation
+│   ├── admin-token-auth.js    # Feature CORE (workflows + operations)
+│   ├── admin-token-auth/      # Feature SUB-MODULES (when >400 lines)
+│   │   ├── token-management.js # Token lifecycle utilities
+│   │   ├── credential-validation.js # Credential validation utilities
+│   │   ├── session-handling.js # Session management utilities
+│   │   └── validation.js      # Auth-specific validation
+│   └── shared/                # Only truly shared utilities (3+ features)
 │       ├── api-client.js      # Cross-feature API client
 │       ├── request-batching.js # Cross-feature batching
 │       └── errors.js          # Domain-specific error handling
-└── shared/                    # Cross-domain infrastructure utilities
+├── testing/                   # Testing domain (DDD bounded context)
+│   ├── action-testing.js      # Feature CORE (workflows + operations)
+│   ├── action-testing/        # Feature SUB-MODULES (when >400 lines)
+│   │   ├── execution.js       # Action test execution utilities
+│   │   ├── validation.js      # Action test validation utilities
+│   │   └── formatting.js      # Action test formatting utilities
+│   ├── api-testing.js         # Feature CORE (workflows + operations)
+│   ├── api-testing/           # Feature SUB-MODULES (when >400 lines)
+│   │   ├── endpoint-testing.js # API endpoint testing utilities
+│   │   ├── response-validation.js # API response validation utilities
+│   │   └── performance-measurement.js # API performance utilities
+│   ├── performance-testing.js # Feature CORE (workflows + operations)
+│   ├── performance-testing/   # Feature SUB-MODULES (when >400 lines)
+│   │   ├── scenario-execution.js # Performance scenario utilities
+│   │   ├── metrics-collection.js # Performance metrics utilities
+│   │   ├── baseline-comparison.js # Performance baseline utilities
+│   │   └── reporting.js       # Performance reporting utilities
+│   ├── test-orchestration.js  # Feature CORE (workflows + operations)
+│   ├── test-orchestration/    # Feature SUB-MODULES (when >400 lines)
+│   │   ├── suite-management.js # Test suite management utilities
+│   │   ├── parallel-execution.js # Parallel test execution utilities
+│   │   └── result-aggregation.js # Test result aggregation utilities
+│   └── shared/                # Only truly shared utilities (3+ features)
+│       ├── test-utilities.js  # Cross-feature test utilities
+│       ├── assertion-helpers.js # Cross-feature assertion utilities
+│       └── errors.js          # Domain-specific error handling
+└── shared/                    # Cross-domain infrastructure utilities (NOT business domains)
     ├── action/               # Action framework infrastructure
-    │   └── operations/
-    │       └── action-factory.js # Complete action framework capability
-    ├── errors/               # Error handling infrastructure
-    │   ├── types.js          # Core error type definitions
-    │   ├── factory.js        # Error creation utilities
-    │   ├── handling.js       # Error processing logic
-    │   ├── recovery.js       # Retry and recovery strategies
-    │   ├── responses.js      # HTTP error response formatting
-    │   └── operations/
-    │       ├── classification.js # Error type classification
-    │       ├── enhancement.js # Error context enhancement
-    │       └── transformation.js # Error format transformation
+    │   ├── action-factory.js # Complete action framework capability
+    │   ├── context-building.js # Action context utilities
+    │   ├── error-handling.js # Action error utilities
+    │   ├── initialization.js # Action setup utilities
+    │   └── logger-setup.js   # Action logging utilities
+    ├── errors.js             # Error handling infrastructure (single file)
     ├── http/                 # HTTP client infrastructure
-    │   ├── client.js         # Complete HTTP client capability
-    │   └── responses.js      # HTTP response utilities
+    │   ├── client.js         # HTTP client utilities
+    │   ├── responses.js      # HTTP response utilities
+    │   ├── config.js         # HTTP configuration utilities
+    │   ├── params.js         # HTTP parameter utilities
+    │   └── request.js        # HTTP request utilities
     ├── routing/              # URL management infrastructure
-    │   └── operations/
-    │       ├── runtime.js    # Runtime URL building
-    │       └── commerce.js   # Commerce URL building
+    │   ├── runtime.js        # Runtime URL building
+    │   └── commerce.js       # Commerce URL building
     ├── validation/           # Validation infrastructure
-    │   └── operations/
-    │       ├── parameters.js # Parameter validation
-    │       └── product.js    # Product validation
+    │   ├── parameters.js     # Parameter validation
+    │   ├── product.js        # Product validation
+    │   └── types.js          # Validation type utilities
     └── utils/                # Universal utilities
-        └── operations/
-            ├── formatting.js # Universal formatting utilities
-            └── async.js      # Universal async utilities
+        ├── async.js          # Universal async utilities
+        ├── cache.js          # Universal caching utilities
+        ├── formatting.js     # Universal formatting utilities
+        └── graphql.js        # Universal GraphQL utilities
 ```
 
 ### Feature Organization Principles
@@ -196,32 +332,84 @@ function validateProductFields(fields) { }
 function formatProductPrice(price, currency) { }
 function buildProductImageUrl(product, config) { }
 
+**Export Organization Rules:**
+
+```javascript
+// ✅ CORRECT: Files with ≤5 exports and clear sections - NO export comments needed
 module.exports = {
-  // Business workflows
+  exportProductsWithStorageAndFallback,  // Most comprehensive first
   exportProducts,
-  
-  // Feature operations  
   fetchAndEnrichProducts,
   transformProductData,
-  
-  // Feature utilities
   validateProductFields,
-  formatProductPrice
 };
+
+// ✅ CORRECT: Files with 6+ exports or unclear organization - USE export comments
+module.exports = {
+  // Business workflows (main exports that actions import)
+  exportProducts,
+  processProducts,
+  validateProducts,
+  
+  // Feature operations (coordination functions)
+  fetchAndEnrichProducts,
+  transformProductData,
+  enrichWithCategories,
+  enrichWithInventory,
+  
+  // Feature utilities (building blocks)
+  validateProductFields,
+  formatProductPrice,
+  buildProductImageUrl,
+};
+```
+
+**Section Header Standards:**
+
+```javascript
+// ✅ CORRECT: Simple, readable section headers
+// Business Workflows
+// Feature Operations
+// Feature Utilities
+
+// ❌ WRONG: "Shouty" triple-equals format (visual noise)
+// === BUSINESS WORKFLOWS ===
+// === FEATURE OPERATIONS ===
+
+// ❌ WRONG: Redundant export header (module.exports is clear enough)
+// === EXPORTS ORGANIZATION ===
+module.exports = { };
 ```
 
 #### **3. Progressive Disclosure Pattern**
 
-**Features follow complexity hierarchy from high-level to detailed:**
+**Features follow complexity hierarchy from MOST COMPREHENSIVE to most detailed:**
+
+**CRITICAL: Within each section, most comprehensive functions come FIRST:**
 
 1. **Business Workflows** (Composite) - Complete user-facing capabilities
+   - **Order**: Most comprehensive workflow → Supporting workflows
 2. **Feature Operations** (Coordination) - Multi-step business logic coordination  
+   - **Order**: Higher-level coordination → Lower-level coordination
 3. **Feature Utilities** (Atomic) - Simple, focused building blocks
+   - **Order**: Most complex utilities → Simple utilities
 
 ```javascript
+// Business Workflows
+async function exportProductsWithStorageAndFallback(params, config, core) {
+  // MOST comprehensive - entry point for actions
+  const exportResult = await exportProducts(params, config);
+  // ... storage handling
+}
+
+async function exportProducts(params, config) {
+  // LESS comprehensive - called by above
+  // ... core export logic
+}
+
 // Reading from top to bottom:
-// 1. Understand WHAT the feature does (workflows)
-// 2. Understand HOW it coordinates (operations)  
+// 1. Understand WHAT the feature does (most comprehensive first)
+// 2. Understand HOW it coordinates (supporting functions)  
 // 3. Understand building blocks (utilities)
 ```
 
@@ -256,7 +444,7 @@ products/rest-export.js importing:
 // === THREE-TIER DECISION TREE ===
 
 // Tier 1: src/shared/ (3+ domains use it)
-const { formatStepMessage } = require('../../shared/utils/operations/formatting');
+const { formatStepMessage } = require('../../shared/utils/formatting');
 
 // Tier 2: domain/shared/ (3+ features in domain use it)  
 const { validateProductData } = require('./shared/validation');
@@ -270,16 +458,9 @@ function validateExportFields(fields) { /* feature-specific logic */ }
 **All dependencies visible at top of file for cognitive efficiency:**
 
 ```javascript
-// === INFRASTRUCTURE DEPENDENCIES ===
-// Universal utilities used across all domains
+// All dependencies at top of file - grouping is obvious from paths
 const { response } = require('../../shared/http/responses');
-
-// === DOMAIN DEPENDENCIES ===
-// Utilities shared within this domain only
 const { validateProducts } = require('./shared/validation');
-
-// === CROSS-DOMAIN DEPENDENCIES ===
-// Complete capabilities from other domains
 const { storeCsvFile } = require('../files/csv-export');
 ```
 
@@ -372,6 +553,296 @@ products/rest-export-with-files.js →
 products/rest-export-with-files-and-commerce.js
 // Domain bleeding, unclear responsibilities
 ```
+
+### **11. Feature-First File Size Management**
+
+**CRITICAL: When feature files exceed 400 lines, use Feature Core + Sub-modules pattern to maintain cognitive efficiency without creating unwieldy files.**
+
+#### **The File Size Challenge**
+
+Pure Feature-First consolidation can create very large files (700+ lines) that become difficult to maintain despite excellent organization. The solution is a **hybrid approach** that preserves Feature-First cognitive benefits while managing file size.
+
+#### **Feature Core + Sub-modules Pattern**
+
+```text
+src/products/
+├── rest-export.js              # Feature CORE (200-400 lines)
+├── rest-export/               # Feature SUB-MODULES  
+│   ├── enrichment.js          # Category/inventory enrichment (50-150 lines)
+│   ├── transformation.js      # Product transformation (50-150 lines)
+│   ├── csv-generation.js      # CSV utilities (50-150 lines)
+│   └── validation.js          # REST validation (50-150 lines)
+├── mesh-export.js             # Feature CORE (200-400 lines)
+├── mesh-export/               # Feature SUB-MODULES
+│   ├── graphql.js            # GraphQL queries (50-150 lines)
+│   ├── mesh-requests.js      # Mesh API utilities (50-150 lines)
+│   └── validation.js         # Mesh validation (50-150 lines)
+└── shared/                    # Cross-feature utilities (unchanged)
+```
+
+#### **Feature Core Responsibilities (Target: 200-400 lines)**
+
+**The main feature file remains the primary interface and contains:**
+
+```javascript
+/**
+ * Products REST Export - Feature Core
+ * Complete REST API product export capability with organized sub-modules
+ */
+
+// Import from feature sub-modules (same domain)
+const { enrichWithCategories, enrichWithInventory } = require('./rest-export/enrichment');
+const { buildProductObject, transformProductData } = require('./rest-export/transformation');
+const { generateCsvHeaders, formatCsvData } = require('./rest-export/csv-generation');
+const { validateInput, validateProductFetchConfig } = require('./rest-export/validation');
+
+// Import from other domains (cross-domain interfaces)
+const { exportCsvWithStorage } = require('../files/csv-export');
+const { executeAdminTokenCommerceRequest } = require('../commerce/operations/api-requests');
+
+// === BUSINESS WORKFLOWS === (Complete feature entry points)
+async function exportProductsWithStorageAndFallback(params, config) {
+  // Main workflow - 30-50 lines
+}
+
+async function exportProducts(params, config) {
+  // Core workflow - 20-30 lines
+}
+
+// === FEATURE OPERATIONS === (Coordination logic)
+async function fetchAndEnrichProducts(params, config) {
+  // Coordinates enrichment sub-modules - 20-40 lines
+  const products = await fetchProducts(params, config);
+  const categorized = await enrichWithCategories(products, config, params);
+  const enriched = await enrichWithInventory(categorized, config, params);
+  return enriched;
+}
+
+async function buildProducts(products, config) {
+  // Coordinates transformation sub-modules - 15-25 lines
+  return transformProductData(products, config);
+}
+
+// === CORE FEATURE UTILITIES === (Kept in main file if simple)
+async function fetchProducts(params, config) {
+  // Product fetching logic - 30-50 lines (or move to sub-module if larger)
+}
+
+module.exports = {
+  // Business workflows (primary feature interface)
+  exportProductsWithStorageAndFallback,
+  exportProducts,
+  
+  // Feature operations (available for extension)
+  fetchAndEnrichProducts,
+  buildProducts,
+};
+```
+
+#### **Sub-module Organization Rules**
+
+**When to create a sub-module:**
+
+1. **Utility category has 5+ related functions** (enrichment, transformation, CSV)
+2. **Category is 50+ lines** of related functionality
+3. **Functions are tightly coupled** (all work with same data types)
+4. **Category has clear boundary** (enrichment vs transformation vs CSV)
+
+**Sub-module structure:**
+
+```javascript
+// rest-export/enrichment.js
+/**
+ * REST Export - Product Enrichment Sub-module
+ * All product enrichment utilities for REST API export
+ */
+
+// Sub-module specific imports (can import from utils, not from sibling sub-modules)
+const { getCategoryIds, extractProductSkus } = require('../utils/data');
+const { executeAdminTokenBatchCommerceRequests } = require('../../commerce/operations/api-requests');
+
+// === ENRICHMENT WORKFLOWS ===
+async function enrichWithCategories(products, config, params) {
+  // 20-30 lines
+}
+
+async function enrichWithInventory(products, config, params) {
+  // 20-30 lines  
+}
+
+// === ENRICHMENT UTILITIES ===
+async function fetchCategoryData(categoryIds, config, params) {
+  // 30-50 lines
+}
+
+async function fetchInventoryData(skus, config, params) {
+  // 30-50 lines
+}
+
+function enrichProductsWithCategories(products, categoryMap) {
+  // 15-25 lines
+}
+
+function enrichProductsWithInventory(products, inventoryMap) {
+  // 15-25 lines
+}
+
+module.exports = {
+  // Workflows (used by feature core)
+  enrichWithCategories,
+  enrichWithInventory,
+  
+  // Utilities (available for testing/extension)
+  fetchCategoryData,
+  fetchInventoryData,
+  enrichProductsWithCategories,
+  enrichProductsWithInventory,
+};
+```
+
+#### **Sub-module Categories by Domain**
+
+**Products Domain:**
+
+- `enrichment.js` - Category and inventory enrichment utilities
+- `transformation.js` - Product object building and standardization
+- `csv-generation.js` - CSV formatting and generation utilities
+- `graphql.js` - GraphQL query utilities (mesh-export)
+- `mesh-requests.js` - Mesh API utilities (mesh-export)
+- `validation.js` - REST/Mesh-specific validation functions
+
+**Files Domain:**
+
+- `storage-strategies.js` - Storage provider selection and configuration
+- `url-generation.js` - Presigned URL and download URL utilities
+- `metadata.js` - File metadata extraction and processing
+- `ui-generation.js` - HTML generation utilities (file-browser)
+- `navigation.js` - Directory navigation utilities (file-browser)
+- `filtering.js` - File filtering utilities (file-browser)
+- `access-control.js` - Download permission utilities (file-download)
+- `confirmation.js` - Deletion confirmation utilities (file-deletion)
+- `cleanup.js` - File cleanup utilities (file-deletion)
+- `validation.js` - File operation validation
+
+**HTMX Domain:**
+
+- `html-generation.js` - HTML component utilities (file-browser-ui)
+- `table-generation.js` - File table utilities (file-browser-ui)
+- `modal-generation.js` - Modal HTML utilities (file-browser-ui)
+- `confirmation-modals.js` - Confirmation modal utilities (modal-interactions)
+- `form-modals.js` - Form modal utilities (modal-interactions)
+- `response-handling.js` - Modal response utilities (modal-interactions)
+- `toast-generation.js` - Toast notification utilities (notification-system)
+- `alert-generation.js` - Alert notification utilities (notification-system)
+- `progress-indicators.js` - Progress display utilities (notification-system)
+- `validation.js` - UI/modal/notification-specific validation
+
+**Commerce Domain:**
+
+- `api-requests.js` - Commerce API request utilities (product-fetching)
+- `pagination.js` - Product pagination utilities (product-fetching)
+- `filtering.js` - Product filtering utilities (product-fetching)
+- `category-mapping.js` - Category mapping utilities (category-enrichment)
+- `hierarchy-building.js` - Category hierarchy utilities (category-enrichment)
+- `data-enrichment.js` - Category data utilities (category-enrichment)
+- `stock-fetching.js` - Stock data utilities (inventory-enrichment)
+- `availability-calc.js` - Availability calculation utilities (inventory-enrichment)
+- `batch-processing.js` - Inventory batch utilities (inventory-enrichment)
+- `token-management.js` - Token lifecycle utilities (admin-token-auth)
+- `credential-validation.js` - Credential validation utilities (admin-token-auth)
+- `session-handling.js` - Session management utilities (admin-token-auth)
+- `validation.js` - Domain-specific validation for each feature
+
+#### **Import Rules for Sub-modules**
+
+**✅ ALLOWED Sub-module Imports:**
+
+```javascript
+// From domain utils (same domain)
+const { getCategoryIds } = require('../utils/data');
+
+// From other domain operations (cross-domain interfaces)
+const { executeAdminTokenCommerceRequest } = require('../../commerce/operations/api-requests');
+
+// From shared infrastructure
+const { formatStepMessage } = require('../../shared/utils/formatting');
+```
+
+**❌ FORBIDDEN Sub-module Imports:**
+
+```javascript
+// From sibling sub-modules (creates coupling)
+const { transformProductData } = require('./transformation');
+
+// From parent feature core (creates circular dependency)
+const { exportProducts } = require('../rest-export');
+```
+
+#### **Benefits of Feature Core + Sub-modules**
+
+**Maintains Feature-First Benefits:**
+
+- ✅ **Single feature interface** - Main file is still the complete feature entry point
+- ✅ **No file jumping** - All related functionality in feature directory
+- ✅ **Progressive disclosure** - Core workflows → operations → utilities
+- ✅ **Complete feature understanding** - Feature directory contains everything
+
+**Addresses File Size Concerns:**
+
+- ✅ **Manageable file sizes** - Core 200-400 lines, sub-modules 50-150 lines
+- ✅ **Logical organization** - Related utilities grouped in meaningful sub-modules
+- ✅ **Easy navigation** - Clear categories (enrichment, transformation, validation)
+- ✅ **Focused maintenance** - Changes to CSV logic only affect csv-generation.js
+
+**Preserves DDD Architecture:**
+
+- ✅ **Domain boundaries** - Sub-modules are within domain boundaries
+- ✅ **Feature cohesion** - All sub-modules serve the same feature
+- ✅ **Clear ownership** - Feature team owns core + all sub-modules
+- ✅ **Strategic duplication** - Sub-modules avoid cross-feature dependencies
+
+#### **Migration Strategy for Large Features**
+
+**When an existing feature file exceeds 400 lines:**
+
+1. **Identify utility categories** (enrichment, transformation, CSV, validation)
+2. **Create sub-module directories** (`feature-name/`)
+3. **Extract categories to sub-modules** (groups of 5+ related functions)
+4. **Update feature core imports** (import from sub-modules)
+5. **Update external imports** (still import from feature core, not sub-modules)
+6. **Test complete feature** (ensure no functionality breaks)
+
+**Example Refactoring:**
+
+```javascript
+// BEFORE: Large feature file (774 lines)
+src/products/rest-export.js                    // 774 lines - TOO LARGE
+
+// AFTER: Feature core + sub-modules
+src/products/rest-export.js                    // 250 lines - MANAGEABLE
+src/products/rest-export/enrichment.js         // 120 lines - FOCUSED  
+src/products/rest-export/transformation.js     // 150 lines - FOCUSED
+src/products/rest-export/csv-generation.js     // 80 lines - FOCUSED
+src/products/rest-export/validation.js         // 70 lines - FOCUSED
+```
+
+#### **Testing Strategy**
+
+**Feature-level testing** (tests the complete feature):
+
+```javascript
+// Test the feature core (main interface)
+const { exportProducts } = require('../src/products/rest-export');
+```
+
+**Sub-module testing** (tests utility categories):
+
+```javascript
+// Test enrichment utilities in isolation
+const { enrichWithCategories } = require('../src/products/rest-export/enrichment');
+```
+
+This hybrid approach gives us the best of both worlds: **Feature-First cognitive benefits** with **manageable file sizes** and **clear organization boundaries**.
 
 ---
 
@@ -667,93 +1138,72 @@ function generateFrontendConfig(environment, userPreferences = {}) {
 
 ---
 
-
----
-
 ## Scripts Architecture Standards
 
-### Feature-First DDD for Scripts
+### CRITICAL: Scripts Follow Identical Standards to src/ and actions/
 
-**CRITICAL: Scripts use Feature-First DDD organization for maximum cognitive efficiency:**
+**Scripts use the exact same Feature-First DDD organization and code quality standards as the main application code.**
 
-Scripts represent complete operational capabilities that users invoke directly, making them perfect candidates for Feature-First organization. Each script file contains everything needed to understand and maintain that specific capability.
+There is **no difference** in architectural approach between `scripts/`, `src/`, and `actions/` - all follow the same unified Feature-First DDD principles.
 
-#### The Scripts Problem
+#### Unified Architecture Pattern
 
-**Traditional Layer-First Organization:**
+**All code in this repository follows these identical standards:**
 
-- File jumping required to understand complete script workflows
-- Context switching between workflows, operations, and utilities
-- Feature fragmentation across multiple files
-- Cognitive overhead to trace script execution flow
-
-**Feature-First Solution:**
-
-- Complete script capability in single file
-- Progressive disclosure: main workflow → operations → utilities
-- No file jumping required for script understanding
-- Clear script ownership and maintenance boundaries
+1. **Feature-First Organization** - Complete business capabilities in single files
+2. **Progressive Disclosure** - Business workflows → Feature operations → Feature utilities
+3. **Domain-Driven Design** - Clear bounded contexts and domain separation
+4. **Direct Imports** - No namespace imports, explicit dependencies
+5. **ESLint Compliance** - Max 5 parameters, complexity ≤10, no unused variables
+6. **Configuration Over Constants** - Use config values, not hardcoded fallbacks
+7. **Step Comments in Workflows** - "Step 1:", "Step 2:" for business processes
+8. **Strategic Duplication** - Better than complex abstractions
 
 #### Scripts Feature-First Pattern
 
-**Each script feature file follows this structure:**
+**Scripts follow the exact same structure as src/ features:**
 
 ```javascript
-// scripts/deployment/app-deployment.js
+// scripts/app-deploy.js
 
 /**
- * Deployment - App Deployment
- * Complete app deployment capability with all supporting functions
+ * App Deploy - Complete deployment capability
+ * Complete application deployment with all supporting functions
  */
 
-// === INFRASTRUCTURE DEPENDENCIES ===
-const { executeScriptWithExit } = require('../shared/execution/script-framework');
-const { parseArgs } = require('../shared/cli/args');
+// All dependencies at top - external vs internal is obvious from paths
+const { executeScriptWithExit } = require('./shared/script-framework');
+const { loadConfig } = require('../config');
 
-// === DOMAIN DEPENDENCIES ===
-const { detectEnvironment } = require('./shared/environment-detection');
-const { formatDeploymentOutput } = require('./shared/output-formatting');
-
-// === MAIN SCRIPT WORKFLOW === (What users invoke)
-async function deployApp(options = {}) {
+// Business Workflows
+async function deployApp(options) {
   // Step 1: Environment setup
   const environment = detectEnvironment(options);
-  await displayDeploymentStart(environment);
   
-  // Step 2: Build process  
+  // Step 2: Build and deploy
   const buildResult = await executeBuildProcess(environment);
-  if (!buildResult.success) throw new Error(buildResult.error);
+  const deployResult = await executeAppDeployment(buildResult);
   
-  // Step 3: Deploy application
-  await displayAppDeployment();
-  const deployResult = await executeAppDeployment(options);
-  
-  // Step 4: Display results
-  await displayDeploymentResults(deployResult);
   return deployResult;
 }
 
-// === SCRIPT OPERATIONS === (Coordinate script steps)
+// Feature Operations
 async function executeBuildProcess(environment) {
   // Build coordination logic
 }
 
-async function executeAppDeployment(options) {
+async function executeAppDeployment(buildResult) {
   // App deployment coordination logic  
 }
 
-// === SCRIPT UTILITIES === (Building blocks for this script)
+// Feature Utilities
 function detectEnvironment(options) {
   // Environment detection logic
 }
 
-async function displayDeploymentStart(environment) {
-  // Output formatting logic
-}
-
-// Entry point for CLI usage
+// CLI Entry Point (Scripts-specific pattern)
 if (require.main === module) {
-  executeScriptWithExit('app-deployment', async () => {
+  executeScriptWithExit('app-deploy', async () => {
     const args = parseArgs(process.argv.slice(2));
     return await deployApp(args);
   });
@@ -762,97 +1212,75 @@ if (require.main === module) {
 module.exports = { deployApp };
 ```
 
-#### Scripts vs Application Code Differences
+#### Scripts-Specific Additions
 
-**1. CLI Entry Point Integration:**
+**The only difference is CLI integration:**
 
 ```javascript
-// Each script includes CLI integration pattern
+// CLI Entry Point Integration (unique to scripts)
 if (require.main === module) {
-  // CLI entry point with argument parsing
+  executeScriptWithExit('script-name', async () => {
+    const args = parseArgs(process.argv.slice(2));
+    return await mainFunction(args);
+  });
 }
 ```
 
-**2. Operational Domain Boundaries:**
+#### Operational Domain Organization
 
-- `deployment/` - Everything related to deploying the application
-- `testing/` - Everything related to testing the application  
-- `monitoring/` - Everything related to monitoring the application
-- `development/` - Everything related to development tooling
+**Scripts organize by operational capabilities (same as src/ domain organization):**
 
-**3. Enhanced Shared Infrastructure:**
-Scripts have more cross-cutting concerns requiring robust shared infrastructure:
-
-- CLI argument parsing (universal need)
-- Output formatting (consistent visual experience)
-- Script execution framework (error handling, exit codes)
-- Environment detection (staging vs production)
-
-### Scripts Development Standards
-
-**CRITICAL: Feature-First with Domain Boundaries**
-
-1. **Complete Features in Single Files** - Each script represents one complete operational capability
-2. **Progressive Disclosure** - Main workflow → operations → utilities within each file
-3. **Domain Boundaries Respected** - Deployment, testing, monitoring, development domains
-4. **Shared Infrastructure Separated** - CLI, execution, and universal utilities in `shared/`
-5. **Direct Imports Always** - No namespace imports, explicit dependencies
-6. **CLI Integration Pattern** - Consistent entry point pattern across all scripts
-
-### Scripts File Organization Rules
-
-**Required Section Pattern:**
-
-```javascript
-// === MAIN SCRIPT WORKFLOW === (What users invoke from CLI)
-// === SCRIPT OPERATIONS === (Coordinate multiple script steps)  
-// === SCRIPT UTILITIES === (Building blocks for this specific script)
+```text
+scripts/
+├── app-deploy.js              # Complete deployment capability
+├── app-test.js                # Complete testing capability  
+├── app-monitor.js             # Complete monitoring capability
+├── app-build.js               # Complete build capability
+├── app-audit.js               # Complete audit capability
+├── app-audit-test.js          # Complete audit testing capability
+├── app-audit/                 # Feature sub-modules (when >400 lines)
+│   ├── tier1-audits.js        # Tier 1 audit utilities
+│   ├── tier2-audits.js        # Tier 2 audit utilities
+│   ├── tier3-audits.js        # Tier 3 audit utilities
+│   └── report-generation.js   # Report generation utilities
+├── app-audit-test/            # Feature sub-modules (when >400 lines)
+│   ├── test-case-generation.js # Test case utilities
+│   ├── audit-validation.js   # Validation utilities
+│   ├── confidence-scoring.js # Confidence utilities
+│   └── suite-execution.js    # Execution utilities
+└── shared/                    # Cross-script infrastructure utilities
+    ├── script-framework.js    # Script execution framework
+    ├── formatting.js          # Output formatting utilities
+    └── args.js                # CLI argument parsing
 ```
 
-**JSDoc Requirements:**
+### Scripts Compliance Checklist
 
-```javascript
-/**
- * [Domain] [Script Name]
- * 
- * @description Complete [capability description] with all supporting functions
- * @param {Object} options - Script execution options
- * @returns {Promise<Object>} Script execution result
- * 
- * @usedBy npm run [script-name] (CLI integration)
- */
-```
+**Scripts must meet ALL the same standards as src/ and actions/:**
 
-**Export Pattern:**
+- [ ] **Feature-First organization** - Complete capabilities in single files
+- [ ] **Progressive disclosure** - Business workflows → operations → utilities
+- [ ] **ESLint compliance** - Max 5 parameters, complexity ≤10, no unused variables
+- [ ] **Configuration over constants** - Use config values, not hardcoded fallbacks
+- [ ] **Step comments in workflows** - Convert regular comments to step comments for business processes
+- [ ] **Direct imports** - No namespace imports, explicit dependencies
+- [ ] **Function organization** - Most comprehensive functions FIRST within each section
+- [ ] **Export organization** - ≤5 exports = no comments; 6+ exports = use export comments
+- [ ] **CLI integration pattern** - Consistent entry point pattern across all scripts
+- [ ] **Domain-appropriate JSDoc** - Clear contracts and usage examples
+- [ ] **Pure functions** - Clear input/output contracts
+- [ ] **Single responsibility** - Each function does one thing well
 
-```javascript
-module.exports = { 
-  mainScriptFunction, // Primary export for programmatic use
-  // Secondary functions only if needed by other scripts
-};
-```
+### Unified Development Benefits
 
-### Migration Benefits
+**Same benefits across scripts/, src/, and actions/:**
 
-**Cognitive Load Optimization:**
-
-- ✅ **Complete script understanding** in single file
-- ✅ **No file jumping** to understand deployment/testing process  
-- ✅ **Progressive disclosure** within each script
-- ✅ **Predictable script structure** across all operational domains
-
-**Maintained Code Quality:**
-
-- ✅ **DDD domain boundaries** preserved (deployment vs testing vs monitoring)
-- ✅ **Shared infrastructure** properly separated
-- ✅ **CLI consistency** across all scripts
-- ✅ **Clear script ownership** for maintenance
-
-**Developer Experience:**
-
-- ✅ **Easy script debugging** - trace complete logic in one file
-- ✅ **Consistent patterns** - same structure for all scripts
-- ✅ **Clear modification points** - know exactly where to change functionality
+- ✅ **Cognitive Consistency** - Same mental model for all code contexts
+- ✅ **Complete Feature Understanding** - No file jumping required for any capability
+- ✅ **Predictable Structure** - Same organization patterns everywhere
+- ✅ **Easy Maintenance** - Same patterns for debugging and modification
+- ✅ **Quality Assurance** - Same ESLint rules and architectural compliance
+- ✅ **Clear Ownership** - Same responsibility boundaries
 
 ---
 
@@ -928,7 +1356,7 @@ const { executeAdminTokenCommerceRequest } = require('../../../src/commerce/oper
 
 const response = await executeAdminTokenCommerceRequest('/products', {
   method: 'GET',
-}, config); // config contains admin token
+}, config, params); // No trace parameter
 ```
 
 **Required Admin Token Configuration:**
@@ -944,18 +1372,205 @@ All actions calling Commerce APIs must have these inputs:
 2. Token is cached and reused for subsequent requests
 3. Token is automatically refreshed when expired
 
+### Code Quality Standards
+
+**CRITICAL: ESLint Compliance (NEW)**
+
+All functions must pass ESLint validation without warnings:
+
+```javascript
+// ✅ CORRECT: ESLint compliant function
+async function executeRequest(url, options, config, params) { // ≤5 parameters
+  if (!url) throw new Error('URL required'); // Simple complexity
+  return await makeRequest(url, options, config, params);
+}
+
+// ❌ WRONG: ESLint violations
+async function executeRequest(url, options, config, params, trace, ttl) { // >5 parameters
+  // Complex nested logic with high cyclomatic complexity
+}
+```
+
+**ESLint Requirements:**
+
+- **max-params**: ≤5 parameters per function
+- **complexity**: ≤10 cyclomatic complexity
+- **no-unused-vars**: All imports and variables must be used
+
+**Parameter Consolidation Strategies:**
+
+```javascript
+// ✅ CORRECT: Consolidate related parameters into options object
+async function executeRequest(url, requestOptions, config, params) {
+  const { ttl = 300, method = 'GET', ...options } = requestOptions;
+}
+
+// ❌ WRONG: Too many individual parameters
+async function executeRequest(url, method, ttl, options, config, params) {
+}
+```
+
+### Monitoring and Observability Standards
+
+**CRITICAL: No Over-Architected Monitoring (NEW)**
+
+Trace and monitoring parameters have been removed as over-engineering:
+
+```javascript
+// ✅ CORRECT: Clean function signatures without trace
+async function executeRequest(url, options, config, params) {
+  return await makeRequest(url, options, config, params);
+}
+
+// ❌ WRONG: Over-architected monitoring parameters
+async function executeRequest(url, options, config, params, trace = null) {
+  if (trace?.incrementApiCalls) trace.incrementApiCalls(); // Over-engineering
+}
+```
+
+**Monitoring Policy:**
+
+- **No trace parameters** - Remove from all function signatures
+- **No monitoring injection** - Monitoring should be infrastructure concern, not business logic
+- **Simple logging** - Use console.warn/error for important events only
+- **Performance focus** - Optimize for actual business needs, not theoretical monitoring
+
+### Step Comments Standards (REFINED)
+
+**CRITICAL: Workflow Step Comments vs Regular Comments**
+
+Convert meaningful regular comments to step comments in business workflows:
+
+```javascript
+// ✅ CORRECT: Step comments in workflows
+async function processExport(data, config) {
+  // Step 1: Validate input parameters
+  validateExportData(data, config);
+  
+  // Step 2: Transform data for export
+  const transformed = await transformData(data, config);
+  
+  // Step 3: Generate and store file
+  return await storeExportFile(transformed, config);
+}
+
+// ✅ CORRECT: Regular comments for implementation details
+function buildApiUrl(baseUrl, endpoint) {
+  // Handle both absolute and relative URLs
+  return endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
+}
+
+// ❌ WRONG: Regular comments for workflow steps
+async function processExport(data, config) {
+  // Validate input parameters
+  validateExportData(data, config);
+  
+  // Transform data for export
+  const transformed = await transformData(data, config);
+}
+```
+
+**Step Comment Rules:**
+
+- **Use in workflows**: Functions that orchestrate multiple operations
+- **Sequential operations**: When there are multiple logical steps
+- **Business processes**: User-facing capabilities with clear phases
+- **Don't use for**: Single operations, utilities, implementation details
+
+### Configuration Over Constants (NEW)
+
+**CRITICAL: Use Configuration Instead of Hardcoded Constants**
+
+Always use configuration values instead of hardcoded constants:
+
+```javascript
+// ✅ CORRECT: Use configuration values
+async function buildProducts(products, config) {
+  const exportFields = config.main.exportFields; // From configuration
+  const categoryMap = config.categoryMap || {};
+  
+  return products.map(product => 
+    buildProductObject(product, categoryMap, config)
+  );
+}
+
+// ❌ WRONG: Hardcoded constants
+const DEFAULT_PRODUCT_FIELDS = ['sku', 'name', 'price']; // Should be in config
+
+async function buildProducts(products, config = {}) {
+  const exportFields = config.main?.exportFields || DEFAULT_PRODUCT_FIELDS; // Fallback pattern
+}
+```
+
+**Configuration Requirements:**
+
+- **Required config parameter** - Don't make configuration optional
+- **No fallback constants** - Force proper dependency injection
+- **Validation** - Ensure required configuration is provided
+- **Error messages** - Clear errors when configuration is missing
+
+**Configuration Validation Pattern:**
+
+```javascript
+function validateRequiredConfig(config, requiredPath) {
+  if (!config || !config.main || !config.main.exportFields) {
+    throw new Error(`Configuration with ${requiredPath} is required`);
+  }
+}
+```
+
 ---
 
 ## Compliance Checklist
 
-### Action Standards
+### Universal Feature-First Standards
+
+**CRITICAL: These standards apply to ALL code - `src/`, `actions/`, `scripts/`, and `shared/`**
+
+- [ ] **Feature-First organization** - Complete business capabilities in single files or sub-modules
+- [ ] **Progressive disclosure** - Business workflows → Feature operations → Feature utilities
+- [ ] **Domain boundaries respected** - Clear separation between domains and infrastructure
+- [ ] **Direct imports** - No namespace imports, explicit dependencies
+- [ ] **ESLint compliance** - Max 5 parameters, complexity ≤10, no unused variables
+- [ ] **Configuration over constants** - Use config values, not hardcoded fallbacks
+- [ ] **Step comments in workflows** - "Step 1:", "Step 2:" for business processes only
+- [ ] **Export organization** - ≤5 exports = no comments; 6+ exports = use export comments
+- [ ] **Function organization** - Most comprehensive functions FIRST within each section
+- [ ] **JSDoc documentation** - @purpose, @usedBy, clear contracts for all functions
+
+### Domain-Specific Standards
+
+#### Action Standards (actions/)
 
 - [ ] Uses `createAction()` framework
 - [ ] Clean orchestrator pattern (50-80 lines)
-- [ ] Direct imports for dependencies
-- [ ] Step-based workflow with `formatStepMessage()`
+- [ ] Import organization: All dependencies at top of file - grouping is obvious from paths
+- [ ] Step comments only for multiple logical steps (no "Step 1:" for single operations)
+- [ ] Step-based workflow with `formatStepMessage()` when appropriate
 - [ ] No custom error handling
 - [ ] Consistent response structure
+
+#### Primary Domain Standards (src/products/, src/files/, src/commerce/, src/htmx/, src/testing/)
+
+- [ ] **Complete feature files** - Business workflows + operations + utilities in single files
+- [ ] **Sub-modules when needed** - For files >400 lines, organize into feature/sub-modules/
+- [ ] **Domain shared/** - Only truly shared utilities used by 3+ features within domain
+- [ ] **Cross-domain imports** - Only from other domain interfaces and shared infrastructure
+- [ ] **Feature cohesion** - Related business logic concentrated in appropriate features
+
+#### Infrastructure Standards (src/shared/)
+
+- [ ] **Cross-domain utilities only** - NOT business domains (action framework, HTTP, validation, utils)
+- [ ] **Universal applicability** - Used by multiple primary domains
+- [ ] **Technical focus** - Infrastructure concerns, not business logic
+- [ ] **Flat organization** - Simple directory structure appropriate to complexity
+
+#### Scripts Standards (scripts/)
+
+- [ ] **Operational capabilities** - Complete deployment, monitoring, auditing workflows
+- [ ] **CLI integration pattern** - Consistent entry points and argument parsing
+- [ ] **Feature-First organization** - Same patterns as src/ domains
+- [ ] **Shared infrastructure** - Common CLI utilities in `scripts/shared/`
 
 ### Configuration Standards
 
@@ -970,22 +1585,8 @@ All actions calling Commerce APIs must have these inputs:
 - [ ] Operations receive targeted config sections only
 - [ ] Config-agnostic feature implementation for testing
 - [ ] Configuration requirements documented in feature JSDoc
-
-### Scripts Standards
-
-- [ ] Feature-First DDD organization (complete capabilities in single files)
-- [ ] Operational domain boundaries (deployment, testing, monitoring, development)
-- [ ] Progressive disclosure (main workflow → operations → utilities)
-- [ ] Direct imports (no namespace imports)
-- [ ] CLI integration pattern (consistent entry points)
-- [ ] Shared infrastructure in `scripts/shared/`
-
-### Function Standards
-
-- [ ] Single responsibility (10-40 lines)
-- [ ] Clear parameter contracts
-- [ ] Pure functions with clear input/output
-- [ ] Domain-appropriate organization
+- [ ] **Required configuration validation** - Validate config presence, don't use fallbacks
+- [ ] **No hardcoded constants** - All defaults come from configuration files
 
 ---
 
@@ -1039,6 +1640,7 @@ All actions calling Commerce APIs must have these inputs:
 ---
 
 This architecture successfully implements:
+
 - ✅ **Direct import clarity** - Dependencies are immediately obvious
 - ✅ **Action framework consistency** - All actions follow the same pattern
 - ✅ **Feature-First DDD organization** - Complete capabilities with domain boundaries
@@ -1182,10 +1784,8 @@ const storageResponse = buildStorageResponse(storageResult, storage, config);
  * Feature-First file demonstrating integration with layer-first response building
  */
 
-// === INFRASTRUCTURE DEPENDENCIES ===
+// All dependencies at top - core and domain layers clear from paths
 const { response } = require('../../shared/http/responses'); // Core layer
-
-// === DOMAIN DEPENDENCIES ===
 const { buildStorageResponse } = require('./shared/response-building'); // Operations layer
 
 // === BUSINESS WORKFLOWS ===
@@ -1302,10 +1902,8 @@ All actions must use the unified action framework:
  * Business capability: Export product data as CSV with multiple implementation options
  */
 
-// === INFRASTRUCTURE DEPENDENCIES ===
-const { createAction } = require('../../src/shared/action/operations/action-factory');
-
-// === DOMAIN DEPENDENCIES === 
+// All dependencies at top - framework and domain imports clear from paths
+const { createAction } = require('../../src/shared/action/action-factory');
 const { exportProducts } = require('../../src/products/rest-export');
 
 // === ACTION BUSINESS LOGIC ===
@@ -1391,17 +1989,12 @@ module.exports = { main };
  * Business capability: [Clear description of what business use case this serves]
  */
 
-// === INFRASTRUCTURE DEPENDENCIES ===
-const { createAction } = require('../../src/shared/action/operations/action-factory');
-
-// === DOMAIN DEPENDENCIES ===
+const { createAction } = require('../../src/shared/action/action-factory');
 const { domainWorkflow } = require('../../src/domain/feature-file');
 
-// === ACTION BUSINESS LOGIC ===
 async function actionBusinessLogic(context) {
-  // Step 1: [Business step]
-  // Step 2: [Business step]
-  // Step 3: [Business step]
+  // Step comments only when there are genuinely multiple logical steps
+  // Single operations don't need "Step 1:" comments
   
   return {
     message: 'Success message',
@@ -1410,7 +2003,6 @@ async function actionBusinessLogic(context) {
   };
 }
 
-// === ACTION FRAMEWORK INTEGRATION ===
 module.exports = createAction(actionBusinessLogic, {
   actionName: 'action-directory-name',
   description: 'Business capability description'
@@ -1471,9 +2063,64 @@ async function actionLogic(context) {
 // No custom error response building required
 ```
 
+#### Action Code Style Rules
+
+**Import Organization:**
+
+```javascript
+// ✅ CORRECT: Clean imports (grouping is obvious from paths)
+const { createAction } = require('../../src/shared/action/action-factory');
+const { deleteFileWithValidation } = require('../../src/files/file-deletion');
+const { generateDeleteConfirmationModal } = require('../../src/htmx/modal-interactions');
+
+// ✅ CORRECT: More imports (still no section comments needed)
+const { createAction } = require('../../src/shared/action/action-factory');
+const { response } = require('../../src/shared/http/responses');
+const { deleteFileWithValidation } = require('../../src/files/file-deletion');
+const { generateDeleteConfirmationModal } = require('../../src/htmx/modal-interactions');
+const { generateCompleteFileBrowserUI } = require('../../src/htmx/file-browser-ui');
+const { storeCsvFile } = require('../files/csv-export');
+```
+
+**Step Comments:**
+
+```javascript
+// ✅ CORRECT: Multiple meaningful steps - Use step comments
+async function deleteFileBusinessLogic(context) {
+  const { config, extractedParams } = context;
+
+  // Step 1: Check if this is a confirmation request or file browser refresh
+  if (!extractedParams.fileName) {
+    return await generateCompleteFileBrowserUI(config, extractedParams);
+  }
+
+  // Step 2: Generate delete confirmation modal 
+  if (!extractedParams.confirmed) {
+    return await generateDeleteConfirmationModal(extractedParams.fileName, config, extractedParams);
+  }
+
+  // Step 3: Execute validated file deletion
+  const deletionResult = await deleteFileWithValidation(
+    extractedParams.fileName,
+    config,
+    extractedParams
+  );
+
+  return deletionResult;
+}
+
+// ✅ CORRECT: Single operation - No step comment needed
+async function browseFilesBusinessLogic(context) {
+  const { config, extractedParams } = context;
+
+  return await generateCompleteFileBrowserUI(config, extractedParams);
+}
+```
+
 ---
 
 This comprehensive architecture provides a **complete foundation** for Feature-First DDD development in Adobe App Builder applications, successfully balancing:
+
 - ✅ **Domain-Driven Design** - Proper bounded contexts and domain separation
 - ✅ **Feature-First Organization** - Complete business capabilities in single files  
 - ✅ **Cognitive Efficiency** - Progressive disclosure and no file jumping required
@@ -1482,6 +2129,215 @@ This comprehensive architecture provides a **complete foundation** for Feature-F
 - ✅ **Action Framework Integration** - Consistent thin orchestration layer
 - ✅ **Adobe I/O Runtime Compliance** - Platform-specific patterns and best practices
 - ✅ **Comprehensive Documentation** - Complete contracts and usage examples
+
+## Safe Architectural Transformation Patterns
+
+### CRITICAL: Zero-Downtime Transformation Strategy
+
+**When refactoring from layer-first to Feature-First architecture, always use the "Consolidate THEN Remove" pattern to prevent broken intermediate states.**
+
+#### **The Consolidate-Then-Remove Pattern**
+
+**RULE: Never remove existing working structure until new structure is validated and all imports are switched.**
+
+```javascript
+// === PHASE 1: CONSOLIDATE (Build alongside existing) ===
+
+src/products/
+├── workflows/             # KEEP - existing working structure
+├── operations/            # KEEP - existing working structure  
+├── utils/                 # KEEP - existing working structure
+├── rest-export.js         # NEW - consolidate functions from workflows/operations/utils
+├── mesh-export.js         # NEW - consolidate functions from workflows/operations/utils
+└── shared/                # NEW - extract truly shared utilities
+
+// === PHASE 2: VALIDATE NEW STRUCTURE ===
+// Test new files in isolation
+// Verify imports work correctly
+// Confirm functionality is preserved
+
+// === PHASE 3: ATOMIC SWITCH ===
+// Update ALL imports simultaneously in one commit
+// Deploy and test complete system
+// Verify all actions work with new architecture
+
+// === PHASE 4: REMOVE OLD STRUCTURE ===
+// Only after confirming new system works completely
+rm -rf src/products/workflows/
+rm -rf src/products/operations/  
+rm -rf src/products/utils/
+```
+
+#### **Why This Pattern is Critical**
+
+**❌ WRONG: Remove-Then-Build Approach**
+
+```bash
+# This creates broken intermediate states
+rm -rf src/products/operations/  # BREAKS existing imports
+rm -rf src/products/utils/       # BREAKS existing imports
+# Now build new files... (system is broken during this phase)
+```
+
+**✅ CORRECT: Consolidate-Then-Remove Approach**
+
+```bash
+# Build new structure alongside existing
+# Validate new structure works
+# Switch imports atomically  
+# Remove old structure only after validation
+```
+
+#### **Architectural Transformation Safety Rules**
+
+**1. Parallel Development Phase**
+
+- Build new feature files alongside existing structure
+- Never modify existing working files during consolidation phase
+- Test new files in isolation before integration
+
+**2. Atomic Integration Phase**  
+
+- Update ALL imports simultaneously in single commit
+- Deploy to staging/production environment
+- Test ALL actions and workflows with new architecture
+- Verify complete system functionality
+
+**3. Validation Phase**
+
+- Verify all actions work with new architecture
+- Confirm no broken imports or missing dependencies
+- Test complete system functionality before cleanup
+
+**4. Cleanup Phase**
+
+- Remove old directories only after confirming new system works
+- Document what was moved where for future reference
+- Update audit baselines to reflect new structure
+
+#### **Implementation Template**
+
+```javascript
+/**
+ * Safe Architectural Transformation Checklist
+ * Use this pattern for any layer-first to Feature-First migration
+ */
+
+// === STEP 1: CONSOLIDATE (Parallel Development) ===
+// 1. Build new feature files alongside existing structure
+// 2. Consolidate functions from operations/utils into feature files  
+// 3. Test new files in isolation (syntax, linting, basic functionality)
+// 4. Verify no circular dependencies in new structure
+
+// === STEP 2: VALIDATE (Atomic Integration) ===
+// 1. Update ALL imports to use new feature files (single commit)
+// 2. Deploy to staging/production environment
+// 3. Test ALL actions and workflows with new architecture
+// 4. Verify complete system functionality
+
+// === STEP 3: CLEANUP (Safe Removal) ===
+// 1. Confirm new system works completely
+// 2. Remove old layer-first directories (rm -rf operations/ utils/ workflows/)
+// 3. Update documentation and audit baselines
+// 4. Final validation that nothing is broken
+
+// === STEP 4: AUDIT COMPLIANCE ===
+// 1. Run architecture audit to confirm compliance
+// 2. Verify no broken imports remain
+// 3. Update progress tracking and metrics
+// 4. Document transformation for future reference
+```
+
+#### **Common Transformation Antipatterns**
+
+**❌ ANTIPATTERN: Incremental File-by-File Migration**
+
+```bash
+# Don't do this - creates inconsistent intermediate states
+mv src/products/operations/validation.js src/products/rest-export.js # Partial migration
+# Some imports still point to operations/, others to rest-export.js
+# System is in inconsistent state
+```
+
+**❌ ANTIPATTERN: Remove Before Validate**
+
+```bash
+# Don't do this - creates broken deployment windows
+rm -rf src/products/operations/  # System breaks
+# Then try to fix imports... (deployment is broken)
+```
+
+**❌ ANTIPATTERN: Mixed Architecture States**
+
+```bash
+# Don't do this - creates cognitive overhead
+src/products/
+├── rest-export.js         # Feature-First file
+├── operations/            # Layer-first directory  
+│   └── validation.js      # Some functions moved, others not
+└── utils/                 # Layer-first directory
+    └── formatting.js      # Mixed state - hard to understand
+```
+
+**✅ CORRECT PATTERN: Complete Domain Transformation**
+
+```bash
+# Do this - clear before/after states
+src/products/
+├── rest-export.js         # Complete feature with all related functions
+├── mesh-export.js         # Complete feature with all related functions  
+├── product-enrichment.js  # Complete feature with all related functions
+└── shared/                # Only truly shared utilities (3+ feature usage)
+```
+
+#### **Transformation Validation Commands**
+
+```bash
+# === PHASE 1: CONSOLIDATION VALIDATION ===
+# Verify new files exist and have no syntax errors
+node -e "require('./src/products/rest-export.js')"
+npm run lint src/products/rest-export.js
+
+# === PHASE 2: INTEGRATION VALIDATION ===
+# Deploy and test complete system
+npm run deploy
+npm run test:action get-products
+npm run test:action get-products-mesh
+
+# === PHASE 3: CLEANUP VALIDATION ===  
+# Verify old structure is completely removed
+find src/ -name "workflows" -o -name "operations" -o -name "utils" -type d
+
+# === PHASE 4: AUDIT VALIDATION ===
+# Confirm architectural compliance
+npm run audit | grep "feature-first-file-organization"
+npm run audit | grep "function-organization-within-files"
+```
+
+#### **Benefits of Safe Transformation Pattern**
+
+**Development Benefits:**
+
+- ✅ **Zero downtime** - System never breaks during transformation
+- ✅ **Rollback safety** - Can return to working state at any point
+- ✅ **Clear progress** - Obvious before/during/after states
+- ✅ **Validation points** - Multiple verification opportunities
+
+**Operational Benefits:**
+
+- ✅ **Production safety** - No broken deployments
+- ✅ **Team coordination** - Clear transformation phases
+- ✅ **Audit compliance** - Measurable progress tracking
+- ✅ **Documentation trail** - Clear record of what moved where
+
+**Architecture Benefits:**
+
+- ✅ **Complete features** - All related functions consolidated together
+- ✅ **Clear boundaries** - Domain separation maintained
+- ✅ **Progressive disclosure** - Functions organized by complexity
+- ✅ **Strategic sharing** - Only true cross-feature utilities shared
+
+---
 
 ## Conclusion
 
@@ -1497,13 +2353,18 @@ This comprehensive architecture provides a **complete foundation** for Feature-F
 - ✅ **Comprehensive Documentation** - Complete contracts and usage examples
 
 ### **Architecture Validation**
+
 The architecture has been validated through:
+
 - **Successful Implementation** - 5 production actions using createAction() framework
 - **Comprehensive Audit System** - 100% accurate validation rules for architectural compliance
 - **Real-World Deployment** - Adobe I/O Runtime staging and production environments
 - **Performance Testing** - Consistent performance patterns across REST and API Mesh implementations
+
 ### **Development Benefits**
+
 **Code Quality:**
+
 - Zero duplication across actions (216 lines eliminated)
 - Consistent patterns (100% compliance via audit system)
 - Average action size: 46 lines (down from 123 lines)

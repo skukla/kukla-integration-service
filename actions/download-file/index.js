@@ -1,30 +1,32 @@
 /**
- * Action for downloading files from storage
- * @module download-file
+ * File Download Action
+ * Business capability: Download files with content retrieval and proper response headers
  */
 
-const { createAction } = require('../../src/core/action/operations/action-factory');
-const { downloadFileWorkflow } = require('../../src/files/workflows/file-management');
+const { downloadFileWithResponse } = require('../../src/files/file-download');
+const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
- * Business logic for download-file action
- * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Response object
+ * File download business logic
+ * @purpose Execute file download workflow with content retrieval and response building
+ * @param {Object} context - Initialized action context with config and parameters
+ * @returns {Promise<Object>} Complete download response with file content and headers
+ * @usedBy Adobe App Builder frontend, external download requests
+ * @config storage.provider, storage.directory, files.mimeTypes
  */
 async function downloadFileBusinessLogic(context) {
   const { config, extractedParams } = context;
 
-  // Extract filename from parameters
+  // Step 1: Validate required parameters
   const fileName = extractedParams.fileName;
   if (!fileName) {
     throw new Error('fileName parameter is required');
   }
 
-  // Use the download workflow which handles all the response formatting
-  return await downloadFileWorkflow(fileName, config, extractedParams);
+  // Step 2: Execute complete download workflow
+  return await downloadFileWithResponse(fileName, config, extractedParams);
 }
 
-// Export the action with proper configuration
 module.exports = createAction(downloadFileBusinessLogic, {
   actionName: 'download-file',
   withLogger: false,
