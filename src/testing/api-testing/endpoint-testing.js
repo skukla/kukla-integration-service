@@ -3,6 +3,7 @@
  * All API endpoint testing utilities including URL building, request execution, and mocking
  */
 
+const { createUrlBuilders } = require('../../shared/routing/url-factory');
 const { sleep } = require('../../shared/utils/async');
 
 // Endpoint URL Building
@@ -16,21 +17,8 @@ const { sleep } = require('../../shared/utils/async');
  * @usedBy executeApiTestWorkflow, executeApiTestWithParams
  */
 function buildApiTestUrl(endpoint, config) {
-  const { commerce } = config;
-
-  if (!commerce?.baseUrl) {
-    throw new Error('Commerce base URL is required for API testing');
-  }
-
-  const endpointMap = {
-    products: '/rest/V1/products',
-    categories: '/rest/V1/categories',
-    customers: '/rest/V1/customers',
-    orders: '/rest/V1/orders',
-  };
-
-  const apiPath = endpointMap[endpoint] || `/rest/V1/${endpoint}`;
-  return `${commerce.baseUrl}${apiPath}`;
+  const { commerceUrl } = createUrlBuilders(config);
+  return commerceUrl(endpoint);
 }
 
 /**

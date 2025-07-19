@@ -4,7 +4,8 @@
  */
 
 const { loadConfig } = require('../../config');
-const { sleep } = require('../shared/utils/async');
+const { request } = require('../shared/http/client');
+const { createUrlBuilders } = require('../shared/routing/url-factory');
 
 // Business Workflows
 
@@ -25,14 +26,15 @@ async function executeActionTestWorkflow(actionName, options = {}) {
       return buildActionTestErrorResult(validationResult.error, actionName);
     }
 
-    // Step 2: Load configuration and build test URL
+    // Step 2: Load configuration and build test URL using factory pattern
     const config = loadConfig({}, options.isProd);
-    const actionUrl = buildActionTestUrl(actionName, config);
+    const { runtimeUrl } = createUrlBuilders(config);
+    const actionUrl = runtimeUrl(actionName);
 
     // Step 3: Execute action test with timing
     const testResult = await executeActionTestRequest(actionUrl, actionName, options);
 
-    // Step 4: Validate response and build result
+    // Step 4: Validate response and build complete result
     const responseValidation = validateActionTestResponse(testResult, actionName);
 
     return buildActionTestResult(actionName, actionUrl, testResult, responseValidation, options);
@@ -97,20 +99,6 @@ function validateActionTestInputs(actionName, options) {
 }
 
 /**
- * Build action test URL for environment
- * @purpose Construct complete action URL based on configuration and environment
- * @param {string} actionName - Name of action to build URL for
- * @param {Object} config - Complete application configuration
- * @returns {string} Complete action test URL
- */
-function buildActionTestUrl(actionName, config) {
-  const baseUrl = config.runtime.url;
-  const namespace = config.runtime.namespace;
-
-  return `${baseUrl}/api/v1/web/${namespace}/${actionName}`;
-}
-
-/**
  * Execute action HTTP request with timing and error handling
  * @purpose Make HTTP request to action with comprehensive error handling and timing
  * @param {string} actionUrl - Complete action URL
@@ -123,19 +111,22 @@ async function executeActionTestRequest(actionUrl, actionName, options) {
   const params = options.params || {};
 
   try {
-    // Add artificial delay for testing timing
-    await sleep(Math.random() * 100 + 50);
+    const response = await request(actionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
 
-    // Simulate action response based on action type
-    const mockResponse = generateMockActionResponse(actionName, params);
     const responseTime = Date.now() - startTime;
 
     return {
-      success: true,
-      statusCode: 200,
+      success: response.statusCode >= 200 && response.statusCode < 300,
+      statusCode: response.statusCode,
       responseTime,
-      data: mockResponse,
-      headers: { 'Content-Type': 'application/json' },
+      data: typeof response.body === 'string' ? JSON.parse(response.body) : response.body,
+      headers: response.headers,
       url: actionUrl,
     };
   } catch (error) {
@@ -303,7 +294,6 @@ module.exports = {
 
   // Feature operations
   validateActionTestInputs,
-  buildActionTestUrl,
   executeActionTestRequest,
   validateActionTestResponse,
 

@@ -1,16 +1,14 @@
 /**
- * API Testing - Feature Core
- * Complete API endpoint testing capability with organized sub-modules for different utility categories
+ * API Testing
+ * Complete API testing capability with request execution and response validation
  */
 
 const { loadConfig } = require('../../config');
-const {
-  buildApiTestUrl,
-  buildApiRequestOptions,
-  executeApiTestRequest,
-} = require('./api-testing/endpoint-testing');
+const { buildApiRequestOptions } = require('./api-testing/endpoint-testing');
+const { executeApiTestRequest } = require('./api-testing/endpoint-testing');
 const { validateApiTestResponse } = require('./api-testing/response-validation');
 const { buildApiTestResult, buildApiTestErrorResult } = require('./api-testing/result-building');
+const { createUrlBuilders } = require('../shared/routing/url-factory');
 
 // Business Workflows
 
@@ -33,7 +31,8 @@ async function executeApiTestWorkflow(endpoint, options = {}) {
 
     // Step 2: Build API URL and prepare request
     const config = loadConfig({}, options.isProd);
-    const apiUrl = buildApiTestUrl(endpoint, config);
+    const { commerceUrl } = createUrlBuilders(config);
+    const apiUrl = commerceUrl(endpoint);
     const requestOptions = buildApiRequestOptions(options);
 
     // Step 3: Execute API test with comprehensive error handling
@@ -48,20 +47,6 @@ async function executeApiTestWorkflow(endpoint, options = {}) {
   }
 }
 
-/**
- * Execute API test with specific parameters
- * @purpose Test API endpoint with custom parameters and validation rules
- * @param {string} endpoint - API endpoint to test
- * @param {Object} testParams - Specific test parameters
- * @param {Object} options - Additional test options
- * @returns {Promise<Object>} API test result with parameter-specific validation
- * @usedBy Test orchestration, custom testing scenarios
- */
-async function executeApiTestWithParams(endpoint, testParams, options = {}) {
-  const enhancedOptions = { ...options, params: testParams };
-  return await executeApiTestWorkflow(endpoint, enhancedOptions);
-}
-
 // Feature Operations
 
 /**
@@ -70,77 +55,35 @@ async function executeApiTestWithParams(endpoint, testParams, options = {}) {
  * @param {string} endpoint - API endpoint to test
  * @param {Object} options - API test options
  * @returns {Object} Validation result with errors and configuration
- * @usedBy executeApiTestWorkflow
  */
 function validateApiTestInputs(endpoint, options) {
   const errors = [];
-  const warnings = [];
 
-  validateEndpointInput(endpoint, errors);
-  validateApiTestOptions(options, errors, warnings);
+  if (!endpoint || typeof endpoint !== 'string') {
+    errors.push('API endpoint is required and must be a string');
+  }
+
+  if (!isValidEndpointName(endpoint)) {
+    errors.push(`Invalid endpoint name: ${endpoint}`);
+  }
+
+  if (options && options.timeout && typeof options.timeout !== 'number') {
+    errors.push('Timeout must be a number if provided');
+  }
 
   return {
     isValid: errors.length === 0,
     error: errors.length > 0 ? errors.join('; ') : null,
-    errors,
-    warnings,
   };
 }
-
-/**
- * Validate endpoint input parameter
- * @purpose Check endpoint name format and requirements
- * @param {string} endpoint - Endpoint to validate
- * @param {Array} errors - Array to collect validation errors
- * @usedBy validateApiTestInputs
- */
-function validateEndpointInput(endpoint, errors) {
-  if (!endpoint || typeof endpoint !== 'string') {
-    errors.push('API endpoint is required and must be a string');
-    return;
-  }
-
-  if (!isValidEndpointName(endpoint)) {
-    errors.push(
-      `Invalid endpoint name: ${endpoint}. Must contain only letters, numbers, and hyphens`
-    );
-  }
-}
-
-/**
- * Validate API test options
- * @purpose Check options object structure and values
- * @param {Object} options - Options to validate
- * @param {Array} errors - Array to collect validation errors
- * @param {Array} warnings - Array to collect validation warnings
- * @usedBy validateApiTestInputs
- */
-function validateApiTestOptions(options, errors, warnings) {
-  if (options && typeof options !== 'object') {
-    errors.push('Options must be an object if provided');
-    return;
-  }
-
-  if (options && options.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
-    errors.push('Timeout must be a positive number if provided');
-  }
-
-  if (options && options.method && !isValidHttpMethod(options.method)) {
-    warnings.push('Invalid HTTP method specified, using GET');
-  }
-}
-
-// Feature Utilities
 
 /**
  * Check if endpoint name is valid
  * @purpose Validate endpoint name format and characters
  * @param {string} endpoint - Endpoint name to validate
  * @returns {boolean} True if endpoint name is valid
- * @usedBy validateEndpointInput
  */
 function isValidEndpointName(endpoint) {
-  // Allow letters, numbers, hyphens, and underscores
   return /^[a-zA-Z0-9_-]+$/.test(endpoint);
 }
 
@@ -149,7 +92,6 @@ function isValidEndpointName(endpoint) {
  * @purpose Validate HTTP method against allowed methods
  * @param {string} method - HTTP method to validate
  * @returns {boolean} True if HTTP method is valid
- * @usedBy validateApiTestOptions
  */
 function isValidHttpMethod(method) {
   const allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
@@ -157,16 +99,8 @@ function isValidHttpMethod(method) {
 }
 
 module.exports = {
-  // Business workflows (main exports that actions import)
   executeApiTestWorkflow,
-  executeApiTestWithParams,
-
-  // Feature operations (coordination functions)
   validateApiTestInputs,
-  validateEndpointInput,
-  validateApiTestOptions,
-
-  // Feature utilities (building blocks)
   isValidEndpointName,
   isValidHttpMethod,
 };
