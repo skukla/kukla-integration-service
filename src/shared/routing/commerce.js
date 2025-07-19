@@ -37,28 +37,6 @@ function buildCommerceApiUrl(endpoint, config, pathParams = {}) {
   return `${normalizedBaseUrl}${finalPath}`;
 }
 
-/**
- * Legacy function for backward compatibility (deprecated)
- * @deprecated Use buildCommerceApiUrl instead
- */
-function buildCommerceUrl(baseUrl, path, pathParams = {}) {
-  // Legacy implementation for backward compatibility
-  if (!baseUrl) {
-    throw new Error('Commerce base URL is required');
-  }
-
-  const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
-  const normalizedPath = path.replace(/^\/+/, '');
-  let apiPath = `/rest/all/V1/${normalizedPath}`;
-
-  Object.entries(pathParams).forEach(([key, value]) => {
-    apiPath = apiPath.replace(`:${key}`, encodeURIComponent(value));
-  });
-
-  return `${normalizedBaseUrl}${apiPath}`;
-}
-
 module.exports = {
   buildCommerceApiUrl,
-  buildCommerceUrl, // Keep for backward compatibility
 };
