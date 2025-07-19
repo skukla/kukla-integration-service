@@ -1,0 +1,29 @@
+<div class="notification notification-<%= type %>" 
+     id="<%= notificationId %>" 
+     <% if (autoHide) { %>data-auto-hide="<%= duration %>"<% } %>
+     role="alert"
+     aria-live="polite">
+  <div class="notification-content">
+    <div class="notification-icon"><%= icon %></div>
+    <div class="notification-message">
+      <div class="notification-text"><%= message %></div>
+      <% if (details) { %>
+      <div class="notification-details"><%= details %></div>
+      <% } %>
+      <% if (actions && actions.length > 0) { %>
+      <div class="notification-actions">
+        <% actions.forEach(action => { %>
+        <button class="btn btn-sm btn-outline" onclick="<%= action.onClick %>"><%= action.label %></button>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+    <% if (showCloseButton) { %>
+    <button class="notification-close" 
+            onclick="closeNotification('<%= notificationId %>')"
+            aria-label="Close notification">
+      &times;
+    </button>
+    <% } %>
+  </div>
+</div> 

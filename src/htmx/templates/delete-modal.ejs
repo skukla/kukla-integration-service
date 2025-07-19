@@ -1,0 +1,32 @@
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Confirm File Deletion</h3>
+      <button class="modal-close" onclick="cancelDelete()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this file? This action cannot be undone.</p>
+      <% if (isProtected) { %>
+      <div class="modal-warning">⚠️ This file may be protected. Deletion may not be allowed.</div>
+      <% } %>
+      <div class="file-info">
+        <div class="file-info-row">
+          <strong>Name:</strong> <span class="file-name"><%= fileName %></span>
+        </div>
+        <div class="file-info-row">
+          <strong>Size:</strong> <span class="file-size"><%= fileSize %></span>
+        </div>
+        <div class="file-info-row">
+          <strong>Modified:</strong> <span class="file-date"><%= fileDate %></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cancelDelete()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete('<%= fileName %>')"
+              <% if (isProtected) { %>title="File may be protected"<% } %>>
+        Delete File
+      </button>
+    </div>
+  </div>
+</div> 

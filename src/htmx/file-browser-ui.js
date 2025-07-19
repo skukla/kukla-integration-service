@@ -1,9 +1,10 @@
 /**
  * HTMX File Browser UI
- * Complete file browser UI capability with HTML generation and HTMX response building
+ * Complete file browser UI capability using HTML template files for cleaner maintainable UI
  */
 
-// All dependencies at top - external vs internal obvious from paths
+// All dependencies at top - template loader, file operations, and URL building
+const { loadTemplateSync } = require('./shared/template-loader');
 const { listCsvFiles } = require('../files/file-browser');
 const { buildRuntimeUrl } = require('../shared/routing/runtime');
 
@@ -11,7 +12,7 @@ const { buildRuntimeUrl } = require('../shared/routing/runtime');
 
 /**
  * Complete file browser UI workflow with error handling
- * @purpose Generate complete file browser interface with file listing and navigation
+ * @purpose Generate complete file browser interface using HTML templates
  * @param {Object} config - Configuration object with storage settings
  * @param {Object} params - Action parameters containing credentials
  * @returns {Promise<Object>} HTMX response with complete file browser UI
@@ -24,7 +25,7 @@ async function generateCompleteFileBrowserUI(config, params) {
     // Step 1: Fetch file list from storage
     const files = await listCsvFiles(config, params);
 
-    // Step 2: Generate complete file browser HTML
+    // Step 2: Generate complete file browser HTML using templates
     const fileBrowserHTML = generateFileBrowserHTML(files, config);
 
     // Step 3: Build HTMX response with file browser
@@ -36,7 +37,7 @@ async function generateCompleteFileBrowserUI(config, params) {
 }
 
 /**
- * Refresh file browser after operations
+ * Refresh file browser after operations using templates
  * @purpose Regenerate file browser UI after file operations like delete, upload
  * @param {Object} config - Configuration object with storage settings
  * @param {Object} params - Action parameters containing credentials
@@ -51,7 +52,7 @@ async function refreshFileBrowserUI(config, params, successMessage = null) {
     // Step 1: Fetch updated file list
     const files = await listCsvFiles(config, params);
 
-    // Step 2: Generate updated file browser HTML
+    // Step 2: Generate updated file browser HTML using templates
     const fileBrowserHTML = generateFileBrowserHTML(files, config);
 
     // Step 3: Build success response with optional message
@@ -66,7 +67,7 @@ async function refreshFileBrowserUI(config, params, successMessage = null) {
 }
 
 /**
- * Generate empty file browser state
+ * Generate empty file browser state using templates
  * @purpose Create file browser UI when no files are available
  * @param {Object} config - Configuration object with storage settings
  * @returns {Object} HTMX response with empty state UI
@@ -81,7 +82,7 @@ async function generateEmptyFileBrowserUI(config) {
 // Feature Operations
 
 /**
- * Generate complete file browser HTML with all components
+ * Generate complete file browser HTML using templates
  * @purpose Coordinate HTML generation for complete file browser interface
  * @param {Array} files - Array of file objects with metadata
  * @param {Object} config - Configuration object with URL settings
@@ -143,27 +144,22 @@ function buildFileOperationSuccessResponse(updatedBrowserHTML, successMessage) {
 // Feature Utilities
 
 /**
- * Generate HTML for empty file list state
+ * Generate HTML for empty file list state using template
  * @purpose Create user-friendly empty state when no files are available
  * @param {Object} config - Configuration object for messaging
  * @returns {string} HTML string for empty state
  * @usedBy generateFileBrowserHTML
  */
 function generateEmptyFileListHTML(config) {
-  const storageType = config.storage?.provider || 'storage';
+  const variables = {
+    storageType: config.storage?.provider || 'storage',
+  };
 
-  return `
-    <div class="empty-state">
-      <div class="empty-icon">📄</div>
-      <h2>No exported files found</h2>
-      <p>Use the export buttons above to create CSV files.</p>
-      <p class="empty-details">Files will be stored in ${storageType} and appear here.</p>
-    </div>
-  `;
+  return loadTemplateSync('empty-file-list', variables);
 }
 
 /**
- * Generate HTML for individual file row
+ * Generate HTML for individual file row using template
  * @purpose Create HTML representation of a single file with actions
  * @param {Object} file - File object with metadata (name, size, lastModified, fullPath)
  * @param {Object} config - Configuration object with URL settings
@@ -176,36 +172,15 @@ function generateFileRowHTML(file, config) {
   const downloadUrl =
     buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
 
-  return `
-    <div class="table-row">
-      <div class="table-cell">
-        <span class="file-name">${escapeHtml(file.name)}</span>
-      </div>
-      <div class="table-cell">
-        <span class="file-size">${file.size || 'Unknown'}</span>
-      </div>
-      <div class="table-cell">
-        <span class="file-date">${file.lastModified || 'Unknown'}</span>
-      </div>
-      <div class="table-cell">
-        <div class="table-actions">
-          <a href="${downloadUrl}" 
-             class="btn btn-sm btn-primary"
-             download="${escapeHtml(file.name)}"
-             title="Download ${escapeHtml(file.name)}">
-            Download
-          </a>
-          <button class="btn btn-sm btn-danger btn-outline"
-                  data-action="delete"
-                  data-file-name="${escapeHtml(file.name)}"
-                  data-file-path="${escapeHtml(fullPath)}"
-                  title="Delete ${escapeHtml(file.name)}">
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
+  const variables = {
+    fileName: file.name,
+    fileSize: file.size || 'Unknown',
+    fileDate: file.lastModified || 'Unknown',
+    fullPath: fullPath,
+    downloadUrl: downloadUrl,
+  };
+
+  return loadTemplateSync('file-row', variables);
 }
 
 /**
@@ -243,7 +218,7 @@ function generateFileBrowserErrorResponse(errorMessage, details = '') {
  * @purpose Prevent XSS by escaping HTML characters in user data
  * @param {string} text - Text to escape
  * @returns {string} HTML-escaped text
- * @usedBy generateFileRowHTML, generateFileBrowserErrorResponse
+ * @usedBy generateFileBrowserErrorResponse (for content not using templates)
  */
 function escapeHtml(text) {
   if (typeof text !== 'string') {

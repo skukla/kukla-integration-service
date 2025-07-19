@@ -1,0 +1,32 @@
+<div class="notification notification-progress" 
+     id="{{notificationId}}" 
+     {{#if autoHide}}data-auto-hide="{{duration}}"{{/if}}
+     role="status"
+     aria-live="polite">
+  <div class="notification-content">
+    <div class="notification-icon">🔄</div>
+    <div class="notification-message">
+      <div class="notification-text">{{message}}</div>
+      {{#if showProgress}}
+      <div class="progress-bar{{#if indeterminate}} progress-indeterminate{{/if}}">
+        <div class="progress-fill"{{#if progress}} style="width: {{progress}}%"{{/if}}></div>
+        {{#if progress}}<div class="progress-text">{{progress}}%</div>{{/if}}
+      </div>
+      {{/if}}
+      {{#if actions}}
+      <div class="notification-actions">
+        {{#each actions}}
+        <button class="btn btn-sm btn-outline" onclick="{{onClick}}">{{label}}</button>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+    {{#if showCloseButton}}
+    <button class="notification-close" 
+            onclick="closeNotification('{{notificationId}}')"
+            aria-label="Close notification">
+      &times;
+    </button>
+    {{/if}}
+  </div>
+</div> 

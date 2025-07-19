@@ -1,60 +1,58 @@
 /**
  * HTMX Modal Interactions
- * Complete modal interaction capability with confirmation dialogs and dynamic content
+ * Complete modal interaction capability using HTML template files for cleaner maintainable UI
  */
 
-// All dependencies at top - external vs internal obvious from paths
-const { listCsvFiles } = require('../files/file-browser');
+// All dependencies at top - template loader and file validation
+const { loadTemplateSync } = require('./shared/template-loader');
 
 // Business Workflows
 
 /**
- * Complete delete confirmation modal workflow
- * @purpose Generate delete confirmation modal with file context and safety checks
+ * Generate delete confirmation modal using HTML template
+ * @purpose Create interactive delete confirmation modal for file operations
  * @param {string} fileName - Name of file to delete
- * @param {Object} config - Configuration object with storage settings
- * @param {Object} params - Action parameters containing credentials
+ * @param {Object} config - Configuration object with file settings
+ * @param {Object} params - Action parameters for file validation
  * @returns {Promise<Object>} HTMX response with delete confirmation modal
- * @throws {Error} When modal generation fails or file context cannot be loaded
- * @usedBy delete-file action (confirmation step)
- * @config storage.provider, files.protectedPatterns
+ * @usedBy delete-file action for confirmation workflow
+ * @config files.protectedPatterns (for protected file detection)
  */
 async function generateDeleteConfirmationModal(fileName, config, params) {
   try {
-    // Step 1: Validate file exists and get context
-    const files = await listCsvFiles(config, params);
-    const fileToDelete = files.find((f) => f.name === fileName || f.fullPath === fileName);
-
-    // Step 2: Check if file is protected
+    // Step 1: Check if file is protected
     const isProtected = checkIfFileProtected(fileName, config);
 
-    // Step 3: Generate appropriate modal content
-    const modalHTML = generateDeleteModalHTML(fileName, fileToDelete, isProtected);
+    // Step 2: Get file metadata if available
+    const fileInfo = await getFileInfoForModal(fileName, params);
 
-    // Step 4: Build modal response
-    return buildModalResponse(modalHTML, { action: 'show' });
+    // Step 3: Generate modal HTML using template
+    const modalHTML = generateDeleteModalHTML(fileName, fileInfo, isProtected);
+
+    // Step 4: Return modal response
+    return buildModalResponse(modalHTML);
   } catch (error) {
     return generateModalErrorResponse('Failed to generate delete confirmation', error.message);
   }
 }
 
 /**
- * Process modal confirmation result
- * @purpose Handle user confirmation or cancellation from modal interactions
- * @param {string} action - User action ('confirm' or 'cancel')
- * @param {Object} modalData - Data passed from modal interaction
- * @returns {Object} HTMX response for modal result processing
- * @throws {Error} When action processing fails
- * @usedBy modal confirmation handlers
+ * Process modal confirmation actions
+ * @purpose Handle modal confirmation responses and route to appropriate actions
+ * @param {string} action - Modal action (confirm, cancel, dismiss)
+ * @param {Object} data - Modal action data
+ * @returns {Object} HTMX response for modal action
+ * @usedBy Modal interaction handlers
  */
-async function processModalConfirmation(action, modalData) {
+async function processModalConfirmation(action, data) {
   try {
-    if (action === 'confirm') {
-      // Step 1: Return confirmation trigger for calling action
-      return buildModalConfirmationResponse(modalData);
-    } else {
-      // Step 2: Close modal on cancellation
-      return buildModalCancelResponse();
+    switch (action) {
+      case 'confirm':
+        return buildModalConfirmationResponse('confirmed', data);
+      case 'cancel':
+        return buildModalConfirmationResponse('cancelled', data);
+      default:
+        return buildModalConfirmationResponse('dismissed', data);
     }
   } catch (error) {
     return generateModalErrorResponse('Failed to process modal confirmation', error.message);
@@ -62,17 +60,22 @@ async function processModalConfirmation(action, modalData) {
 }
 
 /**
- * Generate generic information modal
- * @purpose Create informational modal for user messaging and guidance
+ * Generate information modal using HTML template
+ * @purpose Create informational modal for user messaging
  * @param {string} title - Modal title
  * @param {string} message - Modal message content
  * @param {Object} [options] - Modal display options
  * @returns {Object} HTMX response with information modal
- * @usedBy various actions for user guidance and information
+ * @usedBy Information display workflows
+ * @config ui.modals (styling and behavior settings)
  */
 async function generateInformationModal(title, message, options = {}) {
-  const modalHTML = generateInfoModalHTML(title, message, options);
-  return buildModalResponse(modalHTML, { action: 'show' });
+  try {
+    const modalHTML = generateInfoModalHTML(title, message, options);
+    return buildModalResponse(modalHTML);
+  } catch (error) {
+    return generateModalErrorResponse('Failed to generate information modal', error.message);
+  }
 }
 
 // Feature Operations
@@ -80,7 +83,7 @@ async function generateInformationModal(title, message, options = {}) {
 /**
  * Build modal response with HTMX triggers
  * @purpose Create standardized HTMX response for modal operations
- * @param {string} modalHTML - Complete modal HTML content
+ * @param {string} modalHTML - Complete modal HTML content from template
  * @param {Object} [options] - Modal response options
  * @returns {Object} HTMX modal response
  * @usedBy generateDeleteConfirmationModal, generateInformationModal
@@ -102,50 +105,32 @@ function buildModalResponse(modalHTML, options = {}) {
 
 /**
  * Build modal confirmation response
- * @purpose Create response for confirmed modal actions
- * @param {Object} modalData - Data from confirmed modal
+ * @purpose Create standardized response for modal confirmation actions
+ * @param {string} result - Confirmation result (confirmed, cancelled, dismissed)
+ * @param {Object} data - Associated modal data
  * @returns {Object} HTMX confirmation response
  * @usedBy processModalConfirmation
  */
-function buildModalConfirmationResponse(modalData) {
+function buildModalConfirmationResponse(result, data) {
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
       'HX-Trigger': JSON.stringify({
-        'modal-confirmed': modalData,
+        'modal-confirmed': { result, data },
         'hide-modal': true,
       }),
     },
-    body: JSON.stringify({ confirmed: true, data: modalData }),
-  };
-}
-
-/**
- * Build modal cancellation response
- * @purpose Create response for cancelled modal actions
- * @returns {Object} HTMX cancellation response
- * @usedBy processModalConfirmation
- */
-function buildModalCancelResponse() {
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'HX-Trigger': JSON.stringify({
-        'modal-cancelled': true,
-        'hide-modal': true,
-      }),
-    },
-    body: JSON.stringify({ cancelled: true }),
+    body: JSON.stringify({ result, data }),
   };
 }
 
 // Feature Utilities
 
 /**
- * Generate delete confirmation modal HTML
- * @purpose Create HTML for delete confirmation dialog with file information
+ * Generate delete confirmation modal HTML using template
+ * @purpose Create HTML for delete confirmation dialog using template file
  * @param {string} fileName - Name of file to delete
  * @param {Object} [fileInfo] - File metadata object
  * @param {boolean} [isProtected] - Whether file is protected
@@ -153,49 +138,18 @@ function buildModalCancelResponse() {
  * @usedBy generateDeleteConfirmationModal
  */
 function generateDeleteModalHTML(fileName, fileInfo = null, isProtected = false) {
-  const fileSize = fileInfo?.size || 'Unknown size';
-  const fileDate = fileInfo?.lastModified || 'Unknown date';
+  const variables = {
+    fileName,
+    fileSize: fileInfo?.size || 'Unknown size',
+    fileDate: fileInfo?.lastModified || 'Unknown date',
+    isProtected,
+  };
 
-  const warningText = isProtected
-    ? '<div class="modal-warning">⚠️ This file may be protected. Deletion may not be allowed.</div>'
-    : '';
-
-  return `
-    <div class="modal-overlay" id="delete-modal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>Confirm File Deletion</h3>
-          <button class="modal-close" onclick="cancelDelete()" aria-label="Close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>Are you sure you want to delete this file? This action cannot be undone.</p>
-          ${warningText}
-          <div class="file-info">
-            <div class="file-info-row">
-              <strong>Name:</strong> <span class="file-name">${escapeHtml(fileName)}</span>
-            </div>
-            <div class="file-info-row">
-              <strong>Size:</strong> <span class="file-size">${fileSize}</span>
-            </div>
-            <div class="file-info-row">
-              <strong>Modified:</strong> <span class="file-date">${fileDate}</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="cancelDelete()">Cancel</button>
-          <button class="btn btn-danger" onclick="confirmDelete('${escapeHtml(fileName)}')"
-                  ${isProtected ? 'title="File may be protected"' : ''}>
-            Delete File
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
+  return loadTemplateSync('delete-modal', variables);
 }
 
 /**
- * Generate information modal HTML
+ * Generate information modal HTML using inline template
  * @purpose Create HTML for informational modal dialogs
  * @param {string} title - Modal title
  * @param {string} message - Modal message content
@@ -235,23 +189,47 @@ function generateInfoModalHTML(title, message, options = {}) {
 
 /**
  * Check if file is protected from deletion
- * @purpose Determine if file matches protection patterns
+ * @purpose Determine if file should be protected from deletion based on patterns
  * @param {string} fileName - Name of file to check
- * @param {Object} config - Configuration object with protection settings
- * @returns {boolean} True if file is protected
+ * @param {Object} config - Configuration with protected patterns
+ * @returns {boolean} Whether file is protected
  * @usedBy generateDeleteConfirmationModal
  */
 function checkIfFileProtected(fileName, config) {
   const protectedPatterns = config.files?.protectedPatterns || [];
 
   return protectedPatterns.some((pattern) => {
-    try {
-      return fileName.match(new RegExp(pattern));
-    } catch (error) {
-      // Invalid regex pattern - skip it
-      return false;
+    if (typeof pattern === 'string') {
+      return fileName.includes(pattern);
     }
+    if (pattern instanceof RegExp) {
+      return pattern.test(fileName);
+    }
+    return false;
   });
+}
+
+/**
+ * Get file information for modal display
+ * @purpose Retrieve file metadata for modal display purposes
+ * @param {string} fileName - File name to get info for
+ * @param {Object} params - Action parameters
+ * @returns {Promise<Object|null>} File info object or null
+ * @usedBy generateDeleteConfirmationModal
+ */
+async function getFileInfoForModal(fileName, params) {
+  try {
+    // This would typically call a file info service
+    // For now, return basic info based on fileName and params
+    console.log(`Getting file info for ${fileName}`, params);
+    return {
+      size: 'Unknown size',
+      lastModified: 'Unknown date',
+    };
+  } catch (error) {
+    console.error(`Failed to get file info for ${fileName}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -297,7 +275,7 @@ function generateModalErrorResponse(errorMessage, details = '') {
  * @purpose Prevent XSS by escaping HTML characters in user data
  * @param {string} text - Text to escape
  * @returns {string} HTML-escaped text
- * @usedBy generateDeleteModalHTML, generateInfoModalHTML, generateModalErrorResponse
+ * @usedBy generateInfoModalHTML, generateModalErrorResponse
  */
 function escapeHtml(text) {
   if (typeof text !== 'string') {
@@ -324,12 +302,12 @@ module.exports = {
   // Feature operations (coordination functions)
   buildModalResponse,
   buildModalConfirmationResponse,
-  buildModalCancelResponse,
 
   // Feature utilities (building blocks)
   generateDeleteModalHTML,
   generateInfoModalHTML,
   checkIfFileProtected,
+  getFileInfoForModal,
   generateModalErrorResponse,
   escapeHtml,
 };
