@@ -66,25 +66,24 @@ async function executeApiTestWithParams(endpoint, testParams, options = {}) {
 
 /**
  * Validate API test inputs
- * @purpose Check that endpoint and options are valid before testing
- * @param {string} endpoint - API endpoint to validate
- * @param {Object} options - Test options to validate
- * @returns {Object} Validation result with isValid flag and error details
+ * @purpose Validate API test parameters and environment settings
+ * @param {string} endpoint - API endpoint to test
+ * @param {Object} options - API test options
+ * @returns {Object} Validation result with errors and configuration
  * @usedBy executeApiTestWorkflow
  */
 function validateApiTestInputs(endpoint, options) {
   const errors = [];
+  const warnings = [];
 
-  // Validate endpoint
   validateEndpointInput(endpoint, errors);
-
-  // Validate options
-  validateOptionsInput(options, errors);
+  validateApiTestOptions(options, errors, warnings);
 
   return {
     isValid: errors.length === 0,
     error: errors.length > 0 ? errors.join('; ') : null,
     errors,
+    warnings,
   };
 }
 
@@ -97,7 +96,7 @@ function validateApiTestInputs(endpoint, options) {
  */
 function validateEndpointInput(endpoint, errors) {
   if (!endpoint || typeof endpoint !== 'string') {
-    errors.push('API endpoint name is required and must be a string');
+    errors.push('API endpoint is required and must be a string');
     return;
   }
 
@@ -109,24 +108,25 @@ function validateEndpointInput(endpoint, errors) {
 }
 
 /**
- * Validate options input parameter
+ * Validate API test options
  * @purpose Check options object structure and values
  * @param {Object} options - Options to validate
  * @param {Array} errors - Array to collect validation errors
+ * @param {Array} warnings - Array to collect validation warnings
  * @usedBy validateApiTestInputs
  */
-function validateOptionsInput(options, errors) {
+function validateApiTestOptions(options, errors, warnings) {
   if (options && typeof options !== 'object') {
     errors.push('Options must be an object if provided');
     return;
   }
 
-  if (options?.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
+  if (options && options.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
     errors.push('Timeout must be a positive number if provided');
   }
 
-  if (options?.method && !isValidHttpMethod(options.method)) {
-    errors.push(`Invalid HTTP method: ${options.method}`);
+  if (options && options.method && !isValidHttpMethod(options.method)) {
+    warnings.push('Invalid HTTP method specified, using GET');
   }
 }
 
@@ -149,7 +149,7 @@ function isValidEndpointName(endpoint) {
  * @purpose Validate HTTP method against allowed methods
  * @param {string} method - HTTP method to validate
  * @returns {boolean} True if HTTP method is valid
- * @usedBy validateOptionsInput
+ * @usedBy validateApiTestOptions
  */
 function isValidHttpMethod(method) {
   const allowedMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
@@ -164,7 +164,7 @@ module.exports = {
   // Feature operations (coordination functions)
   validateApiTestInputs,
   validateEndpointInput,
-  validateOptionsInput,
+  validateApiTestOptions,
 
   // Feature utilities (building blocks)
   isValidEndpointName,

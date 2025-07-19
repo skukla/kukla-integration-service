@@ -3,6 +3,8 @@
  * Insight generation, recommendation analysis, and test pattern detection utilities
  */
 
+// Workflows
+
 /**
  * Analyze test results by test type
  * @purpose Provide breakdown of results by test type (action, api, performance)
@@ -39,6 +41,8 @@ function analyzeTestTypes(results) {
 
   return analysis;
 }
+
+// Utilities
 
 /**
  * Generate insights and recommendations from test results

@@ -3,6 +3,9 @@
  * @module core/http/responses
  */
 
+// Constants
+const CONTENT_TYPE_JSON = 'application/json';
+
 /**
  * Standard response format for OpenWhisk web actions
  * Note: CORS headers are handled automatically by Adobe I/O Runtime for web actions
@@ -19,7 +22,7 @@ const response = {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': options.cacheControl || 'no-cache',
       },
       body,
@@ -37,7 +40,7 @@ const response = {
     return {
       statusCode: error.status || error.statusCode || 500,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-store',
       },
       body,
@@ -54,7 +57,7 @@ const response = {
     return {
       statusCode: 400,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-store',
       },
       body,
@@ -86,7 +89,7 @@ const response = {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-cache',
       },
       body,
@@ -111,10 +114,30 @@ const response = {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-cache',
       },
       body,
+    };
+  },
+
+  /**
+   * HTML response for HTMX interactions
+   * @param {string} htmlContent - HTML content to return
+   * @param {Object} options - Response options including custom headers
+   * @returns {Object} Formatted HTML response
+   */
+  html: (htmlContent, options = {}) => {
+    const { headers: customHeaders = {}, statusCode = 200 } = options;
+
+    return {
+      statusCode,
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache',
+        ...customHeaders,
+      },
+      body: htmlContent,
     };
   },
 };

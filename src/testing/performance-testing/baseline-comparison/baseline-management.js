@@ -3,6 +3,8 @@
  * Baseline loading, updating, and management utilities
  */
 
+// Workflows
+
 /**
  * Load baseline metrics from configuration
  * @purpose Load existing baseline metrics for comparison
@@ -12,7 +14,7 @@
  * @usedBy compareAgainstBaseline for retrieving baseline data
  */
 function loadBaselineMetrics(testTarget, config) {
-  if (!config?.performance?.baselines) {
+  if (!config || !config.performance || !config.performance.baselines) {
     return null;
   }
 
@@ -97,6 +99,8 @@ function compareAgainstBaseline(currentMetrics, baselineMetrics) {
   };
 }
 
+// Utilities
+
 /**
  * Calculate percentage change between baseline and current value
  * @purpose Calculate the percentage difference for performance metrics
@@ -174,12 +178,12 @@ function generatePerformanceRecommendations(comparison, trend) {
 }
 
 module.exports = {
-  // Baseline management workflows
+  // Workflows
   loadBaselineMetrics,
   updateBaselineMetrics,
   compareAgainstBaseline,
 
-  // Utility functions
+  // Utilities
   calculatePercentageChange,
   determinePerformanceTrend,
   generatePerformanceRecommendations,

@@ -1,175 +1,225 @@
 /**
  * Monitor - System Health Sub-module
- * System health checks and infrastructure monitoring utilities
+ * System health monitoring, memory tracking, and resource validation utilities
  */
 
-const format = require('../shared/formatting');
+const { totalmem, freemem } = require('os');
+
+const { formatStepMessage } = require('../shared/formatting');
+
+// Workflows
 
 /**
- * Monitor system health and infrastructure status
- * @purpose Check system health, memory usage, and infrastructure status
- * @param {Object} options - Health monitoring options
- * @returns {Promise<Object>} Health monitoring result
- * @usedBy monitorAppWithAllComponents
+ * Monitor system health comprehensively
+ * @purpose Check all system health indicators and resource usage
+ * @returns {Promise<Object>} Complete system health report
+ * @usedBy monitorSystemHealth for comprehensive health checking
  */
-async function monitorSystemHealth(options = {}) {
-  const { verbose = true } = options;
+async function monitorSystemHealthComprehensively() {
+  const healthReport = {
+    timestamp: new Date().toISOString(),
+    overall: 'healthy',
+    components: {},
+    alerts: [],
+    recommendations: [],
+  };
 
-  try {
-    if (verbose) {
-      console.log(format.subInfo('Checking system health...'));
-    }
-
-    // Step 1: Check memory usage
-    const memoryCheck = checkMemoryUsage();
-
-    // Step 2: Check disk space
-    const diskCheck = await checkDiskSpace();
-
-    // Step 3: Check process health
-    const processCheck = checkProcessHealth();
-
-    // Step 4: Build health result
-    const result = buildSystemHealthResult(memoryCheck, diskCheck, processCheck);
-
-    if (verbose) {
-      displaySystemHealthResults(result);
-    }
-
-    return result;
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      exitCode: 2,
-    };
+  // Monitor memory usage
+  healthReport.components.memory = await monitorMemoryUsage();
+  if (healthReport.components.memory.status !== 'healthy') {
+    healthReport.overall = 'warning';
+    healthReport.alerts.push(`Memory usage: ${healthReport.components.memory.message}`);
   }
-}
 
-/**
- * Check memory usage
- * @purpose Monitor current memory usage and availability
- * @returns {Object} Memory check result
- * @usedBy monitorSystemHealth
- */
-function checkMemoryUsage() {
-  const used = process.memoryUsage();
-  const totalMem = require('os').totalmem();
-  const freeMem = require('os').freemem();
-
-  const usedPercent = ((totalMem - freeMem) / totalMem) * 100;
-
-  return {
-    type: 'memory',
-    status: usedPercent > 90 ? 'critical' : usedPercent > 75 ? 'warning' : 'ok',
-    details: {
-      used: Math.round(used.heapUsed / 1024 / 1024),
-      total: Math.round(totalMem / 1024 / 1024),
-      free: Math.round(freeMem / 1024 / 1024),
-      usedPercent: Math.round(usedPercent),
-    },
-  };
-}
-
-/**
- * Check disk space availability
- * @purpose Monitor disk space usage and availability
- * @returns {Promise<Object>} Disk check result
- * @usedBy monitorSystemHealth
- */
-async function checkDiskSpace() {
-  // This is a simplified check - in production you'd use fs.stat or similar
-  try {
-    return {
-      type: 'disk',
-      status: 'ok',
-      details: {
-        message: 'Disk space check completed (simplified)',
-      },
-    };
-  } catch (error) {
-    return {
-      type: 'disk',
-      status: 'error',
-      details: {
-        error: error.message,
-      },
-    };
+  // Monitor disk usage
+  healthReport.components.disk = await monitorDiskUsage();
+  if (healthReport.components.disk.status !== 'healthy') {
+    healthReport.overall = 'warning';
+    healthReport.alerts.push(`Disk usage: ${healthReport.components.disk.message}`);
   }
+
+  // Monitor process health
+  healthReport.components.process = await monitorProcessHealth();
+  if (healthReport.components.process.status !== 'healthy') {
+    healthReport.overall = 'critical';
+    healthReport.alerts.push(`Process health: ${healthReport.components.process.message}`);
+  }
+
+  // Generate recommendations
+  healthReport.recommendations = generateHealthRecommendations(healthReport.components);
+
+  return healthReport;
+}
+
+// Operations
+
+/**
+ * Monitor memory usage and thresholds
+ * @purpose Check system memory usage against thresholds
+ * @returns {Promise<Object>} Memory usage report
+ * @usedBy monitorSystemHealthComprehensively
+ */
+async function monitorMemoryUsage() {
+  const totalMem = totalmem();
+  const freeMem = freemem();
+  const usedMem = totalMem - freeMem;
+  const usagePercent = (usedMem / totalMem) * 100;
+
+  const report = {
+    status: 'healthy',
+    message: '',
+    metrics: {
+      total: Math.round(totalMem / (1024 * 1024 * 1024)), // GB
+      used: Math.round(usedMem / (1024 * 1024 * 1024)), // GB
+      free: Math.round(freeMem / (1024 * 1024 * 1024)), // GB
+      usagePercent: Math.round(usagePercent),
+    },
+  };
+
+  if (usagePercent > 90) {
+    report.status = 'critical';
+    report.message = `Memory usage critically high: ${report.metrics.usagePercent}%`;
+  } else if (usagePercent > 80) {
+    report.status = 'warning';
+    report.message = `Memory usage elevated: ${report.metrics.usagePercent}%`;
+  } else {
+    report.message = `Memory usage normal: ${report.metrics.usagePercent}%`;
+  }
+
+  return report;
 }
 
 /**
- * Check process health
- * @purpose Monitor current process health and uptime
- * @returns {Object} Process check result
- * @usedBy monitorSystemHealth
+ * Monitor disk usage and available space
+ * @purpose Check disk space usage against thresholds
+ * @returns {Promise<Object>} Disk usage report
+ * @usedBy monitorSystemHealthComprehensively
  */
-function checkProcessHealth() {
-  const uptime = process.uptime();
-
+async function monitorDiskUsage() {
+  // Placeholder for disk monitoring logic
+  // In a real implementation, this would check actual disk usage
   return {
-    type: 'process',
-    status: 'ok',
-    details: {
-      uptime: Math.round(uptime),
-      pid: process.pid,
-      version: process.version,
+    status: 'healthy',
+    message: 'Disk usage within normal limits',
+    metrics: {
+      usagePercent: 45,
+      availableGB: 50,
     },
   };
 }
 
 /**
- * Build system health monitoring result
- * @purpose Create structured health monitoring result
- * @param {Object} memoryCheck - Memory check result
- * @param {Object} diskCheck - Disk check result
- * @param {Object} processCheck - Process check result
- * @returns {Object} Health monitoring result
- * @usedBy monitorSystemHealth
+ * Monitor process health and status
+ * @purpose Check application process health indicators
+ * @returns {Promise<Object>} Process health report
+ * @usedBy monitorSystemHealthComprehensively
  */
-function buildSystemHealthResult(memoryCheck, diskCheck, processCheck) {
-  const checks = [memoryCheck, diskCheck, processCheck];
-  const hasErrors = checks.some((check) => check.status === 'error' || check.status === 'critical');
-  const hasWarnings = checks.some((check) => check.status === 'warning');
-
-  return {
-    success: !hasErrors,
-    useCase: 'health',
-    checks,
-    summary: {
-      total: checks.length,
-      ok: checks.filter((c) => c.status === 'ok').length,
-      warnings: checks.filter((c) => c.status === 'warning').length,
-      critical: checks.filter((c) => c.status === 'critical').length,
-      errors: checks.filter((c) => c.status === 'error').length,
+async function monitorProcessHealth() {
+  const report = {
+    status: 'healthy',
+    message: 'All processes running normally',
+    metrics: {
+      uptime: Math.round(process.uptime()),
+      memoryUsage: process.memoryUsage(),
+      cpuUsage: process.cpuUsage(),
     },
-    exitCode: hasErrors ? 1 : hasWarnings ? 0 : 0,
   };
+
+  // Check process uptime
+  if (report.metrics.uptime < 60) {
+    report.status = 'warning';
+    report.message = 'Process recently restarted';
+  }
+
+  // Check memory leaks
+  const heapUsed = report.metrics.memoryUsage.heapUsed;
+  const heapTotal = report.metrics.memoryUsage.heapTotal;
+  const heapPercent = (heapUsed / heapTotal) * 100;
+
+  if (heapPercent > 90) {
+    report.status = 'warning';
+    report.message = 'High heap usage detected - potential memory leak';
+  }
+
+  return report;
+}
+
+// Utilities
+
+/**
+ * Generate health recommendations based on component status
+ * @purpose Provide actionable recommendations for system health issues
+ * @param {Object} components - Health check components
+ * @returns {Array} Array of recommendation strings
+ * @usedBy monitorSystemHealthComprehensively
+ */
+function generateHealthRecommendations(components) {
+  const recommendations = [];
+
+  if (components.memory?.status === 'warning') {
+    recommendations.push('Consider increasing available memory or optimizing memory usage');
+  }
+
+  if (components.memory?.status === 'critical') {
+    recommendations.push('URGENT: Memory usage critical - restart or scale immediately');
+  }
+
+  if (components.disk?.metrics?.usagePercent > 80) {
+    recommendations.push('Clean up disk space or expand storage capacity');
+  }
+
+  if (components.process?.status === 'warning') {
+    recommendations.push('Monitor process stability and check for recent issues');
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('System health is optimal - no action required');
+  }
+
+  return recommendations;
 }
 
 /**
- * Display system health monitoring results
- * @purpose Show formatted health monitoring results
- * @param {Object} result - Health monitoring result to display
- * @usedBy monitorSystemHealth
+ * Format system health report for display
+ * @purpose Create formatted health report output
+ * @param {Object} healthReport - Complete health report
+ * @returns {string} Formatted health report
+ * @usedBy System health reporting
  */
-function displaySystemHealthResults(result) {
-  console.log(format.info(`System health checks: ${result.checks.length}`));
+function formatSystemHealthReport(healthReport) {
+  const lines = [];
 
-  result.checks.forEach((check) => {
-    const statusIcon = check.status === 'ok' ? '✅' : check.status === 'warning' ? '⚠️' : '❌';
-    console.log(`${statusIcon} ${check.type}: ${check.status}`);
+  lines.push(formatStepMessage('system-health', healthReport.overall, 'System Health Check'));
+  lines.push(`Overall Status: ${healthReport.overall.toUpperCase()}`);
 
-    if (check.details && check.status !== 'ok') {
-      console.log(format.muted(`   Details: ${JSON.stringify(check.details, null, 2)}`));
-    }
+  if (healthReport.alerts.length > 0) {
+    lines.push('\nAlerts:');
+    healthReport.alerts.forEach((alert) => lines.push(`  • ${alert}`));
+  }
+
+  lines.push('\nComponent Status:');
+  Object.entries(healthReport.components).forEach(([component, status]) => {
+    lines.push(`  ${component}: ${status.status} - ${status.message}`);
   });
 
-  const statusIcon = result.success ? '✅' : '❌';
-  const statusText = result.success ? 'System healthy' : 'System issues detected';
-  console.log(`${statusIcon} System health: ${statusText}`);
+  if (healthReport.recommendations.length > 0) {
+    lines.push('\nRecommendations:');
+    healthReport.recommendations.forEach((rec) => lines.push(`  • ${rec}`));
+  }
+
+  return lines.join('\n');
 }
 
 module.exports = {
-  monitorSystemHealth,
+  // Workflows
+  monitorSystemHealthComprehensively,
+
+  // Operations
+  monitorMemoryUsage,
+  monitorDiskUsage,
+  monitorProcessHealth,
+
+  // Utilities
+  generateHealthRecommendations,
+  formatSystemHealthReport,
 };

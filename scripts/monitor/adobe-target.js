@@ -1,236 +1,249 @@
 /**
  * Monitor - Adobe Target Sub-module
- * Adobe Target URL expiration monitoring and validation utilities
+ * Adobe Target URL monitoring, expiration checking, and health validation utilities
  */
 
-const fs = require('fs').promises;
-const path = require('path');
+const https = require('https');
+const { URL } = require('url');
 
-const format = require('../shared/formatting');
+const { formatStepMessage } = require('../shared/formatting');
+
+// Workflows
 
 /**
- * Monitor Adobe Target URLs for expiration
- * @purpose Check Adobe Target presigned URLs in CSV file for upcoming expiration
- * @param {string} fileName - Name of CSV file to monitor
+ * Monitor Adobe Target URLs and health
+ * @purpose Comprehensive monitoring of Adobe Target endpoint availability and health
+ * @param {Array} urls - Array of URLs to monitor
  * @param {Object} options - Monitoring options
- * @returns {Promise<Object>} Monitoring result
- * @usedBy monitorAppWithAllComponents
+ * @returns {Promise<Object>} Complete Adobe Target monitoring result
+ * @usedBy monitorAppWithAllComponents for Adobe Target health checking
  */
-async function monitorAdobeTargetUrls(fileName, options = {}) {
-  const { verbose = true } = options;
+async function monitorAdobeTargetComprehensively(urls = [], options = {}) {
+  const { verbose = true, timeout = 10000 } = options;
+
+  const monitoringResult = {
+    timestamp: new Date().toISOString(),
+    overall: 'healthy',
+    urls: [],
+    summary: {
+      total: urls.length,
+      healthy: 0,
+      unhealthy: 0,
+      timeouts: 0,
+    },
+    alerts: [],
+    recommendations: [],
+  };
+
+  if (verbose) {
+    console.log(
+      formatStepMessage('adobe-target', 'info', `Monitoring ${urls.length} Adobe Target URLs`)
+    );
+  }
+
+  // Monitor each URL
+  for (const targetUrl of urls) {
+    const urlResult = await monitorSingleAdobeTargetUrl(targetUrl, { timeout, verbose });
+    monitoringResult.urls.push(urlResult);
+
+    if (urlResult.status === 'healthy') {
+      monitoringResult.summary.healthy++;
+    } else {
+      monitoringResult.summary.unhealthy++;
+      if (urlResult.isTimeout) {
+        monitoringResult.summary.timeouts++;
+      }
+      monitoringResult.alerts.push(`${targetUrl}: ${urlResult.message}`);
+    }
+  }
+
+  // Determine overall health
+  if (monitoringResult.summary.unhealthy > 0) {
+    monitoringResult.overall = monitoringResult.summary.timeouts > 0 ? 'critical' : 'warning';
+  }
+
+  // Generate recommendations
+  monitoringResult.recommendations = generateAdobeTargetRecommendations(monitoringResult);
+
+  if (verbose) {
+    displayAdobeTargetResults(monitoringResult);
+  }
+
+  return monitoringResult;
+}
+
+// Operations
+
+/**
+ * Monitor single Adobe Target URL
+ * @purpose Check individual Adobe Target URL for availability and response time
+ * @param {string} targetUrl - URL to monitor
+ * @param {Object} options - Monitoring options
+ * @returns {Promise<Object>} Single URL monitoring result
+ * @usedBy monitorAdobeTargetComprehensively
+ */
+async function monitorSingleAdobeTargetUrl(targetUrl, options = {}) {
+  const { timeout = 10000, verbose = false } = options;
+  const startTime = Date.now();
+
+  const result = {
+    url: targetUrl,
+    status: 'healthy',
+    message: '',
+    responseTime: 0,
+    isTimeout: false,
+    timestamp: new Date().toISOString(),
+  };
 
   try {
-    // Step 1: Find monitoring file
-    const filePath = await findMonitoringFile(fileName);
-
-    // Step 2: Parse CSV and extract URLs
-    const csvContent = await fs.readFile(filePath, 'utf8');
-    const urls = extractUrlsFromCsv(csvContent);
-
-    // Step 3: Check URL expiration
-    const urlChecks = await checkUrlExpiration(urls, verbose);
-
-    // Step 4: Generate monitoring result
-    const result = buildAdobeTargetMonitoringResult(urlChecks, fileName);
-
     if (verbose) {
-      displayAdobeTargetResults(result);
+      console.log(formatStepMessage('url-check', 'info', `Checking ${targetUrl}`));
     }
 
-    return result;
+    await checkUrlAvailability(targetUrl, timeout);
+
+    result.responseTime = Date.now() - startTime;
+    result.message = `Healthy (${result.responseTime}ms)`;
+
+    if (result.responseTime > 5000) {
+      result.status = 'warning';
+      result.message = `Slow response (${result.responseTime}ms)`;
+    }
   } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      exitCode: 2,
+    result.status = 'unhealthy';
+    result.responseTime = Date.now() - startTime;
+
+    if (error.code === 'TIMEOUT' || result.responseTime >= timeout) {
+      result.isTimeout = true;
+      result.message = `Timeout after ${timeout}ms`;
+    } else {
+      result.message = error.message || 'Unknown error';
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Check URL availability with timeout
+ * @purpose Perform HTTP request to check URL availability
+ * @param {string} targetUrl - URL to check
+ * @param {number} timeout - Request timeout in milliseconds
+ * @returns {Promise<void>} Resolves if URL is available
+ * @usedBy monitorSingleAdobeTargetUrl
+ */
+function checkUrlAvailability(targetUrl, timeout) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(targetUrl);
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 443,
+      pathname: parsedUrl.pathname,
+      method: 'HEAD',
+      timeout,
     };
-  }
-}
 
-/**
- * Find monitoring file in common locations
- * @purpose Locate the monitoring file in project or download directories
- * @param {string} fileName - Name of file to find
- * @returns {Promise<string>} Full path to monitoring file
- * @usedBy monitorAdobeTargetUrls
- */
-async function findMonitoringFile(fileName) {
-  const possiblePaths = [
-    fileName, // Current directory
-    path.join(process.cwd(), fileName), // Project root
-    path.join(process.cwd(), 'downloads', fileName), // Downloads folder
-    path.join(require('os').homedir(), 'Downloads', fileName), // User downloads
-  ];
-
-  for (const filePath of possiblePaths) {
-    try {
-      await fs.access(filePath);
-      return filePath;
-    } catch (error) {
-      // File doesn't exist at this path, try next
-    }
-  }
-
-  throw new Error(`Monitoring file not found: ${fileName}. Checked: ${possiblePaths.join(', ')}`);
-}
-
-/**
- * Extract URLs from CSV content
- * @purpose Parse CSV and extract thumbnail_url column values
- * @param {string} csvContent - Raw CSV file content
- * @returns {Array<string>} Array of URLs found in CSV
- * @usedBy monitorAdobeTargetUrls
- */
-function extractUrlsFromCsv(csvContent) {
-  const lines = csvContent.split('\n').filter((line) => line.trim());
-  if (lines.length === 0) return [];
-
-  // Find thumbnail_url column index
-  const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
-  const urlColumnIndex = headers.findIndex(
-    (header) =>
-      header.toLowerCase().includes('thumbnail_url') || header.toLowerCase().includes('url')
-  );
-
-  if (urlColumnIndex === -1) {
-    throw new Error('No URL column found in CSV. Expected "thumbnail_url" or similar.');
-  }
-
-  // Extract URLs from data rows
-  const urls = [];
-  for (let i = 1; i < lines.length; i++) {
-    const columns = lines[i].split(',');
-    if (columns[urlColumnIndex]) {
-      const url = columns[urlColumnIndex].trim().replace(/"/g, '');
-      if (url && url.startsWith('http')) {
-        urls.push(url);
-      }
-    }
-  }
-
-  return urls;
-}
-
-/**
- * Check URL expiration for Adobe Target URLs
- * @purpose Analyze presigned URLs for expiration timing
- * @param {Array<string>} urls - URLs to check
- * @param {boolean} verbose - Show detailed output
- * @returns {Promise<Array>} Array of URL check results
- * @usedBy monitorAdobeTargetUrls
- */
-async function checkUrlExpiration(urls, verbose = true) {
-  const urlChecks = [];
-  const now = Date.now();
-
-  for (const url of urls) {
-    try {
-      // Extract expiration from presigned URL
-      const urlObj = new URL(url);
-      const expires = urlObj.searchParams.get('Expires');
-
-      if (expires) {
-        const expirationTime = parseInt(expires) * 1000; // Convert to milliseconds
-        const timeUntilExpiration = expirationTime - now;
-        const daysUntilExpiration = timeUntilExpiration / (1000 * 60 * 60 * 24);
-
-        const status =
-          daysUntilExpiration < 1 ? 'expired' : daysUntilExpiration < 2 ? 'expiring_soon' : 'valid';
-
-        urlChecks.push({
-          url: url.substring(0, 80) + '...', // Truncate for display
-          expires: new Date(expirationTime).toISOString(),
-          daysUntilExpiration: Math.round(daysUntilExpiration * 10) / 10,
-          status,
-        });
+    const req = https.request(options, (res) => {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        resolve();
       } else {
-        urlChecks.push({
-          url: url.substring(0, 80) + '...',
-          expires: 'No expiration found',
-          daysUntilExpiration: 0,
-          status: 'unknown',
-        });
+        reject(new Error(`HTTP ${res.statusCode}`));
       }
-    } catch (error) {
-      urlChecks.push({
-        url: url.substring(0, 80) + '...',
-        expires: 'Parse error',
-        daysUntilExpiration: 0,
-        status: 'error',
-      });
-    }
-  }
+    });
 
-  return urlChecks;
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('TIMEOUT'));
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.end();
+  });
 }
 
+// Utilities
+
 /**
- * Build Adobe Target monitoring result
- * @purpose Create structured monitoring result for Adobe Target URLs
- * @param {Array} urlChecks - URL check results
- * @param {string} fileName - Monitored file name
- * @returns {Object} Monitoring result object
- * @usedBy monitorAdobeTargetUrls
+ * Generate Adobe Target monitoring recommendations
+ * @purpose Provide actionable recommendations based on monitoring results
+ * @param {Object} monitoringResult - Complete monitoring result
+ * @returns {Array} Array of recommendation strings
+ * @usedBy monitorAdobeTargetComprehensively
  */
-function buildAdobeTargetMonitoringResult(urlChecks, fileName) {
-  const expired = urlChecks.filter((check) => check.status === 'expired').length;
-  const expiringSoon = urlChecks.filter((check) => check.status === 'expiring_soon').length;
-  const valid = urlChecks.filter((check) => check.status === 'valid').length;
-  const unknown = urlChecks.filter((check) => check.status === 'unknown').length;
-  const errors = urlChecks.filter((check) => check.status === 'error').length;
+function generateAdobeTargetRecommendations(monitoringResult) {
+  const recommendations = [];
 
-  const success = expired === 0 && expiringSoon === 0 && errors === 0;
+  if (monitoringResult.summary.timeouts > 0) {
+    recommendations.push(
+      'URGENT: URL timeouts detected - check network connectivity and Adobe Target service status'
+    );
+  }
 
-  return {
-    success,
-    useCase: 'adobeTarget',
-    fileName,
-    urls: urlChecks,
-    summary: {
-      total: urlChecks.length,
-      expired,
-      expiringSoon,
-      valid,
-      unknown,
-      errors,
-    },
-    exitCode: success ? 0 : 1,
-  };
+  if (monitoringResult.summary.unhealthy > 0) {
+    recommendations.push(
+      'Some Adobe Target URLs are unhealthy - verify URL configuration and service availability'
+    );
+  }
+
+  const slowUrls = monitoringResult.urls.filter(
+    (u) => u.responseTime > 3000 && u.status !== 'unhealthy'
+  );
+  if (slowUrls.length > 0) {
+    recommendations.push(
+      `${slowUrls.length} URLs have slow response times - consider performance optimization`
+    );
+  }
+
+  if (recommendations.length === 0) {
+    recommendations.push('All Adobe Target URLs are healthy and responsive');
+  }
+
+  return recommendations;
 }
 
 /**
  * Display Adobe Target monitoring results
- * @purpose Show formatted monitoring results for Adobe Target URLs
+ * @purpose Show formatted Adobe Target monitoring results
  * @param {Object} result - Monitoring result to display
- * @usedBy monitorAdobeTargetUrls
+ * @usedBy monitorAdobeTargetComprehensively
  */
 function displayAdobeTargetResults(result) {
-  console.log(format.info(`URLs checked: ${result.urls ? result.urls.length : 0}`));
+  console.log(formatStepMessage('adobe-target', result.overall, 'Adobe Target Health Check'));
 
-  if (result.summary) {
-    console.log(
-      format.info(
-        `Valid: ${result.summary.valid}, Expiring soon: ${result.summary.expiringSoon}, Expired: ${result.summary.expired}`
-      )
-    );
+  console.log(`Overall Status: ${result.overall.toUpperCase()}`);
+  console.log(`URLs Checked: ${result.summary.total}`);
+  console.log(`Healthy: ${result.summary.healthy}, Unhealthy: ${result.summary.unhealthy}`);
 
-    if (result.summary.expired > 0 || result.summary.expiringSoon > 0) {
-      console.log(format.warn('⚠️  Some URLs need attention:'));
-
-      result.urls.forEach((check) => {
-        if (check.status === 'expired' || check.status === 'expiring_soon') {
-          const statusIcon = check.status === 'expired' ? '🔴' : '🟡';
-          console.log(`${statusIcon} ${check.url} - expires in ${check.daysUntilExpiration} days`);
-        }
-      });
-    }
+  if (result.alerts.length > 0) {
+    console.log('\nAlerts:');
+    result.alerts.forEach((alert) => console.log(`  • ${alert}`));
   }
 
-  const statusIcon = result.success ? '✅' : '❌';
-  const statusText = result.success ? 'All URLs valid' : 'URLs need attention';
-  console.log(`${statusIcon} Adobe Target monitoring: ${statusText}`);
+  if (result.recommendations.length > 0) {
+    console.log('\nRecommendations:');
+    result.recommendations.forEach((rec) => console.log(`  • ${rec}`));
+  }
+
+  console.log('\nURL Details:');
+  result.urls.forEach((urlResult) => {
+    const statusIcon =
+      urlResult.status === 'healthy' ? '✅' : urlResult.status === 'warning' ? '⚠️' : '❌';
+    console.log(`${statusIcon} ${urlResult.url}: ${urlResult.message}`);
+  });
 }
 
 module.exports = {
-  monitorAdobeTargetUrls,
+  // Workflows
+  monitorAdobeTargetComprehensively,
+
+  // Operations
+  monitorSingleAdobeTargetUrl,
+  checkUrlAvailability,
+
+  // Utilities
+  generateAdobeTargetRecommendations,
+  displayAdobeTargetResults,
 };

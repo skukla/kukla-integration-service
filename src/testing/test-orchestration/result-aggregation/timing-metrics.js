@@ -3,7 +3,7 @@
  * Timing analysis, distribution calculation, and performance scoring utilities
  */
 
-// Timing Analysis Workflows
+// Workflows
 
 /**
  * Calculate comprehensive timing metrics from test results
@@ -31,56 +31,72 @@ function calculateTimingMetrics(results) {
     totalTime,
     fastestTest,
     slowestTest,
-    timingDistribution: calculateTimingDistribution(executionTimes),
+    distribution: calculateTimingDistribution(executionTimes),
   };
 }
 
-// Timing Analysis Utilities
-
 /**
- * Calculate timing distribution statistics
- * @purpose Provide distribution analysis of test execution times
- * @param {Array} executionTimes - Array of execution times
- * @returns {Object} Timing distribution statistics
+ * Calculate timing distribution analysis
+ * @purpose Analyze timing distribution patterns and performance consistency
+ * @param {Array} executionTimes - Array of execution times in milliseconds
+ * @returns {Object} Distribution analysis with percentiles and variance
  * @usedBy calculateTimingMetrics
  */
 function calculateTimingDistribution(executionTimes) {
-  const sortedTimes = [...executionTimes].sort((a, b) => a - b);
-  const length = sortedTimes.length;
+  if (executionTimes.length === 0) {
+    return { p50: 0, p95: 0, p99: 0, variance: 0 };
+  }
 
-  const median =
-    length % 2 === 0
-      ? (sortedTimes[length / 2 - 1] + sortedTimes[length / 2]) / 2
-      : sortedTimes[Math.floor(length / 2)];
-
-  const p90Index = Math.floor(length * 0.9);
-  const p90 = sortedTimes[p90Index] || sortedTimes[length - 1];
+  const sorted = [...executionTimes].sort((a, b) => a - b);
+  const length = sorted.length;
 
   return {
-    median: Math.round(median),
-    p90: Math.round(p90),
-    range: sortedTimes[length - 1] - sortedTimes[0],
+    p50: sorted[Math.floor(length * 0.5)],
+    p95: sorted[Math.floor(length * 0.95)],
+    p99: sorted[Math.floor(length * 0.99)],
+    variance: calculateVariance(executionTimes),
   };
 }
 
+// Utilities
+
 /**
- * Calculate timing score based on average execution time
- * @purpose Convert execution time to a 0-100 score
- * @param {number} averageTime - Average execution time in milliseconds
- * @returns {number} Timing score from 0-100
+ * Calculate timing score based on performance metrics
+ * @purpose Generate performance score from timing metrics for grading
+ * @param {Object} timingMetrics - Timing metrics object
+ * @returns {number} Performance score from 0-100
  * @usedBy calculateOverallGrade
  */
-function calculateTimingScore(averageTime) {
-  // Timing score thresholds
-  if (averageTime <= 2000) return 100; // Excellent
-  if (averageTime <= 5000) return 80; // Good
-  if (averageTime <= 10000) return 60; // Fair
-  if (averageTime <= 20000) return 40; // Poor
-  return 20; // Very poor
+function calculateTimingScore(timingMetrics) {
+  if (!timingMetrics.averageTime) return 100;
+
+  // Score based on average execution time
+  // Under 1s = 100, under 5s = 80, under 10s = 60, under 30s = 40, over 30s = 20
+  if (timingMetrics.averageTime < 1000) return 100;
+  if (timingMetrics.averageTime < 5000) return 80;
+  if (timingMetrics.averageTime < 10000) return 60;
+  if (timingMetrics.averageTime < 30000) return 40;
+  return 20;
+}
+
+/**
+ * Calculate variance in execution times
+ * @purpose Calculate statistical variance for timing consistency analysis
+ * @param {Array} times - Array of execution times
+ * @returns {number} Variance value
+ * @usedBy calculateTimingDistribution
+ */
+function calculateVariance(times) {
+  if (times.length === 0) return 0;
+
+  const mean = times.reduce((sum, time) => sum + time, 0) / times.length;
+  const squaredDiffs = times.map((time) => Math.pow(time - mean, 2));
+  return squaredDiffs.reduce((sum, diff) => sum + diff, 0) / times.length;
 }
 
 module.exports = {
   calculateTimingMetrics,
   calculateTimingDistribution,
   calculateTimingScore,
+  calculateVariance,
 };
