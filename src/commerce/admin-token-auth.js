@@ -3,7 +3,7 @@
  * Complete admin token authentication capability for Commerce API requests
  */
 
-const { request: executeRequest } = require('../shared/http/client');
+const { request } = require('../shared/http/client');
 const { createUrlBuilders } = require('../shared/routing/url-factory');
 const { sleep } = require('../shared/utils/async');
 
@@ -116,12 +116,12 @@ async function generateAdminToken(config) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      username: config.commerce.username,
-      password: config.commerce.password,
+      username: config.commerce.adminUsername,
+      password: config.commerce.adminPassword,
     }),
   };
 
-  const response = await executeRequest(tokenEndpoint, tokenOptions);
+  const response = await request(tokenEndpoint, tokenOptions);
 
   if (!response.body || typeof response.body !== 'string') {
     throw new Error('Invalid token response format');
@@ -142,7 +142,7 @@ async function generateAdminToken(config) {
  */
 async function executeRequestWithAuthRetry(url, options, config) {
   try {
-    return await executeRequest(url, options);
+    return await request(url, options);
   } catch (error) {
     if (isAuthenticationError(error)) {
       // Clear cached token and retry with fresh token
@@ -153,7 +153,7 @@ async function executeRequestWithAuthRetry(url, options, config) {
       const retryOptions = buildAuthenticatedRequestOptions(options, newToken);
 
       await sleep(1000); // Brief delay before retry
-      return await executeRequest(url, retryOptions);
+      return await request(url, retryOptions);
     }
     throw error;
   }
