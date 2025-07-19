@@ -1,274 +1,88 @@
 /**
- * Shared Test Utilities
+ * Shared Test Utilities - Feature Core
  * Cross-feature test utilities used by action, API, and performance testing
  */
 
-// Test Environment Utilities
-
-/**
- * Build test environment configuration
- * @purpose Create standardized test environment configuration
- * @param {boolean} isProd - Whether to use production environment
- * @param {Object} overrides - Configuration overrides
- * @returns {Object} Test environment configuration
- * @usedBy All testing features for environment setup
- */
-function buildTestEnvironmentConfig(isProd = false, overrides = {}) {
-  const baseConfig = {
-    environment: isProd ? 'production' : 'staging',
-    timeout: isProd ? 15000 : 10000,
-    retries: isProd ? 2 : 1,
-    verbose: !isProd,
-    endpoints: {
-      runtime: isProd ? 'https://prod-runtime.com' : 'https://stage-runtime.com',
-      commerce: isProd ? 'https://prod-commerce.com' : 'https://stage-commerce.com',
-    },
-  };
-
-  return { ...baseConfig, ...overrides };
-}
-
-/**
- * Wait for test environment readiness
- * @purpose Ensure test environment is ready before executing tests
- * @param {Object} config - Environment configuration
- * @returns {Promise<boolean>} True if environment is ready
- * @usedBy Test orchestration workflows before test execution
- */
-async function waitForTestEnvironmentReady() {
-  const maxWaitTime = 30000; // 30 seconds
-  const checkInterval = 2000; // 2 seconds
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitTime) {
-    try {
-      // Simulate environment readiness check
-      const isReady = Math.random() > 0.1; // 90% chance of being ready
-      if (isReady) {
-        return true;
-      }
-
-      await sleep(checkInterval);
-    } catch (error) {
-      // Continue checking on error
-      await sleep(checkInterval);
-    }
-  }
-
-  return false;
-}
-
-// Test Data Utilities
-
-/**
- * Generate test parameters for action testing
- * @purpose Create realistic test parameters for different action types
- * @param {string} actionName - Name of action to generate parameters for
- * @param {string} scenario - Test scenario (quick, comprehensive, stress)
- * @returns {Object} Test parameters object
- * @usedBy Action testing features for parameter generation
- */
-function generateTestParameters(actionName, scenario = 'quick') {
-  const baseParams = {
-    timestamp: Date.now(),
-    testId: generateTestId(),
-    scenario,
-  };
-
-  switch (actionName) {
-    case 'get-products':
-    case 'get-products-mesh':
-      return {
-        ...baseParams,
-        limit: scenario === 'stress' ? 500 : 50,
-        offset: 0,
-        filters: scenario === 'comprehensive' ? { status: 1, visibility: 4 } : {},
-      };
-
-    case 'browse-files':
-      return {
-        ...baseParams,
-        path: scenario === 'comprehensive' ? '/exports' : '/',
-        limit: scenario === 'stress' ? 200 : 50,
-      };
-
-    case 'download-file':
-      return {
-        ...baseParams,
-        fileName: 'test-export.csv',
-        includeMetadata: scenario === 'comprehensive',
-      };
-
-    case 'delete-file':
-      return {
-        ...baseParams,
-        fileName: 'test-delete.csv',
-        confirmed: true,
-      };
-
-    default:
-      return baseParams;
-  }
-}
-
-/**
- * Generate unique test identifier
- * @purpose Create unique identifier for test runs
- * @returns {string} Unique test identifier
- * @usedBy Test utilities for test tracking and identification
- */
-function generateTestId() {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substr(2, 5);
-  return `test-${timestamp}-${random}`;
-}
+// Import test operations from sub-modules
+const {
+  generateTestData,
+  generateTestParameters,
+  generateTestId,
+} = require('./test-utilities/test-data');
+const {
+  buildTestEnvironmentConfig,
+  setupTestEnvironment,
+  cleanupTestEnvironment,
+} = require('./test-utilities/test-environment');
 
 // Test Validation Utilities
 
 /**
  * Validate test result structure
- * @purpose Ensure test results follow expected structure
- * @param {Object} result - Test result to validate
- * @param {string} testType - Type of test (action, api, performance)
- * @returns {Object} Validation result with isValid flag and issues
+ * @purpose Ensure test results contain required fields and valid data
+ * @param {Object} result - Test result object to validate
+ * @param {Array} requiredFields - Array of required field names
+ * @returns {Object} Validation result with status and messages
  * @usedBy All testing features for result validation
  */
-function validateTestResultStructure(result, testType) {
+function validateTestResultStructure(result, requiredFields = ['success', 'timing']) {
   const validation = {
-    isValid: true,
-    issues: [],
-    warnings: [],
+    valid: true,
+    messages: [],
   };
 
-  // Validate universal required fields
-  validateUniversalRequiredFields(result, validation);
+  if (!result || typeof result !== 'object') {
+    validation.valid = false;
+    validation.messages.push('Test result must be an object');
+    return validation;
+  }
 
-  // Validate type-specific requirements
-  validateTestTypeSpecificFields(result, testType, validation);
+  for (const field of requiredFields) {
+    if (result[field] === undefined) {
+      validation.valid = false;
+      validation.messages.push(`Missing required field: ${field}`);
+    }
+  }
+
+  // Validate timing data if present
+  if (result.timing && typeof result.timing !== 'object') {
+    validation.valid = false;
+    validation.messages.push('Timing data must be an object');
+  }
 
   return validation;
 }
 
 /**
- * Validate universal required fields for all test types
- * @purpose Check fields that all test results must have
- * @param {Object} result - Test result to validate
- * @param {Object} validation - Validation object to update
+ * Validate test timing data
+ * @purpose Ensure timing measurements are valid and consistent
+ * @param {Object} timing - Timing object to validate
+ * @returns {Object} Validation result with status and messages
+ * @usedBy Performance and timing validation
  */
-function validateUniversalRequiredFields(result, validation) {
-  const requiredFields = ['success', 'executedAt'];
-  for (const field of requiredFields) {
-    if (result[field] === undefined) {
-      validation.isValid = false;
-      validation.issues.push(`Missing required field: ${field}`);
-    }
-  }
-}
-
-/**
- * Validate test type-specific fields and requirements
- * @purpose Check fields specific to each test type
- * @param {Object} result - Test result to validate
- * @param {string} testType - Type of test
- * @param {Object} validation - Validation object to update
- */
-function validateTestTypeSpecificFields(result, testType, validation) {
-  switch (testType) {
-    case 'action':
-      validateActionTestFields(result, validation);
-      break;
-    case 'api':
-      validateApiTestFields(result, validation);
-      break;
-    case 'performance':
-      validatePerformanceTestFields(result, validation);
-      break;
-  }
-}
-
-/**
- * Validate action test specific fields
- * @purpose Check requirements specific to action tests
- * @param {Object} result - Test result to validate
- * @param {Object} validation - Validation object to update
- */
-function validateActionTestFields(result, validation) {
-  if (!result.actionName) {
-    validation.issues.push('Action tests must include actionName');
-    validation.isValid = false;
-  }
-  if (!result.response && result.success) {
-    validation.warnings.push('Successful action tests should include response data');
-  }
-}
-
-/**
- * Validate API test specific fields
- * @purpose Check requirements specific to API tests
- * @param {Object} result - Test result to validate
- * @param {Object} validation - Validation object to update
- */
-function validateApiTestFields(result, validation) {
-  if (!result.endpoint) {
-    validation.issues.push('API tests must include endpoint');
-    validation.isValid = false;
-  }
-  if (!result.url && result.success) {
-    validation.warnings.push('Successful API tests should include URL');
-  }
-}
-
-/**
- * Validate performance test specific fields
- * @purpose Check requirements specific to performance tests
- * @param {Object} result - Test result to validate
- * @param {Object} validation - Validation object to update
- */
-function validatePerformanceTestFields(result, validation) {
-  if (!result.metrics) {
-    validation.issues.push('Performance tests must include metrics');
-    validation.isValid = false;
-  }
-  if (result.success && (!result.duration || result.duration <= 0)) {
-    validation.warnings.push('Performance tests should include positive duration');
-  }
-}
-
-/**
- * Validate test timing and performance
- * @purpose Check if test execution times are within acceptable ranges
- * @param {Object} result - Test result with timing information
- * @param {Object} expectations - Expected timing thresholds
- * @returns {Object} Timing validation result
- * @usedBy Performance testing and test orchestration for timing validation
- */
-function validateTestTiming(result, expectations = {}) {
-  const { maxDuration = 10000, warnDuration = 5000, minDuration = 100 } = expectations;
-
+function validateTestTiming(timing) {
   const validation = {
-    isValid: true,
-    issues: [],
-    warnings: [],
+    valid: true,
+    messages: [],
   };
 
-  const duration = result.duration || result.responseTime || 0;
-
-  if (duration <= 0) {
-    validation.issues.push('Test duration must be positive');
-    validation.isValid = false;
+  if (!timing || typeof timing !== 'object') {
+    validation.valid = false;
+    validation.messages.push('Timing data must be an object');
+    return validation;
   }
 
-  if (duration < minDuration) {
-    validation.warnings.push(`Test duration ${duration}ms is unusually fast (< ${minDuration}ms)`);
+  // Check for negative values
+  if (timing.duration && timing.duration < 0) {
+    validation.valid = false;
+    validation.messages.push('Duration cannot be negative');
   }
 
-  if (duration > maxDuration) {
-    validation.issues.push(`Test duration ${duration}ms exceeds maximum ${maxDuration}ms`);
-    validation.isValid = false;
-  } else if (duration > warnDuration) {
-    validation.warnings.push(
-      `Test duration ${duration}ms exceeds warning threshold ${warnDuration}ms`
-    );
+  if (timing.startTime && timing.endTime) {
+    const calculatedDuration = timing.endTime - timing.startTime;
+    if (timing.duration && Math.abs(timing.duration - calculatedDuration) > 10) {
+      validation.messages.push('Duration inconsistent with start/end times');
+    }
   }
 
   return validation;
@@ -277,166 +91,89 @@ function validateTestTiming(result, expectations = {}) {
 // Test Formatting Utilities
 
 /**
- * Format test result for output
- * @purpose Create consistent formatted output for test results
+ * Format test result for display
+ * @purpose Convert test result to formatted string representation
  * @param {Object} result - Test result to format
- * @param {string} format - Output format (summary, detailed, json)
+ * @param {Object} options - Formatting options
  * @returns {string} Formatted test result
- * @usedBy All testing features for consistent output formatting
+ * @usedBy Test reporting and logging
  */
-function formatTestResult(result, format = 'summary') {
-  switch (format) {
-    case 'json':
-      return JSON.stringify(result, null, 2);
+function formatTestResult(result, options = {}) {
+  const { detailed = false } = options;
 
-    case 'detailed':
-      return formatDetailedTestResult(result);
-
-    case 'summary':
-    default:
-      return formatSummaryTestResult(result);
+  if (detailed) {
+    return formatDetailedTestResult(result, options);
+  } else {
+    return formatSummaryTestResult(result);
   }
 }
 
 /**
- * Format test result as summary
- * @purpose Create concise summary of test result
+ * Format test result summary
+ * @purpose Create concise test result summary
  * @param {Object} result - Test result to format
- * @returns {string} Summary formatted result
+ * @param {Object} options - Formatting options
+ * @returns {string} Summary format
+ * @usedBy formatTestResult
  */
 function formatSummaryTestResult(result) {
+  if (!result) return 'No result';
+
   const status = result.success ? '✅ PASS' : '❌ FAIL';
-  const target = result.actionName || result.endpoint || result.target || 'unknown';
-  const duration = result.duration || result.responseTime || 0;
+  const timing = result.timing?.duration ? ` (${result.timing.duration}ms)` : '';
+  const name = result.name || result.target || 'Test';
 
-  let summary = `${status} ${target} (${duration}ms)`;
-
-  if (result.details && result.details.length > 0) {
-    summary += ` - ${result.details[0]}`;
-  }
-
-  return summary;
+  return `${status} ${name}${timing}`;
 }
 
 /**
- * Format test result with detailed information
- * @purpose Create comprehensive formatted output with all test details
+ * Format detailed test result
+ * @purpose Create comprehensive test result display
  * @param {Object} result - Test result to format
- * @returns {string} Detailed formatted result
+ * @param {Object} options - Formatting options
+ * @returns {string} Detailed format
+ * @usedBy formatTestResult
  */
-function formatDetailedTestResult(result) {
-  const lines = [];
+function formatDetailedTestResult(result, options = {}) {
+  if (!result) return 'No result available';
 
-  // Add header section
-  addDetailedResultHeader(result, lines);
+  const { includeStack = false } = options;
+  let output = [];
 
-  // Add basic information section
-  addDetailedResultBasicInfo(result, lines);
+  output.push(`Test: ${result.name || result.target || 'Unknown'}`);
+  output.push(`Status: ${result.success ? 'PASSED' : 'FAILED'}`);
 
-  // Add success-specific details
-  if (result.success) {
-    addDetailedResultSuccessInfo(result, lines);
-  } else {
-    addDetailedResultErrorInfo(result, lines);
+  if (result.timing) {
+    output.push(`Duration: ${result.timing.duration || 0}ms`);
   }
 
-  // Add additional details section
-  addDetailedResultAdditionalDetails(result, lines);
-
-  return lines.join('\n');
-}
-
-/**
- * Add header section to detailed result
- * @purpose Add status and target information
- * @param {Object} result - Test result
- * @param {Array} lines - Lines array to update
- */
-function addDetailedResultHeader(result, lines) {
-  const status = result.success ? '✅ PASS' : '❌ FAIL';
-  const target = result.actionName || result.endpoint || result.target || 'unknown';
-  lines.push(`${status} ${target}`);
-}
-
-/**
- * Add basic info section to detailed result
- * @purpose Add URL, duration, and execution time
- * @param {Object} result - Test result
- * @param {Array} lines - Lines array to update
- */
-function addDetailedResultBasicInfo(result, lines) {
-  if (result.url) {
-    lines.push(`  URL: ${result.url}`);
+  if (result.message) {
+    output.push(`Message: ${result.message}`);
   }
-  if (result.duration || result.responseTime) {
-    lines.push(`  Duration: ${result.duration || result.responseTime}ms`);
-  }
-  if (result.executedAt) {
-    lines.push(`  Executed: ${result.executedAt}`);
-  }
-}
 
-/**
- * Add success-specific info to detailed result
- * @purpose Add response data for successful tests
- * @param {Object} result - Test result
- * @param {Array} lines - Lines array to update
- */
-function addDetailedResultSuccessInfo(result, lines) {
-  if (!result.response) return;
+  if (!result.success && result.error) {
+    output.push(`Error: ${result.error}`);
 
-  if (result.response.statusCode) {
-    lines.push(`  Status: ${result.response.statusCode}`);
+    if (includeStack && result.stack) {
+      output.push(`Stack: ${result.stack}`);
+    }
   }
-  if (result.response.data) {
-    const responsePreview = JSON.stringify(result.response.data).substring(0, 100);
-    lines.push(`  Response: ${responsePreview}...`);
-  }
-}
 
-/**
- * Add error-specific info to detailed result
- * @purpose Add error information for failed tests
- * @param {Object} result - Test result
- * @param {Array} lines - Lines array to update
- */
-function addDetailedResultErrorInfo(result, lines) {
-  if (result.error) {
-    lines.push(`  Error: ${result.error}`);
+  if (result.metadata) {
+    output.push(`Metadata: ${JSON.stringify(result.metadata, null, 2)}`);
   }
-  if (result.validation && result.validation.errors) {
-    result.validation.errors.forEach((error) => {
-      lines.push(`  Validation Error: ${error}`);
-    });
-  }
-}
 
-/**
- * Add additional details section to detailed result
- * @purpose Add any additional details provided
- * @param {Object} result - Test result
- * @param {Array} lines - Lines array to update
- */
-function addDetailedResultAdditionalDetails(result, lines) {
-  if (result.details && result.details.length > 0) {
-    lines.push('  Details:');
-    result.details.forEach((detail) => {
-      lines.push(`    - ${detail}`);
-    });
-  }
-}
-
-// Helper function (imported from shared utilities)
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return output.join('\n');
 }
 
 module.exports = {
   // Test environment utilities
   buildTestEnvironmentConfig,
-  waitForTestEnvironmentReady,
+  setupTestEnvironment,
+  cleanupTestEnvironment,
 
   // Test data utilities
+  generateTestData,
   generateTestParameters,
   generateTestId,
 
