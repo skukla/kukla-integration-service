@@ -463,6 +463,88 @@ const timeout = config.commerce?.api?.timeout || 30000;
 
 ---
 
+## URL Building Standards
+
+### **URL Factory Pattern**
+
+**All URL building must use the centralized factory pattern to eliminate config repetition and provide purpose-driven function names:**
+
+```javascript
+// ✅ CORRECT: URL Factory Pattern
+const { createUrlBuilders } = require('../shared/routing/url-factory');
+const { downloadUrl, commerceUrl, testUrl } = createUrlBuilders(config);
+
+// Clean, purpose-driven syntax with no config repetition
+const fileUrl = downloadUrl('products.csv');
+const apiUrl = commerceUrl('products', { pageSize: 100 });
+const testEndpoint = testUrl('categories');
+```
+
+### **URL Builder Functions**
+
+**Standard URL builders available from the factory:**
+
+| **Function** | **Purpose** | **Usage Example** |
+|--------------|-------------|-------------------|
+| `downloadUrl(fileName, options?)` | File downloads | `downloadUrl('data.csv')` |
+| `deleteUrl(fileName, options?)` | File deletion | `deleteUrl('old.csv')` |
+| `browseUrl(options?)` | File browsing | `browseUrl()` |
+| `uploadUrl(options?)` | File uploads | `uploadUrl()` |
+| `commerceUrl(endpoint, params?, pathParams?)` | Commerce APIs | `commerceUrl('products', {pageSize: 100})` |
+| `testUrl(endpoint, params?)` | API testing | `testUrl('products')` |
+| `runtimeUrl(action, params?, options?)` | Runtime actions | `runtimeUrl('get-products')` |
+
+### **URL Building Patterns**
+
+```javascript
+// ✅ CORRECT: Factory pattern with purpose-driven names
+function generateFileRowHTML(file, config) {
+  const { downloadUrl, deleteUrl } = createUrlBuilders(config);
+  
+  return {
+    downloadLink: downloadUrl(file.name),
+    deleteLink: deleteUrl(file.name),
+  };
+}
+
+// ✅ CORRECT: Commerce API with parameters
+function fetchProductData(params, config) {
+  const { commerceUrl } = createUrlBuilders(config);
+  const apiEndpoint = commerceUrl('products', { 
+    pageSize: params.pageSize || 100,
+    currentPage: params.page || 1,
+  });
+  
+  return await fetch(apiEndpoint);
+}
+
+// ❌ WRONG: Direct infrastructure usage
+const url = buildActionUrl(config, 'download-file', {
+  absolute: true,
+  params: { fileName },
+});
+
+// ❌ WRONG: Manual URL concatenation
+const url = baseUrl + '/download-file?fileName=' + encodeURIComponent(fileName);
+
+// ❌ WRONG: Config repetition
+const url1 = buildDownloadUrl(file1, config);
+const url2 = buildDownloadUrl(file2, config);
+const url3 = buildDownloadUrl(file3, config);
+```
+
+### **URL Building Anti-Patterns**
+
+**Avoid these patterns that violate our standards:**
+
+- **Manual concatenation**: String building with `+` or template literals
+- **Config repetition**: Passing config to every URL building call
+- **Direct infrastructure usage**: Calling `buildActionUrl` directly in business logic
+- **Namespace confusion**: `fileUrls.download()` instead of `downloadUrl()`
+- **Legacy function usage**: Any deprecated URL building functions
+
+---
+
 ## Development Guidelines
 
 ### **Creating New Features**
