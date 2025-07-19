@@ -1,12 +1,17 @@
 /**
- * App Audit - Tier 1 Audits Sub-module
+ * App Audit - Tier 1 Audits Feature Core
  * High reliability audit rules (90-100% accurate) - Used as CI/CD gate
  */
 
 const fs = require('fs').promises;
 const path = require('path');
 
-const format = require('../shared/formatting');
+// Import audit operations from sub-modules
+const { loadAuditConfig, getFlattenedPatterns } = require('./config-loader');
+const { auditExportPatterns } = require('./tier1-audits/export-patterns');
+const { auditImportOrganization } = require('./tier1-audits/import-organization');
+const { auditJSDocDocumentation } = require('./tier1-audits/jsdoc-documentation');
+const { subInfo } = require('../shared/formatting');
 
 // Tier 1 Audit Workflows
 
@@ -29,7 +34,7 @@ async function executeTier1Audits(files, results) {
   ];
 
   for (const rule of tier1Rules) {
-    console.log(format.subInfo(rule.name));
+    console.log(subInfo(rule.name));
 
     for (const file of files) {
       try {
@@ -58,116 +63,7 @@ async function executeTier1Audits(files, results) {
   }
 }
 
-// Tier 1 Audit Operations
-
-/**
- * Audit import organization compliance
- * @purpose Validates import grouping, section comments, and namespace import patterns
- * @param {string} filePath - Path to file being audited
- * @returns {Promise<Object>} Audit result with passed status and issues
- * @usedBy executeTier1Audits
- */
-async function auditImportOrganization(filePath) {
-  const content = await fs.readFile(filePath, 'utf8');
-  const issues = [];
-
-  // Rule 1: Import organization (grouping is obvious from paths - no section comments needed)
-  const importLines = content.match(/const\s+\{[^}]+\}\s*=\s*require\([^)]+\);?/g) || [];
-  const requireLines = content.match(/const\s+\w+\s*=\s*require\([^)]+\);?/g) || [];
-
-  const totalImports = importLines.length + requireLines.length;
-
-  if (totalImports >= 4) {
-    // We don't enforce section comments for imports - grouping is obvious from paths
-    // This check is disabled as per our architectural standards
-  }
-
-  // Rule 2: No namespace imports (everything is direct imports)
-  const namespaceImportPattern = /const\s+\w+\s*=\s*require\(/;
-  const requireCount = (content.match(/require\(/g) || []).length;
-
-  if (requireCount > 0) {
-    const lines = content.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (namespaceImportPattern.test(line) && line.includes('require(')) {
-        // Check if this is an allowed namespace import
-        const allowedNamespaceImports = [
-          'path',
-          'fs',
-          'crypto',
-          'glob',
-          'dotenv', // Node.js built-ins
-          './shared/formatting',
-          './shared/format',
-          './formatting', // Formatting utilities
-          'chalk',
-          'ora',
-          'node-fetch', // Common utility libraries
-          '../audit.config.js',
-          '../config', // Configuration modules
-        ];
-        const isAllowed = allowedNamespaceImports.some(
-          (allowed) => line.includes(`'${allowed}'`) || line.includes(`"${allowed}"`)
-        );
-
-        if (!isAllowed && !line.includes('{')) {
-          issues.push(
-            `Line ${i + 1}: Use direct imports instead of namespace imports. Import specific functions: ${line.trim()}`
-          );
-        }
-      }
-    }
-  }
-
-  return { passed: issues.length === 0, issues };
-}
-
-/**
- * Audit export patterns compliance
- * @purpose Validates module.exports structure and grouping
- * @param {string} filePath - Path to file being audited
- * @returns {Promise<Object>} Audit result with passed status and issues
- * @usedBy executeTier1Audits
- */
-async function auditExportPatterns(filePath) {
-  const content = await fs.readFile(filePath, 'utf8');
-  const issues = [];
-
-  // Skip files that don't export anything
-  if (!content.includes('module.exports')) {
-    return { passed: true, issues: [] };
-  }
-
-  // Rule 1: Must use object-style exports for multiple exports
-  const multipleExportPattern = /module\.exports\s*=\s*{\s*[\s\S]*?}/;
-  const hasMultipleExports = content.match(multipleExportPattern);
-
-  // Rule 2: No mixed export patterns
-  const exportLines = content.split('\n').filter((line) => line.includes('module.exports'));
-  if (exportLines.length > 1) {
-    issues.push('Multiple module.exports statements found. Use single object export pattern.');
-  }
-
-  // Rule 3: Export organization comments (for files with multiple exports)
-  if (hasMultipleExports) {
-    const exportBlock = hasMultipleExports[0];
-    const hasWorkflowComment =
-      exportBlock.includes('// Business workflows') || exportBlock.includes('Business workflows');
-    const hasOperationComment =
-      exportBlock.includes('// Feature operations') || exportBlock.includes('operations');
-
-    // Only flag if exports are complex enough to warrant organization
-    const exportCount = (exportBlock.match(/^\s*\w+[,\s]*$/gm) || []).length;
-    if (exportCount >= 6 && !hasWorkflowComment && !hasOperationComment) {
-      issues.push(
-        'Complex exports (6+ functions) should include organization comments (// Business workflows, // Feature operations, etc.)'
-      );
-    }
-  }
-
-  return { passed: issues.length === 0, issues };
-}
+// Tier 1 Audit Operations (kept in core for simpler rules)
 
 /**
  * Audit Action Framework compliance
@@ -258,127 +154,36 @@ async function auditNamingConventions(filePath) {
 }
 
 /**
- * Check if JSDoc block contains @purpose tag
- * @purpose Validate JSDoc content for required @purpose tag
- * @param {string[]} lines - Lines before function
- * @param {number} startIndex - Starting line index
- * @returns {boolean} True if proper JSDoc with @purpose found
+ * Check for progressive disclosure section headers using external config
+ * @purpose Validate presence of section organization headers in content
+ * @param {string} content - File content to check
+ * @returns {Promise<Object>} Object with boolean flags for each section type
  */
-function hasJSDocWithPurpose(lines, startIndex) {
-  let lastJSDocContent = '';
-  let inJSDocBlock = false;
-  let jsdocContent = '';
+async function checkSectionHeaders(content) {
+  // Load section headers configuration
+  const sectionConfig = await loadAuditConfig('sectionHeaders');
 
-  for (let i = Math.max(0, startIndex); i < lines.length; i++) {
-    const line = lines[i].trim();
+  // Get patterns from external config
+  const workflowPatterns = getFlattenedPatterns(sectionConfig, 'workflowPatterns.patterns');
+  const operationPatterns = getFlattenedPatterns(sectionConfig, 'operationPatterns.patterns');
+  const utilityPatterns = getFlattenedPatterns(sectionConfig, 'utilityPatterns.patterns');
+  const legacyPatterns = getFlattenedPatterns(sectionConfig, 'legacyPatterns.patterns');
 
-    if (line.includes('/**')) {
-      inJSDocBlock = true;
-      jsdocContent = line;
-    } else if (inJSDocBlock) {
-      jsdocContent += ' ' + line;
+  const hasWorkflowSection = workflowPatterns.some((pattern) => content.includes(pattern));
+  const hasOperationSection = operationPatterns.some((pattern) => content.includes(pattern));
+  const hasUtilitySection = utilityPatterns.some((pattern) => content.includes(pattern));
+  const hasShoutySections = legacyPatterns.some((pattern) => content.includes(pattern));
+  const hasRedundantExportHeaders = legacyPatterns
+    .slice(-2)
+    .some((pattern) => content.includes(pattern));
 
-      if (line.includes('*/')) {
-        // Found complete JSDoc block - save it and continue looking
-        lastJSDocContent = jsdocContent;
-        inJSDocBlock = false;
-        jsdocContent = '';
-      }
-    }
-  }
-
-  // Check the last (closest to function) JSDoc block found
-  return lastJSDocContent.includes('@purpose');
-}
-
-/**
- * Audit JSDoc documentation compliance
- * @purpose Validate functions have proper JSDoc with required tags
- * @param {string} filePath - Path to file being audited
- * @returns {Promise<Object>} Audit result with passed status and issues
- * @usedBy executeTier1Audits
- */
-async function auditJSDocDocumentation(filePath) {
-  const content = await fs.readFile(filePath, 'utf8');
-  const issues = [];
-
-  // Check if file is exempt (shared utilities, etc.)
-  const exemptFiles = ['shared/', 'config/', 'test'];
-  const isExemptFile = exemptFiles.some((pattern) => filePath.includes(pattern));
-  if (isExemptFile) {
-    return { passed: true, issues: [] };
-  }
-
-  // Enhanced function detection
-  const functionPatterns = [
-    /(async\s+)?function\s+(\w+)/g,
-    /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?(?:\([^)]*\)\s*=>\s*{|\([^)]*\)\s*=>)/g,
-    /(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?function/g,
-  ];
-
-  let allMatches = [];
-  for (const pattern of functionPatterns) {
-    // Reset regex state for each pattern
-    pattern.lastIndex = 0;
-    let match;
-    while ((match = pattern.exec(content)) !== null) {
-      const functionName = match[2] || match[1];
-      // Enhanced filtering to reduce false positives
-      if (
-        functionName &&
-        // Filter out obvious non-function names
-        ![
-          'module',
-          'require',
-          'exports',
-          'names',
-          'length',
-          'const',
-          'let',
-          'var',
-          'for',
-          'if',
-          'while',
-          'do',
-          'switch',
-          'try',
-          'catch',
-          'finally',
-          'matches',
-          'patterns',
-          'duplication',
-          'organization',
-          'detection',
-        ].includes(functionName) &&
-        functionName.length > 1 &&
-        // Must start with letter or underscore
-        /^[a-zA-Z_]/.test(functionName) &&
-        // Must not be all caps (likely constants)
-        !/^[A-Z_]+$/.test(functionName)
-      ) {
-        allMatches.push({
-          name: functionName,
-          index: match.index,
-        });
-      }
-    }
-  }
-
-  // Check each function for JSDoc with @purpose tag
-  for (const func of allMatches) {
-    const beforeFunction = content.substring(0, func.index);
-    const lines = beforeFunction.split('\n');
-
-    // Check for JSDoc with @purpose tag using helper function
-    // Look back up to 20 lines to find JSDoc block (was 10, too narrow)
-    const hasProperJSDoc = hasJSDocWithPurpose(lines, lines.length - 20);
-
-    if (!hasProperJSDoc) {
-      issues.push(`Function '${func.name}' should have JSDoc documentation with @purpose tag`);
-    }
-  }
-
-  return { passed: issues.length === 0, issues };
+  return {
+    hasWorkflowSection,
+    hasOperationSection,
+    hasUtilitySection,
+    hasShoutySections,
+    hasRedundantExportHeaders,
+  };
 }
 
 /**
@@ -396,40 +201,37 @@ async function auditFunctionOrganizationWithinFiles(filePath) {
   const functionCount = (
     content.match(/(?:async\s+)?function\s+\w+|const\s+\w+\s*=\s*(?:async\s+)?\(/g) || []
   ).length;
-  if (functionCount < 3 || filePath.includes('/shared/') || filePath.includes('config/')) {
+  if (
+    functionCount < 3 ||
+    filePath.includes('/shared/') ||
+    filePath.includes('config/') ||
+    filePath.includes('audit/')
+  ) {
     return { passed: true, issues: [] };
   }
 
-  // Rule 1: Feature files should have progressive disclosure organization
-  const hasWorkflowSection =
-    content.includes('// Business Workflows') || content.includes('=== BUSINESS WORKFLOWS ===');
-  const hasOperationSection =
-    content.includes('// Feature Operations') || content.includes('=== FEATURE OPERATIONS ===');
-  const hasUtilitySection =
-    content.includes('// Feature Utilities') || content.includes('=== FEATURE UTILITIES ===');
+  const sections = await checkSectionHeaders(content);
 
-  if (!hasWorkflowSection && !hasOperationSection && !hasUtilitySection) {
+  // Rule 1: Feature files should have progressive disclosure organization
+  if (
+    !sections.hasWorkflowSection &&
+    !sections.hasOperationSection &&
+    !sections.hasUtilitySection
+  ) {
     issues.push(
-      'Feature files with 3+ functions should use progressive disclosure organization (// Business Workflows → // Feature Operations → // Feature Utilities)'
+      'Feature files with 3+ functions should use progressive disclosure organization with descriptive section headers (e.g., "// Business Workflows", "// Query Building Workflows", "// Feature Operations", "// Feature Utilities")'
     );
   }
 
   // Rule 2: Check for outdated "shouty" section headers
-  if (
-    content.includes('=== BUSINESS WORKFLOWS ===') ||
-    content.includes('=== FEATURE OPERATIONS ===') ||
-    content.includes('=== FEATURE UTILITIES ===')
-  ) {
+  if (sections.hasShoutySections) {
     issues.push(
       'Use simple section headers (// Business Workflows) instead of "shouty" triple-equals format (=== BUSINESS WORKFLOWS ===)'
     );
   }
 
   // Rule 3: Check for redundant export headers
-  if (
-    content.includes('=== EXPORTS ORGANIZATION ===') ||
-    content.includes('// === EXPORTS ORGANIZATION ===')
-  ) {
+  if (sections.hasRedundantExportHeaders) {
     issues.push(
       'Remove redundant export headers - module.exports = { } is clear enough without additional headers'
     );
