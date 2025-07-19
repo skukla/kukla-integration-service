@@ -1,6 +1,6 @@
 /**
  * Commerce Shared - Endpoint Builders
- * True configuration-driven endpoint building utilities that leverage commerce configuration for both URL building and query parameter patterns
+ * Configuration-driven endpoint building utilities that require complete commerce configuration
  */
 
 const { buildCommerceApiUrl } = require('../../shared/routing/commerce');
@@ -14,6 +14,10 @@ const { buildCommerceApiUrl } = require('../../shared/routing/commerce');
  * @usedBy All endpoint builders for consistent query parameter building
  */
 function buildConfiguredQueryParams(params, config) {
+  if (!config?.commerce) {
+    throw new Error('Commerce configuration is required for query parameter building');
+  }
+
   const queryParams = new URLSearchParams();
   const { queryPatterns, pagination } = config.commerce;
 
@@ -36,6 +40,10 @@ function buildConfiguredQueryParams(params, config) {
  * @usedBy Product search endpoints requiring configured search patterns
  */
 function addConfiguredSearchCriteria(queryParams, searchTerm, config) {
+  if (!config?.commerce?.queryPatterns?.search) {
+    throw new Error('Commerce search patterns configuration is required');
+  }
+
   const { search } = config.commerce.queryPatterns;
 
   // Search in both name and SKU fields using configuration patterns
@@ -61,6 +69,10 @@ function addConfiguredSearchCriteria(queryParams, searchTerm, config) {
  * @usedBy Product endpoints requiring specific field selection
  */
 function addConfiguredFieldSelection(queryParams, fields, config) {
+  if (!config?.commerce?.queryPatterns?.fields) {
+    throw new Error('Commerce field patterns configuration is required');
+  }
+
   const { fields: fieldPatterns } = config.commerce.queryPatterns;
 
   const itemFields = fields.join(',');
@@ -81,9 +93,8 @@ function addConfiguredFieldSelection(queryParams, fields, config) {
  * @usedBy Product fetching workflows requiring configuration-driven query building
  */
 function buildProductsEndpoint(params = {}, config) {
-  if (!config || !config.commerce?.baseUrl) {
-    // Legacy mode: use configuration paths but simple URL building
-    return buildLegacyProductsEndpoint(params, config);
+  if (!config) {
+    throw new Error('Configuration is required for buildProductsEndpoint');
   }
 
   // Step 1: Build base URL using configuration
@@ -108,37 +119,6 @@ function buildProductsEndpoint(params = {}, config) {
 }
 
 /**
- * Build simple endpoint URL from configuration paths (legacy helper)
- * @purpose Create basic endpoint URL using configuration paths without full URL building
- * @param {string} pathKey - Configuration path key
- * @param {Object} config - Configuration object (may be partial)
- * @param {Object} [pathParams] - Path parameters for substitution
- * @returns {string} Simple endpoint URL
- * @usedBy Legacy functions when full configuration not available
- */
-function buildSimpleEndpointFromConfig(pathKey, config, pathParams = {}) {
-  // Try to get configuration, fall back to minimal defaults
-  const commerce = config?.commerce || {};
-  const api = commerce.api || { version: 'V1', prefix: '/rest' };
-  const paths = commerce.paths || {
-    products: '/products',
-    stockItem: '/stockItems/:sku',
-    category: '/categories/:id',
-    categoryList: '/categories/list',
-    adminToken: '/integration/admin/token',
-  };
-
-  let path = paths[pathKey] || `/${pathKey}`;
-
-  // Replace path parameters if provided
-  Object.entries(pathParams).forEach(([key, value]) => {
-    path = path.replace(`:${key}`, encodeURIComponent(value));
-  });
-
-  return `${api.prefix}/${api.version}${path}`;
-}
-
-/**
  * Build stock item endpoint URL with configuration
  * @purpose Create complete Commerce API URL for inventory data fetching using configuration
  * @param {string} sku - Product SKU
@@ -147,9 +127,8 @@ function buildSimpleEndpointFromConfig(pathKey, config, pathParams = {}) {
  * @usedBy Inventory enrichment workflows
  */
 function buildStockItemEndpoint(sku, config) {
-  if (!config || !config.commerce?.baseUrl) {
-    // Legacy mode: use configuration paths but simple URL building
-    return buildSimpleEndpointFromConfig('stockItem', config, { sku });
+  if (!config) {
+    throw new Error('Configuration is required for buildStockItemEndpoint');
   }
 
   return buildCommerceApiUrl('stockItem', config, { sku });
@@ -164,9 +143,8 @@ function buildStockItemEndpoint(sku, config) {
  * @usedBy Category enrichment workflows
  */
 function buildCategoryEndpoint(categoryId, config) {
-  if (!config || !config.commerce?.baseUrl) {
-    // Legacy mode: use configuration paths but simple URL building
-    return buildSimpleEndpointFromConfig('category', config, { id: categoryId });
+  if (!config) {
+    throw new Error('Configuration is required for buildCategoryEndpoint');
   }
 
   return buildCommerceApiUrl('category', config, { id: categoryId });
@@ -183,9 +161,8 @@ function buildCategoryEndpoint(categoryId, config) {
  * @usedBy Category fetching workflows
  */
 function buildCategoryListEndpoint(params = {}, config) {
-  if (!config || !config.commerce?.baseUrl) {
-    // Legacy mode: use configuration paths but simple URL building
-    return buildLegacyCategoryListEndpoint(params, config);
+  if (!config) {
+    throw new Error('Configuration is required for buildCategoryListEndpoint');
   }
 
   // Step 1: Build base URL using configuration
@@ -217,54 +194,11 @@ function buildCategoryListEndpoint(params = {}, config) {
  * @usedBy Admin token authentication workflows
  */
 function buildAdminTokenEndpoint(config) {
-  if (!config || !config.commerce?.baseUrl) {
-    // Legacy mode: use configuration paths but simple URL building
-    return buildSimpleEndpointFromConfig('adminToken', config);
+  if (!config) {
+    throw new Error('Configuration is required for buildAdminTokenEndpoint');
   }
 
   return buildCommerceApiUrl('adminToken', config);
-}
-
-// Legacy Functions (for backward compatibility)
-
-/**
- * Legacy product endpoint builder
- * @deprecated Use buildProductsEndpoint with config parameter
- */
-function buildLegacyProductsEndpoint(params = {}, config = {}) {
-  const queryParams = new URLSearchParams();
-
-  if (params.pageSize) {
-    queryParams.append('searchCriteria[pageSize]', params.pageSize);
-  }
-
-  if (params.currentPage) {
-    queryParams.append('searchCriteria[currentPage]', params.currentPage);
-  }
-
-  const endpoint = buildSimpleEndpointFromConfig('products', config);
-  const queryString = queryParams.toString();
-  return queryString ? `${endpoint}?${queryString}` : endpoint;
-}
-
-/**
- * Legacy category list endpoint builder
- * @deprecated Use buildCategoryListEndpoint with config parameter
- */
-function buildLegacyCategoryListEndpoint(params = {}, config = {}) {
-  const queryParams = new URLSearchParams();
-
-  if (params.rootCategoryId) {
-    queryParams.append('rootCategoryId', params.rootCategoryId);
-  }
-
-  if (params.depth) {
-    queryParams.append('depth', params.depth);
-  }
-
-  const endpoint = buildSimpleEndpointFromConfig('categoryList', config);
-  const queryString = queryParams.toString();
-  return queryString ? `${endpoint}?${queryString}` : endpoint;
 }
 
 module.exports = {
@@ -279,9 +213,4 @@ module.exports = {
   buildConfiguredQueryParams,
   addConfiguredSearchCriteria,
   addConfiguredFieldSelection,
-  buildSimpleEndpointFromConfig,
-
-  // Legacy functions (backward compatibility)
-  buildLegacyProductsEndpoint,
-  buildLegacyCategoryListEndpoint,
 };
