@@ -5,6 +5,7 @@
 
 // All dependencies at top - template loader and configuration
 const { loadTemplateSync } = require('./shared/template-loader');
+const { response } = require('../shared/http/responses');
 
 // Business Workflows
 
@@ -128,10 +129,10 @@ function showNotification(message, type, options = {}) {
 }
 
 /**
- * Build notification response with HTMX triggers
- * @purpose Create standardized HTMX response for notification display
- * @param {string} notificationHTML - Complete notification HTML from template
- * @param {string} type - Notification type (success, error, warning, info, progress)
+ * Build HTMX notification response with custom triggers
+ * @purpose Create HTMX notification response with notification triggers
+ * @param {string} notificationHTML - Rendered notification HTML
+ * @param {string} type - Notification type (success, error, warning, info)
  * @param {Object} [options] - Response options
  * @returns {Object} HTMX notification response
  * @usedBy showNotification, showProgressNotification
@@ -147,15 +148,11 @@ function buildNotificationResponse(notificationHTML, type, options = {}) {
     },
   };
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-      'HX-Trigger': JSON.stringify(triggerData),
-    },
-    body: notificationHTML,
+  const customHeaders = {
+    'HX-Trigger': JSON.stringify(triggerData),
   };
+
+  return response.html(notificationHTML, { headers: customHeaders });
 }
 
 // Feature Utilities

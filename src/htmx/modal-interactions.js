@@ -5,6 +5,7 @@
 
 // All dependencies at top - template loader and file validation
 const { loadTemplateSync } = require('./shared/template-loader');
+const { response } = require('../shared/http/responses');
 
 // Business Workflows
 
@@ -91,16 +92,12 @@ async function generateInformationModal(title, message, options = {}) {
 function buildModalResponse(modalHTML, options = {}) {
   const { action = 'show', ...otherOptions } = options;
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-      'HX-Trigger': action === 'show' ? 'show-modal' : 'hide-modal',
-      ...otherOptions.headers,
-    },
-    body: modalHTML,
+  const customHeaders = {
+    'HX-Trigger': action === 'show' ? 'show-modal' : 'hide-modal',
+    ...otherOptions.headers,
   };
+
+  return response.html(modalHTML, { headers: customHeaders });
 }
 
 /**
@@ -112,18 +109,14 @@ function buildModalResponse(modalHTML, options = {}) {
  * @usedBy processModalConfirmation
  */
 function buildModalConfirmationResponse(result, data) {
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      'HX-Trigger': JSON.stringify({
-        'modal-confirmed': { result, data },
-        'hide-modal': true,
-      }),
-    },
-    body: JSON.stringify({ result, data }),
+  const customHeaders = {
+    'HX-Trigger': JSON.stringify({
+      'modal-confirmed': { result, data },
+      'hide-modal': true,
+    }),
   };
+
+  return response.success({ result, data }, 'Modal action processed', { headers: customHeaders });
 }
 
 // Feature Utilities
@@ -149,7 +142,7 @@ function generateDeleteModalHTML(fileName, fileInfo = null, isProtected = false)
 }
 
 /**
- * Generate information modal HTML using inline template
+ * Generate information modal HTML using template
  * @purpose Create HTML for informational modal dialogs
  * @param {string} title - Modal title
  * @param {string} message - Modal message content
@@ -169,22 +162,15 @@ function generateInfoModalHTML(title, message, options = {}) {
 
   const icon = iconMap[type] || iconMap.info;
 
-  return `
-    <div class="modal-overlay" id="info-modal">
-      <div class="modal modal-${type}">
-        <div class="modal-header">
-          <h3>${icon} ${escapeHtml(title)}</h3>
-          ${showCloseButton ? '<button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>' : ''}
-        </div>
-        <div class="modal-body">
-          <p>${escapeHtml(message)}</p>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" onclick="closeModal()">OK</button>
-        </div>
-      </div>
-    </div>
-  `;
+  const variables = {
+    title,
+    message,
+    type,
+    icon,
+    showCloseButton,
+  };
+
+  return loadTemplateSync('info-modal', variables);
 }
 
 /**
@@ -241,63 +227,24 @@ async function getFileInfoForModal(fileName, params) {
  * @usedBy generateDeleteConfirmationModal, processModalConfirmation
  */
 function generateModalErrorResponse(errorMessage, details = '') {
-  const errorHTML = `
-    <div class="modal-overlay" id="error-modal">
-      <div class="modal modal-error">
-        <div class="modal-header">
-          <h3>❌ Error</h3>
-          <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>${escapeHtml(errorMessage)}</p>
-          ${details ? `<p class="error-details">${escapeHtml(details)}</p>` : ''}
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" onclick="closeModal()">OK</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  return {
-    statusCode: 500,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-      'HX-Trigger': 'show-modal',
-    },
-    body: errorHTML,
-  };
-}
-
-/**
- * Escape HTML characters for safe output
- * @purpose Prevent XSS by escaping HTML characters in user data
- * @param {string} text - Text to escape
- * @returns {string} HTML-escaped text
- * @usedBy generateInfoModalHTML, generateModalErrorResponse
- */
-function escapeHtml(text) {
-  if (typeof text !== 'string') {
-    return '';
-  }
-
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
+  const variables = {
+    message: errorMessage,
+    details: details || null,
   };
 
-  return text.replace(/[&<>"']/g, (m) => map[m]);
+  const errorHTML = loadTemplateSync('error-modal', variables);
+  const customHeaders = {
+    'HX-Trigger': 'show-modal',
+  };
+
+  return response.html(errorHTML, { statusCode: 500, headers: customHeaders });
 }
 
 module.exports = {
   // Business workflows (main exports that actions import)
   generateDeleteConfirmationModal,
-  processModalConfirmation,
   generateInformationModal,
+  processModalConfirmation,
 
   // Feature operations (coordination functions)
   buildModalResponse,
@@ -309,5 +256,4 @@ module.exports = {
   checkIfFileProtected,
   getFileInfoForModal,
   generateModalErrorResponse,
-  escapeHtml,
 };

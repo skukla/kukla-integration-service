@@ -1,0 +1,10 @@
+<div class="error-message htmx-error">
+  <div class="error-icon">⚠️</div>
+  <div class="error-content">
+    <h4><%= title || 'Error' %></h4>
+    <p><%= message %></p>
+    <% if (details) { %>
+    <p class="error-details"><%= details %></p>
+    <% } %>
+  </div>
+</div> 

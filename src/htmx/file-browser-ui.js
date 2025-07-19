@@ -6,6 +6,7 @@
 // All dependencies at top - template loader, file operations, and URL building
 const { loadTemplateSync } = require('./shared/template-loader');
 const { listCsvFiles } = require('../files/file-browser');
+const { response } = require('../shared/http/responses');
 const { buildRuntimeUrl } = require('../shared/routing/runtime');
 
 // Business Workflows
@@ -106,16 +107,12 @@ function generateFileBrowserHTML(files, config) {
  * @usedBy generateCompleteFileBrowserUI, refreshFileBrowserUI
  */
 function buildFileBrowserResponse(htmlContent, options = {}) {
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-      'HX-Trigger': 'file-browser-updated',
-      ...options.headers,
-    },
-    body: htmlContent,
+  const customHeaders = {
+    'HX-Trigger': 'file-browser-updated',
+    ...options.headers,
   };
+
+  return response.html(htmlContent, { headers: customHeaders });
 }
 
 /**
@@ -127,18 +124,14 @@ function buildFileBrowserResponse(htmlContent, options = {}) {
  * @usedBy refreshFileBrowserUI
  */
 function buildFileOperationSuccessResponse(updatedBrowserHTML, successMessage) {
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-      'HX-Trigger': JSON.stringify({
-        'file-operation-success': { message: successMessage },
-        'file-browser-updated': true,
-      }),
-    },
-    body: updatedBrowserHTML,
+  const customHeaders = {
+    'HX-Trigger': JSON.stringify({
+      'file-operation-success': { message: successMessage },
+      'file-browser-updated': true,
+    }),
   };
+
+  return response.html(updatedBrowserHTML, { headers: customHeaders });
 }
 
 // Feature Utilities
@@ -192,48 +185,14 @@ function generateFileRowHTML(file, config) {
  * @usedBy generateCompleteFileBrowserUI, refreshFileBrowserUI
  */
 function generateFileBrowserErrorResponse(errorMessage, details = '') {
-  const errorHTML = `
-    <div class="error-message htmx-error">
-      <div class="error-icon">⚠️</div>
-      <div class="error-content">
-        <h4>File Browser Error</h4>
-        <p>${escapeHtml(errorMessage)}</p>
-        ${details ? `<p class="error-details">${escapeHtml(details)}</p>` : ''}
-      </div>
-    </div>
-  `;
-
-  return {
-    statusCode: 500,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-    },
-    body: errorHTML,
-  };
-}
-
-/**
- * Escape HTML characters for safe output
- * @purpose Prevent XSS by escaping HTML characters in user data
- * @param {string} text - Text to escape
- * @returns {string} HTML-escaped text
- * @usedBy generateFileBrowserErrorResponse (for content not using templates)
- */
-function escapeHtml(text) {
-  if (typeof text !== 'string') {
-    return '';
-  }
-
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
+  const variables = {
+    title: 'File Browser Error',
+    message: errorMessage,
+    details: details || null,
   };
 
-  return text.replace(/[&<>"']/g, (m) => map[m]);
+  const errorHTML = loadTemplateSync('error-message', variables);
+  return response.html(errorHTML, { statusCode: 500 });
 }
 
 module.exports = {
@@ -251,5 +210,4 @@ module.exports = {
   generateEmptyFileListHTML,
   generateFileRowHTML,
   generateFileBrowserErrorResponse,
-  escapeHtml,
 };

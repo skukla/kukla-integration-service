@@ -1,0 +1,17 @@
+<div class="modal-overlay" id="error-modal">
+  <div class="modal modal-error">
+    <div class="modal-header">
+      <h3>❌ Error</h3>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><%= message %></p>
+      <% if (details) { %>
+      <p class="error-details"><%= details %></p>
+      <% } %>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal()">OK</button>
+    </div>
+  </div>
+</div> 
