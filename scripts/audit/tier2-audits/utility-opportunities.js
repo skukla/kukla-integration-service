@@ -29,14 +29,18 @@ async function auditSharedUtilityOpportunities(filePath) {
   const currentDomain = domainMatch[1];
 
   // Look for utilities commonly needed across domains (exclude domain-specific patterns)
-  const sharedUtilityPatterns = [
-    'formatFileSize',
-    'formatDate',
-    'formatStepMessage',
-    'buildCommerceUrl',
-    'buildRuntimeUrl',
-    'createHttpClient',
-    'retryWithBackoff',
+  const commonUtilities = [
+    // HTTP and networking
+    'request',
+    'fetch',
+    'axios',
+    'buildActionUrl',
+    'buildCommerceApiUrl',
+
+    // Data processing
+    'filter',
+    'map',
+    'reduce',
   ];
 
   // Domain-specific patterns that should NOT be shared
@@ -50,7 +54,7 @@ async function auditSharedUtilityOpportunities(filePath) {
 
   const functionNames = extractFunctionNamesFromContent(content);
 
-  for (const pattern of sharedUtilityPatterns) {
+  for (const pattern of commonUtilities) {
     const matchingFunctions = functionNames.filter(
       (name) =>
         (name === pattern || name.toLowerCase().includes(pattern.toLowerCase())) &&

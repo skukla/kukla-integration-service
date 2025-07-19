@@ -295,13 +295,228 @@ function checkResponseBuildingFunctions(content, currentDomain) {
   return issues;
 }
 
+/**
+ * Audit URL construction duplication patterns
+ * @purpose Detect manual URL concatenation, legacy URL building functions, and enforce URL factory pattern
+ * @param {string} filePath - Path to file being audited
+ * @returns {Promise<Object>} Audit result for URL construction patterns
+ * @usedBy executeTier2Audits
+ */
+async function auditUrlConstructionDuplication(filePath) {
+  const content = await fs.readFile(filePath, 'utf8');
+  const issues = [];
+
+  // Run all URL construction checks
+  issues.push(...checkManualUrlConcatenation(content));
+  issues.push(...checkDirectInfrastructureUsage(content));
+  issues.push(...checkConfigRepetition(content));
+  issues.push(...checkLegacyUrlFunctions(content));
+  issues.push(...checkHardcodedEndpoints(content));
+  issues.push(...checkUrlFactoryUsage(content, filePath));
+
+  return { passed: issues.length === 0, issues };
+}
+
+/**
+ * Check for manual URL concatenation patterns
+ * @purpose Detect manual URL building with string concatenation
+ * @param {string} content - File content to analyze
+ * @returns {Array} Issues found
+ */
+function checkManualUrlConcatenation(content) {
+  const issues = [];
+  const patterns = [
+    /\+\s*[`'"]\?.*encodeURIComponent/g,
+    /[`'"].*[`'"]\s*\+\s*[`'"]\?/g,
+    /buildRuntimeUrl.*\+.*[`'"]\?/g,
+    /buildActionUrl.*\+.*[`'"]\?/g,
+  ];
+
+  patterns.forEach((pattern) => {
+    const matches = content.match(pattern);
+    if (matches) {
+      issues.push(
+        `Manual URL concatenation detected - use URL factory pattern instead: ${matches[0].substring(0, 50)}...`
+      );
+    }
+  });
+
+  return issues;
+}
+
+/**
+ * Check for excessive config repetition
+ * @purpose Detect excessive config passing in URL building
+ * @param {string} content - File content to analyze
+ * @returns {Array} Issues found
+ */
+function checkConfigRepetition(content) {
+  const issues = [];
+
+  // Only flag config repetition in non-infrastructure files
+  // Infrastructure files legitimately pass config
+  const patterns = [/\w+Url\([^)]*config[^)]*\)/g, /build\w+\([^)]*config[^)]*\)/g];
+
+  patterns.forEach((pattern) => {
+    const matches = content.match(pattern);
+    // Increase threshold and add context check
+    if (matches && matches.length >= 8) {
+      // Check if this looks like a business workflow (not infrastructure)
+      const hasBusinessContext =
+        content.includes('Step 1:') || content.includes('Business Workflows');
+      if (hasBusinessContext) {
+        issues.push(
+          `Excessive config repetition in URL building detected (${matches.length} instances) - consider using URL factory pattern`
+        );
+      }
+    }
+  });
+
+  return issues;
+}
+
+/**
+ * Check for legacy URL building functions
+ * @purpose Detect deprecated URL building functions
+ * @param {string} content - File content to analyze
+ * @returns {Array} Issues found
+ */
+function checkLegacyUrlFunctions(content) {
+  const issues = [];
+  // Only flag actual legacy functions, not current infrastructure
+  const patterns = [/buildCommerceUrl\(/g, /getActionUrl\(/g];
+
+  patterns.forEach((pattern) => {
+    if (content.match(pattern)) {
+      issues.push(
+        'Legacy URL building function detected - use createUrlBuilders() factory pattern instead'
+      );
+    }
+  });
+
+  return issues;
+}
+
+/**
+ * Check for hardcoded API endpoints
+ * @purpose Detect hardcoded endpoint patterns
+ * @param {string} content - File content to analyze
+ * @returns {Array} Issues found
+ */
+function checkHardcodedEndpoints(content) {
+  const issues = [];
+  const patterns = [/['"`]\/rest\/V1\/\w+['"`]/g, /endpointMap\s*=\s*{/g];
+
+  patterns.forEach((pattern) => {
+    if (content.match(pattern)) {
+      issues.push(
+        'Hardcoded API endpoints detected - use createUrlBuilders() factory with commerceUrl() instead'
+      );
+    }
+  });
+
+  return issues;
+}
+
+/**
+ * Check for proper URL factory usage
+ * @purpose Detect files that should use URL factory pattern
+ * @param {string} content - File content to analyze
+ * @param {string} filePath - File path for context
+ * @returns {Array} Issues found
+ */
+function checkUrlFactoryUsage(content, filePath) {
+  const issues = [];
+
+  const isInfrastructureFile =
+    filePath.includes('/shared/routing/') ||
+    filePath.includes('/shared/url') ||
+    filePath.includes('/audit/') ||
+    filePath.includes('/templates/');
+
+  const isNonBuildingFile =
+    filePath.includes('/formatting.js') ||
+    filePath.includes('/validation/') ||
+    filePath.includes('/monitor/') ||
+    filePath.includes('/presigned-urls.js');
+
+  if (
+    !isInfrastructureFile &&
+    !isNonBuildingFile &&
+    content.includes('Url(') &&
+    !content.includes('createUrlBuilders')
+  ) {
+    const hasUrlBuilding = /\w*[Uu]rl\s*\(/g.test(content);
+    const hasUrlVariables = /\w*[Uu]rl\s*=/g.test(content);
+
+    if (hasUrlBuilding && !hasUrlVariables) {
+      issues.push(
+        "URL building detected without factory pattern - use createUrlBuilders() from '../shared/routing/url-factory'"
+      );
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Check for direct infrastructure usage
+ * @purpose Detect direct calls to infrastructure URL functions
+ * @param {string} content - File content to analyze
+ * @returns {Array} Issues found
+ */
+function checkDirectInfrastructureUsage(content) {
+  const issues = [];
+
+  // Only flag infrastructure usage in application files, not infrastructure files themselves
+  const infrastructurePatterns = [
+    /buildActionUrl\s*\(/g,
+    /buildCommerceApiUrl\s*\(/g,
+    /buildProductsEndpoint\s*\(/g,
+    /buildStockItemEndpoint\s*\(/g,
+  ];
+
+  // Skip if this looks like an infrastructure file
+  const isInfrastructureFile =
+    content.includes('module.exports = {') &&
+    (content.includes('buildActionUrl') ||
+      content.includes('buildCommerceApiUrl') ||
+      content.includes('buildProductsEndpoint') ||
+      content.includes('buildStockItemEndpoint'));
+
+  if (!isInfrastructureFile) {
+    infrastructurePatterns.forEach((pattern) => {
+      const matches = content.match(pattern);
+      if (matches) {
+        // Filter out function declarations - only flag actual calls
+        const actualCalls = matches.filter((match) => {
+          // Find the full line containing this match
+          const lines = content.split('\n');
+          const matchingLine = lines.find((line) => line.includes(match));
+
+          // Skip if it's a function declaration
+          return matchingLine && !matchingLine.trim().startsWith('function ');
+        });
+
+        if (actualCalls.length > 0) {
+          issues.push(
+            'Direct infrastructure URL usage detected - use createUrlBuilders() factory pattern instead'
+          );
+        }
+      }
+    });
+  }
+
+  return issues;
+}
+
 // Duplication Detection Utilities
 
 /**
- * Extract function names from source code content
- * @purpose Extract all function names from content for duplication analysis
- * @param {string} content - Source code content to analyze
- * @returns {Array<string>} Array of unique function names found
+ * Extract function names from file content
+ * @purpose Parse file content to identify all function declarations and expressions
+ * @param {string} content - File content to parse
+ * @returns {Array<string>} Array of unique function names found in the content
  * @usedBy auditCrossDomainFunctionDuplication, auditValidationPatternDuplication, auditResponseBuildingDuplication
  */
 function extractFunctionNames(content) {
@@ -329,5 +544,6 @@ module.exports = {
   auditCrossDomainFunctionDuplication,
   auditValidationPatternDuplication,
   auditResponseBuildingDuplication,
+  auditUrlConstructionDuplication,
   extractFunctionNames,
 };

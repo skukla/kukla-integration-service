@@ -14,6 +14,7 @@ const {
   auditCrossDomainFunctionDuplication,
   auditValidationPatternDuplication,
   auditResponseBuildingDuplication,
+  auditUrlConstructionDuplication,
 } = require('./tier2-audits/duplication-detection');
 const { auditSharedUtilityOpportunities } = require('./tier2-audits/utility-opportunities');
 const { subInfo } = require('../shared/formatting');
@@ -37,6 +38,7 @@ async function executeTier2Audits(files, results) {
     { name: 'cross-domain-function-duplication', fn: auditCrossDomainFunctionDuplication },
     { name: 'validation-pattern-duplication', fn: auditValidationPatternDuplication },
     { name: 'response-building-duplication', fn: auditResponseBuildingDuplication },
+    { name: 'url-construction-duplication', fn: auditUrlConstructionDuplication },
     { name: 'shared-utility-opportunities', fn: auditSharedUtilityOpportunities },
   ];
 
@@ -82,5 +84,6 @@ module.exports = {
   auditCrossDomainFunctionDuplication,
   auditValidationPatternDuplication,
   auditResponseBuildingDuplication,
+  auditUrlConstructionDuplication,
   auditSharedUtilityOpportunities,
 };
