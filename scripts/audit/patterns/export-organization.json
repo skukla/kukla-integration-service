@@ -1,0 +1,83 @@
+{
+  "description": "Export organization patterns for export pattern audit",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-XX",
+
+  "workflowComments": {
+    "description": "Patterns that indicate workflow organization in exports",
+    "patterns": [
+      "// Business workflows",
+      "// Workflows",
+      "Business workflows",
+      "// Action Initialization Workflows",
+      "// Suite Management Workflows",
+      "// Performance Reporting Workflows",
+      "// Test Result Building",
+      "// API Testing",
+      "// Compression",
+      "// Parallel Test Execution",
+      "// Sequential Test Execution",
+      "// Single Test Execution",
+      "// Performance Analysis",
+      "// Baseline Management",
+      "// Threshold Analysis",
+      "// Trend Analysis"
+    ]
+  },
+
+  "operationComments": {
+    "description": "Patterns that indicate operations/utilities organization in exports",
+    "patterns": [
+      "// Feature operations",
+      "// Operations",
+      "// Utilities",
+      "// Suite Management Operations",
+      "// Compression Operations",
+      "// Action Initialization Utilities",
+      "// Compression Configuration",
+      "// Performance Metrics",
+      "// Statistical Calculations",
+      "// API-specific assertion",
+      "// Test suite assertion",
+      "// Utility functions",
+      "// Performance Quality Indicators",
+      "// Test Insights Generation",
+      "// Result Building",
+      "// Grade Calculation",
+      "// Structure formatting",
+      "// Content formatting",
+      "// Baseline Comparison",
+      "// Utility Functions",
+      "// Summary Generation",
+      "// Performance Recommendations",
+      "// Validation Functions",
+      "// Response Validation",
+      "// Endpoint Testing",
+      "// API Response Processing",
+      "// Storage Strategy Selection",
+      "// Storage Configuration",
+      "// File Path Operations",
+      "// Re-export generic functions",
+      "// Products domain-specific validation functions",
+      "// Domain-specific validation",
+      "// Storage strategy implementations",
+      "// Configuration utilities",
+      "// File operations",
+      "// Strategy functions",
+      "// Strategy registry and selector",
+      "// Extension functions",
+      "// URL Building",
+      "// Request Execution",
+      "// Mock Response Generation",
+      "// Test Duration and Scoring",
+      "// Result Formatting",
+      "operations",
+      "utilities"
+    ]
+  },
+
+  "complexityThreshold": {
+    "description": "Minimum number of exports that require organization comments",
+    "value": 6
+  }
+}

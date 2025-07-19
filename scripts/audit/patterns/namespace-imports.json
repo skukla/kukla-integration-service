@@ -1,0 +1,39 @@
+{
+  "description": "Allowed namespace import patterns for import organization audit",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-XX",
+
+  "allowedNamespaceImports": {
+    "description": "Modules that legitimately use namespace import pattern",
+    "categories": {
+      "nodeBuiltins": {
+        "description": "Node.js built-in modules",
+        "patterns": ["path", "fs", "crypto", "glob", "https", "zlib", "dotenv"]
+      },
+      "templateEngines": {
+        "description": "Template engines and similar tools",
+        "patterns": ["ejs"]
+      },
+      "utilityLibraries": {
+        "description": "Common utility libraries",
+        "patterns": ["chalk", "ora", "node-fetch"]
+      },
+      "projectSpecific": {
+        "description": "Project-specific modules with legitimate namespace usage",
+        "patterns": [
+          "./shared/formatting",
+          "./shared/format",
+          "./formatting",
+          "../http/responses",
+          "../audit.config.js",
+          "../config"
+        ]
+      }
+    }
+  },
+
+  "importThreshold": {
+    "description": "Minimum number of imports that might need section comments",
+    "value": 4
+  }
+}

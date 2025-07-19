@@ -1,0 +1,111 @@
+{
+  "description": "Progressive disclosure section header patterns for function organization audit",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-XX",
+
+  "workflowPatterns": {
+    "description": "Patterns for business workflow section headers",
+    "patterns": [
+      "// Business Workflows",
+      "// Workflows",
+      "// Data Extraction Workflows",
+      "// Data Application Workflows",
+      "// Data Processing Workflows",
+      "// Enrichment Workflows",
+      "// Query Building Workflows",
+      "// Sorting and Filtering Workflows",
+      "// Validation Workflows",
+      "// Stock Validation Workflows",
+      "// Storage Workflows",
+      "// Authentication Workflows",
+      "// Processing Workflows",
+      "// Test Execution Workflows",
+      "// Test Result Building Workflows",
+      "// Test Result Aggregation",
+      "// Performance Test Result Building",
+      "// Performance Results Analysis",
+      "// Response Validation",
+      "// Parallel Test Execution",
+      "// Baseline Performance Analysis",
+      "// Suite Management Workflows",
+      "// Performance Reporting Workflows",
+      "// API Testing Workflows",
+      "// Performance Testing Workflows",
+      "// Scenario Execution Workflows",
+      "// Tier 2 Audit Workflows",
+      "// Tier 1 Audit Workflows"
+    ]
+  },
+
+  "operationPatterns": {
+    "description": "Patterns for feature operations section headers",
+    "patterns": [
+      "// Feature Operations",
+      "// Operations",
+      "// Data Extraction Operations",
+      "// Data Application Operations",
+      "// Data Processing Operations",
+      "// Query Building Operations",
+      "// Stock Validation Operations",
+      "// Storage Operations",
+      "// Processing Operations",
+      "// Test Execution Operations",
+      "// API Testing Operations",
+      "// Performance Testing Operations",
+      "// Endpoint URL Building",
+      "// Test Case Generation",
+      "// Test Command Parsing and Validation",
+      "// Performance Test Result Building",
+      "// Response Validation Operations",
+      "// Result Processing",
+      "// Confidence Scoring",
+      "// Scenario Loading and Configuration",
+      "// Suite Management Operations",
+      "// Result Aggregation Operations",
+      "// Parallel Execution Operations",
+      "// Baseline Comparison Operations",
+      "// Report Generation Operations"
+    ]
+  },
+
+  "utilityPatterns": {
+    "description": "Patterns for feature utilities section headers",
+    "patterns": [
+      "// Feature Utilities",
+      "// Utilities",
+      "// Data Extraction Utilities",
+      "// Data Application Utilities",
+      "// Data Processing Utilities",
+      "// Query Building Utilities",
+      "// Sorting and Filtering Utilities",
+      "// Validation Utilities",
+      "// Stock Validation Utilities",
+      "// Storage Utilities",
+      "// Authentication Utilities",
+      "// Processing Utilities",
+      "// Test Execution Utilities",
+      "// API Testing Utilities",
+      "// Performance Testing Utilities",
+      "// Tier 2 Audit Utilities",
+      "// Tier 1 Audit Utilities",
+      "// Suite Management Utilities",
+      "// Result Aggregation Utilities",
+      "// Parallel Execution Utilities",
+      "// Baseline Comparison Utilities",
+      "// Report Generation Utilities",
+      "// Response Validation Utilities",
+      "// Scenario Execution Utilities"
+    ]
+  },
+
+  "legacyPatterns": {
+    "description": "Legacy shouty patterns that should be replaced",
+    "patterns": [
+      "=== BUSINESS WORKFLOWS ===",
+      "=== FEATURE OPERATIONS ===",
+      "=== FEATURE UTILITIES ===",
+      "=== EXPORTS ORGANIZATION ===",
+      "// === EXPORTS ORGANIZATION ==="
+    ]
+  }
+}

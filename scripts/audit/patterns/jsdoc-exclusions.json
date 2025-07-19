@@ -1,0 +1,70 @@
+{
+  "description": "JSDoc exclusion patterns for documentation audit",
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-XX",
+
+  "exemptDirectories": {
+    "description": "Directories exempt from JSDoc requirements",
+    "patterns": ["shared/", "config/", "test"]
+  },
+
+  "excludedVariableNames": {
+    "description": "Variable names that are often detected as functions but should be excluded",
+    "categories": {
+      "languageKeywords": [
+        "module",
+        "require",
+        "exports",
+        "const",
+        "let",
+        "var",
+        "for",
+        "if",
+        "while",
+        "do",
+        "switch",
+        "try",
+        "catch",
+        "finally"
+      ],
+      "commonVariables": [
+        "names",
+        "length",
+        "matches",
+        "patterns",
+        "duplication",
+        "organization",
+        "detection",
+        "body",
+        "data",
+        "content",
+        "result",
+        "response",
+        "request",
+        "lineCount",
+        "definitions",
+        "name",
+        "count",
+        "value",
+        "key",
+        "index",
+        "config",
+        "should"
+      ]
+    }
+  },
+
+  "functionDetectionPatterns": {
+    "description": "Regex patterns for detecting actual functions",
+    "patterns": [
+      "/(async\\s+)?function\\s+(\\w+)/g",
+      "/(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s+)?(?:\\([^)]*\\)\\s*=>\\s*{|\\([^)]*\\)\\s*=>)/g",
+      "/(?:const|let|var)\\s+(\\w+)\\s*=\\s*(?:async\\s+)?function/g"
+    ]
+  },
+
+  "jsdocSearchRange": {
+    "description": "Number of lines to look back for JSDoc block",
+    "value": 20
+  }
+}
