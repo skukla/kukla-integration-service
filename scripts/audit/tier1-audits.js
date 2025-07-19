@@ -323,13 +323,38 @@ async function auditJSDocDocumentation(filePath) {
     let match;
     while ((match = pattern.exec(content)) !== null) {
       const functionName = match[2] || match[1];
-      // Filter out common false positives and non-function matches
+      // Enhanced filtering to reduce false positives
       if (
         functionName &&
-        !['module', 'require', 'exports', 'names', 'length', 'const', 'let', 'var'].includes(
-          functionName
-        ) &&
-        functionName.length > 1
+        // Filter out obvious non-function names
+        ![
+          'module',
+          'require',
+          'exports',
+          'names',
+          'length',
+          'const',
+          'let',
+          'var',
+          'for',
+          'if',
+          'while',
+          'do',
+          'switch',
+          'try',
+          'catch',
+          'finally',
+          'matches',
+          'patterns',
+          'duplication',
+          'organization',
+          'detection',
+        ].includes(functionName) &&
+        functionName.length > 1 &&
+        // Must start with letter or underscore
+        /^[a-zA-Z_]/.test(functionName) &&
+        // Must not be all caps (likely constants)
+        !/^[A-Z_]+$/.test(functionName)
       ) {
         allMatches.push({
           name: functionName,
