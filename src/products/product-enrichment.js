@@ -6,6 +6,7 @@
 // All dependencies at top - external vs internal obvious from paths
 const { executeAdminTokenCommerceRequest } = require('../commerce/admin-token-auth');
 const { extractCategoryIds, extractProductSkus } = require('./shared/data-extraction');
+const { sleep } = require('../shared/utils/async');
 
 // Business Workflows
 
@@ -67,7 +68,7 @@ async function enrichProductsWithCategories(products, config, params) {
     }
 
     // Step 2: Fetch category data from Commerce API
-    const categoryMap = await fetchCategoryDataInBatches(categoryIds, config, params);
+    const categoryMap = await fetchCategoriesInBatches(categoryIds, config, params);
 
     // Step 3: Apply category data to products
     return applyCategoriesToProducts(products, categoryMap);
@@ -114,80 +115,127 @@ async function enrichProductsWithInventory(products, config, params) {
 // Feature Operations
 
 /**
- * Fetch category data from Commerce API with intelligent batching
- * @purpose Retrieve category information with batch processing and concurrency control
+ * Fetch categories in optimized batches
+ * @purpose Retrieve category data for products using batched requests for optimal performance
  * @param {Set} categoryIds - Set of unique category IDs to fetch
- * @param {Object} config - Configuration object with Commerce settings
- * @param {Object} params - Action parameters with credentials
- * @returns {Promise<Object>} Map of category ID to category data
+ * @param {Object} config - Configuration with batching settings
+ * @param {Object} params - Parameters with authentication
+ * @returns {Promise<Map>} Map of category ID to category data
  * @usedBy enrichProductsWithCategories
  */
-async function fetchCategoryDataInBatches(categoryIds, config, params) {
-  const categoryMap = {};
-
+async function fetchCategoriesInBatches(categoryIds, config, params) {
   if (!categoryIds || categoryIds.size === 0) {
-    return categoryMap;
+    return new Map();
   }
 
-  const batchSize = config.commerce.batching.categories || 20;
-  const requestDelay = config.performance.batching.requestDelay || 100;
-  const maxConcurrent = config.performance.batching.maxConcurrent || 15;
-
+  const batchConfig = extractBatchingConfig(config);
   const categoryArray = Array.from(categoryIds);
+  const categoryMap = new Map();
+  const errors = [];
 
-  // Process in batches with configurable concurrency
-  for (let i = 0; i < categoryArray.length; i += batchSize) {
-    const batch = categoryArray.slice(i, i + batchSize);
+  await processCategoryBatches(
+    categoryArray,
+    batchConfig,
+    { categoryMap, errors },
+    { config, params }
+  );
 
-    // Limit concurrent requests per batch
-    const chunks = [];
-    for (let j = 0; j < batch.length; j += maxConcurrent) {
-      chunks.push(batch.slice(j, j + maxConcurrent));
-    }
-
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      const chunk = chunks[chunkIndex];
-      const categoryPromises = chunk.map(async (categoryId) => {
-        try {
-          const response = await executeAdminTokenCommerceRequest(
-            `/categories/${categoryId}`,
-            { method: 'GET' },
-            config,
-            params
-          );
-
-          if (response.body) {
-            categoryMap[categoryId] = {
-              id: response.body.id,
-              name: response.body.name,
-              parent_id: response.body.parent_id,
-              level: response.body.level,
-            };
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch category ${categoryId}: ${error.message}`);
-          categoryMap[categoryId] = { id: categoryId, name: 'Unknown Category' };
-        }
-      });
-
-      await Promise.all(categoryPromises);
-
-      // Add configurable delay between chunks
-      if (chunkIndex < chunks.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, requestDelay));
-      }
-    }
+  if (errors.length > 0) {
+    console.warn(
+      `Category enrichment warnings: ${errors.slice(0, 3).join(', ')}${errors.length > 3 ? '...' : ''}`
+    );
   }
 
   return categoryMap;
 }
 
 /**
+ * Extract batching configuration settings
+ * @purpose Get batching settings from configuration
+ * @param {Object} config - Configuration object
+ * @returns {Object} Batching configuration settings
+ */
+function extractBatchingConfig(config) {
+  return {
+    batchSize: config.commerce.batching.categories,
+    requestDelay: config.performance.batching.requestDelay,
+    maxConcurrent: config.performance.batching.maxConcurrent,
+  };
+}
+
+/**
+ * Process category batches with controlled concurrency
+ * @purpose Process categories in batches with rate limiting
+ * @param {Array} categoryArray - Array of category IDs
+ * @param {Object} batchConfig - Batching configuration
+ * @param {Object} results - Results object containing categoryMap and errors
+ * @param {Object} requestConfig - Configuration and parameters for requests
+ */
+async function processCategoryBatches(categoryArray, batchConfig, results, requestConfig) {
+  const { batchSize, requestDelay, maxConcurrent } = batchConfig;
+  const { errors } = results;
+
+  for (let i = 0; i < categoryArray.length; i += batchSize) {
+    const batch = categoryArray.slice(i, i + batchSize);
+
+    try {
+      await processSingleCategoryBatch(batch, maxConcurrent, results, requestConfig);
+
+      if (i + batchSize < categoryArray.length) {
+        await sleep(requestDelay);
+      }
+    } catch (error) {
+      errors.push(`Batch processing error: ${error.message}`);
+    }
+  }
+}
+
+/**
+ * Process a single batch of categories
+ * @purpose Process one batch of categories with concurrency control
+ * @param {Array} batch - Batch of category IDs
+ * @param {number} maxConcurrent - Maximum concurrent requests
+ * @param {Object} results - Results object containing categoryMap and errors
+ * @param {Object} requestConfig - Configuration and parameters for requests
+ */
+async function processSingleCategoryBatch(batch, maxConcurrent, results, requestConfig) {
+  const { categoryMap, errors } = results;
+  const { config, params } = requestConfig;
+
+  const batchPromises = batch.slice(0, maxConcurrent).map(async (categoryId) => {
+    try {
+      const endpoint = `/categories/${categoryId}`;
+      const response = await executeAdminTokenCommerceRequest(
+        endpoint,
+        { method: 'GET' },
+        config,
+        params
+      );
+
+      if (response.success && response.body) {
+        categoryMap.set(categoryId, {
+          id: response.body.id,
+          name: response.body.name,
+          path: response.body.path,
+          level: response.body.level,
+          position: response.body.position,
+          parent_id: response.body.parent_id,
+        });
+      }
+    } catch (error) {
+      errors.push(`Category ${categoryId}: ${error.message}`);
+    }
+  });
+
+  await Promise.all(batchPromises);
+}
+
+/**
  * Fetch inventory data from Commerce API with intelligent batching
- * @purpose Retrieve inventory information with batch processing and concurrency control
- * @param {Array} skus - Array of SKUs to fetch inventory for
- * @param {Object} config - Configuration object with Commerce settings
- * @param {Object} params - Action parameters with credentials
+ * @purpose Retrieve stock information with batch processing for optimal performance
+ * @param {Array} skus - Array of product SKUs to fetch inventory for
+ * @param {Object} config - Configuration with batching settings
+ * @param {Object} params - Parameters with authentication
  * @returns {Promise<Object>} Map of SKU to inventory data
  * @usedBy enrichProductsWithInventory
  */
@@ -198,23 +246,16 @@ async function fetchInventoryDataInBatches(skus, config, params) {
     return inventoryMap;
   }
 
-  const batchSize = config.commerce.batching.inventory || 20;
-  const requestDelay = config.performance.batching.requestDelay || 100;
-  const maxConcurrent = config.performance.batching.maxConcurrent || 15;
+  const batchSize = config.commerce.batching.inventory;
+  const requestDelay = config.performance.batching.requestDelay;
+  const maxConcurrent = config.performance.batching.maxConcurrent;
 
-  // Process in batches with configurable concurrency
+  // Process SKUs in batches
   for (let i = 0; i < skus.length; i += batchSize) {
     const batch = skus.slice(i, i + batchSize);
 
-    // Limit concurrent requests per batch
-    const chunks = [];
-    for (let j = 0; j < batch.length; j += maxConcurrent) {
-      chunks.push(batch.slice(j, j + maxConcurrent));
-    }
-
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      const chunk = chunks[chunkIndex];
-      const inventoryPromises = chunk.map(async (sku) => {
+    try {
+      const inventoryPromises = batch.slice(0, maxConcurrent).map(async (sku) => {
         try {
           const response = await executeAdminTokenCommerceRequest(
             `/stockItems/${sku}`,
@@ -223,24 +264,36 @@ async function fetchInventoryDataInBatches(skus, config, params) {
             params
           );
 
-          if (response.body) {
+          if (response.success && response.body) {
             inventoryMap[sku] = {
-              qty: response.body.qty || 0,
-              is_in_stock: response.body.is_in_stock || false,
+              sku: sku,
+              qty: response.body.qty,
+              is_in_stock: response.body.is_in_stock,
+              stock_status: response.body.stock_status,
+              manage_stock: response.body.manage_stock,
             };
           }
         } catch (error) {
-          console.warn(`Failed to fetch inventory for ${sku}: ${error.message}`);
-          inventoryMap[sku] = { qty: 0, is_in_stock: false };
+          console.warn(`Failed to fetch inventory for SKU ${sku}: ${error.message}`);
+          // Provide default inventory data for failed requests
+          inventoryMap[sku] = {
+            sku: sku,
+            qty: 0,
+            is_in_stock: false,
+            stock_status: 'out_of_stock',
+            manage_stock: true,
+          };
         }
       });
 
       await Promise.all(inventoryPromises);
 
-      // Add configurable delay between chunks
-      if (chunkIndex < chunks.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, requestDelay));
+      // Delay between batches
+      if (i + batchSize < skus.length) {
+        await sleep(requestDelay);
       }
+    } catch (error) {
+      console.warn(`Inventory batch processing error: ${error.message}`);
     }
   }
 
@@ -264,7 +317,7 @@ function applyCategoriesToProducts(products, categoryMap) {
 
     // Map IDs to full category objects
     const categories = Array.from(categoryIds)
-      .map((id) => categoryMap[String(id)])
+      .map((id) => categoryMap.get(String(id)))
       .filter(Boolean);
 
     return {
@@ -334,7 +387,7 @@ module.exports = {
   enrichProductsWithInventory,
 
   // Feature operations (coordination functions)
-  fetchCategoryDataInBatches,
+  fetchCategoriesInBatches,
   fetchInventoryDataInBatches,
 
   // Feature utilities (building blocks)

@@ -3,14 +3,12 @@
  * Complete API Mesh product export capability - Feature Core with Sub-modules
  */
 
-// Import from feature sub-modules (same domain)
 const { buildEnrichedProductsQuery } = require('./mesh-export/graphql');
 const {
   makeMeshRequestWithRetry,
   fetchEnrichedProductsFromMesh,
 } = require('./mesh-export/mesh-requests');
 const { validateMeshInput } = require('./mesh-export/validation');
-// Import from other domains (cross-domain interfaces)
 const { extractProductMessage } = require('./shared/data-extraction');
 const { transformImageEntry } = require('./utils/image');
 const { exportCsvWithStorage } = require('../files/csv-export');
@@ -18,10 +16,10 @@ const { exportCsvWithStorage } = require('../files/csv-export');
 // Business Workflows
 
 /**
- * Complete mesh product export workflow with storage and error handling
- * @purpose Complete export workflow with CSV storage and comprehensive error handling
- * @param {Object} params - Action parameters with OAuth credentials
- * @param {Object} config - Configuration object
+ * Export mesh products with storage and fallback handling
+ * @purpose Complete mesh product export with storage and error handling fallback
+ * @param {Object} params - Export parameters with mesh configuration
+ * @param {Object} config - Complete application configuration
  * @param {Object} core - Core utilities for step messaging
  * @returns {Promise<Object>} Complete export result with storage info and steps
  * @throws {Error} When mesh export fails
@@ -45,51 +43,29 @@ async function exportMeshProductsWithStorageAndFallback(params, config, core) {
 
     steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
 
-    // Step 2: Store CSV file with error handling
-    let storageResult;
-    try {
-      storageResult = await exportCsvWithStorage(
-        exportResult.csvContent,
-        config,
-        params,
-        undefined,
-        {
-          useCase: params.useCase,
-        }
-      );
+    // Step 2: Handle storage with fallback
+    const storageResult = await handleStorageWithFallback(
+      exportResult,
+      config,
+      params,
+      steps,
+      core
+    );
 
-      steps.push(
-        core.formatStepMessage('store-csv', 'success', {
-          provider: storageResult.provider,
-          fileName: storageResult.fileName,
-        })
-      );
-
-      return {
-        success: true,
-        exportResult,
-        storageResult,
-        steps,
-        fallback: false,
-      };
-    } catch (storageError) {
-      steps.push(
-        core.formatStepMessage('store-csv', 'warning', {
-          message: `Storage failed: ${storageError.message}`,
-        })
-      );
-
-      return {
-        success: true,
-        exportResult,
-        storageError,
-        steps,
-        fallback: true,
-      };
-    }
+    return {
+      success: true,
+      exportResult,
+      ...storageResult,
+      steps,
+    };
   } catch (error) {
-    steps.push(core.formatStepMessage('error', 'error', { message: error.message }));
-    throw error;
+    steps.push(
+      core.formatStepMessage('mesh-export', 'error', {
+        message: error.message,
+      })
+    );
+
+    throw new Error(`Mesh export failed: ${error.message}`);
   }
 }
 
@@ -335,6 +311,54 @@ function formatArrayField(arrayValue) {
  */
 function formatStockStatus(isInStock) {
   return `"${isInStock ? 'Yes' : 'No'}"`;
+}
+
+/**
+ * Handle storage with fallback logic
+ * @purpose Store CSV file with comprehensive error handling and fallback options
+ * @param {Object} exportResult - Export result containing CSV content
+ * @param {Object} config - Application configuration
+ * @param {Object} params - Export parameters
+ * @param {Array} steps - Steps array to update
+ * @param {Object} core - Core utilities for step messaging
+ * @returns {Promise<Object>} Storage result with fallback indicator
+ * @usedBy exportMeshProductsWithStorageAndFallback
+ */
+async function handleStorageWithFallback(exportResult, config, params, steps, core) {
+  try {
+    const storageResult = await exportCsvWithStorage(
+      exportResult.csvContent,
+      config,
+      params,
+      undefined,
+      {
+        useCase: params.useCase,
+      }
+    );
+
+    steps.push(
+      core.formatStepMessage('store-csv', 'success', {
+        provider: storageResult.provider,
+        fileName: storageResult.fileName,
+      })
+    );
+
+    return {
+      storageResult,
+      fallback: false,
+    };
+  } catch (storageError) {
+    steps.push(
+      core.formatStepMessage('store-csv', 'warning', {
+        message: `Storage failed: ${storageError.message}`,
+      })
+    );
+
+    return {
+      storageError,
+      fallback: true,
+    };
+  }
 }
 
 module.exports = {

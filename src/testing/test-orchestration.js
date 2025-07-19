@@ -78,11 +78,11 @@ function validateTestOrchestrationOptions(options) {
     errors.push('Test orchestration options must be an object');
   }
 
-  if (options?.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
+  if (options && options.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
     errors.push('Timeout must be a positive number if provided');
   }
 
-  if (options?.parallel && typeof options.parallel !== 'boolean') {
+  if (options && options.parallel && typeof options.parallel !== 'boolean') {
     warnings.push('Parallel option should be a boolean, defaulting to true');
   }
 

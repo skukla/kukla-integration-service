@@ -69,14 +69,15 @@ async function executePerformanceTestWithScenario(target, scenarioConfig, option
 
 /**
  * Validate performance test inputs
- * @purpose Check that target and options are valid before testing
- * @param {string} target - Target to validate
- * @param {Object} options - Test options to validate
- * @returns {Object} Validation result with isValid flag and error details
+ * @purpose Validate performance test parameters and environment settings
+ * @param {string} target - Target to test
+ * @param {Object} options - Performance test options
+ * @returns {Object} Validation result with errors and configuration
  * @usedBy executePerformanceTestWorkflow
  */
 function validatePerformanceTestInputs(target, options) {
   const errors = [];
+  const warnings = [];
 
   // Validate target
   validatePerformanceTarget(target, errors);
@@ -88,6 +89,7 @@ function validatePerformanceTestInputs(target, options) {
     isValid: errors.length === 0,
     error: errors.length > 0 ? errors.join('; ') : null,
     errors,
+    warnings,
   };
 }
 
@@ -135,7 +137,11 @@ function validatePerformanceOptions(options, errors) {
  * @usedBy validatePerformanceOptions
  */
 function validateIterationsOption(options, errors) {
-  if (options?.iterations && (!Number.isInteger(options.iterations) || options.iterations <= 0)) {
+  if (
+    options &&
+    options.iterations &&
+    (!Number.isInteger(options.iterations) || options.iterations <= 0)
+  ) {
     errors.push('Iterations must be a positive integer if provided');
   }
 }
@@ -148,7 +154,7 @@ function validateIterationsOption(options, errors) {
  * @usedBy validatePerformanceOptions
  */
 function validateScenarioOption(options, errors) {
-  if (options?.scenario && typeof options.scenario !== 'string') {
+  if (options && options.scenario && typeof options.scenario !== 'string') {
     errors.push('Scenario must be a string if provided');
   }
 }
@@ -161,7 +167,7 @@ function validateScenarioOption(options, errors) {
  * @usedBy validatePerformanceOptions
  */
 function validateTimeoutOption(options, errors) {
-  if (options?.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
+  if (options && options.timeout && (typeof options.timeout !== 'number' || options.timeout <= 0)) {
     errors.push('Timeout must be a positive number if provided');
   }
 }

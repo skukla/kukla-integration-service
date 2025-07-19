@@ -30,60 +30,46 @@ function buildProducts(products) {
  */
 function buildBaseProductFields(product) {
   return {
-    ...buildCoreFields(product),
-    ...buildMetadataFields(product),
-    ...buildPriceFields(product),
-  };
-}
-
-/**
- * Build core product fields
- * @purpose Extract essential product identification and basic information
- * @param {Object} product - Raw product data from Commerce
- * @returns {Object} Core product fields (SKU, name, description, etc.)
- * @usedBy Base product building requiring essential product information
- */
-function buildCoreFields(product) {
-  return {
-    sku: product.sku || '',
-    name: extractProductMessage(product, 'name') || '',
-    description: extractProductMessage(product, 'description') || '',
-    short_description: extractProductMessage(product, 'short_description') || '',
-    type_id: product.type_id || '',
-    status: product.status === 1 ? 'Enabled' : 'Disabled',
+    id: product.id,
+    sku: product.sku,
+    name: extractProductMessage(product, 'name'),
+    description: extractProductMessage(product, 'description'),
+    short_description: extractProductMessage(product, 'short_description'),
+    type_id: product.type_id,
   };
 }
 
 /**
  * Build product metadata fields
- * @purpose Extract product metadata including dates, visibility, and configuration
+ * @purpose Extract product metadata and timestamps
  * @param {Object} product - Raw product data from Commerce
- * @returns {Object} Product metadata fields
- * @usedBy Product transformation requiring metadata information
+ * @returns {Object} Object containing product metadata
+ * @usedBy Product transformation workflows requiring metadata
  */
-function buildMetadataFields(product) {
+function buildProductMetadata(product) {
   return {
+    status: product.status,
     visibility: getVisibilityText(product.visibility),
-    created_at: product.created_at || '',
-    updated_at: product.updated_at || '',
-    weight: normalizeProductValue(product.weight) || '',
-    attribute_set_id: product.attribute_set_id || '',
+    created_at: product.created_at,
+    updated_at: product.updated_at,
+    weight: normalizeProductValue(product.weight),
+    attribute_set_id: product.attribute_set_id,
   };
 }
 
 /**
- * Build product price fields
+ * Build product pricing fields
  * @purpose Extract and format product pricing information
  * @param {Object} product - Raw product data from Commerce
- * @returns {Object} Product price fields
- * @usedBy Product transformation requiring pricing information
+ * @returns {Object} Object containing pricing fields
+ * @usedBy Product transformation workflows requiring pricing data
  */
-function buildPriceFields(product) {
+function buildProductPricing(product) {
   return {
-    price: normalizeProductValue(product.price) || '0',
-    special_price: normalizeProductValue(product.special_price) || '',
-    cost: normalizeProductValue(product.cost) || '',
-    msrp: normalizeProductValue(product.msrp) || '',
+    price: normalizeProductValue(product.price),
+    special_price: normalizeProductValue(product.special_price),
+    cost: normalizeProductValue(product.cost),
+    msrp: normalizeProductValue(product.msrp),
   };
 }
 
@@ -251,9 +237,8 @@ module.exports = {
 
   // Feature operations
   buildBaseProductFields,
-  buildCoreFields,
-  buildMetadataFields,
-  buildPriceFields,
+  buildProductMetadata,
+  buildProductPricing,
   addInventoryFields,
   addCategoryFields,
   addImageFields,
