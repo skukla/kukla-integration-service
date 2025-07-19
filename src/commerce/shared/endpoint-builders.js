@@ -3,7 +3,7 @@
  * Configuration-driven endpoint building utilities that require complete commerce configuration
  */
 
-const { buildCommerceApiUrl } = require('../../shared/routing/commerce');
+const { createUrlBuilders } = require('../../shared/routing/url-factory');
 
 /**
  * Build query parameters using configuration patterns
@@ -97,25 +97,9 @@ function buildProductsEndpoint(params = {}, config) {
     throw new Error('Configuration is required for buildProductsEndpoint');
   }
 
-  // Step 1: Build base URL using configuration
-  const baseUrl = buildCommerceApiUrl('products', config);
-
-  // Step 2: Build query parameters using configuration patterns and defaults
-  const queryParams = buildConfiguredQueryParams(params, config);
-
-  // Step 3: Add search criteria if provided (using configuration patterns)
-  if (params.searchTerm) {
-    addConfiguredSearchCriteria(queryParams, params.searchTerm, config);
-  }
-
-  // Step 4: Add field selection if provided (using configuration patterns)
-  if (params.fields && Array.isArray(params.fields) && params.fields.length > 0) {
-    addConfiguredFieldSelection(queryParams, params.fields, config);
-  }
-
-  // Step 5: Combine URL with query parameters
-  const queryString = queryParams.toString();
-  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  // Use URL factory for commerce URL building with products endpoint and parameters
+  const { commerceUrl } = createUrlBuilders(config);
+  return commerceUrl('products', params);
 }
 
 /**
@@ -131,7 +115,8 @@ function buildStockItemEndpoint(sku, config) {
     throw new Error('Configuration is required for buildStockItemEndpoint');
   }
 
-  return buildCommerceApiUrl('stockItem', config, { sku });
+  const { commerceUrl } = createUrlBuilders(config);
+  return commerceUrl('stockItem', {}, { sku });
 }
 
 /**
@@ -147,7 +132,8 @@ function buildCategoryEndpoint(categoryId, config) {
     throw new Error('Configuration is required for buildCategoryEndpoint');
   }
 
-  return buildCommerceApiUrl('category', config, { id: categoryId });
+  const { commerceUrl } = createUrlBuilders(config);
+  return commerceUrl('category', {}, { id: categoryId });
 }
 
 /**
@@ -165,25 +151,9 @@ function buildCategoryListEndpoint(params = {}, config) {
     throw new Error('Configuration is required for buildCategoryListEndpoint');
   }
 
-  // Step 1: Build base URL using configuration
-  const baseUrl = buildCommerceApiUrl('categoryList', config);
-
-  // Step 2: Build query parameters using configuration defaults
-  const queryParams = new URLSearchParams();
-
-  // Use configuration default for root category if not provided
-  const rootCategoryId = params.rootCategoryId || config.commerce.categories?.rootCategoryId;
-  if (rootCategoryId) {
-    queryParams.append('rootCategoryId', rootCategoryId);
-  }
-
-  if (params.depth) {
-    queryParams.append('depth', params.depth);
-  }
-
-  // Step 3: Combine URL with query parameters
-  const queryString = queryParams.toString();
-  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  // Use URL factory for category list URL building with parameters
+  const { commerceUrl } = createUrlBuilders(config);
+  return commerceUrl('categoryList', params);
 }
 
 /**
@@ -198,7 +168,8 @@ function buildAdminTokenEndpoint(config) {
     throw new Error('Configuration is required for buildAdminTokenEndpoint');
   }
 
-  return buildCommerceApiUrl('adminToken', config);
+  const { commerceUrl } = createUrlBuilders(config);
+  return commerceUrl('adminToken');
 }
 
 module.exports = {

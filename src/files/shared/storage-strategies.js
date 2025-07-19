@@ -3,14 +3,15 @@
  * Complete storage strategy pattern implementation with pure functions
  */
 
-// Import storage wrapper functions from correct sub-modules
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client } = require('@aws-sdk/client-s3');
+
+const { createUrlBuilders } = require('../../shared/routing/url-factory');
 const { createS3BrowserWrapper } = require('../file-browser/storage-operations');
 const {
   createAppBuilderStorageWrapper,
   createS3StorageWrapper,
 } = require('../file-deletion/storage-operations');
-
-// Strategy Interface Functions (What other files import - Most Comprehensive)
 
 /**
  * Initialize storage strategy based on configuration
@@ -29,6 +30,7 @@ const {
  * - list(): List all files
  * - getProperties(fileName): Get detailed file properties
  * - read(fileName): Read file content
+ * - store(storageParams): Store file and return download URLs
  */
 async function initializeStorageStrategy(config, params) {
   const provider = config.storage.provider;
@@ -113,7 +115,39 @@ function getAvailableStorageStrategies() {
 async function appBuilderStorageStrategy(config, params) {
   validateAppBuilderEnvironment();
   const files = await createAppBuilderClient();
-  return createAppBuilderStorageWrapper(files, config);
+  const baseWrapper = createAppBuilderStorageWrapper(files, config);
+
+  // Add store method for CSV export functionality
+  return {
+    ...baseWrapper,
+    async store(storageParams) {
+      try {
+        // Store the file using App Builder Files
+        const fullFileName = `${config.storage.directory}/${storageParams.fileName}`;
+        await files.write(fullFileName, storageParams.content);
+
+        // Build download URL using URL factory pattern
+        const { downloadUrl } = createUrlBuilders(config);
+        const fileDownloadUrl = downloadUrl(storageParams.fileName);
+
+        return {
+          downloadUrl: fileDownloadUrl,
+          storage: 'app-builder',
+          fileName: storageParams.fileName,
+          properties: {
+            size: storageParams.size,
+            contentType: storageParams.mimeType,
+          },
+          management: {
+            fileExisted: false, // Simplified for now
+            urlGenerated: true,
+          },
+        };
+      } catch (error) {
+        throw new Error(`App Builder storage failed: ${error.message}`);
+      }
+    },
+  };
 }
 
 /**
@@ -133,9 +167,49 @@ async function s3StorageStrategy(config, params) {
   const deletionWrapper = createS3StorageWrapper(s3Client, config);
   const browserWrapper = createS3BrowserWrapper(s3Client, config);
 
+  // Add store method for CSV export functionality
   return {
     ...deletionWrapper,
     ...browserWrapper,
+    async store(storageParams) {
+      try {
+        const bucket = config.storage.s3.bucket;
+        const prefix = config.storage.s3.prefix || '';
+        const key = `${prefix}${storageParams.fileName}`;
+
+        // Store the file in S3
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: key,
+            Body: storageParams.content,
+            ContentType: storageParams.mimeType,
+          })
+        );
+
+        // Build download URL
+        const { downloadUrl } = createUrlBuilders(config);
+        const fileDownloadUrl = downloadUrl(storageParams.fileName);
+
+        return {
+          downloadUrl: fileDownloadUrl,
+          storage: 's3',
+          fileName: storageParams.fileName,
+          properties: {
+            size: storageParams.size,
+            contentType: storageParams.mimeType,
+            bucket,
+            key,
+          },
+          management: {
+            fileExisted: false, // Simplified for now
+            urlGenerated: true,
+          },
+        };
+      } catch (error) {
+        throw new Error(`S3 storage failed: ${error.message}`);
+      }
+    },
   };
 }
 
@@ -199,14 +273,12 @@ async function createAppBuilderClient() {
  * @usedBy s3StorageStrategy
  */
 async function createS3Client(config, params) {
-  const { S3Client } = require('@aws-sdk/client-s3');
-
   // Get credentials from params (Adobe I/O Runtime) or environment (scripts)
   const accessKeyId = params.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = params.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
 
   return new S3Client({
-    region: config.storage.s3.region || 'us-east-1',
+    region: config.storage.s3.region,
     credentials: {
       accessKeyId,
       secretAccessKey,

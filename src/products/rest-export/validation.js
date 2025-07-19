@@ -4,8 +4,7 @@
  */
 
 // Sub-module specific imports (can import from utils, not from sibling sub-modules)
-const { buildProductsEndpoint } = require('../../commerce/shared/endpoint-builders');
-const { buildCommerceUrl } = require('../../shared/routing/commerce');
+const { createUrlBuilders } = require('../../shared/routing/url-factory');
 const { checkMissingParams } = require('../../shared/validation/parameters');
 
 // Validation Workflows
@@ -164,8 +163,8 @@ function shouldContinuePagination(response, currentPage, pageSize, maxPages) {
  */
 function buildProductsApiUrl(pageSize, currentPage, config) {
   try {
-    const endpoint = buildProductsEndpoint({ pageSize, currentPage }, config);
-    return buildCommerceUrl(config.commerce.baseUrl, endpoint);
+    const { commerceUrl } = createUrlBuilders(config);
+    return commerceUrl('products', { pageSize, currentPage });
   } catch (error) {
     throw new Error(`Failed to build products API URL: ${error.message}`);
   }

@@ -4,7 +4,7 @@
  */
 
 const { executeRequest } = require('../shared/http/client');
-const { buildCommerceApiUrl } = require('../shared/routing/commerce');
+const { createUrlBuilders } = require('../shared/routing/url-factory');
 const { sleep } = require('../shared/utils/async');
 
 // Token storage - In-memory cache for admin tokens
@@ -13,19 +13,20 @@ const tokenStorage = new Map();
 // Business Workflows
 
 /**
- * Execute authenticated Commerce request with automatic token management
- * @purpose Execute Commerce API request with automatic admin token authentication and retry logic
- * @param {string} endpoint - Commerce API endpoint path
+ * Execute authenticated Commerce API request with automatic token management
+ * @purpose Make authenticated Commerce API calls with automatic token acquisition and retry logic
+ * @param {string} endpoint - Commerce API endpoint name (products, categories, etc.)
  * @param {Object} requestOptions - HTTP request options (method, headers, body)
- * @param {Object} config - Application configuration with Commerce credentials
- * @param {Object} params - Request parameters for URL building and authentication
+ * @param {Object} config - Application configuration with commerce settings
+ * @param {Object} params - URL path parameters for endpoint building
  * @returns {Promise<Object>} Commerce API response data
- * @usedBy Products, commerce, and files domains for authenticated API access
+ * @usedBy All authenticated Commerce operations
  */
 async function executeAuthenticatedCommerceRequest(endpoint, requestOptions, config, params) {
   const token = await getAdminToken(config);
   const options = buildAuthenticatedRequestOptions(requestOptions, token);
-  const url = buildCommerceApiUrl(endpoint, config, params);
+  const { commerceUrl } = createUrlBuilders(config);
+  const url = commerceUrl(endpoint, {}, params);
 
   return await executeRequestWithAuthRetry(url, options, config);
 }
@@ -33,19 +34,21 @@ async function executeAuthenticatedCommerceRequest(endpoint, requestOptions, con
 /**
  * Execute multiple authenticated Commerce requests in batch
  * @purpose Execute multiple Commerce API requests efficiently with shared token and parallel processing
- * @param {Array} requests - Array of request objects with endpoint and options
- * @param {Object} config - Application configuration with Commerce credentials
- * @param {Object} params - Request parameters for URL building and authentication
- * @returns {Promise<Array>} Array of Commerce API response results
- * @usedBy Category and inventory enrichment for bulk data fetching
+ * @param {Array<Object>} requests - Array of request objects with endpoint and options
+ * @param {Object} config - Configuration object with commerce and authentication settings
+ * @param {Object} params - Common parameters to apply to all requests
+ * @returns {Promise<Array>} Array of request results from Promise.allSettled
+ * @usedBy Batch commerce operations, bulk data fetching workflows
  */
 async function executeBatchAuthenticatedRequests(requests, config, params) {
   const token = await getAdminToken(config, params);
 
+  // Create URL builders once for all requests
+  const { commerceUrl } = createUrlBuilders(config);
   const authenticatedRequests = requests.map((request) => ({
     ...request,
     options: buildAuthenticatedRequestOptions(request.options, token),
-    url: buildCommerceApiUrl(request.endpoint, config, params),
+    url: commerceUrl(request.endpoint, {}, params),
   }));
 
   return await Promise.allSettled(
@@ -97,42 +100,35 @@ async function getAdminToken(config) {
 }
 
 /**
- * Generate new admin token from Commerce API
- * @purpose Generate fresh admin token using Commerce admin credentials with validation
- * @param {Object} config - Application configuration with Commerce credentials
+ * Generate new admin token for Commerce API authentication
+ * @purpose Generate fresh admin token using Commerce API credentials when cache is empty or expired
+ * @param {Object} config - Application configuration with commerce credentials
  * @returns {Promise<string>} Newly generated admin token for Commerce API
  * @usedBy Token management when cache is empty or expired
  */
 async function generateAdminToken(config) {
   validateAdminCredentials(config);
 
-  const tokenEndpoint = buildCommerceApiUrl('adminToken', config);
+  const { commerceUrl } = createUrlBuilders(config);
+  const tokenEndpoint = commerceUrl('adminToken');
 
   const tokenOptions = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      username: config.commerce.adminUsername,
-      password: config.commerce.adminPassword,
+      username: config.commerce.username,
+      password: config.commerce.password,
     }),
   };
 
-  try {
-    const tokenResponse = await executeRequest(tokenEndpoint, tokenOptions);
-    const token =
-      typeof tokenResponse === 'string'
-        ? tokenResponse.replace(/"/g, '')
-        : tokenResponse.token || tokenResponse;
+  const response = await executeRequest(tokenEndpoint, tokenOptions);
 
-    if (!token) {
-      throw new Error('Invalid token response from Commerce API');
-    }
-
-    return token;
-  } catch (error) {
-    console.error('Failed to generate admin token:', error.message);
-    throw new Error(`Admin token generation failed: ${error.message}`);
+  if (!response.body || typeof response.body !== 'string') {
+    throw new Error('Invalid token response format');
   }
+
+  // Commerce API returns token in quotes, so we need to clean it
+  return response.body.replace(/"/g, '');
 }
 
 /**

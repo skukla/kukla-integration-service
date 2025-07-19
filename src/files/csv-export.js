@@ -71,7 +71,7 @@ async function exportCsvDataOnly(csvData, config, params) {
  * @usedBy CSV export workflows requiring storage execution
  */
 async function storeCsvWithStrategy(storageParams, config) {
-  const strategy = determineStorageStrategy(config);
+  const strategy = await determineStorageStrategy(config);
 
   return await strategy.store(storageParams);
 }

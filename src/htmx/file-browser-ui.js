@@ -7,7 +7,7 @@
 const { loadTemplateSync } = require('./shared/template-loader');
 const { listCsvFiles } = require('../files/file-browser');
 const { response } = require('../shared/http/responses');
-const { buildRuntimeUrl } = require('../shared/routing/runtime');
+const { createUrlBuilders } = require('../shared/routing/url-factory');
 
 // Business Workflows
 
@@ -160,17 +160,19 @@ function generateEmptyFileListHTML(config) {
  * @usedBy generateFileBrowserHTML
  */
 function generateFileRowHTML(file, config) {
+  // Create pre-configured URL builders (config passed once)
+  const { downloadUrl } = createUrlBuilders(config);
+
   // Use the full path for both download and delete to ensure consistency
   const fullPath = file.fullPath || file.name;
-  const downloadUrl =
-    buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
+  const fileDownloadUrl = downloadUrl(fullPath);
 
   const variables = {
     fileName: file.name,
     fileSize: file.size || 'Unknown',
     fileDate: file.lastModified || 'Unknown',
     fullPath: fullPath,
-    downloadUrl: downloadUrl,
+    downloadUrl: fileDownloadUrl,
   };
 
   return loadTemplateSync('file-row', variables);
