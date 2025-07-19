@@ -16,7 +16,7 @@ const tokenStorage = new Map();
  * Execute authenticated Commerce API request with automatic token management
  * @purpose Make authenticated Commerce API calls with automatic token acquisition and retry logic
  * @param {string} endpoint - Commerce API endpoint name (products, categories, etc.)
- * @param {Object} requestOptions - HTTP request options (method, headers, body)
+ * @param {Object} requestOptions - HTTP request options (method, headers, body, query)
  * @param {Object} config - Application configuration with commerce settings
  * @param {Object} params - URL path parameters for endpoint building
  * @returns {Promise<Object>} Commerce API response data

@@ -97,9 +97,22 @@ function buildProductsEndpoint(params = {}, config) {
     throw new Error('Configuration is required for buildProductsEndpoint');
   }
 
-  // Use URL factory for commerce URL building with products endpoint and parameters
-  const { commerceUrl } = createUrlBuilders(config);
-  return commerceUrl('products', params);
+  // Build URL directly to avoid circular dependency with commerceUrl
+  const baseUrl = config.commerce.baseUrl;
+  const apiVersion = config.commerce.api.version;
+  const scope = config.commerce.api.scope;
+  const prefix = config.commerce.api.prefix;
+  const productsPath = config.commerce.paths.products;
+
+  let url = `${baseUrl}${prefix}/${scope}/${apiVersion}${productsPath}`;
+
+  // Add query parameters if provided
+  if (params && Object.keys(params).length > 0) {
+    const searchParams = new URLSearchParams(params);
+    url += `?${searchParams.toString()}`;
+  }
+
+  return url;
 }
 
 /**

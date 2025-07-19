@@ -48,6 +48,9 @@ function buildRequestOptions(url, options) {
     requestOptions.body = normalizeRequestBody(options.body);
   }
 
+  // Remove query from request options as it should be in the URL
+  delete requestOptions.query;
+
   return requestOptions;
 }
 

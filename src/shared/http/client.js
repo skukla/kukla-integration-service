@@ -11,13 +11,21 @@ const { processResponseBody, createHttpError } = require('./response');
 /**
  * Generic HTTP client for making requests
  * @param {string} url - The URL to make the request to
- * @param {Object} options - Request options (method, headers, body, etc.)
+ * @param {Object} options - Request options (method, headers, body, query, etc.)
  * @returns {Promise<Object>} The response data
  */
 async function request(url, options = {}) {
-  const requestOptions = buildRequestOptions(url, options);
+  // Handle query parameters
+  let finalUrl = url;
+  if (options.query) {
+    const searchParams = new URLSearchParams(options.query);
+    const separator = url.includes('?') ? '&' : '?';
+    finalUrl = `${url}${separator}${searchParams.toString()}`;
+  }
 
-  const response = await fetch(url, requestOptions);
+  const requestOptions = buildRequestOptions(finalUrl, options);
+
+  const response = await fetch(finalUrl, requestOptions);
   const body = await processResponseBody(response);
 
   if (!response.ok) {

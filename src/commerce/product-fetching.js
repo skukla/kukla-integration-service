@@ -25,19 +25,18 @@ const {
  * @param {Object} query - Query parameters for product fetching (pageSize, currentPage, searchCriteria, etc.)
  * @param {Object} config - Complete configuration object
  * @param {Object} params - Action parameters containing admin credentials
- * @param {Object} [trace] - Optional trace context for API call tracking
  * @param {Object} [options={}] - Fetching options including processing preferences
  * @returns {Promise<Object>} Complete product fetching result with products, pagination, and metadata
  * @throws {Error} When product fetching fails or validation errors occur
  * @usedBy get-products action, get-products-mesh action, product enrichment workflows
  */
-async function fetchProductsWithPagination(query, config, params, trace = null, options = {}) {
+async function fetchProductsWithPagination(query, config, params, options = {}) {
   try {
     // Step 1: Build and validate query parameters
     const validatedQuery = buildProductQuery(query, config, options);
 
     // Step 2: Execute paginated product fetching
-    const rawProductData = await fetchProductsFromCommerce(validatedQuery, config, params, trace);
+    const rawProductData = await fetchProductsFromCommerce(validatedQuery, config, params);
 
     // Step 3: Process and validate product data
     const processedData = await processProductResults(rawProductData, config, options);
@@ -55,17 +54,16 @@ async function fetchProductsWithPagination(query, config, params, trace = null, 
  * @param {Object} query - Basic query parameters (limit, offset, filters)
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters containing credentials
- * @param {Object} [trace] - Optional trace context
  * @returns {Promise<Object>} Basic product fetching result
  * @usedBy Simple product listings, basic product operations
  */
-async function fetchProducts(query, config, params, trace = null) {
+async function fetchProducts(query, config, params) {
   try {
     // Step 1: Build basic query
     const basicQuery = buildBasicProductQuery(query, config);
 
     // Step 2: Fetch products from Commerce
-    const rawProductData = await fetchProductsFromCommerce(basicQuery, config, params, trace);
+    const rawProductData = await fetchProductsFromCommerce(basicQuery, config, params);
 
     // Step 3: Process with minimal validation
     const processedData = await processProductResults(rawProductData, config, {
@@ -93,17 +91,16 @@ async function fetchProducts(query, config, params, trace = null) {
  * @param {Object} criteria - Specific search criteria (skus, categoryIds, attributeFilters)
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters containing credentials
- * @param {Object} [trace] - Optional trace context
  * @returns {Promise<Object>} Criteria-based product fetching result
  * @usedBy Product enrichment workflows, targeted product operations
  */
-async function fetchProductsByCriteria(criteria, config, params, trace = null) {
+async function fetchProductsByCriteria(criteria, config, params) {
   try {
     // Step 1: Build criteria-based query
     const criteriaQuery = buildCriteriaQuery(criteria, config);
 
     // Step 2: Fetch products using criteria
-    const rawProductData = await fetchProductsFromCommerce(criteriaQuery, config, params, trace);
+    const rawProductData = await fetchProductsFromCommerce(criteriaQuery, config, params);
 
     // Step 3: Process with targeted validation
     const processedData = await processProductResults(rawProductData, config, {
