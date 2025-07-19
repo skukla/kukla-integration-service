@@ -6,7 +6,9 @@
 const { executeRequest } = require('../shared/http/client');
 const { buildCommerceApiUrl } = require('../shared/routing/commerce');
 const { sleep } = require('../shared/utils/async');
-const { buildTokenCacheKey: buildCacheKey } = require('../shared/utils/cache');
+
+// Token storage - In-memory cache for admin tokens
+const tokenStorage = new Map();
 
 // Business Workflows
 
@@ -68,22 +70,31 @@ async function getAdminTokenOnly(config, params) {
 // Feature Operations
 
 /**
- * Get or generate admin token with caching
- * @purpose Manage admin token lifecycle with caching, validation, and automatic refresh
+ * Get or generate admin token with enhanced caching
+ * @purpose Manage admin token lifecycle with improved caching, validation, and automatic refresh
  * @param {Object} config - Application configuration with Commerce credentials
  * @param {Object} params - Request parameters for token generation and caching
  * @returns {Promise<string>} Valid admin token for Commerce API requests
  * @usedBy Authentication workflows requiring token management
  */
 async function getAdminToken(config, params) {
-  const cacheKey = buildTokenCacheKey(config, params);
-  const cachedToken = buildCacheKey(cacheKey);
+  const cacheKey = buildAdminTokenCacheKey(config);
+  const cachedTokenData = tokenStorage.get(cacheKey);
 
-  if (cachedToken && !isTokenExpired(cachedToken)) {
-    return cachedToken.token;
+  if (cachedTokenData && !isTokenExpired(cachedTokenData)) {
+    return cachedTokenData.token;
   }
 
-  return await generateAdminToken(config, params);
+  // Generate new token and store it
+  const newToken = await generateAdminToken(config, params);
+  const tokenData = {
+    token: newToken,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + getTokenExpirationTime(config),
+  };
+
+  tokenStorage.set(cacheKey, tokenData);
+  return newToken;
 }
 
 /**
@@ -109,17 +120,22 @@ async function generateAdminToken(config, params) {
     }),
   };
 
-  const tokenResponse = await executeRequest(tokenUrl, tokenOptions);
-  const token = tokenResponse.replace(/"/g, '');
+  try {
+    const tokenResponse = await executeRequest(tokenUrl, tokenOptions);
+    const token =
+      typeof tokenResponse === 'string'
+        ? tokenResponse.replace(/"/g, '')
+        : tokenResponse.token || tokenResponse;
 
-  // Cache token with expiration
-  const cacheKey = buildTokenCacheKey(config, params);
-  buildCacheKey(cacheKey, {
-    token,
-    expiresAt: Date.now() + 3 * 60 * 60 * 1000, // 3 hours
-  });
+    if (!token) {
+      throw new Error('Invalid token response from Commerce API');
+    }
 
-  return token;
+    return token;
+  } catch (error) {
+    console.error('Failed to generate admin token:', error.message);
+    throw new Error(`Admin token generation failed: ${error.message}`);
+  }
 }
 
 /**
@@ -138,8 +154,8 @@ async function executeRequestWithAuthRetry(url, options, config, params) {
   } catch (error) {
     if (isAuthenticationError(error)) {
       // Clear cached token and retry with fresh token
-      const cacheKey = buildTokenCacheKey(config, params);
-      buildCacheKey(cacheKey, null);
+      const cacheKey = buildAdminTokenCacheKey(config);
+      tokenStorage.delete(cacheKey);
 
       const newToken = await generateAdminToken(config, params);
       const retryOptions = buildAuthenticatedRequestOptions(options, newToken);
@@ -180,22 +196,38 @@ function buildAuthenticatedRequestOptions(requestOptions, token) {
  * @usedBy Token generation to ensure valid credentials
  */
 function validateAdminCredentials(config) {
-  if (!config.commerce.adminUsername || !config.commerce.adminPassword) {
-    throw new Error('Commerce admin credentials (username and password) are required');
+  if (!config.commerce.adminUsername) {
+    throw new Error('Commerce admin username is required for authentication');
+  }
+  if (!config.commerce.adminPassword) {
+    throw new Error('Commerce admin password is required for authentication');
   }
 }
 
 /**
- * Build token cache key for admin token storage
+ * Build admin token cache key for storage
  * @purpose Generate unique cache key for admin token based on Commerce configuration
  * @param {Object} config - Application configuration with Commerce instance details
  * @returns {string} Unique cache key for token storage
  * @usedBy Token caching and retrieval operations
  */
-function buildTokenCacheKey(config) {
-  const baseUrl = config.commerce.baseUrl || 'default';
-  const username = config.commerce.adminUsername || 'default';
-  return `admin-token-${baseUrl}-${username}`;
+function buildAdminTokenCacheKey(config) {
+  const baseUrl = config.commerce.baseUrl;
+  const username = config.commerce.adminUsername;
+  return `admin-token-${Buffer.from(`${baseUrl}-${username}`).toString('base64').slice(0, 32)}`;
+}
+
+/**
+ * Get token expiration time from configuration
+ * @purpose Get token expiration duration from configuration with sensible default
+ * @param {Object} config - Application configuration
+ * @returns {number} Token expiration time in milliseconds
+ * @usedBy Token storage to set appropriate expiration times
+ */
+function getTokenExpirationTime(config) {
+  // Use configuration value or default to 3 hours
+  const defaultExpiration = 3 * 60 * 60 * 1000; // 3 hours
+  return config.commerce.tokenExpirationMs || defaultExpiration;
 }
 
 /**
@@ -209,7 +241,10 @@ function isTokenExpired(tokenData) {
   if (!tokenData || !tokenData.expiresAt) {
     return true;
   }
-  return Date.now() > tokenData.expiresAt;
+
+  // Add 5-minute buffer to avoid using tokens about to expire
+  const bufferTime = 5 * 60 * 1000; // 5 minutes
+  return Date.now() > tokenData.expiresAt - bufferTime;
 }
 
 /**
@@ -223,12 +258,50 @@ function isAuthenticationError(error) {
   if (!error) return false;
 
   const authErrorCodes = [401, 403];
-  const authErrorMessages = ['unauthorized', 'forbidden', 'invalid token', 'token expired'];
+  const authErrorMessages = [
+    'unauthorized',
+    'forbidden',
+    'invalid token',
+    'token expired',
+    'authentication',
+  ];
 
   return (
     authErrorCodes.includes(error.status) ||
+    authErrorCodes.includes(error.code) ||
     authErrorMessages.some((msg) => error.message && error.message.toLowerCase().includes(msg))
   );
+}
+
+/**
+ * Clear all cached tokens (useful for testing and forced refresh)
+ * @purpose Clear token storage for testing or security purposes
+ * @usedBy Testing utilities and administrative functions
+ */
+function clearTokenCache() {
+  tokenStorage.clear();
+}
+
+/**
+ * Get token cache statistics (useful for monitoring)
+ * @purpose Provide insights into token cache usage for monitoring
+ * @returns {Object} Token cache statistics
+ * @usedBy Monitoring and debugging functions
+ */
+function getTokenCacheStats() {
+  const stats = {
+    totalTokens: tokenStorage.size,
+    tokenKeys: Array.from(tokenStorage.keys()),
+    tokenAges: {},
+  };
+
+  for (const [key, tokenData] of tokenStorage.entries()) {
+    if (tokenData.createdAt) {
+      stats.tokenAges[key] = Date.now() - tokenData.createdAt;
+    }
+  }
+
+  return stats;
 }
 
 module.exports = {
@@ -245,7 +318,10 @@ module.exports = {
   // Feature utilities
   buildAuthenticatedRequestOptions,
   validateAdminCredentials,
-  buildTokenCacheKey,
+  buildAdminTokenCacheKey,
+  getTokenExpirationTime,
   isTokenExpired,
   isAuthenticationError,
+  clearTokenCache,
+  getTokenCacheStats,
 };
