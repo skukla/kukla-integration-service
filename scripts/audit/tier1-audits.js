@@ -258,6 +258,35 @@ async function auditNamingConventions(filePath) {
 }
 
 /**
+ * Check if JSDoc block contains @purpose tag
+ * @purpose Validate JSDoc content for required @purpose tag
+ * @param {string[]} lines - Lines before function
+ * @param {number} startIndex - Starting line index
+ * @returns {boolean} True if proper JSDoc with @purpose found
+ */
+function hasJSDocWithPurpose(lines, startIndex) {
+  let inJSDocBlock = false;
+  let jsdocContent = '';
+
+  for (let i = Math.max(0, startIndex); i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (line.includes('/**')) {
+      inJSDocBlock = true;
+      jsdocContent = line;
+    } else if (inJSDocBlock) {
+      jsdocContent += ' ' + line;
+
+      if (line.includes('*/')) {
+        return jsdocContent.includes('@purpose');
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Audit JSDoc documentation compliance
  * @purpose Validate functions have proper JSDoc with required tags
  * @param {string} filePath - Path to file being audited
@@ -284,10 +313,19 @@ async function auditJSDocDocumentation(filePath) {
 
   let allMatches = [];
   for (const pattern of functionPatterns) {
+    // Reset regex state for each pattern
+    pattern.lastIndex = 0;
     let match;
     while ((match = pattern.exec(content)) !== null) {
       const functionName = match[2] || match[1];
-      if (functionName && !['module', 'require', 'exports'].includes(functionName)) {
+      // Filter out common false positives and non-function matches
+      if (
+        functionName &&
+        !['module', 'require', 'exports', 'names', 'length', 'const', 'let', 'var'].includes(
+          functionName
+        ) &&
+        functionName.length > 1
+      ) {
         allMatches.push({
           name: functionName,
           index: match.index,
@@ -296,21 +334,15 @@ async function auditJSDocDocumentation(filePath) {
     }
   }
 
-  // Check each function for JSDoc
+  // Check each function for JSDoc with @purpose tag
   for (const func of allMatches) {
     const beforeFunction = content.substring(0, func.index);
     const lines = beforeFunction.split('\n');
 
-    // Look for JSDoc in the few lines before the function
-    let hasJSDoc = false;
-    for (let i = Math.max(0, lines.length - 5); i < lines.length; i++) {
-      if (lines[i].includes('/**') || lines[i].includes('* @purpose')) {
-        hasJSDoc = true;
-        break;
-      }
-    }
+    // Check for JSDoc with @purpose tag using helper function
+    const hasProperJSDoc = hasJSDocWithPurpose(lines, lines.length - 10);
 
-    if (!hasJSDoc) {
+    if (!hasProperJSDoc) {
       issues.push(`Function '${func.name}' should have JSDoc documentation with @purpose tag`);
     }
   }
