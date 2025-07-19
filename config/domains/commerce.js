@@ -91,8 +91,8 @@ function buildCommerceConfig(params = {}) {
 
   return {
     baseUrl,
-    adminUsername: process.env.COMMERCE_ADMIN_USERNAME,
-    adminPassword: process.env.COMMERCE_ADMIN_PASSWORD,
+    adminUsername: params.COMMERCE_ADMIN_USERNAME || process.env.COMMERCE_ADMIN_USERNAME,
+    adminPassword: params.COMMERCE_ADMIN_PASSWORD || process.env.COMMERCE_ADMIN_PASSWORD,
 
     /**
      * Token Management Configuration
