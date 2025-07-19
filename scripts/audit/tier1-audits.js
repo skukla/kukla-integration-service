@@ -265,6 +265,7 @@ async function auditNamingConventions(filePath) {
  * @returns {boolean} True if proper JSDoc with @purpose found
  */
 function hasJSDocWithPurpose(lines, startIndex) {
+  let lastJSDocContent = '';
   let inJSDocBlock = false;
   let jsdocContent = '';
 
@@ -278,12 +279,16 @@ function hasJSDocWithPurpose(lines, startIndex) {
       jsdocContent += ' ' + line;
 
       if (line.includes('*/')) {
-        return jsdocContent.includes('@purpose');
+        // Found complete JSDoc block - save it and continue looking
+        lastJSDocContent = jsdocContent;
+        inJSDocBlock = false;
+        jsdocContent = '';
       }
     }
   }
 
-  return false;
+  // Check the last (closest to function) JSDoc block found
+  return lastJSDocContent.includes('@purpose');
 }
 
 /**
@@ -340,7 +345,8 @@ async function auditJSDocDocumentation(filePath) {
     const lines = beforeFunction.split('\n');
 
     // Check for JSDoc with @purpose tag using helper function
-    const hasProperJSDoc = hasJSDocWithPurpose(lines, lines.length - 10);
+    // Look back up to 20 lines to find JSDoc block (was 10, too narrow)
+    const hasProperJSDoc = hasJSDocWithPurpose(lines, lines.length - 20);
 
     if (!hasProperJSDoc) {
       issues.push(`Function '${func.name}' should have JSDoc documentation with @purpose tag`);
