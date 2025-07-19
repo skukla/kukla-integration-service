@@ -1,4 +1,3 @@
-/** METADATA: {"templateHash":"f70238cfc1afe302ba08493908e8d9c09956bfa0ec9ac862920e4ff62f7cdbc0","configHash":"c682ded0248e5204bf509da5b56adc2977a006503a531e158943c721322700ea","generatedAt":"2025-07-16T01:47:28.933Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Optimized Implementation
  *
@@ -129,7 +128,7 @@ async function fetchCategories(context, info, categoryIds) {
   const result = { categoryMap: new Map(), apiCallsMade: 0, batched: false };
 
   // Use batch endpoint if available and we have multiple categories
-  if (categoryIds.length >= 1) {
+  if (categoryIds.length >= 1 /* {{{CATEGORY_BATCH_THRESHOLD}}} */) {
     try {
       const batchResponse = await context.Categories.Query.categories_batch({
         root: {},
@@ -193,7 +192,7 @@ async function fetchInventory(context, info, skus) {
   const result = { inventoryMap: new Map(), apiCallsMade: 0, batched: false };
 
   // Use batch endpoint if available and we have multiple SKUs
-  if (skus.length >= 1) {
+  if (skus.length >= 1 /* {{{INVENTORY_BATCH_THRESHOLD}}} */) {
     try {
       const batchResponse = await context.Inventory.Query.inventory_batch({
         root: {},
@@ -498,7 +497,10 @@ module.exports = {
                 const productCategoryIds = getCategoryIds(product);
                 productCategoryIds.forEach((id) => categoryIdSet.add(id));
               });
-              categoryIds = Array.from(categoryIdSet).slice(0, 10); // Limit to first N for performance
+              categoryIds = Array.from(categoryIdSet).slice(
+                0,
+                10 /* {{{MAX_CATEGORIES_DISPLAY}}} */
+              ); // Limit to first N for performance
             }
 
             const categoryResult = await fetchCategories(context, info, categoryIds);

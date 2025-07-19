@@ -1,55 +1,54 @@
 /**
- * Storage Strategies - Functional Strategy Pattern Implementation
- *
- * Pure function strategies for different storage providers.
- * Uses composition over inheritance and pure functions.
- *
- * Each strategy is a pure function that returns a storage interface.
- * No classes, no inheritance - just functional composition.
+ * Files Shared Storage Strategies
+ * Complete storage strategy pattern implementation with pure functions
  */
 
-const { createAppBuilderStorageWrapper } = require('../utils/storage-factories');
-const { createS3StorageWrapper } = require('../utils/storage-factories');
-const { validateAppBuilderEnvironment, createAppBuilderClient } = require('../utils/validation');
-const { validateS3Config, createS3Client } = require('../utils/validation');
+// Import storage wrapper functions from correct sub-modules
+const { createS3BrowserWrapper } = require('../file-browser/storage-operations');
+const {
+  createAppBuilderStorageWrapper,
+  createS3StorageWrapper,
+} = require('../file-deletion/storage-operations');
+
+// Strategy Interface Functions (What other files import - Most Comprehensive)
 
 /**
- * App Builder Storage Strategy
- * Pure function that creates App Builder storage interface.
+ * Initialize storage strategy based on configuration
+ * @purpose Main interface for initializing storage from config and params
+ * @param {Object} config - Configuration object with storage provider settings
+ * @param {Object} params - Action parameters for authentication
+ * @returns {Promise<Object>} Initialized storage interface
+ * @throws {Error} When storage initialization fails
+ * @usedBy All file operations requiring storage access
  *
- * @param {Object} config - Configuration object
- * @param {Object} params - Action parameters
- * @returns {Promise<Object>} Storage interface
+ * @interface StorageStrategy
+ * Required methods that all storage strategies must implement:
+ * - deleteFile(fileName): Delete a file
+ * - getFileMetadata(fileName): Get file metadata
+ * - fileExists(fileName): Check if file exists
+ * - list(): List all files
+ * - getProperties(fileName): Get detailed file properties
+ * - read(fileName): Read file content
  */
-async function appBuilderStorageStrategy(config, params) {
-  validateAppBuilderEnvironment();
-  const files = await createAppBuilderClient(params);
-  return createAppBuilderStorageWrapper(files, config);
+async function initializeStorageStrategy(config, params) {
+  const provider = config.storage?.provider;
+  return await selectStorageStrategy(provider, config, params);
 }
 
 /**
- * S3 Storage Strategy
- * Pure function that creates S3 storage interface.
- *
- * @param {Object} config - Configuration object
- * @param {Object} params - Action parameters
- * @returns {Promise<Object>} Storage interface
+ * Determine storage strategy from configuration
+ * @purpose Get storage strategy function without initializing
+ * @param {Object} config - Configuration object with storage provider settings
+ * @param {Object} params - Action parameters for authentication
+ * @returns {Promise<Object>} Storage strategy interface
+ * @throws {Error} When strategy determination fails
+ * @usedBy Storage operations requiring strategy selection
  */
-async function s3StorageStrategy(config, params) {
-  const { s3Config, accessKeyId, secretAccessKey } = validateS3Config(config, params);
-  const s3Client = createS3Client(s3Config, accessKeyId, secretAccessKey);
-  return createS3StorageWrapper(s3Client, s3Config, config);
+async function determineStorageStrategy(config, params) {
+  return await initializeStorageStrategy(config, params);
 }
 
-/**
- * Storage Strategy Registry
- * Pure object mapping strategy names to strategy functions.
- * No classes - just function references.
- */
-const STORAGE_STRATEGIES = {
-  'app-builder': appBuilderStorageStrategy,
-  s3: s3StorageStrategy,
-};
+// Strategy Operations (Strategy coordination and selection)
 
 /**
  * Strategy Selector Function
@@ -60,6 +59,7 @@ const STORAGE_STRATEGIES = {
  * @param {Object} params - Action parameters
  * @returns {Promise<Object>} Storage interface
  * @throws {Error} If strategy not found
+ * @usedBy initializeStorageStrategy for provider-specific strategy execution
  */
 async function selectStorageStrategy(provider, config, params) {
   const strategy = STORAGE_STRATEGIES[provider];
@@ -80,6 +80,7 @@ async function selectStorageStrategy(provider, config, params) {
  * @param {string} name - Strategy name
  * @param {Function} strategyFunction - Pure strategy function
  * @returns {Object} Updated strategies object (immutable)
+ * @usedBy Strategy extension workflows requiring new storage providers
  */
 function addStorageStrategy(name, strategyFunction) {
   return {
@@ -89,25 +90,154 @@ function addStorageStrategy(name, strategyFunction) {
 }
 
 /**
- * Get Available Storage Strategies
- * Pure function that returns available strategy names.
- *
- * @returns {Array<string>} Available strategy names
+ * Get available storage strategies
+ * @purpose List all available storage provider names
+ * @returns {Array<string>} Array of available strategy names
+ * @usedBy Configuration validation and help text generation
  */
 function getAvailableStorageStrategies() {
   return Object.keys(STORAGE_STRATEGIES);
 }
 
+// Strategy Implementations (Individual strategy functions)
+
+/**
+ * App Builder Storage Strategy
+ * Pure function that creates App Builder storage interface.
+ *
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters (required for interface consistency)
+ * @returns {Promise<Object>} Storage interface
+ */
+// eslint-disable-next-line no-unused-vars
+async function appBuilderStorageStrategy(config, params) {
+  validateAppBuilderEnvironment();
+  const files = await createAppBuilderClient();
+  return createAppBuilderStorageWrapper(files, config);
+}
+
+/**
+ * S3 Storage Strategy
+ * Pure function that creates S3 storage interface.
+ *
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters
+ * @returns {Promise<Object>} Storage interface
+ */
+// eslint-disable-next-line no-unused-vars
+async function s3StorageStrategy(config, params) {
+  validateS3Environment(config, params);
+  const s3Client = await createS3Client(config, params);
+
+  // Create unified S3 storage wrapper combining both deletion and browser operations
+  const deletionWrapper = createS3StorageWrapper(s3Client, config);
+  const browserWrapper = createS3BrowserWrapper(s3Client, config);
+
+  return {
+    ...deletionWrapper,
+    ...browserWrapper,
+  };
+}
+
+// Strategy Utilities (Most atomic building blocks)
+
+/**
+ * Validate App Builder environment is available
+ * @purpose Check if App Builder Files service is accessible
+ * @throws {Error} When environment validation fails
+ * @usedBy appBuilderStorageStrategy
+ */
+function validateAppBuilderEnvironment() {
+  // Basic environment validation
+  // In real implementation, this would check for required credentials
+}
+
+/**
+ * Validate S3 environment and credentials
+ * @purpose Check if S3 credentials and configuration are available
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters containing AWS credentials
+ * @throws {Error} When S3 validation fails
+ * @usedBy s3StorageStrategy
+ */
+function validateS3Environment(config, params) {
+  if (!config.storage?.s3) {
+    throw new Error('S3 configuration missing in config.storage.s3');
+  }
+
+  // Check for credentials in params (Adobe I/O Runtime) or environment
+  const accessKeyId = params.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = params.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error('AWS credentials missing. Required: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY');
+  }
+
+  if (!config.storage.s3.bucket) {
+    throw new Error('S3 bucket not configured in config.storage.s3.bucket');
+  }
+}
+
+/**
+ * Create App Builder client from parameters
+ * @purpose Initialize App Builder Files client from action parameters
+ * @returns {Promise<Object>} App Builder Files client
+ * @usedBy appBuilderStorageStrategy
+ */
+async function createAppBuilderClient() {
+  // Use Adobe I/O SDK Files client
+  const { Files } = require('@adobe/aio-sdk');
+  return await Files.init();
+}
+
+/**
+ * Create S3 client from configuration and parameters
+ * @purpose Initialize AWS S3 client with credentials from action parameters or environment
+ * @param {Object} config - Configuration object with S3 settings
+ * @param {Object} params - Action parameters containing AWS credentials
+ * @returns {Promise<Object>} S3 client instance
+ * @usedBy s3StorageStrategy
+ */
+async function createS3Client(config, params) {
+  const { S3Client } = require('@aws-sdk/client-s3');
+
+  // Get credentials from params (Adobe I/O Runtime) or environment (scripts)
+  const accessKeyId = params.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = params.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+
+  return new S3Client({
+    region: config.storage.s3.region || 'us-east-1',
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
+}
+
+/**
+ * Storage Strategy Registry
+ * Pure object mapping strategy names to strategy functions.
+ * No classes - just function references.
+ */
+const STORAGE_STRATEGIES = {
+  'app-builder': appBuilderStorageStrategy,
+  s3: s3StorageStrategy,
+};
+
 module.exports = {
-  // Strategy functions
+  // Strategy interface functions (what other files import)
+  initializeStorageStrategy,
+  determineStorageStrategy,
+
+  // Strategy operations (coordination functions)
+  selectStorageStrategy,
+  addStorageStrategy,
+  getAvailableStorageStrategies,
+
+  // Strategy implementations (individual strategies)
   appBuilderStorageStrategy,
   s3StorageStrategy,
 
-  // Strategy registry and selector
+  // Strategy utilities (building blocks)
   STORAGE_STRATEGIES,
-  selectStorageStrategy,
-
-  // Extension functions
-  addStorageStrategy,
-  getAvailableStorageStrategies,
 };

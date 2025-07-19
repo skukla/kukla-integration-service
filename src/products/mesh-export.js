@@ -1,6 +1,6 @@
 /**
  * Products Mesh Export
- * Complete API Mesh product export capability - Feature Core with Sub-modules
+ * Complete API Mesh product export capability with GraphQL integration
  */
 
 const { buildEnrichedProductsQuery } = require('./mesh-export/graphql');
@@ -10,7 +10,6 @@ const {
 } = require('./mesh-export/mesh-requests');
 const { validateMeshInput } = require('./mesh-export/validation');
 const { extractProductMessage } = require('./shared/data-extraction');
-const { transformImageEntry } = require('./utils/image');
 const { exportCsvWithStorage } = require('../files/csv-export');
 
 // Business Workflows
@@ -361,6 +360,22 @@ async function handleStorageWithFallback(exportResult, config, params, steps, co
   }
 }
 
+// Feature Utilities
+
+/**
+ * Transform image entry for export
+ * @purpose Extract file path from media gallery entry for CSV export
+ * @param {Object} imageEntry - Image entry from media_gallery_entries
+ * @returns {string} Image file path or empty string
+ * @usedBy buildProductObject for image field transformation
+ */
+function transformImageEntry(imageEntry) {
+  if (!imageEntry || typeof imageEntry !== 'object') {
+    return '';
+  }
+  return imageEntry.file || '';
+}
+
 module.exports = {
   // Business workflows
   exportMeshProductsWithStorageAndFallback,
@@ -374,4 +389,5 @@ module.exports = {
   sortProductsBySku,
   buildProductObject,
   convertToCSV,
+  transformImageEntry,
 };

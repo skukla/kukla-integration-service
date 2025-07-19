@@ -76,6 +76,14 @@ function createAppBuilderBrowserWrapper(files) {
         throw new Error(`Failed to get file properties: ${error.message}`);
       }
     },
+
+    async read(fileName) {
+      try {
+        return await files.read(fileName);
+      } catch (error) {
+        throw new Error(`App Builder file read failed: ${error.message}`);
+      }
+    },
   };
 }
 
@@ -141,6 +149,102 @@ function removePublicPrefix(fileName, storageDirectory = 'public/') {
   return fileName.replace(new RegExp(`^${prefix.replace('/', '\\/')}`), '');
 }
 
+/**
+ * Create S3 storage wrapper for browser operations
+ * @purpose Wrap S3 client with browser-specific methods
+ * @param {Object} s3Client - AWS S3 client instance
+ * @param {Object} config - Configuration object with S3 settings
+ * @returns {Object} Storage wrapper with browser methods
+ * @usedBy S3 storage strategy for file listing operations
+ */
+function createS3BrowserWrapper(s3Client, config) {
+  const { ListObjectsV2Command, HeadObjectCommand } = require('@aws-sdk/client-s3');
+  const bucket = config.storage.s3.bucket;
+  const prefix = config.storage.s3.prefix || '';
+
+  return {
+    async list() {
+      try {
+        const response = await s3Client.send(
+          new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: prefix,
+          })
+        );
+
+        if (!response.Contents) {
+          return [];
+        }
+
+        return response.Contents.map((file) => ({
+          name: file.Key.replace(prefix, ''), // Remove prefix to get clean filename
+          size: file.Size,
+          lastModified: file.LastModified,
+          contentType: 'application/octet-stream', // S3 doesn't always provide content type
+          url: `https://${bucket}.s3.amazonaws.com/${file.Key}`,
+        }));
+      } catch (error) {
+        throw new Error(`S3 file listing failed: ${error.message}`);
+      }
+    },
+
+    async getProperties(fileName) {
+      try {
+        const key = `${prefix}${fileName}`;
+        const response = await s3Client.send(
+          new HeadObjectCommand({
+            Bucket: bucket,
+            Key: key,
+          })
+        );
+        return {
+          size: response.ContentLength,
+          lastModified: response.LastModified,
+          contentType: response.ContentType || 'application/octet-stream',
+        };
+      } catch (error) {
+        throw new Error(`Failed to get S3 file properties: ${error.message}`);
+      }
+    },
+
+    async read(fileName) {
+      return await executeS3ReadFileForBrowser(s3Client, bucket, prefix, fileName);
+    },
+  };
+}
+
+/**
+ * Execute S3 file read for browser operations
+ * @purpose Read file content from S3 for browser operations
+ * @param {Object} s3Client - S3 client instance
+ * @param {string} bucket - S3 bucket name
+ * @param {string} prefix - S3 key prefix
+ * @param {string} fileName - File name to read
+ * @returns {Promise<Buffer>} File content
+ * @usedBy createS3BrowserWrapper
+ */
+async function executeS3ReadFileForBrowser(s3Client, bucket, prefix, fileName) {
+  const { GetObjectCommand } = require('@aws-sdk/client-s3');
+  try {
+    const key = `${prefix}${fileName}`;
+    const response = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      })
+    );
+
+    // Convert stream to buffer
+    const chunks = [];
+    for await (const chunk of response.Body) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  } catch (error) {
+    throw new Error(`S3 file read failed: ${error.message}`);
+  }
+}
+
 module.exports = {
   // Workflows (used by feature core)
   listCsvFiles,
@@ -148,6 +252,7 @@ module.exports = {
 
   // Utilities
   createAppBuilderBrowserWrapper,
+  createS3BrowserWrapper,
   getFileMetadataForFile,
   formatFileMetadata,
   removePublicPrefix,
