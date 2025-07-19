@@ -1,6 +1,9 @@
 # Template files with template syntax
 mesh-resolvers.template.js
 
+# EJS template files
+src/htmx/templates/*.ejs
+
 # Generated files  
 mesh-resolvers.js
 web-src/src/config/generated/
