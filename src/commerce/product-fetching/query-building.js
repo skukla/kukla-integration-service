@@ -33,7 +33,7 @@ function buildProductQuery(query, config, options = {}) {
  * @usedBy fetchProducts
  */
 function buildBasicProductQuery(query, config) {
-  const pageSize = query.limit || config.commerce.product.pagination.pageSize || 100;
+  const pageSize = query.limit || config.commerce.pagination.defaultPageSize || 100;
   const currentPage = Math.floor((query.offset || 0) / pageSize) + 1;
 
   return {
@@ -52,8 +52,8 @@ function buildBasicProductQuery(query, config) {
  * @returns {Object} Base search criteria with pagination
  */
 function buildBasePaginationCriteria(query, config) {
-  const defaultPageSize = config.commerce.product.pagination.pageSize;
-  const maxPageSize = config.commerce.product.pagination.maxPageSize;
+  const defaultPageSize = config.commerce.pagination.defaultPageSize;
+  const maxPageSize = config.commerce.pagination.maxPageSize;
 
   return {
     'searchCriteria[pageSize]': Math.min(query.pageSize || defaultPageSize, maxPageSize),
@@ -115,7 +115,7 @@ function addFieldFilteringToQuery(query, options, config, searchCriteria) {
  */
 function buildCriteriaQuery(criteria, config) {
   const query = {
-    'searchCriteria[pageSize]': config.commerce.product.pagination.pageSize,
+    'searchCriteria[pageSize]': config.commerce.pagination.defaultPageSize,
     'searchCriteria[currentPage]': 1,
   };
 

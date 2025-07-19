@@ -56,7 +56,7 @@ async function fetchProductsFromCommerce(query, config, params) {
  * @usedBy Large dataset operations, bulk product processing
  */
 async function fetchProductsInBatches(query, config, params, options = {}) {
-  const batchSize = options.batchSize || config.commerce.product.pagination.batchSize || 100;
+  const batchSize = options.batchSize || config.commerce.pagination.defaultPageSize || 100;
   const maxBatches = options.maxBatches || 10;
   const concurrency = options.concurrency || 3;
 

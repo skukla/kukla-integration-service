@@ -147,10 +147,14 @@ async function fetchProducts(params, config) {
 
   try {
     while (currentPage <= maxPages) {
-      // Step 1: Make API request
+      // Step 1: Make API request using proper query building
+      const query = {
+        'searchCriteria[pageSize]': pageSize,
+        'searchCriteria[currentPage]': currentPage,
+      };
       const response = await executeAuthenticatedCommerceRequest(
-        `/rest/V1/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}`,
-        { method: 'GET' },
+        'products',
+        { method: 'GET', query },
         config,
         params
       );

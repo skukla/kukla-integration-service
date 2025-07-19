@@ -1,6 +1,7 @@
 /**
  * Product Export Action
  * Business capability: Export Adobe Commerce product data as CSV using REST API
+ * Version: Fixed circular dependency, HTTP client, and query building issues
  */
 
 const { exportProductsWithStorageAndFallback } = require('../../src/products/rest-export');

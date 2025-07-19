@@ -105,7 +105,7 @@ function buildProductFetchResponse(processedData, query, config) {
   const { products, totalCount, validation, searchCriteria, processing } = processedData;
 
   const pageSize =
-    parseInt(query['searchCriteria[pageSize]']) || config.commerce.product.pagination.pageSize;
+    parseInt(query['searchCriteria[pageSize]']) || config.commerce.pagination.defaultPageSize;
   const currentPage = parseInt(query['searchCriteria[currentPage]']) || 1;
   const totalPages = Math.ceil(totalCount / pageSize);
 
