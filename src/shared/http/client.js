@@ -17,23 +17,18 @@ const { processResponseBody, createHttpError } = require('./response');
 async function request(url, options = {}) {
   const requestOptions = buildRequestOptions(url, options);
 
-  try {
-    const response = await fetch(url, requestOptions);
-    const body = await processResponseBody(response);
+  const response = await fetch(url, requestOptions);
+  const body = await processResponseBody(response);
 
-    if (!response.ok) {
-      throw createHttpError(response, body);
-    }
-
-    return {
-      statusCode: response.status,
-      headers: response.headers,
-      body,
-    };
-  } catch (error) {
-    console.warn(`Request failed for ${url}:`, error.message);
-    throw error;
+  if (!response.ok) {
+    throw createHttpError(response, body);
   }
+
+  return {
+    statusCode: response.status,
+    headers: response.headers,
+    body,
+  };
 }
 
 module.exports = {

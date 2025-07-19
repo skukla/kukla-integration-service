@@ -3,7 +3,7 @@
  * Complete admin token authentication capability for Commerce API requests
  */
 
-const { executeRequest } = require('../shared/http/client');
+const { request: executeRequest } = require('../shared/http/client');
 const { createUrlBuilders } = require('../shared/routing/url-factory');
 const { sleep } = require('../shared/utils/async');
 

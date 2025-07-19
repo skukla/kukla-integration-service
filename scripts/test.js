@@ -92,6 +92,7 @@ async function executeTest(testType, target, options) {
 async function executeActionTest(actionName, config, options) {
   const { params = {}, isProd = false } = options;
   let requestSpinner;
+  let actionUrl;
 
   try {
     // Step 1: Show environment and action
@@ -102,7 +103,7 @@ async function executeActionTest(actionName, config, options) {
 
     // Step 2: Build and display URL
     const { runtimeUrl } = createUrlBuilders(config);
-    const actionUrl = runtimeUrl(actionName);
+    actionUrl = runtimeUrl(actionName);
     console.log(format.url(actionUrl));
 
     // Step 3: Execute test with spinner during request
@@ -112,7 +113,13 @@ async function executeActionTest(actionName, config, options) {
       params,
       isProd,
     });
-    succeedSpinner(requestSpinner, 'Request completed');
+
+    // Handle spinner based on test result
+    if (testResult.success) {
+      succeedSpinner(requestSpinner, 'Request successful');
+    } else {
+      requestSpinner.fail('Request failed');
+    }
 
     // Step 4: Display results with full response content
     displayTestResults(testResult);
@@ -123,13 +130,13 @@ async function executeActionTest(actionName, config, options) {
       environment,
     };
   } catch (error) {
-    // Fail the spinner if request threw an error
+    // Fail the spinner if request threw an error before test execution
     if (requestSpinner) {
-      requestSpinner.fail('Request failed');
+      requestSpinner.fail('Test setup failed');
     }
 
     console.log();
-    console.log('Status: ERROR (500)');
+    console.log('Status: ERROR (Setup failed)');
     console.log(`Error: ${error.message}`);
 
     return {
@@ -191,15 +198,49 @@ function displayTestResults(testResult) {
     console.log();
   }
 
-  // Display status with proper formatting (colors, no checkmarks)
-  console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', isSuccess ? 200 : 500));
+  // Display status only for success (failure already shown by spinner)
+  if (isSuccess) {
+    console.log(format.status('SUCCESS', 200));
+  }
 
   // Display response content
   if (isSuccess && responseBody) {
     displaySuccessContent(responseBody);
   } else if (!isSuccess) {
-    console.log(`Error: ${testResult.error || 'Test failed'}`);
+    const errorMessage = extractErrorMessage(testResult);
+    console.log(format.error(`Error: ${errorMessage}`));
   }
+}
+
+/**
+ * Extract error message from test result
+ * @purpose Get the most relevant error message from multiple possible sources
+ * @param {Object} testResult - Test result object
+ * @returns {string} Error message
+ * @usedBy displayTestResults
+ */
+function extractErrorMessage(testResult) {
+  let errorMessage = testResult.error;
+
+  // Check for HTTP error details in the response
+  if (!errorMessage && testResult.response?.error) {
+    errorMessage = testResult.response.error;
+  }
+
+  // Check for validation errors
+  if (!errorMessage && testResult.validation?.errors?.length > 0) {
+    errorMessage = testResult.validation.errors[0];
+  }
+
+  // Check for response status information
+  if (!errorMessage && testResult.response?.statusCode) {
+    const status = testResult.response.statusCode;
+    const statusText = testResult.response.statusText || 'Server Error';
+    errorMessage = `${statusText} (${status})`;
+  }
+
+  // Fallback to generic message
+  return errorMessage || 'Test failed';
 }
 
 /**

@@ -5,7 +5,6 @@
 
 // Sub-module specific imports (can import from utils, not from sibling sub-modules)
 const { createUrlBuilders } = require('../../shared/routing/url-factory');
-const { checkMissingParams } = require('../../shared/validation/parameters');
 
 // Validation Workflows
 
@@ -18,18 +17,14 @@ const { checkMissingParams } = require('../../shared/validation/parameters');
  * @usedBy exportProducts in rest-export.js
  */
 async function validateInput(params, config) {
-  // Step 1: Validate required parameters
-  const requiredParams = ['COMMERCE_BASE_URL'];
-  checkMissingParams(params, requiredParams);
+  // Step 1: Validate Commerce API configuration (includes base URL check)
+  validateCommerceApiConfig(config);
 
   // Step 2: Validate product fetch configuration
   validateProductFetchConfig(config);
-
-  // Step 3: Validate Commerce API configuration
-  validateCommerceApiConfig(config);
 }
 
-// === VALIDATION UTILITIES ===
+// Validation Utilities
 
 /**
  * Validate product fetch configuration
@@ -91,6 +86,18 @@ function validateProductPaginationConfig(config) {
  * @usedBy validateInput
  */
 function validateCommerceApiConfig(config) {
+  // Validate base URL is configured
+  if (!config.commerce.baseUrl) {
+    throw new Error('Commerce base URL is required - set COMMERCE_BASE_URL environment variable');
+  }
+
+  if (config.commerce.baseUrl.startsWith('REQUIRED:')) {
+    throw new Error(
+      'Commerce base URL not configured - set COMMERCE_BASE_URL environment variable'
+    );
+  }
+
+  // Validate API configuration
   if (!config.commerce.api || !config.commerce.api.timeout) {
     throw new Error('Commerce API timeout configuration is required');
   }
