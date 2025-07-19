@@ -7,12 +7,11 @@ const { downloadFileWithResponse } = require('../../src/files/file-download');
 const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
- * File download business logic
- * @purpose Execute file download workflow with content retrieval and response building
- * @param {Object} context - Initialized action context with config and parameters
- * @returns {Promise<Object>} Complete download response with file content and headers
- * @usedBy Adobe App Builder frontend, external download requests
- * @config storage.provider, storage.directory, files.mimeTypes
+ * Download file with response handling
+ * @purpose Orchestrate file download with proper content type detection and response building
+ * @param {Object} context - Action execution context with config and extracted parameters
+ * @returns {Promise<Object>} File download response with proper headers and content
+ * @usedBy download-file action via createAction framework
  */
 async function downloadFileBusinessLogic(context) {
   const { config, extractedParams } = context;

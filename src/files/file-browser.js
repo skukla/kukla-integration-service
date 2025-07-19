@@ -1,6 +1,6 @@
 /**
- * Files File Browser - Feature Core
- * Complete file browsing capability - Feature Core with Sub-modules
+ * Files File Browser
+ * Complete file browser capability with metadata enrichment and sorting
  */
 
 // Import from feature sub-modules (same domain)
@@ -10,59 +10,73 @@ const {
 } = require('./file-browser/metadata-processing');
 const { processBrowserFiles, sortFilesByDate } = require('./file-browser/sorting-filtering');
 const { listCsvFiles, getFileMetadata } = require('./file-browser/storage-operations');
+const { response } = require('../shared/http/responses');
 
 // Business Workflows
 
 /**
- * Complete file browser data workflow with comprehensive metadata
- * @purpose Execute complete file browser workflow with metadata enrichment and sorting
- * @param {Object} config - Complete configuration object
- * @param {Object} params - Action parameters containing credentials
- * @param {Object} [options={}] - Browse options including sorting and filtering
- * @returns {Promise<Array>} Sorted array of file objects with complete metadata
- * @throws {Error} When storage access fails or configuration is invalid
- * @usedBy browse-files action, file browser UI components
+ * Browse CSV files with metadata enrichment
+ * @purpose Browse CSV files with complete metadata enrichment and filtering capabilities
+ * @param {Object} config - Application configuration with storage and browser settings
+ * @param {Object} params - Browser parameters including filters and sorting options
+ * @returns {Promise<Object>} File browser response with enriched file metadata
+ * @usedBy File browser workflows requiring complete metadata and filtering
  */
-async function browseCsvFilesWithMetadata(config, params, options = {}) {
+async function browseCsvFilesWithMetadata(config, params) {
   try {
-    // Step 1: Get CSV files from storage with basic metadata
-    const files = await listCsvFiles(config, params);
+    const rawFiles = await listCsvFiles(config, params);
+    const enrichedFiles = await enrichFilesWithMetadata(rawFiles, config);
+    const processedFiles = processBrowserFiles(enrichedFiles, params);
 
-    // Step 2: Enrich files with additional metadata if requested
-    const enrichedFiles = options.enrichMetadata
-      ? await enrichFilesWithMetadata(files, config, params)
-      : files;
-
-    // Step 3: Apply sorting and filtering
-    const processedFiles = processBrowserFiles(enrichedFiles, options);
-
-    // Step 4: Validate and return results
-    return validateBrowserResults(processedFiles);
+    return response.success(
+      {
+        files: processedFiles.files,
+        metadata: processedFiles.metadata,
+        totalFiles: processedFiles.totalFiles,
+        hasMore: processedFiles.hasMore,
+      },
+      'Files retrieved successfully',
+      {
+        storageProvider: config.storage.provider,
+        processingTime: processedFiles.processingTime,
+      }
+    );
   } catch (error) {
-    throw new Error(`File browser workflow failed: ${error.message}`);
+    return response.error(error, {
+      operation: 'file-browser',
+      params: params,
+    });
   }
 }
 
 /**
- * Basic file browser data workflow
- * @purpose Get CSV files with basic metadata and default sorting
- * @param {Object} config - Configuration object with storage settings
- * @param {Object} params - Action parameters containing credentials
- * @returns {Promise<Array>} Array of CSV file objects sorted by last modified date
- * @usedBy browse-files action, file browser UI
+ * Browse CSV files with basic listing
+ * @purpose Browse CSV files with basic file listing without metadata enrichment
+ * @param {Object} config - Application configuration with storage settings
+ * @param {Object} params - Browser parameters for basic file listing
+ * @returns {Promise<Object>} Basic file browser response with file list
+ * @usedBy Simple file browser workflows not requiring metadata enrichment
  */
 async function browseCsvFiles(config, params) {
   try {
-    // Step 1: Get CSV files from storage
     const files = await listCsvFiles(config, params);
 
-    // Step 2: Sort by date (most recent first)
-    const sortedFiles = sortFilesByDate(files, 'desc');
-
-    // Step 3: Validate and return results
-    return validateBrowserResults(sortedFiles);
+    return response.success(
+      {
+        files: files,
+        totalFiles: files.length,
+      },
+      'Files listed successfully',
+      {
+        storageProvider: config.storage.provider,
+        enriched: false,
+      }
+    );
   } catch (error) {
-    throw new Error(`Basic file browser failed: ${error.message}`);
+    return response.error(error, {
+      operation: 'file-browser-basic',
+      params: params,
+    });
   }
 }
 

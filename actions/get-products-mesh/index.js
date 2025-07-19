@@ -1,37 +1,22 @@
 /**
- * Product Mesh Export Action
- * Business capability: Export Adobe Commerce product data as CSV using API Mesh
+ * Get Products Mesh Action
+ * Business capability: Export product data as CSV using API Mesh with storage
  */
 
 const { exportMeshProductsWithStorageAndFallback } = require('../../src/products/mesh-export');
 const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
- * Product mesh export business logic
- * @purpose Execute complete product export workflow with API Mesh integration
- * @param {Object} context - Initialized action context with config and parameters
- * @returns {Promise<Object>} Export result with CSV data and metadata
- * @usedBy Adobe App Builder frontend, external API consumers
- * @config mesh.endpoint, mesh.apiKey, commerce.credentials, storage.provider, products.fields
+ * Export products via API Mesh workflow
+ * @purpose Orchestrate complete product export via API Mesh with GraphQL queries and CSV generation
+ * @param {Object} context - Action execution context with config and extracted parameters
+ * @returns {Promise<Object>} Product export response with download URL and storage metadata
+ * @usedBy get-products-mesh action via createAction framework
  */
 async function getProductsMeshBusinessLogic(context) {
-  const { core, config, extractedParams } = context;
+  const { config, extractedParams } = context;
 
-  // Step 1: Execute complete mesh product export workflow with storage and fallback
-  const exportResult = await exportMeshProductsWithStorageAndFallback(
-    extractedParams,
-    config,
-    core
-  );
-
-  // Step 2: Return export result with success message
-  return {
-    message: 'Product export completed successfully',
-    steps: [
-      core.formatStepMessage('mesh-export', 'success', 'CSV generated via API Mesh and stored'),
-    ],
-    ...exportResult,
-  };
+  return await exportMeshProductsWithStorageAndFallback(extractedParams, config);
 }
 
 module.exports = createAction(getProductsMeshBusinessLogic, {

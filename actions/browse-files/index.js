@@ -3,7 +3,7 @@
  * Business capability: Browse and list CSV files with interactive UI generation
  */
 
-const { browseCsvFilesWithMetadata } = require('../../src/files/file-browser');
+const { generateCompleteFileBrowserUI } = require('../../src/htmx/file-browser-ui');
 const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
@@ -17,7 +17,7 @@ const { createAction } = require('../../src/shared/action/action-factory');
 async function browseFilesBusinessLogic(context) {
   const { config, extractedParams } = context;
 
-  return await browseCsvFilesWithMetadata(config, extractedParams);
+  return await generateCompleteFileBrowserUI(config, extractedParams);
 }
 
 module.exports = createAction(browseFilesBusinessLogic, {

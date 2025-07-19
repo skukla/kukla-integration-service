@@ -1,36 +1,32 @@
 /**
  * REST Export - Product Transformation Sub-module
- * All product transformation and object building utilities for REST API export
+ * All product transformation utilities for REST API export
  */
 
 const { extractProductMessage } = require('../shared/data-extraction');
-const { normalizeProductValue, normalizeProductInventory } = require('../shared/normalization');
-const { transformImageEntry, getPrimaryImageUrl } = require('../utils/image');
+const { normalizeProductValue } = require('../shared/normalization');
 
-// Transformation Workflows
+// Business Workflows
 
 /**
- * Build products from enriched data
- * @purpose Transform enriched products into standardized format for export
- * @param {Array} products - Array of enriched product objects
- * @param {Object} config - Configuration object
- * @returns {Promise<Array>} Array of built product objects ready for CSV
- * @usedBy exportProducts in rest-export.js
+ * Build complete product objects for export
+ * @purpose Transform raw Commerce products into complete export-ready product objects
+ * @param {Array} products - Raw product data from Commerce API
+ * @returns {Array} Array of complete product objects ready for CSV export
+ * @usedBy REST export workflows requiring full product transformation
  */
-async function buildProducts(products, config) {
-  return products.map((product) => {
-    return buildProductObject(product, {}, config);
-  });
+function buildProducts(products) {
+  return products.map((product) => buildProductObject(product));
 }
 
-// Transformation Utilities
+// Feature Operations
 
 /**
- * Build base product fields
- * @purpose Create base product object with core fields
- * @param {Object} product - Raw product data from Commerce API
- * @returns {Object} Base product object
- * @usedBy buildProductObject
+ * Build base product fields for export
+ * @purpose Extract and format basic product fields required for all exports
+ * @param {Object} product - Raw product data from Commerce
+ * @returns {Object} Object containing base product fields
+ * @usedBy Product transformation workflows requiring core product data
  */
 function buildBaseProductFields(product) {
   return {
@@ -41,171 +37,169 @@ function buildBaseProductFields(product) {
 }
 
 /**
- * Build core product identification fields
- * @purpose Create SKU, name, and description fields
- * @param {Object} product - Raw product data from Commerce API
- * @returns {Object} Core product fields
- * @usedBy buildBaseProductFields
+ * Build core product fields
+ * @purpose Extract essential product identification and basic information
+ * @param {Object} product - Raw product data from Commerce
+ * @returns {Object} Core product fields (SKU, name, description, etc.)
+ * @usedBy Base product building requiring essential product information
  */
 function buildCoreFields(product) {
   return {
     sku: product.sku || '',
-    name: product.name || '',
+    name: extractProductMessage(product, 'name') || '',
     description: extractProductMessage(product, 'description') || '',
     short_description: extractProductMessage(product, 'short_description') || '',
     type_id: product.type_id || '',
+    status: product.status === 1 ? 'Enabled' : 'Disabled',
   };
 }
 
 /**
  * Build product metadata fields
- * @purpose Create status, visibility, weight, and timestamp fields
- * @param {Object} product - Raw product data from Commerce API
- * @returns {Object} Metadata product fields
- * @usedBy buildBaseProductFields
+ * @purpose Extract product metadata including dates, visibility, and configuration
+ * @param {Object} product - Raw product data from Commerce
+ * @returns {Object} Product metadata fields
+ * @usedBy Product transformation requiring metadata information
  */
 function buildMetadataFields(product) {
   return {
-    status: product.status === 1 ? 'Enabled' : 'Disabled',
     visibility: getVisibilityText(product.visibility),
-    weight: normalizeProductValue(product.weight) || '',
     created_at: product.created_at || '',
     updated_at: product.updated_at || '',
+    weight: normalizeProductValue(product.weight) || '',
+    attribute_set_id: product.attribute_set_id || '',
   };
 }
 
 /**
  * Build product price fields
- * @purpose Create price and special price fields
- * @param {Object} product - Raw product data from Commerce API
- * @returns {Object} Price product fields
- * @usedBy buildBaseProductFields
+ * @purpose Extract and format product pricing information
+ * @param {Object} product - Raw product data from Commerce
+ * @returns {Object} Product price fields
+ * @usedBy Product transformation requiring pricing information
  */
 function buildPriceFields(product) {
   return {
     price: normalizeProductValue(product.price) || '0',
     special_price: normalizeProductValue(product.special_price) || '',
+    cost: normalizeProductValue(product.cost) || '',
+    msrp: normalizeProductValue(product.msrp) || '',
   };
 }
 
 /**
- * Add inventory fields to product object
- * @purpose Add quantity and stock information
- * @param {Object} builtProduct - Product object to modify
- * @param {Object} product - Source product data
- * @returns {void}
- * @usedBy buildProductObject
+ * Add inventory fields to product
+ * @purpose Append inventory information to existing product object
+ * @param {Object} productObj - Base product object to enhance
+ * @param {Object} product - Raw product with inventory data
+ * @returns {Object} Product object with inventory fields added
+ * @usedBy Product enrichment requiring inventory integration
  */
-function addInventoryFields(builtProduct, product) {
-  if (product.inventory) {
-    builtProduct.qty = normalizeProductInventory(product.inventory.qty);
-    builtProduct.is_in_stock = product.inventory.is_in_stock ? 'Yes' : 'No';
-  } else {
-    builtProduct.qty = '';
-    builtProduct.is_in_stock = '';
-  }
+function addInventoryFields(productObj, product) {
+  return {
+    ...productObj,
+    qty: product.inventory?.qty || '',
+    is_in_stock: product.inventory?.is_in_stock || '',
+    stock_status: product.inventory?.stock_status || '',
+    manage_stock: product.inventory?.manage_stock || '',
+  };
 }
 
 /**
- * Add category fields to product object
- * @purpose Add category information
- * @param {Object} builtProduct - Product object to modify
- * @param {Object} product - Source product data
- * @returns {void}
- * @usedBy buildProductObject
+ * Add category fields to product
+ * @purpose Append category information to existing product object
+ * @param {Object} productObj - Base product object to enhance
+ * @param {Object} product - Raw product with category data
+ * @returns {Object} Product object with category fields added
+ * @usedBy Product enrichment requiring category integration
  */
-function addCategoryFields(builtProduct, product) {
-  if (product.categories && product.categories.length > 0) {
-    builtProduct.categories = buildCategoryString(product.categories);
-    builtProduct.category_ids = product.categories.map((cat) => cat.id).join(',');
-  } else {
-    builtProduct.categories = '';
-    builtProduct.category_ids = '';
-  }
+function addCategoryFields(productObj, product) {
+  return {
+    ...productObj,
+    categories: buildCategoryString(product.categories || []),
+    category_ids: product.category_links
+      ? product.category_links.map((link) => link.category_id).join(',')
+      : '',
+  };
 }
 
 /**
- * Add image fields to product object
- * @purpose Add image information
- * @param {Object} builtProduct - Product object to modify
- * @param {Object} product - Source product data
- * @returns {void}
- * @usedBy buildProductObject
+ * Add image fields to product
+ * @purpose Append image information to existing product object
+ * @param {Object} productObj - Base product object to enhance
+ * @param {Object} product - Raw product with image data
+ * @returns {Object} Product object with image fields added
+ * @usedBy Product enrichment requiring image integration
  */
-function addImageFields(builtProduct, product) {
-  if (product.media_gallery_entries && product.media_gallery_entries.length > 0) {
-    builtProduct.images = buildImageString(product.media_gallery_entries);
-    builtProduct.image = getPrimaryImageUrl(product.media_gallery_entries);
-  } else {
-    builtProduct.images = '';
-    builtProduct.image = '';
-  }
+function addImageFields(productObj, product) {
+  return {
+    ...productObj,
+    images: buildImageString(product.media_gallery_entries || []),
+    thumbnail: product.thumbnail || '',
+    small_image: product.small_image || '',
+    base_image: product.base_image || '',
+  };
 }
 
 /**
- * Add custom attributes to product object
- * @purpose Add custom product attributes
- * @param {Object} builtProduct - Product object to modify
- * @param {Object} product - Source product data
- * @returns {void}
- * @usedBy buildProductObject
+ * Add custom attributes to product
+ * @purpose Append custom attribute information to existing product object
+ * @param {Object} productObj - Base product object to enhance
+ * @param {Object} product - Raw product with custom attributes
+ * @returns {Object} Product object with custom attributes added
+ * @usedBy Product enrichment requiring custom attribute integration
  */
-function addCustomAttributes(builtProduct, product) {
+function addCustomAttributes(productObj, product) {
+  const customAttributes = {};
+
   if (product.custom_attributes) {
     product.custom_attributes.forEach((attr) => {
-      const fieldName = `custom_${attr.attribute_code}`;
-      builtProduct[fieldName] = attr.value || '';
+      if (attr.attribute_code && attr.value !== undefined) {
+        customAttributes[attr.attribute_code] = attr.value;
+      }
     });
   }
+
+  return { ...productObj, ...customAttributes };
 }
 
+// Feature Utilities
+
 /**
- * Build standardized product object for export
- * @purpose Create complete product object with all required fields for CSV export
- * @param {Object} product - Raw product data from Commerce API
- * @param {Object} categoryMap - Map of category data (legacy parameter, maintained for compatibility)
- * @param {Object} config - Configuration object
- * @returns {Object} Standardized product object
- * @usedBy buildProducts
+ * Build complete product object
+ * @purpose Create complete product object with all fields for export
+ * @param {Object} product - Raw product data from Commerce
+ * @returns {Object} Complete product object ready for export
+ * @usedBy Product transformation workflows requiring complete product data
  */
 function buildProductObject(product) {
-  const builtProduct = buildBaseProductFields(product);
+  let productObj = buildBaseProductFields(product);
 
-  addInventoryFields(builtProduct, product);
-  addCategoryFields(builtProduct, product);
-  addImageFields(builtProduct, product);
-  addCustomAttributes(builtProduct, product);
+  productObj = addInventoryFields(productObj, product);
+  productObj = addCategoryFields(productObj, product);
+  productObj = addImageFields(productObj, product);
+  productObj = addCustomAttributes(productObj, product);
 
-  return builtProduct;
+  return productObj;
 }
 
 /**
- * Build complete product data for export (legacy function)
- * @purpose Create product object with categories and inventory (legacy compatibility)
- * @param {Object} product - Product data
- * @param {Array} categories - Category data array
- * @param {Object} inventory - Inventory data object
- * @returns {Object} Built product object
- * @usedBy legacy functions for backward compatibility
+ * Build product for export
+ * @purpose Create product object specifically formatted for export requirements
+ * @param {Object} product - Raw product data from Commerce
+ * @returns {Object} Export-ready product object
+ * @usedBy Export workflows requiring standardized product format
  */
-function buildProduct(product, categories = [], inventory = {}) {
-  return {
-    sku: product.sku || '',
-    name: product.name || '',
-    price: product.price || '0',
-    categories: buildCategoryString(categories),
-    qty: inventory.qty || '0',
-    is_in_stock: inventory.is_in_stock ? 'Yes' : 'No',
-    images: product.media_gallery_entries ? buildImageString(product.media_gallery_entries) : '',
-  };
+function buildProduct(product) {
+  return buildProductObject(product);
 }
 
 /**
- * Get human-readable visibility text
- * @purpose Convert numeric visibility code to readable text
- * @param {number} visibility - Numeric visibility code from Commerce API
+ * Get visibility text representation
+ * @purpose Convert numeric visibility code to human-readable text
+ * @param {number} visibility - Numeric visibility code from Commerce
  * @returns {string} Human-readable visibility text
- * @usedBy buildProductObject
+ * @usedBy Product metadata building requiring visibility translation
  */
 function getVisibilityText(visibility) {
   const visibilityMap = {
@@ -219,46 +213,53 @@ function getVisibilityText(visibility) {
 }
 
 /**
- * Build category string from category data
- * @purpose Create comma-separated string of category names
+ * Build category string representation
+ * @purpose Convert category array to string representation for export
  * @param {Array} categories - Array of category objects
- * @returns {string} Comma-separated category names
- * @usedBy buildProductObject, buildProduct
+ * @returns {string} Formatted category string for export
+ * @usedBy Category field building requiring string representation
  */
 function buildCategoryString(categories) {
   if (!Array.isArray(categories) || categories.length === 0) {
     return '';
   }
 
-  return categories
-    .map((category) => category.name || category)
-    .filter((name) => name)
-    .join(', ');
+  return categories.map((cat) => cat.name || cat).join(', ');
 }
 
 /**
- * Build image string from media gallery entries
- * @purpose Create comma-separated string of image URLs
- * @param {Array} mediaEntries - Array of media gallery entries
- * @returns {string} Comma-separated image URLs
- * @usedBy buildProductObject, buildProduct
+ * Build image string representation
+ * @purpose Convert image array to string representation for export
+ * @param {Array} images - Array of image objects from media gallery
+ * @returns {string} Formatted image string for export
+ * @usedBy Image field building requiring string representation
  */
-function buildImageString(mediaEntries) {
-  if (!Array.isArray(mediaEntries) || mediaEntries.length === 0) {
+function buildImageString(images) {
+  if (!Array.isArray(images) || images.length === 0) {
     return '';
   }
 
-  return mediaEntries
-    .map((entry) => transformImageEntry(entry))
-    .filter((url) => url)
+  return images
+    .filter((img) => img.file)
+    .map((img) => img.file)
     .join(', ');
 }
 
 module.exports = {
-  // Workflows (used by feature core)
+  // Business workflows
   buildProducts,
 
-  // Utilities (available for testing/extension)
+  // Feature operations
+  buildBaseProductFields,
+  buildCoreFields,
+  buildMetadataFields,
+  buildPriceFields,
+  addInventoryFields,
+  addCategoryFields,
+  addImageFields,
+  addCustomAttributes,
+
+  // Feature utilities
   buildProductObject,
   buildProduct,
   getVisibilityText,

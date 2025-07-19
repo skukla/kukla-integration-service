@@ -1,310 +1,202 @@
 /**
  * Files CSV Export
- * Complete CSV export capability with storage, presigned URLs, and error handling
+ * Complete CSV export capability with storage strategies and fallback handling
  */
 
-const { initializeStorageStrategy } = require('./shared/storage-strategies');
-const { formatFileSize } = require('../shared/utils/formatting');
+const { buildStorageParams } = require('./shared/file-utils');
+const { determineStorageStrategy } = require('./shared/storage-strategies');
+const { response } = require('../shared/http/responses');
 
 // Business Workflows
 
 /**
- * Complete CSV export with storage and fallback handling
- * @purpose Execute complete CSV export pipeline with multiple storage strategies and comprehensive error recovery
- * @param {string} csvData - CSV content to export
- * @param {Object} config - Complete configuration object
- * @param {Object} params - Action parameters containing credentials and settings
- * @param {string} [fileName] - Optional custom filename
- * @param {Object} [options={}] - Export options including storage strategy overrides
- * @returns {Promise<Object>} Complete export result with download URLs, storage info, and fallback data
- * @throws {Error} When all storage strategies fail
- * @usedBy get-products action, get-products-mesh action
- * @config storage.provider, storage.directory, storage.s3, files.extensions.csv
+ * Export CSV with storage and fallback handling
+ * @purpose Export CSV data with comprehensive storage strategy and fallback options
+ * @param {string} csvData - CSV content to export and store
+ * @param {Object} config - Application configuration with storage settings
+ * @param {Object} params - Export parameters including filename and storage options
+ * @returns {Promise<Object>} Export response with storage result and download information
+ * @usedBy Product export workflows requiring robust CSV storage with fallbacks
  */
-async function exportCsvWithStorageAndFallback(csvData, config, params, fileName, options = {}) {
+async function exportCsvWithStorageAndFallback(csvData, config, params) {
   try {
-    // Step 1: Attempt primary storage method
-    const primaryResult = await exportCsvWithStorage(csvData, config, params, fileName, options);
-
-    if (primaryResult.stored) {
-      return {
-        ...primaryResult,
-        method: 'primary-storage',
-        fallbackUsed: false,
-      };
-    }
-
-    // Step 2: If primary fails, attempt alternative storage
-    const fallbackConfig = {
-      ...config,
-      storage: {
-        ...config.storage,
-        provider: config.storage.provider === 's3' ? 'app-builder' : 's3',
-      },
-    };
-
-    const fallbackResult = await exportCsvWithStorage(
-      csvData,
-      fallbackConfig,
-      params,
-      fileName,
-      options
-    );
-
-    return {
-      ...fallbackResult,
-      method: 'fallback-storage',
-      fallbackUsed: true,
-      originalError: primaryResult.error,
-    };
+    return await exportCsvWithStorage(csvData, config, params);
   } catch (error) {
-    throw new Error(`CSV export failed: ${error.message}`);
+    console.warn('Primary CSV export failed, attempting content-only fallback:', error.message);
+    return await exportCsvDataOnly(csvData, config, params);
   }
 }
 
 /**
- * Complete CSV export with storage
- * @purpose Execute complete CSV export pipeline with configured storage provider
- * @param {string} csvData - CSV content to export
- * @param {Object} config - Complete configuration object
- * @param {Object} params - Action parameters containing credentials
- * @param {string} [fileName] - Optional custom filename
- * @param {Object} [options={}] - Export options
- * @returns {Promise<Object>} Export result with storage metadata and download URLs
- * @usedBy exportCsvWithStorageAndFallback, external actions needing CSV export
- * @config storage.provider, storage.directory, files.extensions.csv
+ * Export CSV with storage strategy
+ * @purpose Export CSV data using configured storage strategy with presigned URLs
+ * @param {string} csvData - CSV content to export and store
+ * @param {Object} config - Application configuration with storage settings
+ * @param {Object} params - Export parameters including filename and storage options
+ * @returns {Promise<Object>} Export response with storage result and download URLs
+ * @usedBy Primary CSV export workflow with storage capabilities
  */
-async function exportCsvWithStorage(csvData, config, params, fileName, options = {}) {
-  try {
-    // Step 1: Prepare storage parameters and filename
-    const storageParams = prepareCsvStorageParams(csvData, config, fileName, options);
+async function exportCsvWithStorage(csvData, config, params) {
+  const fileName = params.fileName || generateDefaultCsvFileName();
+  const storageParams = prepareCsvStorageParams(csvData, fileName, config, params);
 
-    // Step 2: Initialize storage strategy
-    const storage = await initializeStorageStrategy(config.storage.provider, config, params);
+  const storageResult = await storeCsvWithStrategy(storageParams, config);
 
-    // Step 3: Store CSV file using configured strategy
-    const storageResult = await storeCsvWithStrategy(
-      storage,
-      storageParams.fileName,
-      storageParams.csvData,
-      config,
-      storageParams.options
-    );
-
-    // Step 4: Build complete export response
-    return buildCsvExportResponse(storageResult, storage);
-  } catch (error) {
-    return {
-      stored: false,
-      error: {
-        message: error.message,
-        operation: 'csv-export',
-        timestamp: new Date().toISOString(),
-      },
-    };
-  }
+  return buildCsvExportResponse(storageResult, storageParams);
 }
 
 /**
- * Basic CSV export without storage
- * @purpose Generate CSV content and metadata without storage operations
- * @param {string} csvData - CSV content to process
- * @param {Object} config - Configuration object
- * @param {string} [fileName] - Optional filename
- * @returns {Object} CSV export data without storage
- * @usedBy Testing scenarios, in-memory CSV processing
+ * Export CSV data without storage (content-only)
+ * @purpose Export CSV as direct content response without storage for fallback scenarios
+ * @param {string} csvData - CSV content to return as response
+ * @param {Object} config - Application configuration for response building
+ * @param {Object} params - Export parameters including filename
+ * @returns {Promise<Object>} Direct CSV content response without storage
+ * @usedBy Fallback export when storage is unavailable or fails
  */
-function exportCsvDataOnly(csvData, config, fileName) {
-  const finalFileName = fileName || generateDefaultCsvFileName(config);
+async function exportCsvDataOnly(csvData, config, params) {
+  const fileName = params.fileName || generateDefaultCsvFileName();
 
-  return {
-    csvData,
-    fileName: finalFileName,
-    size: csvData.length,
-    formattedSize: formatFileSize(csvData.length),
-    contentType: 'text/csv',
-    timestamp: new Date().toISOString(),
-  };
+  return updateContentOnly(csvData, fileName);
 }
 
 // Feature Operations
 
 /**
- * Store CSV with smart file existence strategy
- * @purpose Coordinate CSV storage with intelligent handling of existing files
- * @param {Object} storage - Storage wrapper instance
- * @param {string} fileName - Name of the file to store
- * @param {string} csvData - CSV content to store
- * @param {Object} config - Configuration object
- * @param {Object} options - Storage options including useCase for access patterns
- * @returns {Promise<Object>} Storage result with operation metadata
- * @usedBy exportCsvWithStorage
+ * Store CSV using determined storage strategy
+ * @purpose Execute CSV storage using appropriate strategy based on configuration
+ * @param {Object} storageParams - Complete storage parameters including content and metadata
+ * @param {Object} config - Application configuration with storage provider settings
+ * @returns {Promise<Object>} Storage operation result with metadata and URLs
+ * @usedBy CSV export workflows requiring storage execution
  */
-async function storeCsvWithStrategy(storage, fileName, csvData, config, options = {}) {
-  try {
-    // Check if file already exists
-    const existingFile = await storage.getProperties(fileName);
-    const fileExists = existingFile !== null;
+async function storeCsvWithStrategy(storageParams, config) {
+  const strategy = determineStorageStrategy(config);
 
-    let result;
-    let urlGenerated = false;
-
-    if (!fileExists) {
-      // File doesn't exist → Create new file + generate presigned URL
-      result = await storage.write(fileName, csvData, options);
-      urlGenerated = true;
-    } else {
-      // File exists → Update content only, preserve existing presigned URL
-      result = await updateContentOnly(storage, fileName, csvData, config);
-      urlGenerated = false;
-    }
-
-    return {
-      result,
-      fileExisted: fileExists,
-      urlGenerated,
-      operation: fileExists ? 'content-update' : 'new-file',
-    };
-  } catch (error) {
-    throw new Error(`CSV storage strategy failed: ${error.message}`);
-  }
+  return await strategy.store(storageParams);
 }
 
 /**
- * Update file content without generating presigned URLs
- * @purpose Update existing file content while preserving existing presigned URLs
- * @param {Object} storage - Storage wrapper instance
- * @param {string} fileName - Name of the file
- * @param {string} content - File content
- * @param {Object} config - Configuration object
- * @returns {Promise<Object>} Content update result
- * @usedBy storeCsvWithStrategy
+ * Update CSV export to content-only response
+ * @purpose Build direct CSV content response for scenarios without storage
+ * @param {string} csvData - CSV content for direct response
+ * @param {string} fileName - Filename for response headers
+ * @returns {Promise<Object>} Direct CSV content response with appropriate headers
+ * @usedBy Content-only export and fallback scenarios
  */
-async function updateContentOnly(storage, fileName, content, config) {
-  const { updateContentOnly: updateOperation } = require('./operations/content-only');
-  return await updateOperation(storage, fileName, content, config);
+async function updateContentOnly(csvData, fileName) {
+  return response.success(
+    {
+      content: csvData,
+      fileName: fileName,
+      mimeType: 'text/csv',
+      size: Buffer.byteLength(csvData, 'utf8'),
+    },
+    'CSV export completed (content-only)',
+    {
+      downloadType: 'content-only',
+      storage: 'none',
+    }
+  );
 }
 
 // Feature Utilities
 
 /**
  * Prepare CSV storage parameters
- * @purpose Process and validate CSV data and filename for storage operations
- * @param {string} csvData - CSV content
- * @param {Object} config - Configuration object
- * @param {string} fileName - Base filename
- * @param {Object} options - Storage options
- * @returns {Object} Processed storage parameters
- * @usedBy exportCsvWithStorage
+ * @purpose Build complete storage parameters object for CSV storage operations
+ * @param {string} csvData - CSV content to store
+ * @param {string} fileName - Target filename for storage
+ * @param {Object} config - Application configuration with storage settings
+ * @param {Object} params - Additional parameters for storage configuration
+ * @returns {Object} Complete storage parameters for strategy execution
+ * @usedBy Storage operations requiring parameter preparation
  */
-function prepareCsvStorageParams(csvData, config, fileName, options = {}) {
-  if (!csvData || typeof csvData !== 'string') {
-    throw new Error('CSV data must be a non-empty string');
-  }
-
-  let finalFileName = fileName || generateDefaultCsvFileName(config);
-  const csvExtension = config.files.extensions.csv;
-
-  if (!finalFileName.endsWith(csvExtension)) {
-    finalFileName = `${finalFileName}${csvExtension}`;
-  }
+function prepareCsvStorageParams(csvData, fileName, config, params) {
+  const baseParams = buildStorageParams(fileName, config, params);
 
   return {
-    fileName: finalFileName,
-    csvData,
-    options: {
-      useCase: 'csv-export',
-      contentType: 'text/csv',
-      ...options,
+    ...baseParams,
+    content: csvData,
+    mimeType: 'text/csv',
+    size: Buffer.byteLength(csvData, 'utf8'),
+    metadata: {
+      type: 'csv-export',
+      source: params.source || 'unknown',
+      timestamp: new Date().toISOString(),
     },
   };
 }
 
 /**
  * Generate default CSV filename
- * @purpose Create standardized filename for CSV exports
- * @param {Object} config - Configuration object
- * @returns {string} Generated filename
- * @usedBy prepareCsvStorageParams, exportCsvDataOnly
+ * @purpose Create default filename for CSV exports when none is provided
+ * @returns {string} Default CSV filename with timestamp
+ * @usedBy CSV export when no filename is specified in parameters
  */
-function generateDefaultCsvFileName(config) {
+function generateDefaultCsvFileName() {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const extension = config.files.extensions.csv;
-  return `export-${timestamp}${extension}`;
+  return `export-${timestamp}.csv`;
 }
 
 /**
  * Build CSV export response
- * @purpose Create standardized response for CSV export operations
+ * @purpose Build complete export response with storage result and metadata
  * @param {Object} storageResult - Result from storage operation
- * @param {Object} storage - Storage wrapper instance
- * @returns {Object} Formatted CSV export response
- * @usedBy exportCsvWithStorage
+ * @param {Object} storageParams - Storage parameters used for operation
+ * @returns {Object} Complete CSV export response with download information
+ * @usedBy CSV export workflows requiring response building
  */
-function buildCsvExportResponse(storageResult, storage) {
-  const { result, fileExisted, urlGenerated, operation } = storageResult;
-
-  return {
-    stored: true,
-    downloadUrl: result.downloadUrl,
-    presignedUrl: result.presignedUrl,
-    storage: {
-      provider: storage.provider,
-      operation,
-      fileExisted,
-      urlGenerated,
-      fileName: result.fileName,
-      properties: result.properties,
+function buildCsvExportResponse(storageResult, storageParams) {
+  return response.exportSuccess(
+    {
+      downloadUrl: storageResult.downloadUrl,
+      storage: storageResult.storage,
+      fileName: storageParams.fileName,
+      fileSize: storageParams.size,
+      mimeType: storageParams.mimeType,
     },
-    file: {
-      name: result.properties.name,
-      size: result.properties.size,
-      formattedSize: formatFileSize(result.properties.size),
-      contentType: result.properties.contentType,
-      lastModified: result.properties.lastModified,
-    },
-    timestamp: new Date().toISOString(),
-  };
+    'CSV export completed successfully',
+    {
+      storageProvider: storageResult.storage,
+      metadata: storageParams.metadata,
+    }
+  );
 }
 
 /**
  * Validate CSV export parameters
- * @purpose Ensure all required parameters are present and valid
+ * @purpose Validate required parameters for CSV export operations
  * @param {string} csvData - CSV content to validate
- * @param {Object} config - Configuration object to validate
- * @param {Object} params - Action parameters to validate
- * @throws {Error} When validation fails
- * @usedBy exportCsvWithStorage, exportCsvWithStorageAndFallback
+ * @param {Object} params - Export parameters to validate
+ * @throws {Error} When required parameters are missing or invalid
+ * @usedBy CSV export workflows for parameter validation
  */
-function validateCsvExportParams(csvData, config, params) {
+function validateCsvExportParams(csvData, params) {
   if (!csvData || typeof csvData !== 'string') {
     throw new Error('CSV data is required and must be a string');
   }
 
-  if (!config || !config.storage) {
-    throw new Error('Storage configuration is required');
+  if (csvData.length === 0) {
+    throw new Error('CSV data cannot be empty');
   }
 
-  if (!config.storage.provider) {
-    throw new Error('Storage provider must be specified');
-  }
-
-  if (!params) {
-    throw new Error('Action parameters are required for storage authentication');
+  if (params.fileName && !/\.(csv|txt)$/i.test(params.fileName)) {
+    throw new Error('CSV filename must have .csv or .txt extension');
   }
 }
 
 module.exports = {
-  // Business workflows (main exports that actions import)
+  // Business workflows
   exportCsvWithStorageAndFallback,
   exportCsvWithStorage,
   exportCsvDataOnly,
 
-  // Feature operations (coordination functions)
+  // Feature operations
   storeCsvWithStrategy,
   updateContentOnly,
 
-  // Feature utilities (building blocks)
+  // Feature utilities
   prepareCsvStorageParams,
   generateDefaultCsvFileName,
   buildCsvExportResponse,

@@ -1,120 +1,86 @@
 /**
- * Files File Deletion - Feature Core
- * Complete file deletion capability - Feature Core with Sub-modules
+ * Files File Deletion
+ * Complete file deletion capability with validation and response handling
  */
 
-// Import from feature sub-modules (same domain)
 const {
   buildDeletionSuccessResponse,
-  buildBasicDeletionResponse,
-  buildBatchDeletionResponse,
   buildDeletionErrorResponse,
 } = require('./file-deletion/response-building');
 const {
   deleteFileFromStorage,
-  getFileMetadataBeforeDeletion,
   deleteBatchFromStorage,
 } = require('./file-deletion/storage-operations');
-const { validateDeletionRequest, cleanFileName } = require('./file-deletion/validation');
-
-// Business Workflows
+const { validateDeletionRequest } = require('./file-deletion/validation');
 
 /**
- * Complete file deletion workflow with comprehensive validation and response
- * @purpose Execute complete file deletion workflow with pre-deletion validation and post-deletion confirmation
- * @param {string} fileName - Name of the file to delete
- * @param {Object} config - Complete configuration object
- * @param {Object} params - Action parameters containing credentials
- * @param {Object} [options={}] - Deletion options including force delete and validation settings
- * @returns {Promise<Object>} Complete deletion result with confirmation and updated file listing
- * @throws {Error} When file access fails or deletion is not permitted
- * @usedBy delete-file action
+ * Delete file with comprehensive validation
+ * @purpose Delete file with complete validation, permission checks, and response handling
+ * @param {string} fileName - Name of file to delete
+ * @param {Object} config - Application configuration with storage and deletion settings
+ * @param {Object} params - Deletion parameters including confirmation and validation options
+ * @returns {Promise<Object>} Deletion response with success or error information
+ * @usedBy File deletion workflows requiring comprehensive validation and error handling
  */
-async function deleteFileWithValidation(fileName, config, params, options = {}) {
+async function deleteFileWithValidation(fileName, config, params) {
   try {
-    // Step 1: Validate deletion request and file existence
-    await validateDeletionRequest(fileName, config, params, options);
+    // Validate deletion request
+    validateDeletionRequest(fileName, config, params);
 
-    // Step 2: Clean filename for storage operations
-    const cleanedFileName = cleanFileName(fileName, config);
+    // Execute deletion
+    const deletionResult = await deleteFileFromStorage(fileName, config);
 
-    // Step 3: Get file metadata before deletion (for confirmation)
-    const preDeleteMetadata = await getFileMetadataBeforeDeletion(cleanedFileName, config, params);
-
-    // Step 4: Execute file deletion
-    await deleteFileFromStorage(cleanedFileName, config, params);
-
-    // Step 5: Verify deletion and build success response
-    return buildDeletionSuccessResponse(fileName, preDeleteMetadata);
+    return buildDeletionSuccessResponse(deletionResult, fileName, config);
   } catch (error) {
-    return buildDeletionErrorResponse(error, fileName);
+    return buildDeletionErrorResponse(error, fileName, config);
   }
 }
 
 /**
- * Basic file deletion workflow
- * @purpose Delete file with minimal validation and basic response
- * @param {string} fileName - Name of the file to delete
- * @param {Object} config - Configuration object with storage settings
- * @param {Object} params - Action parameters containing credentials
- * @returns {Promise<Object>} Basic deletion result
- * @usedBy Simple file management operations
+ * Delete single file without validation
+ * @purpose Delete file directly without validation for internal operations
+ * @param {string} fileName - Name of file to delete
+ * @param {Object} config - Application configuration with storage settings
+ * @returns {Promise<Object>} Direct deletion result from storage provider
+ * @usedBy Internal deletion operations not requiring validation
  */
-async function deleteFile(fileName, config, params) {
-  try {
-    // Step 1: Clean filename for storage operations
-    const cleanedFileName = cleanFileName(fileName, config);
-
-    // Step 2: Execute file deletion
-    await deleteFileFromStorage(cleanedFileName, config, params);
-
-    // Step 3: Build basic response
-    return buildBasicDeletionResponse(fileName);
-  } catch (error) {
-    return buildDeletionErrorResponse(error, fileName);
-  }
+async function deleteFile(fileName, config) {
+  return await deleteFileFromStorage(fileName, config);
 }
 
 /**
- * Batch file deletion workflow
- * @purpose Delete multiple files with batch processing and summary response
- * @param {Array} fileNames - Array of filenames to delete
- * @param {Object} config - Configuration object
- * @param {Object} params - Action parameters containing credentials
- * @param {Object} [options={}] - Batch deletion options
- * @returns {Promise<Object>} Batch deletion result with summary
- * @usedBy Bulk file management operations
+ * Delete multiple files in batch
+ * @purpose Delete multiple files efficiently with batch processing
+ * @param {Array} fileNames - Array of file names to delete
+ * @param {Object} config - Application configuration with storage settings
+ * @returns {Promise<Object>} Batch deletion results with success and failure counts
+ * @usedBy Bulk deletion operations requiring batch processing
  */
-async function deleteFilesBatch(fileNames, config, params) {
+async function deleteFilesBatch(fileNames, config) {
   try {
-    // Step 1: Clean all filenames
-    const cleanedFileNames = fileNames.map((fileName) => cleanFileName(fileName, config));
+    const batchResult = await deleteBatchFromStorage(fileNames, config);
 
-    // Step 2: Execute batch deletion
-    const batchResult = await deleteBatchFromStorage(cleanedFileNames, config, params);
-
-    // Step 3: Build batch response
-    return buildBatchDeletionResponse(batchResult);
+    return {
+      success: true,
+      deleted: batchResult.successful,
+      failed: batchResult.failed,
+      totalRequested: fileNames.length,
+      successCount: batchResult.successful.length,
+      failureCount: batchResult.failed.length,
+    };
   } catch (error) {
-    return buildDeletionErrorResponse(error, 'batch-operation');
+    return {
+      success: false,
+      error: error.message,
+      totalRequested: fileNames.length,
+      successCount: 0,
+      failureCount: fileNames.length,
+    };
   }
 }
 
 module.exports = {
-  // Business workflows
   deleteFileWithValidation,
   deleteFile,
   deleteFilesBatch,
-
-  // Feature operations
-  deleteFileFromStorage,
-  getFileMetadataBeforeDeletion,
-
-  // Feature utilities
-  cleanFileName,
-  validateDeletionRequest,
-  buildDeletionSuccessResponse,
-  buildBasicDeletionResponse,
-  buildBatchDeletionResponse,
-  buildDeletionErrorResponse,
 };

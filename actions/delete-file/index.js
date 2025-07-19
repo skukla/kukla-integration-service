@@ -4,6 +4,8 @@
  */
 
 const { deleteFileWithValidation } = require('../../src/files/file-deletion');
+const { generateCompleteFileBrowserUI } = require('../../src/htmx/file-browser-ui');
+const { generateDeleteConfirmationModal } = require('../../src/htmx/modal-interactions');
 const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
@@ -17,13 +19,24 @@ const { createAction } = require('../../src/shared/action/action-factory');
 async function deleteFileBusinessLogic(context) {
   const { config, extractedParams } = context;
 
-  // Step 1: Validate fileName parameter
+  // Step 1: Check if this is a confirmation request or file browser refresh
   if (!extractedParams.fileName) {
-    throw new Error('fileName parameter is required');
+    return await generateCompleteFileBrowserUI(config, extractedParams);
   }
 
-  // Step 2: Execute validated file deletion
-  return await deleteFileWithValidation(extractedParams.fileName, config, extractedParams);
+  // Step 2: Generate delete confirmation modal
+  if (!extractedParams.confirmed) {
+    return await generateDeleteConfirmationModal(extractedParams.fileName, config, extractedParams);
+  }
+
+  // Step 3: Execute validated file deletion
+  const deletionResult = await deleteFileWithValidation(
+    extractedParams.fileName,
+    config,
+    extractedParams
+  );
+
+  return deletionResult;
 }
 
 module.exports = createAction(deleteFileBusinessLogic, {
