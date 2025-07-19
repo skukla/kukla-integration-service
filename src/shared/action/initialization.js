@@ -149,10 +149,13 @@ function getInitializationMetrics(context) {
 }
 
 module.exports = {
+  // Action Initialization Workflows
   initializeAction,
-  validateActionParams,
-  createInitializationConfig,
   initializeActionSafely,
   initializeTestAction,
+  
+  // Action Initialization Utilities
+  validateActionParams,
+  createInitializationConfig,
   getInitializationMetrics,
 };

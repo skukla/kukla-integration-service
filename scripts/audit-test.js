@@ -139,29 +139,7 @@ function loadAuditTestConfig() {
   const config = loadConfig({});
   return {
     ...config,
-    auditTest: config.scripts?.auditTest || getDefaultAuditTestConfig(),
-  };
-}
-
-/**
- * Get default audit test configuration
- * @purpose Provide fallback audit test configuration
- * @returns {Object} Default audit test configuration
- * @usedBy loadAuditTestConfig
- */
-function getDefaultAuditTestConfig() {
-  return {
-    timeout: 30000,
-    retries: 3,
-    verbose: false,
-    confidence: {
-      threshold: 0.7,
-      weightings: {
-        tier1: 1.0,
-        tier2: 0.8,
-        tier3: 0.5,
-      },
-    },
+    auditTest: config.scripts.auditTest,
   };
 }
 

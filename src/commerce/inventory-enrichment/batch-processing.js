@@ -55,7 +55,7 @@ async function fetchInventoryDataWithBatching(skus, config, params, trace = null
           inventoryMap[sku] = result.value;
         } else {
           console.warn(
-            `Failed to fetch inventory for ${sku}: ${result.reason?.message || 'Unknown error'}`
+            `Failed to fetch inventory for ${sku}: ${result.reason ? result.reason.message : 'Unknown error'}`
           );
           inventoryMap[sku] = createFallbackInventoryData(sku, options);
         }

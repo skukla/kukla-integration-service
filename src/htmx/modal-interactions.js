@@ -140,8 +140,8 @@ function buildModalConfirmationResponse(result, data) {
 function generateDeleteModalHTML(fileName, fileInfo = null, isProtected = false) {
   const variables = {
     fileName,
-    fileSize: fileInfo?.size || 'Unknown size',
-    fileDate: fileInfo?.lastModified || 'Unknown date',
+    fileSize: fileInfo ? fileInfo.size : 'Unknown size',
+    fileDate: fileInfo ? fileInfo.lastModified : 'Unknown date',
     isProtected,
   };
 
@@ -196,7 +196,7 @@ function generateInfoModalHTML(title, message, options = {}) {
  * @usedBy generateDeleteConfirmationModal
  */
 function checkIfFileProtected(fileName, config) {
-  const protectedPatterns = config.files?.protectedPatterns || [];
+  const protectedPatterns = config.files.protectedPatterns;
 
   return protectedPatterns.some((pattern) => {
     if (typeof pattern === 'string') {

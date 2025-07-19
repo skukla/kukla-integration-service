@@ -63,7 +63,7 @@ async function fetchCategoryDataWithBatching(
           categoryMap[categoryId] = result.value;
         } else {
           console.warn(
-            `Failed to fetch category ${categoryId}: ${result.reason?.message || 'Unknown error'}`
+            `Failed to fetch category ${categoryId}: ${result.reason ? result.reason.message : 'Unknown error'}`
           );
           categoryMap[categoryId] = createFallbackCategoryData(categoryId, options);
         }

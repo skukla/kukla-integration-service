@@ -152,7 +152,7 @@ function buildFileOperationSuccessResponse(updatedBrowserHTML, successMessage) {
  */
 function generateEmptyFileListHTML(config) {
   const variables = {
-    storageType: config.storage?.provider || 'storage',
+    storageType: config.storage.provider,
   };
 
   return loadTemplateSync('empty-file-list', variables);

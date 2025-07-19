@@ -69,9 +69,18 @@ function validateBasicDeletionParameters(fileName, config, params) {
  */
 function validateFileTypeAllowed(fileName, config) {
   const fileExtension = fileName.split('.').pop().toLowerCase();
-  const allowedDeletions = config.files?.allowedDeletions || [];
+  const allowedDeletions = config.files.allowedDeletions;
 
-  if (allowedDeletions.length > 0 && !allowedDeletions.includes(fileExtension)) {
+  // Check if file is in allowed deletion list
+  const isAllowedDeletion = allowedDeletions.some((pattern) => {
+    if (pattern.includes('*')) {
+      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      return regex.test(fileName);
+    }
+    return pattern === fileName;
+  });
+
+  if (!isAllowedDeletion) {
     throw new Error(`Deletion not allowed for file type: .${fileExtension}`);
   }
 }
@@ -85,7 +94,7 @@ function validateFileTypeAllowed(fileName, config) {
  * @usedBy validateDeletionRequest
  */
 function validateFileNotProtected(fileName, config) {
-  const protectedPatterns = config.files?.protectedPatterns || [];
+  const protectedPatterns = config.files.protectedPatterns;
 
   for (const pattern of protectedPatterns) {
     if (fileName.includes(pattern)) {

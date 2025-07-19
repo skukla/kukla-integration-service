@@ -59,25 +59,50 @@ function validateAndEnhanceInventoryData(inventory, options = {}) {
 }
 
 /**
- * Normalize inventory fields to consistent types and defaults
+ * Create basic inventory fields with defaults
+ * @purpose Set up core inventory fields with safe default values
  * @param {Object} inventory - Raw inventory data
- * @returns {Object} Normalized inventory object
+ * @returns {Object} Basic inventory fields
  */
-function normalizeInventoryFields(inventory) {
+function createBasicInventoryFields(inventory) {
   return {
     item_id: inventory.item_id || 0,
     product_id: inventory.product_id || 0,
     stock_id: inventory.stock_id || 1,
     qty: parseFloat(inventory.qty) || 0,
     is_in_stock: Boolean(inventory.is_in_stock),
+    sku: inventory.sku || '',
+    stock_status: inventory.stock_status || 'in_stock',
+  };
+}
+
+/**
+ * Create quantity management fields with defaults
+ * @purpose Set up quantity limits and management settings
+ * @param {Object} inventory - Raw inventory data
+ * @returns {Object} Quantity management fields
+ */
+function createQuantityManagementFields(inventory) {
+  return {
     min_qty: parseFloat(inventory.min_qty) || 0,
     max_sale_qty: parseFloat(inventory.max_sale_qty) || 10000,
     min_sale_qty: parseFloat(inventory.min_sale_qty) || 1,
     manage_stock: Boolean(inventory.manage_stock),
     backorders: inventory.backorders || 0,
     notify_stock_qty: parseFloat(inventory.notify_stock_qty) || 1,
-    sku: inventory.sku || '',
-    stock_status: inventory.stock_status || 'in_stock',
+  };
+}
+
+/**
+ * Normalize inventory fields to consistent types and defaults
+ * @purpose Convert raw inventory data to standardized format with type safety
+ * @param {Object} inventory - Raw inventory data
+ * @returns {Object} Normalized inventory object
+ */
+function normalizeInventoryFields(inventory) {
+  return {
+    ...createBasicInventoryFields(inventory),
+    ...createQuantityManagementFields(inventory),
     isEnhanced: true,
     enhancedAt: new Date().toISOString(),
   };
@@ -85,6 +110,7 @@ function normalizeInventoryFields(inventory) {
 
 /**
  * Apply business rules to inventory data
+ * @purpose Enforce business logic for stock status and availability calculations
  * @param {Object} enhancedInventory - Inventory object to apply rules to
  */
 function applyBusinessRulesToInventory(enhancedInventory) {
@@ -151,10 +177,7 @@ function generateStockValidationMetadata(inventory) {
 }
 
 module.exports = {
-  // Workflows (used by feature core)
   validateAndApplyStockRules,
-
-  // Utilities (available for testing/extension)
   validateAndEnhanceInventoryData,
   applyDefaultStockData,
   generateStockValidationMetadata,

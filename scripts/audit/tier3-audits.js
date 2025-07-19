@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 
-const format = require('../shared/formatting');
+const { subInfo } = require('../shared/formatting');
 
 // Tier 3 Audit Workflows
 
@@ -26,7 +26,7 @@ async function executeTier3Audits(files, results) {
   ];
 
   for (const rule of tier3Rules) {
-    console.log(format.subInfo(rule.name));
+    console.log(subInfo(rule.name));
 
     for (const file of files) {
       try {

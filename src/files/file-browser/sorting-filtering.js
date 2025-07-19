@@ -54,6 +54,50 @@ function sortFilesByDate(files, order = 'desc') {
 // Sorting and Filtering Utilities
 
 /**
+ * Extract sort value from file based on field
+ * @purpose Get the appropriate value for sorting from file object
+ * @param {Object} file - File object
+ * @param {string} sortBy - Field to sort by
+ * @returns {*} Value to use for sorting
+ */
+function extractSortValue(file, sortBy) {
+  switch (sortBy) {
+    case 'name':
+      return (file.name || '').toLowerCase();
+    case 'size':
+      return file.rawSize || 0;
+    case 'lastModified':
+      return new Date(file.lastModifiedRaw || file.lastModified || 0);
+    default:
+      return file[sortBy] || '';
+  }
+}
+
+/**
+ * Compare two values for sorting
+ * @purpose Handle comparison logic for different data types
+ * @param {*} valueA - First value to compare
+ * @param {*} valueB - Second value to compare
+ * @param {string} order - Sort order ('asc' or 'desc')
+ * @returns {number} Comparison result
+ */
+function compareValues(valueA, valueB, order) {
+  // Handle Date comparison
+  if (valueA instanceof Date && valueB instanceof Date) {
+    return order === 'desc' ? valueB - valueA : valueA - valueB;
+  }
+
+  // Handle number comparison
+  if (typeof valueA === 'number' && typeof valueB === 'number') {
+    return order === 'desc' ? valueB - valueA : valueA - valueB;
+  }
+
+  // String comparison
+  const compareResult = String(valueA).localeCompare(String(valueB));
+  return order === 'desc' ? -compareResult : compareResult;
+}
+
+/**
  * Sort files by specified field
  * @purpose Generic file sorting with multiple field support
  * @param {Array} files - Array of file objects to sort
@@ -64,39 +108,81 @@ function sortFilesByDate(files, order = 'desc') {
  */
 function sortFiles(files, sortBy, order = 'asc') {
   return files.sort((a, b) => {
-    let valueA, valueB;
-
-    switch (sortBy) {
-      case 'name':
-        valueA = (a.name || '').toLowerCase();
-        valueB = (b.name || '').toLowerCase();
-        break;
-      case 'size':
-        valueA = a.rawSize || 0;
-        valueB = b.rawSize || 0;
-        break;
-      case 'lastModified':
-        valueA = new Date(a.lastModifiedRaw || a.lastModified || 0);
-        valueB = new Date(b.lastModifiedRaw || b.lastModified || 0);
-        break;
-      default:
-        valueA = a[sortBy] || '';
-        valueB = b[sortBy] || '';
-    }
-
-    // Handle comparison based on data type
-    if (valueA instanceof Date && valueB instanceof Date) {
-      return order === 'desc' ? valueB - valueA : valueA - valueB;
-    }
-
-    if (typeof valueA === 'number' && typeof valueB === 'number') {
-      return order === 'desc' ? valueB - valueA : valueA - valueB;
-    }
-
-    // String comparison
-    const compareResult = String(valueA).localeCompare(String(valueB));
-    return order === 'desc' ? -compareResult : compareResult;
+    const valueA = extractSortValue(a, sortBy);
+    const valueB = extractSortValue(b, sortBy);
+    return compareValues(valueA, valueB, order);
   });
+}
+
+/**
+ * Check if file matches name pattern filter
+ * @purpose Test file name against pattern filter
+ * @param {Object} file - File object
+ * @param {string} namePattern - Pattern to match
+ * @returns {boolean} True if matches or no pattern
+ */
+function matchesNamePattern(file, namePattern) {
+  if (!namePattern) return true;
+  const pattern = new RegExp(namePattern, 'i');
+  return pattern.test(file.name);
+}
+
+/**
+ * Check if file matches size filters
+ * @purpose Test file size against min/max filters
+ * @param {Object} file - File object
+ * @param {Object} filter - Filter object with minSize/maxSize
+ * @returns {boolean} True if size is within range
+ */
+function matchesSizeFilter(file, filter) {
+  const fileSize = file.rawSize || 0;
+
+  if (filter.minSize && fileSize < filter.minSize) {
+    return false;
+  }
+
+  if (filter.maxSize && fileSize > filter.maxSize) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check if file matches date range filter
+ * @purpose Test file date against date range filters
+ * @param {Object} file - File object
+ * @param {Object} filter - Filter object with dateFrom/dateTo
+ * @returns {boolean} True if date is within range
+ */
+function matchesDateFilter(file, filter) {
+  if (!filter.dateFrom && !filter.dateTo) return true;
+
+  const fileDate = new Date(file.lastModifiedRaw || file.lastModified);
+
+  if (filter.dateFrom && fileDate < new Date(filter.dateFrom)) {
+    return false;
+  }
+
+  if (filter.dateTo && fileDate > new Date(filter.dateTo)) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check if file matches extension filter
+ * @purpose Test file extension against allowed extensions
+ * @param {Object} file - File object
+ * @param {Array} extensions - Array of allowed extensions
+ * @returns {boolean} True if extension matches or no filter
+ */
+function matchesExtensionFilter(file, extensions) {
+  if (!extensions || !Array.isArray(extensions)) return true;
+
+  const fileExtension = file.name.split('.').pop().toLowerCase();
+  return extensions.includes(fileExtension);
 }
 
 /**
@@ -109,44 +195,12 @@ function sortFiles(files, sortBy, order = 'asc') {
  */
 function applyFileFilter(files, filter) {
   return files.filter((file) => {
-    // Filter by name pattern
-    if (filter.namePattern) {
-      const pattern = new RegExp(filter.namePattern, 'i');
-      if (!pattern.test(file.name)) return false;
-    }
-
-    // Filter by minimum size
-    if (filter.minSize && (file.rawSize || 0) < filter.minSize) {
-      return false;
-    }
-
-    // Filter by maximum size
-    if (filter.maxSize && (file.rawSize || 0) > filter.maxSize) {
-      return false;
-    }
-
-    // Filter by date range
-    if (filter.dateFrom || filter.dateTo) {
-      const fileDate = new Date(file.lastModifiedRaw || file.lastModified);
-
-      if (filter.dateFrom && fileDate < new Date(filter.dateFrom)) {
-        return false;
-      }
-
-      if (filter.dateTo && fileDate > new Date(filter.dateTo)) {
-        return false;
-      }
-    }
-
-    // Filter by file extension
-    if (filter.extensions && Array.isArray(filter.extensions)) {
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      if (!filter.extensions.includes(fileExtension)) {
-        return false;
-      }
-    }
-
-    return true;
+    return (
+      matchesNamePattern(file, filter.namePattern) &&
+      matchesSizeFilter(file, filter) &&
+      matchesDateFilter(file, filter) &&
+      matchesExtensionFilter(file, filter.extensions)
+    );
   });
 }
 

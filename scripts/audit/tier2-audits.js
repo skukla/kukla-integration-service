@@ -5,7 +5,7 @@
 
 const fs = require('fs').promises;
 
-const format = require('../shared/formatting');
+const { subInfo } = require('../shared/formatting');
 
 // Tier 2 Audit Workflows
 
@@ -30,7 +30,7 @@ async function executeTier2Audits(files, results) {
   ];
 
   for (const rule of tier2Rules) {
-    console.log(format.subInfo(rule.name));
+    console.log(subInfo(rule.name));
 
     for (const file of files) {
       try {
@@ -364,6 +364,14 @@ async function auditSharedUtilityOpportunities(filePath) {
 
 // Tier 2 Audit Utilities
 
+/**
+ * Extract function body content from source code
+ * @purpose Extract complete function body for analysis from a starting position
+ * @param {string} content - Source code content
+ * @param {number} startIndex - Starting index to extract from
+ * @returns {string} Complete function body including braces
+ * @usedBy auditFunctionLength
+ */
 function extractFunctionBody(content, startIndex) {
   const fromStart = content.substring(startIndex);
   const openBrace = fromStart.indexOf('{');
@@ -381,6 +389,13 @@ function extractFunctionBody(content, startIndex) {
   return fromStart.substring(openBrace, i);
 }
 
+/**
+ * Extract function names from source code content
+ * @purpose Extract all function names from content for duplication analysis
+ * @param {string} content - Source code content to analyze
+ * @returns {Array<string>} Array of unique function names found
+ * @usedBy auditCrossDomainFunctionDuplication, auditSharedUtilityOpportunities
+ */
 function extractFunctionNames(content) {
   const functionPatterns = [
     /(?:async\s+)?function\s+(\w+)/g,

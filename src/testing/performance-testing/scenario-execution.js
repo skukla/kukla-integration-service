@@ -402,9 +402,9 @@ function generateRealisticTestDuration(target, testConfig) {
   let baseDuration = baseDurations[target] || 500;
 
   // Add scenario-specific variation
-  if (testConfig.scenario?.includes('stress')) {
+  if (testConfig.scenario && testConfig.scenario.includes('stress')) {
     baseDuration *= 1.5; // Stress tests are slower
-  } else if (testConfig.scenario?.includes('quick')) {
+  } else if (testConfig.scenario && testConfig.scenario.includes('quick')) {
     baseDuration *= 0.8; // Quick tests are faster
   }
 

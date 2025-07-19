@@ -98,10 +98,10 @@ function buildPriceFields(product) {
 function addInventoryFields(productObj, product) {
   return {
     ...productObj,
-    qty: product.inventory?.qty || '',
-    is_in_stock: product.inventory?.is_in_stock || '',
-    stock_status: product.inventory?.stock_status || '',
-    manage_stock: product.inventory?.manage_stock || '',
+    qty: product.inventory ? product.inventory.qty : '',
+    is_in_stock: product.inventory ? product.inventory.is_in_stock : '',
+    stock_status: product.inventory ? product.inventory.stock_status : '',
+    manage_stock: product.inventory ? product.inventory.manage_stock : '',
   };
 }
 

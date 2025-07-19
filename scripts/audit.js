@@ -117,22 +117,7 @@ function loadAuditConfig() {
   const config = loadConfig({});
   return {
     ...config,
-    audit: config.scripts?.audit || getDefaultAuditConfig(),
-  };
-}
-
-/**
- * Get default audit configuration
- * @purpose Provide fallback audit configuration
- * @returns {Object} Default audit configuration
- * @usedBy loadAuditConfig
- */
-function getDefaultAuditConfig() {
-  return {
-    strictMode: false,
-    bailOnFailure: false,
-    verbose: false,
-    outputFormat: 'console',
+    audit: config.scripts.audit,
   };
 }
 

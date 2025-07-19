@@ -59,11 +59,7 @@ function calculateRuleConfidence(validationDetail, config) {
 }
 
 function getTierWeighting(tier, config) {
-  const weightings = config.auditTest?.confidence?.weightings || {
-    tier1: 1.0,
-    tier2: 0.8,
-    tier3: 0.5,
-  };
+  const weightings = config.auditTest.confidence.weightings;
 
   return weightings[tier] || 0.5;
 }

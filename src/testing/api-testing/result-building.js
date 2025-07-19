@@ -3,7 +3,7 @@
  * All API test result building utilities including success results, error handling, and formatting
  */
 
-// Test Result Building
+// Test Result Building Workflows
 
 /**
  * Build comprehensive API test result
@@ -65,7 +65,7 @@ function buildApiTestResult(endpoint, apiUrl, testResult, validation, options) {
  * @usedBy executeApiTestWorkflow, executeApiTestWithParams
  */
 function buildApiTestErrorResult(error, endpoint) {
-  const errorMessage = error?.message || error || 'Unknown API test error';
+  const errorMessage = error.message || error || 'Unknown API test error';
 
   return {
     success: false,

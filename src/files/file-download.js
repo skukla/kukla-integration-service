@@ -137,7 +137,7 @@ function detectContentType(fileName, config) {
   if (!fileName) return 'application/octet-stream';
 
   const extension = fileName.split('.').pop().toLowerCase();
-  const mimeTypes = config.files?.mimeTypes || {};
+  const mimeTypes = config.files.mimeTypes;
 
   return mimeTypes[extension] || 'application/octet-stream';
 }

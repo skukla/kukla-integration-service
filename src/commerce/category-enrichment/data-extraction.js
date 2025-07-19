@@ -3,7 +3,7 @@
  * All category ID extraction and product enhancement utilities
  */
 
-// Data Extraction Workflows
+// Business Workflows
 
 /**
  * Apply category data to products with comprehensive mapping
@@ -80,6 +80,7 @@ function getCategoryIdsFromProduct(product) {
 
 /**
  * Extract category IDs from direct categories array
+ * @purpose Extract category IDs from product.categories array in Commerce API responses
  * @param {Object} product - Product object
  * @param {Array} categoryIds - Array to push category IDs to
  */
@@ -95,6 +96,7 @@ function extractFromDirectCategories(product, categoryIds) {
 
 /**
  * Extract category IDs from extension attributes
+ * @purpose Extract category IDs from product.extension_attributes.category_links structure
  * @param {Object} product - Product object
  * @param {Array} categoryIds - Array to push category IDs to
  */
@@ -110,6 +112,7 @@ function extractFromExtensionAttributes(product, categoryIds) {
 
 /**
  * Extract category IDs from custom attributes
+ * @purpose Extract category IDs from product.custom_attributes with category_ids attribute
  * @param {Object} product - Product object
  * @param {Array} categoryIds - Array to push category IDs to
  */
@@ -132,6 +135,7 @@ function extractFromCustomAttributes(product, categoryIds) {
 
 /**
  * Normalize attribute value to array of strings
+ * @purpose Convert various category ID formats (string, array, etc.) to consistent array
  * @param {*} value - Attribute value in various formats
  * @returns {Array} Array of string values
  */
@@ -147,6 +151,7 @@ function normalizeAttributeValue(value) {
 
 /**
  * Add valid category IDs to the collection
+ * @purpose Filter and add only valid numeric category IDs to avoid duplicates
  * @param {Array} catIds - Array of potential category ID strings
  * @param {Array} categoryIds - Target array for valid category IDs
  */
@@ -160,10 +165,7 @@ function addValidCategoryIds(catIds, categoryIds) {
 }
 
 module.exports = {
-  // Workflows
   applyCategoriesToProducts,
-
-  // Utilities
   extractUniqueCategoryIds,
   getCategoryIdsFromProduct,
 };

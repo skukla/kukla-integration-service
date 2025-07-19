@@ -21,7 +21,7 @@ function validateFileType(fileName, config) {
     };
   }
 
-  const allowedExtensions = config.files?.extensions || ['.csv', '.txt', '.json'];
+  const allowedExtensions = config.files.extensions;
   const fileExtension = getFileExtension(fileName);
 
   if (!allowedExtensions.includes(fileExtension)) {

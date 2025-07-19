@@ -3,7 +3,7 @@
  * All test suite management utilities including command parsing, validation, and suite configuration
  */
 
-// Test Command Parsing and Validation
+// Suite Management Workflows
 
 /**
  * Parse test orchestration options into executable test plan
@@ -398,15 +398,11 @@ function getAvailableTestSuites() {
 }
 
 module.exports = {
-  // Test Command Parsing and Validation
+  // Suite Management Workflows
   parseTestOrchestrationOptions,
   validateTestOrchestrationPlan,
-  validateSuiteConfiguration,
 
-  // Command Argument Parsing
-  parseTestCommandArgs,
-
-  // Test Suite Configuration
+  // Suite Management Operations
   determinateTestSuite,
   determineAutoSuite,
   getTestSuiteConfiguration,

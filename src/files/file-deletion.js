@@ -13,6 +13,8 @@ const {
 } = require('./file-deletion/storage-operations');
 const { validateDeletionRequest } = require('./file-deletion/validation');
 
+// Business Workflows
+
 /**
  * Delete file with comprehensive validation
  * @purpose Delete file with complete validation, permission checks, and response handling
@@ -35,6 +37,8 @@ async function deleteFileWithValidation(fileName, config, params) {
     return buildDeletionErrorResponse(error, fileName, config);
   }
 }
+
+// Feature Operations
 
 /**
  * Delete single file without validation

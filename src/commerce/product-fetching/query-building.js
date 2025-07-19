@@ -25,7 +25,28 @@ function buildProductQuery(query, config, options = {}) {
 }
 
 /**
+ * Build basic product query
+ * @purpose Create simple Commerce API query for basic fetching
+ * @param {Object} query - Basic query parameters
+ * @param {Object} config - Configuration object
+ * @returns {Object} Basic Commerce API query
+ * @usedBy fetchProducts
+ */
+function buildBasicProductQuery(query, config) {
+  const pageSize = query.limit || config.commerce.product.pagination.pageSize || 100;
+  const currentPage = Math.floor((query.offset || 0) / pageSize) + 1;
+
+  return {
+    'searchCriteria[pageSize]': pageSize,
+    'searchCriteria[currentPage]': currentPage,
+  };
+}
+
+// Feature Utilities
+
+/**
  * Build base pagination criteria
+ * @purpose Create foundation search criteria with pagination parameters
  * @param {Object} query - Raw query parameters
  * @param {Object} config - Configuration object
  * @returns {Object} Base search criteria with pagination
@@ -42,6 +63,7 @@ function buildBasePaginationCriteria(query, config) {
 
 /**
  * Add sorting parameters to query
+ * @purpose Apply sort order parameters to Commerce API search criteria
  * @param {Object} query - Raw query parameters
  * @param {Object} searchCriteria - Search criteria to modify
  */
@@ -54,6 +76,7 @@ function addSortingToQuery(query, searchCriteria) {
 
 /**
  * Add search term parameters to query
+ * @purpose Apply text search filtering to Commerce API search criteria
  * @param {Object} query - Raw query parameters
  * @param {Object} searchCriteria - Search criteria to modify
  */
@@ -67,6 +90,7 @@ function addSearchTermToQuery(query, searchCriteria) {
 
 /**
  * Add field filtering parameters to query
+ * @purpose Apply field selection to Commerce API query for optimized responses
  * @param {Object} query - Raw query parameters
  * @param {Object} options - Query building options
  * @param {Object} config - Configuration object
@@ -79,24 +103,6 @@ function addFieldFilteringToQuery(query, options, config, searchCriteria) {
       searchCriteria.fields = requestedFields.join(',');
     }
   }
-}
-
-/**
- * Build basic product query
- * @purpose Create simple Commerce API query for basic fetching
- * @param {Object} query - Basic query parameters
- * @param {Object} config - Configuration object
- * @returns {Object} Basic Commerce API query
- * @usedBy fetchProducts
- */
-function buildBasicProductQuery(query, config) {
-  const pageSize = query.limit || config.commerce.product.pagination.pageSize || 100;
-  const currentPage = Math.floor((query.offset || 0) / pageSize) + 1;
-
-  return {
-    'searchCriteria[pageSize]': pageSize,
-    'searchCriteria[currentPage]': currentPage,
-  };
 }
 
 /**
@@ -148,7 +154,6 @@ function buildCriteriaQuery(criteria, config) {
 }
 
 module.exports = {
-  // Workflows (used by feature core)
   buildProductQuery,
   buildBasicProductQuery,
   buildCriteriaQuery,

@@ -136,7 +136,7 @@ function estimateOrchestrationTime(options) {
 
   try {
     const testPlan = parseTestOrchestrationOptions(options);
-    const tests = testPlan.suiteConfig?.tests || [];
+    const tests = testPlan.suiteConfig.tests;
 
     return estimateExecutionTime(tests, testPlan.parallel);
   } catch (error) {

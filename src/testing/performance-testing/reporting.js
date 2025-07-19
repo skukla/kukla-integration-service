@@ -3,7 +3,7 @@
  * All performance test result building utilities including success results, error handling, and formatted output
  */
 
-// Performance Test Result Building
+// Performance Reporting Workflows
 
 /**
  * Build comprehensive performance test result
@@ -156,7 +156,7 @@ function addErrorDetails(result, testResult) {
  * @usedBy executePerformanceTestWorkflow, executePerformanceTestWithScenario
  */
 function buildPerformanceTestErrorResult(error, target) {
-  const errorMessage = error?.message || error || 'Unknown performance test error';
+  const errorMessage = error.message || error || 'Unknown performance test error';
 
   return {
     success: false,

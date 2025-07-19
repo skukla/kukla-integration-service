@@ -19,6 +19,7 @@ async function applyInventoryToProducts(products, inventoryMap) {
 
 /**
  * Apply inventory data to a single product
+ * @purpose Enhance individual product with inventory information from inventory map
  * @param {Object} product - Product to enhance with inventory
  * @param {Object} inventoryMap - Map of SKU to inventory data
  * @returns {Object} Product enhanced with inventory information
@@ -35,6 +36,7 @@ function applyInventoryToSingleProduct(product, inventoryMap) {
 
 /**
  * Create product object when no inventory data is available
+ * @purpose Generate product with safe default inventory values when no stock data exists
  * @param {Object} product - Base product object
  * @returns {Object} Product with default inventory values
  */
@@ -53,6 +55,7 @@ function createProductWithoutInventory(product) {
 
 /**
  * Create product object with inventory data applied
+ * @purpose Merge product data with complete inventory information and metadata
  * @param {Object} product - Base product object
  * @param {Object} inventoryData - Inventory data to apply
  * @returns {Object} Product with complete inventory information
@@ -68,21 +71,16 @@ function createProductWithInventory(product, inventoryData) {
 }
 
 /**
- * Build detailed inventory object
+ * Create basic inventory fields
+ * @purpose Set up core inventory fields with safe defaults
  * @param {Object} inventoryData - Raw inventory data
- * @returns {Object} Structured inventory object
+ * @returns {Object} Basic inventory fields
  */
-function buildInventoryObject(inventoryData) {
+function createBasicInventoryFields(inventoryData) {
   return {
     qty: inventoryData.qty || 0,
     is_in_stock: inventoryData.is_in_stock || false,
     stock_status: inventoryData.stock_status || 'out_of_stock',
-    min_qty: inventoryData.min_qty || 0,
-    max_sale_qty: inventoryData.max_sale_qty || 10000,
-    min_sale_qty: inventoryData.min_sale_qty || 1,
-    manage_stock: inventoryData.manage_stock || true,
-    backorders: inventoryData.backorders || 0,
-    notify_stock_qty: inventoryData.notify_stock_qty || 1,
     item_id: inventoryData.item_id || 0,
     product_id: inventoryData.product_id || 0,
     stock_id: inventoryData.stock_id || 1,
@@ -90,7 +88,38 @@ function buildInventoryObject(inventoryData) {
 }
 
 /**
+ * Create inventory management fields
+ * @purpose Set up quantity management and control fields
+ * @param {Object} inventoryData - Raw inventory data
+ * @returns {Object} Management fields
+ */
+function createInventoryManagementFields(inventoryData) {
+  return {
+    min_qty: inventoryData.min_qty || 0,
+    max_sale_qty: inventoryData.max_sale_qty || 10000,
+    min_sale_qty: inventoryData.min_sale_qty || 1,
+    manage_stock: inventoryData.manage_stock || true,
+    backorders: inventoryData.backorders || 0,
+    notify_stock_qty: inventoryData.notify_stock_qty || 1,
+  };
+}
+
+/**
+ * Build detailed inventory object
+ * @purpose Create structured inventory data object with all stock information
+ * @param {Object} inventoryData - Raw inventory data
+ * @returns {Object} Structured inventory object
+ */
+function buildInventoryObject(inventoryData) {
+  return {
+    ...createBasicInventoryFields(inventoryData),
+    ...createInventoryManagementFields(inventoryData),
+  };
+}
+
+/**
  * Build inventory metadata object
+ * @purpose Create metadata tracking for inventory enrichment process
  * @param {Object} inventoryData - Raw inventory data
  * @returns {Object} Inventory metadata object
  */
@@ -129,9 +158,6 @@ function extractUniqueProductSkus(products) {
 }
 
 module.exports = {
-  // Workflows (used by feature core)
   applyInventoryToProducts,
-
-  // Utilities (available for testing/extension)
   extractUniqueProductSkus,
 };

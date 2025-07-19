@@ -188,10 +188,15 @@ function getCompressionStats(originalBuffer, compressedBuffer) {
 }
 
 module.exports = {
+  // Compression Configuration
   CompressionConfig,
+
+  // Compression Operations
   shouldCompress,
   getCompressionMethod,
   addCompression,
   compress,
+
+  // Compression Utilities
   getCompressionStats,
 };
