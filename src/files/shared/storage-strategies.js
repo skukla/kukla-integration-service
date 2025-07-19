@@ -31,7 +31,7 @@ const {
  * - read(fileName): Read file content
  */
 async function initializeStorageStrategy(config, params) {
-  const provider = config.storage?.provider;
+  const provider = config.storage.provider;
   return await selectStorageStrategy(provider, config, params);
 }
 
