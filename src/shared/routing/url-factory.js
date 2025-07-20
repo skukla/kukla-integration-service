@@ -15,7 +15,7 @@ const { buildActionUrl } = require('./runtime');
  *
  * Usage:
  *   const { downloadUrl, commerceUrl, testUrl } = createUrlBuilders(config);
- *   const url = downloadUrl(fileName);  // No config needed!
+ *   const url = downloadUrl(fileName);
  */
 function createUrlBuilders(config) {
   return {
@@ -67,14 +67,16 @@ function createUrlBuilders(config) {
      * @returns {string} Commerce API URL
      */
     commerceUrl(endpoint, params = {}, pathParams = {}) {
-      // Handle complex endpoint building (like products with query params)
-      if (endpoint === 'products' && Object.keys(params).length > 0) {
-        const { buildProductsEndpoint } = require('../../commerce/shared/endpoint-builders');
-        return buildProductsEndpoint(params, config);
+      // Build Commerce URL with query parameters if provided
+      const url = buildCommerceApiUrl(endpoint, config, pathParams);
+
+      if (params && Object.keys(params).length > 0) {
+        const searchParams = new URLSearchParams(params);
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}${searchParams.toString()}`;
       }
 
-      // Handle simple endpoints
-      return buildCommerceApiUrl(endpoint, config, pathParams);
+      return url;
     },
 
     /**

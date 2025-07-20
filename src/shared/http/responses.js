@@ -3,6 +3,9 @@
  * @module core/http/responses
  */
 
+const { HTTP_STATUS } = require('./status-codes');
+const { validateErrorParameter } = require('../action/response-validation');
+
 // Constants
 const CONTENT_TYPE_JSON = 'application/json';
 
@@ -20,7 +23,7 @@ const response = {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HTTP_STATUS.OK,
       headers: {
         'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': options.cacheControl || 'no-cache',
@@ -30,15 +33,24 @@ const response = {
   },
 
   error: (error, context = {}) => {
+    // Validate and fix error parameter type
+    const { error: validatedError, warning } = validateErrorParameter(error);
+
+    // Log warning in development to catch these issues early
+    if (warning && process.env.NODE_ENV !== 'production') {
+      console.warn(`⚠️  Response validation: ${warning}`);
+    }
+
     const body = JSON.stringify({
       success: false,
-      error: error.message,
-      ...(error.body && { details: error.body }),
+      error: validatedError.message,
+      ...(validatedError.body && { details: validatedError.body }),
       ...(context.steps && { steps: context.steps }),
     });
 
     return {
-      statusCode: error.status || error.statusCode || 500,
+      statusCode:
+        validatedError.status || validatedError.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR,
       headers: {
         'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-store',
@@ -55,7 +67,7 @@ const response = {
     });
 
     return {
-      statusCode: 400,
+      statusCode: HTTP_STATUS.BAD_REQUEST,
       headers: {
         'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-store',
@@ -87,7 +99,7 @@ const response = {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HTTP_STATUS.OK,
       headers: {
         'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-cache',
@@ -112,7 +124,7 @@ const response = {
     });
 
     return {
-      statusCode: 200,
+      statusCode: HTTP_STATUS.OK,
       headers: {
         'Content-Type': CONTENT_TYPE_JSON,
         'Cache-Control': 'no-cache',
@@ -128,7 +140,7 @@ const response = {
    * @returns {Object} Formatted HTML response
    */
   html: (htmlContent, options = {}) => {
-    const { headers: customHeaders = {}, statusCode = 200 } = options;
+    const { headers: customHeaders = {}, statusCode = HTTP_STATUS.OK } = options;
 
     return {
       statusCode,

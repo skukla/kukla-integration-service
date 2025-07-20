@@ -11,12 +11,16 @@
 function normalizeParams(params) {
   const normalized = {};
   const paramMap = {
-    commerce_url: 'COMMERCE_BASE_URL',
-    commerce_admin_username: 'COMMERCE_ADMIN_USERNAME',
-    commerce_admin_password: 'COMMERCE_ADMIN_PASSWORD',
+    commerce_url: 'baseUrl',
+    commerce_base_url: 'baseUrl',
+    COMMERCE_BASE_URL: 'baseUrl',
+    commerce_admin_username: 'adminUsername',
+    COMMERCE_ADMIN_USERNAME: 'adminUsername',
+    commerce_admin_password: 'adminPassword',
+    COMMERCE_ADMIN_PASSWORD: 'adminPassword',
   };
   Object.entries(params).forEach(([key, value]) => {
-    const normalizedKey = paramMap[key.toLowerCase()] || key;
+    const normalizedKey = paramMap[key] || paramMap[key.toLowerCase()] || key;
     normalized[normalizedKey] = value;
   });
   return normalized;
@@ -62,10 +66,10 @@ function extractActionParams(params) {
     const headers = params.__ow_headers;
     // Commerce admin credential headers for HTTP bridge pattern
     if (headers['x-commerce-username']) {
-      headerParams.COMMERCE_ADMIN_USERNAME = headers['x-commerce-username'];
+      headerParams.adminUsername = headers['x-commerce-username'];
     }
     if (headers['x-commerce-password']) {
-      headerParams.COMMERCE_ADMIN_PASSWORD = headers['x-commerce-password'];
+      headerParams.adminPassword = headers['x-commerce-password'];
     }
   }
 

@@ -3,7 +3,7 @@
  * Utility functions for building action execution contexts
  */
 
-const response = require('../http/responses');
+const { response } = require('../http/responses');
 const { formatStepMessage } = require('../utils/formatting');
 
 /**

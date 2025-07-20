@@ -7,7 +7,7 @@ const { buildContext } = require('./context-building');
 const { setupLogger } = require('./logger-setup');
 const { loadConfig } = require('../../../config');
 const { extractActionParams } = require('../http/params');
-const response = require('../http/responses');
+const { response } = require('../http/responses');
 
 /**
  * Initialize action execution environment
@@ -20,8 +20,8 @@ const response = require('../http/responses');
  */
 async function initializeAction(params, options = {}) {
   try {
-    // Step 1: Load configuration and extract parameters
-    const config = loadConfig(params);
+    // Step 1: Load configuration with action-specific profile
+    const config = loadConfig(params, false, options.actionName);
     const extractedParams = extractActionParams(params);
 
     // Step 2: Setup logging with extracted parameters
@@ -40,7 +40,7 @@ async function initializeAction(params, options = {}) {
   } catch (error) {
     return {
       error: true,
-      response: response.error(error.message),
+      response: response.error(error),
     };
   }
 }
@@ -98,7 +98,7 @@ async function initializeActionSafely(params, options = {}) {
   } catch (error) {
     return {
       error: true,
-      response: response.error(`Action initialization failed: ${error.message}`),
+      response: response.error({ message: `Action initialization failed: ${error.message}` }),
     };
   }
 }
@@ -153,7 +153,7 @@ module.exports = {
   initializeAction,
   initializeActionSafely,
   initializeTestAction,
-  
+
   // Action Initialization Utilities
   validateActionParams,
   createInitializationConfig,
