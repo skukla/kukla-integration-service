@@ -122,8 +122,9 @@ src/
 └── shared/                    # Cross-domain infrastructure
     ├── action/                # Action framework infrastructure
     ├── http/                  # HTTP utilities
+    ├── routing/               # URL factory and routing utilities
     ├── validation/            # Cross-domain validation
-    └── utils/                 # Universal utilities
+    └── utils/                 # Universal utilities including parameter resolution
 ```
 
 ### **Feature File Pattern**
@@ -444,10 +445,15 @@ config/
 ### **Configuration Patterns**
 
 ```javascript
-// ✅ CORRECT: Clean object access
+// ✅ CORRECT: Use parameter resolution utilities with standardized names
 async function exportProducts(params, config) {
+  const { baseUrl, adminUsername, adminPassword } = getCommerceParameters(params, config);
+  // Parameters use environment variable format: COMMERCE_BASE_URL, COMMERCE_ADMIN_USERNAME
+}
+
+// ✅ CORRECT: Clean object access
+async function processData(params, config) {
   const timeout = config.commerce.api.timeout;
-  const baseUrl = config.commerce.baseUrl;
   // Use configuration values directly
 }
 
@@ -459,6 +465,34 @@ async function featureFunction(params, config) {
 
 // ❌ WRONG: Optional chaining with fallbacks in business logic
 const timeout = config.commerce?.api?.timeout || 30000;
+```
+
+### **HTTP Headers Pattern**
+
+**When to centralize vs. domain-specific headers based on business and technical constraints:**
+
+```javascript
+// ✅ CENTRALIZE: Domain Business Constraints (Commerce - all calls identical)
+function buildAuthenticatedRequestOptions(requestOptions, token, config) {
+  return {
+    headers: {
+      ...config.commerce.defaultHeaders,  // Centralized
+      ...requestOptions.headers,
+      Authorization: `Bearer ${token}`,
+    },
+  };
+}
+
+// ✅ DOMAIN-SPECIFIC: Technical Constraints (Testing - needs identification)
+function buildApiRequestOptions(options) {
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Adobe-App-Builder-API-Test',  // Domain-specific
+      ...options.headers,
+    },
+  };
+}
 ```
 
 ---

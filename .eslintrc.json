@@ -71,6 +71,15 @@
         "exports": "always-multiline",
         "functions": "never"
       }
+    ],
+
+    // Custom debugging rules
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.object.name='response'][callee.property.name='error'][arguments.0.type='Literal'][arguments.0.value=/^[a-zA-Z]/]",
+        "message": "Don't pass string literals to response.error() - use error objects with .message property"
+      }
     ]
   },
   "settings": {

@@ -64,7 +64,11 @@
     "audit:tier1": "node scripts/audit.js --tier1-only",
     "audit:tier2": "node scripts/audit.js --tier2-only",
     "audit:tier3": "node scripts/audit.js --tier3-only",
-    "audit:ci": "node scripts/audit.js --tier1-only"
+    "audit:ci": "node scripts/audit.js --tier1-only",
+    "debug:logs": "aio runtime activation list --limit 5",
+    "debug:logs:latest": "aio runtime activation get $(aio runtime activation list --limit 1 --json | jq -r '.[0].activationId')",
+    "debug:health": "node scripts/test.js --action=health",
+    "debug:deploy": "npm run clean && npm run build && npm run deploy && npm run debug:health"
   },
   "engines": {
     "node": ">=18"
