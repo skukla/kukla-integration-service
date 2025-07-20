@@ -114,14 +114,14 @@ async function executeActionTest(actionName, config, options) {
       isProd,
     });
 
-    // Handle spinner based on test result
+    // Step 4: Handle spinner result and display results
     if (testResult.success) {
       succeedSpinner(requestSpinner, 'Request successful');
     } else {
       requestSpinner.fail('Request failed');
     }
 
-    // Step 4: Display results with full response content
+    // Step 5: Display results using testing domain
     displayTestResults(testResult);
 
     return {

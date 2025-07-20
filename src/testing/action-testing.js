@@ -3,8 +3,9 @@
  * Complete action testing capability with execution, validation, and response verification
  */
 
-const { loadConfig } = require('../../config');
+const { buildTestingRuntimeConfig } = require('../../config/domains/runtime');
 const { request } = require('../shared/http/client');
+const { isSuccessStatus } = require('../shared/http/status-codes');
 const { createUrlBuilders } = require('../shared/routing/url-factory');
 
 // Business Workflows
@@ -26,8 +27,10 @@ async function executeActionTestWorkflow(actionName, options = {}) {
       return buildActionTestErrorResult(validationResult.error, actionName);
     }
 
-    // Step 2: Load configuration and build test URL using factory pattern
-    const config = loadConfig({}, options.isProd);
+    // Step 2: Build runtime config for testing
+    const config = {
+      runtime: buildTestingRuntimeConfig(),
+    };
     const { runtimeUrl } = createUrlBuilders(config);
     const actionUrl = runtimeUrl(actionName);
 
@@ -121,19 +124,42 @@ async function executeActionTestRequest(actionUrl, actionName, options) {
 
     const responseTime = Date.now() - startTime;
 
+    // Parse response body regardless of status code
+    let parsedData = null;
+    try {
+      parsedData = typeof response.body === 'string' ? JSON.parse(response.body) : response.body;
+    } catch (parseError) {
+      // If JSON parsing fails, keep the raw body
+      parsedData = { rawBody: response.body };
+    }
+
     return {
-      success: response.statusCode >= 200 && response.statusCode < 300,
+      success: isSuccessStatus(response.statusCode),
       statusCode: response.statusCode,
       responseTime,
-      data: typeof response.body === 'string' ? JSON.parse(response.body) : response.body,
+      data: parsedData,
       headers: response.headers,
       url: actionUrl,
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
+
+    // Check if error has response body (HTTP error from our createHttpError)
+    if (error.body) {
+      return {
+        success: false,
+        statusCode: error.status || 500,
+        responseTime,
+        data: error.body, // This contains the parsed JSON response
+        headers: error.headers || {},
+        url: actionUrl,
+      };
+    }
+
+    // Network or other error without response body
     return {
       success: false,
-      statusCode: 500,
+      statusCode: error.status || 500,
       responseTime,
       error: error.message,
       url: actionUrl,
@@ -150,9 +176,11 @@ async function executeActionTestRequest(actionUrl, actionName, options) {
  */
 function validateActionTestResponse(testResult, actionName) {
   if (!testResult.success) {
+    // Extract detailed error from response data if available
+    const detailedError = testResult.data?.error || testResult.error || 'Unknown error';
     return {
       isValid: false,
-      errors: [`Action request failed: ${testResult.error || 'Unknown error'}`],
+      errors: [`Action request failed: ${detailedError}`],
       warnings: [],
     };
   }
@@ -175,17 +203,29 @@ function validateActionTestResponse(testResult, actionName) {
   }
 
   // Action-specific validation
-  if (actionName.includes('products') && testResult.data) {
-    if (!testResult.data.products && !testResult.data.downloadUrl) {
-      warnings.push('Products action should return products data or download URL');
-    }
-  }
+  validateActionSpecificResponse(actionName, testResult, warnings);
 
   return {
     isValid: errors.length === 0,
     errors,
     warnings,
   };
+}
+
+/**
+ * Validate action-specific response requirements
+ * @purpose Check action-specific response structure and content
+ * @param {string} actionName - Action name for specific validation
+ * @param {Object} testResult - Test result with response data
+ * @param {Array} warnings - Array to collect warnings
+ * @usedBy validateActionTestResponse
+ */
+function validateActionSpecificResponse(actionName, testResult, warnings) {
+  if (actionName.includes('products') && testResult.data) {
+    if (!testResult.data.products && !testResult.data.downloadUrl) {
+      warnings.push('Products action should return products data or download URL');
+    }
+  }
 }
 
 // Feature Utilities
@@ -298,6 +338,7 @@ module.exports = {
   validateActionTestResponse,
 
   // Feature utilities
+  validateActionSpecificResponse,
   generateMockActionResponse,
   buildActionTestResult,
   buildActionTestErrorResult,
