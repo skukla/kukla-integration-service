@@ -3,9 +3,10 @@
  * EJS-based template loading utilities for HTMX HTML partials with excellent tooling support
  */
 
-const path = require('path');
-
 const ejs = require('ejs');
+
+// Import embedded templates for deployment
+const { getTemplate, hasTemplate } = require('./template-bundle');
 
 /**
  * Load and render EJS template with variable substitution
@@ -17,15 +18,14 @@ const ejs = require('ejs');
  * @usedBy All HTMX partial generators for file-based templates
  */
 async function loadTemplate(templateName, variables = {}, options = {}) {
-  const { templateDir = 'templates' } = options;
-
   try {
-    // Step 1: Build template file path
-    const templatePath = path.join(__dirname, '..', templateDir, `${templateName}.ejs`);
+    // Step 1: Get template content from embedded bundle
+    const templateContent = getTemplate(templateName);
 
     // Step 2: Render template with EJS
-    const renderedHTML = await ejs.renderFile(templatePath, variables, {
-      cache: process.env.NODE_ENV === 'production', // Cache in production
+    const renderedHTML = ejs.render(templateContent, variables, {
+      cache: process.env.NODE_ENV === 'production',
+      filename: `${templateName}.ejs`, // For error reporting
       ...options,
     });
 
@@ -45,18 +45,13 @@ async function loadTemplate(templateName, variables = {}, options = {}) {
  * @usedBy HTMX generators that need synchronous template loading
  */
 function loadTemplateSync(templateName, variables = {}, options = {}) {
-  const { templateDir = 'templates' } = options;
-
   try {
-    // Step 1: Build template file path
-    const templatePath = path.join(__dirname, '..', templateDir, `${templateName}.ejs`);
+    // Step 1: Get template content from embedded bundle
+    const templateContent = getTemplate(templateName);
 
     // Step 2: Render template with EJS synchronously
-    const fs = require('fs');
-    const templateContent = fs.readFileSync(templatePath, 'utf8');
-
     const renderedHTML = ejs.render(templateContent, variables, {
-      filename: templatePath, // For proper error reporting
+      filename: `${templateName}.ejs`, // For proper error reporting
       cache: process.env.NODE_ENV === 'production',
       ...options,
     });
@@ -69,21 +64,13 @@ function loadTemplateSync(templateName, variables = {}, options = {}) {
 
 /**
  * Check if template file exists
- * @purpose Verify EJS template file exists before attempting to load
+ * @purpose Verify EJS template exists in bundle
  * @param {string} templateName - Template file name (without .ejs extension)
- * @param {string} [templateDir] - Template directory name
- * @returns {Promise<boolean>} Whether template file exists
+ * @returns {Promise<boolean>} Whether template exists
  * @usedBy Template validation utilities
  */
-async function templateExists(templateName, templateDir = 'templates') {
-  try {
-    const fs = require('fs').promises;
-    const templatePath = path.join(__dirname, '..', templateDir, `${templateName}.ejs`);
-    await fs.access(templatePath);
-    return true;
-  } catch {
-    return false;
-  }
+async function templateExists(templateName) {
+  return hasTemplate(templateName);
 }
 
 /**
