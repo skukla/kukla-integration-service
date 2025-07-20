@@ -4,7 +4,7 @@
  */
 
 const { buildStorageParams } = require('./shared/file-utils');
-const { determineStorageStrategy } = require('./shared/storage-strategies');
+const { initializeStorageStrategy } = require('./shared/storage-strategies');
 const { response } = require('../shared/http/responses');
 
 // Business Workflows
@@ -71,7 +71,7 @@ async function exportCsvDataOnly(csvData, config, params) {
  * @usedBy CSV export workflows requiring storage execution
  */
 async function storeCsvWithStrategy(storageParams, config) {
-  const strategy = await determineStorageStrategy(config);
+  const strategy = await initializeStorageStrategy(config, {});
 
   return await strategy.store(storageParams);
 }

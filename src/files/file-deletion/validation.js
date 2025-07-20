@@ -4,6 +4,7 @@
  */
 
 const { cleanFileName } = require('../shared/file-utils');
+const { initializeStorageStrategy } = require('../shared/storage-strategies');
 
 // Validation Workflows
 
@@ -113,10 +114,8 @@ function validateFileNotProtected(fileName, config) {
  * @usedBy validateDeletionRequest
  */
 async function validateFileExists(fileName, config, params) {
-  const { determineStorageStrategy } = require('../shared/storage-strategies');
-
   try {
-    const storageStrategy = await determineStorageStrategy(config, params);
+    const storageStrategy = await initializeStorageStrategy(config, params);
     const cleanedFileName = cleanFileName(fileName, config);
     const exists = await storageStrategy.fileExists(cleanedFileName);
 
