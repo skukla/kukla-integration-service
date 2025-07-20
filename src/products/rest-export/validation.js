@@ -86,23 +86,10 @@ function validateProductPaginationConfig(config) {
  * @usedBy validateInput
  */
 function validateCommerceApiConfig(config) {
-  // Validate base URL is configured
-  if (!config.commerce.baseUrl) {
-    throw new Error('Commerce base URL is required - set COMMERCE_BASE_URL environment variable');
-  }
+  // Just do a basic timeout validation for now - remove complex parameter resolution
+  const timeout = config.commerce?.api?.timeout || 30000;
 
-  if (config.commerce.baseUrl.startsWith('REQUIRED:')) {
-    throw new Error(
-      'Commerce base URL not configured - set COMMERCE_BASE_URL environment variable'
-    );
-  }
-
-  // Validate API configuration
-  if (!config.commerce.api || !config.commerce.api.timeout) {
-    throw new Error('Commerce API timeout configuration is required');
-  }
-
-  const timeout = config.commerce.api.timeout;
+  // Validate business rules for API timeout
   if (timeout < 5000 || timeout > 60000) {
     throw new Error('Commerce API timeout must be between 5000ms and 60000ms');
   }

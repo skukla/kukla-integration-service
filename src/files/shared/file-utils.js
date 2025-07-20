@@ -99,10 +99,32 @@ function extractFileName(filePath) {
   return filePath.split('/').pop() || '';
 }
 
+/**
+ * Build storage parameters for file operations
+ * @purpose Create complete storage parameters object for file storage operations
+ * @param {string} fileName - Target filename for storage
+ * @param {Object} config - Application configuration with storage settings
+ * @param {Object} params - Additional parameters for storage configuration
+ * @returns {Object} Complete storage parameters for strategy execution
+ * @usedBy CSV export and other file storage operations
+ */
+function buildStorageParams(fileName, config, params) {
+  const cleanedFileName = cleanFileName(fileName, config);
+
+  return {
+    fileName: cleanedFileName,
+    provider: config.storage.provider,
+    directory: config.storage.directory,
+    timestamp: new Date().toISOString(),
+    source: params.source || 'file-operation',
+  };
+}
+
 module.exports = {
   cleanFileName,
   removePublicPrefix,
   sanitizeFileName,
   buildSafeFilePath,
   extractFileName,
+  buildStorageParams,
 };
