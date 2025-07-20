@@ -4,8 +4,10 @@
  */
 
 const { request } = require('../shared/http/client');
+const { getAuthErrorCodes } = require('../shared/http/status-codes');
 const { createUrlBuilders } = require('../shared/routing/url-factory');
 const { sleep } = require('../shared/utils/async');
+const { getCommerceParameters } = require('../shared/utils/parameters');
 
 // Token storage - In-memory cache for admin tokens
 const tokenStorage = new Map();
@@ -24,7 +26,7 @@ const tokenStorage = new Map();
  */
 async function executeAuthenticatedCommerceRequest(endpoint, requestOptions, config, params) {
   const token = await getAdminToken(config);
-  const options = buildAuthenticatedRequestOptions(requestOptions, token);
+  const options = buildAuthenticatedRequestOptions(requestOptions, token, config);
   const { commerceUrl } = createUrlBuilders(config);
   const url = commerceUrl(endpoint, {}, params);
 
@@ -47,7 +49,7 @@ async function executeBatchAuthenticatedRequests(requests, config, params) {
   const { commerceUrl } = createUrlBuilders(config);
   const authenticatedRequests = requests.map((request) => ({
     ...request,
-    options: buildAuthenticatedRequestOptions(request.options, token),
+    options: buildAuthenticatedRequestOptions(request.options, token, config),
     url: commerceUrl(request.endpoint, {}, params),
   }));
 
@@ -76,11 +78,12 @@ async function getAdminTokenOnly(config, params) {
  * Get or generate admin token with enhanced caching
  * @purpose Manage admin token lifecycle with improved caching, validation, and automatic refresh
  * @param {Object} config - Application configuration with Commerce credentials
+ * @param {Object} params - Action parameters with potential credential overrides
  * @returns {Promise<string>} Valid admin token for Commerce API requests
  * @usedBy Authentication workflows requiring token management
  */
-async function getAdminToken(config) {
-  const cacheKey = buildAdminTokenCacheKey(config);
+async function getAdminToken(config, params = {}) {
+  const cacheKey = buildAdminTokenCacheKey(config, params);
   const cachedTokenData = tokenStorage.get(cacheKey);
 
   if (cachedTokenData && !isTokenExpired(cachedTokenData)) {
@@ -88,7 +91,7 @@ async function getAdminToken(config) {
   }
 
   // Generate new token and store it
-  const newToken = await generateAdminToken(config);
+  const newToken = await generateAdminToken(config, params);
   const tokenData = {
     token: newToken,
     createdAt: Date.now(),
@@ -103,21 +106,23 @@ async function getAdminToken(config) {
  * Generate new admin token for Commerce API authentication
  * @purpose Generate fresh admin token using Commerce API credentials when cache is empty or expired
  * @param {Object} config - Application configuration with commerce credentials
+ * @param {Object} params - Action parameters with potential credential overrides
  * @returns {Promise<string>} Newly generated admin token for Commerce API
  * @usedBy Token management when cache is empty or expired
  */
-async function generateAdminToken(config) {
-  validateAdminCredentials(config);
+async function generateAdminToken(config, params = {}) {
+  // Use parameter resolver for consistent credential resolution
+  const { adminUsername, adminPassword } = getCommerceParameters(params, config);
 
   const { commerceUrl } = createUrlBuilders(config);
   const tokenEndpoint = commerceUrl('adminToken');
 
   const tokenOptions = {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: config.commerce.defaultHeaders,
     body: JSON.stringify({
-      username: config.commerce.adminUsername,
-      password: config.commerce.adminPassword,
+      username: adminUsername,
+      password: adminPassword,
     }),
   };
 
@@ -146,11 +151,11 @@ async function executeRequestWithAuthRetry(url, options, config) {
   } catch (error) {
     if (isAuthenticationError(error)) {
       // Clear cached token and retry with fresh token
-      const cacheKey = buildAdminTokenCacheKey(config);
+      const cacheKey = buildAdminTokenCacheKey(config, {});
       tokenStorage.delete(cacheKey);
 
-      const newToken = await generateAdminToken(config);
-      const retryOptions = buildAuthenticatedRequestOptions(options, newToken);
+      const newToken = await generateAdminToken(config, {});
+      const retryOptions = buildAuthenticatedRequestOptions(options, newToken, config);
 
       await sleep(1000); // Brief delay before retry
       return await request(url, retryOptions);
@@ -166,34 +171,19 @@ async function executeRequestWithAuthRetry(url, options, config) {
  * @purpose Add admin token authentication headers to HTTP request options
  * @param {Object} requestOptions - Base HTTP request options
  * @param {string} token - Valid admin token for authentication
+ * @param {Object} config - Configuration object with default headers
  * @returns {Object} Request options with authentication headers
  * @usedBy Request building for authenticated Commerce API calls
  */
-function buildAuthenticatedRequestOptions(requestOptions, token) {
+function buildAuthenticatedRequestOptions(requestOptions, token, config) {
   return {
     ...requestOptions,
     headers: {
+      ...config.commerce.defaultHeaders,
       ...requestOptions.headers,
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
     },
   };
-}
-
-/**
- * Validate admin credentials configuration
- * @purpose Validate required admin credentials are present in configuration
- * @param {Object} config - Application configuration to validate
- * @throws {Error} When required admin credentials are missing
- * @usedBy Token generation to ensure valid credentials
- */
-function validateAdminCredentials(config) {
-  if (!config.commerce.adminUsername) {
-    throw new Error('Commerce admin username is required for authentication');
-  }
-  if (!config.commerce.adminPassword) {
-    throw new Error('Commerce admin password is required for authentication');
-  }
 }
 
 /**
@@ -203,10 +193,9 @@ function validateAdminCredentials(config) {
  * @returns {string} Unique cache key for token storage
  * @usedBy Token caching and retrieval operations
  */
-function buildAdminTokenCacheKey(config) {
-  const baseUrl = config.commerce.baseUrl;
-  const username = config.commerce.adminUsername;
-  return `admin-token-${Buffer.from(`${baseUrl}-${username}`).toString('base64').slice(0, 32)}`;
+function buildAdminTokenCacheKey(config, params = {}) {
+  const { baseUrl, adminUsername } = getCommerceParameters(params, config);
+  return `admin-token-${Buffer.from(`${baseUrl}-${adminUsername}`).toString('base64').slice(0, 32)}`;
 }
 
 /**
@@ -249,7 +238,7 @@ function isTokenExpired(tokenData) {
 function isAuthenticationError(error) {
   if (!error) return false;
 
-  const authErrorCodes = [401, 403];
+  const authErrorCodes = getAuthErrorCodes();
   const authErrorMessages = [
     'unauthorized',
     'forbidden',
@@ -309,7 +298,6 @@ module.exports = {
 
   // Feature utilities
   buildAuthenticatedRequestOptions,
-  validateAdminCredentials,
   buildAdminTokenCacheKey,
   getTokenExpirationTime,
   isTokenExpired,

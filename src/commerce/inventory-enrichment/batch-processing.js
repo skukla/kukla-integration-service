@@ -3,6 +3,7 @@
  * All inventory data fetching and batch processing utilities
  */
 
+const { getCommerceParameters } = require('../../shared/utils/parameters');
 const { executeAuthenticatedCommerceRequest } = require('../admin-token-auth');
 
 // Batch Processing Workflows
@@ -13,13 +14,12 @@ const { executeAuthenticatedCommerceRequest } = require('../admin-token-auth');
  * @param {Array} skus - Array of unique SKUs to fetch from Commerce API
  * @param {Object} config - Configuration object with batching and performance settings
  * @param {Object} params - Action parameters containing admin credentials for API requests
- * @param {Object} [trace=null] - Optional trace context for performance monitoring
  * @param {Object} [options={}] - Fetching options including retry strategies and error handling
  * @returns {Promise<Object>} Map of SKU to complete inventory data with stock metadata
  * @throws {Error} When critical API failures occur or authentication errors prevent access
  * @usedBy enrichProductsWithInventoryAndValidation
  */
-async function fetchInventoryDataWithBatching(skus, config, params, trace = null, options = {}) {
+async function fetchInventoryDataWithBatching(skus, config, params, options = {}) {
   const inventoryMap = {};
 
   if (!skus || skus.length === 0) {
@@ -43,7 +43,7 @@ async function fetchInventoryDataWithBatching(skus, config, params, trace = null
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
       const inventoryPromises = chunk.map(async (sku) => {
-        return await fetchSingleInventoryWithRetry(sku, config, params, trace, options);
+        return await fetchSingleInventoryWithRetry(sku, config, params, options);
       });
 
       const chunkResults = await Promise.allSettled(inventoryPromises);
@@ -79,35 +79,20 @@ async function fetchInventoryDataWithBatching(skus, config, params, trace = null
  * @param {string} sku - Product SKU to fetch inventory for
  * @param {Object} config - Configuration object with API settings
  * @param {Object} params - Action parameters with credentials
- * @param {Object} [trace=null] - Optional trace context
  * @param {Object} [options={}] - Retry and error handling options
  * @returns {Promise<Object|null>} Inventory data or null if fetch fails
  * @usedBy fetchInventoryDataWithBatching
  */
-async function fetchSingleInventoryWithRetry(sku, config, params, trace = null, options = {}) {
+async function fetchSingleInventoryWithRetry(sku, config, params, options = {}) {
   const maxRetries = options.maxRetries || 3;
   const retryDelay = options.retryDelay || 1000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const inventoryUrl = `${config.commerce.baseUrl}/rest/V1/stockItems/${sku}`;
-
-      if (trace && trace.incrementApiCalls) {
-        trace.incrementApiCalls();
-      }
-
-      const response = await executeAuthenticatedCommerceRequest(
-        inventoryUrl,
-        { method: 'GET' },
-        config,
-        params,
-        trace
-      );
-
-      if (response && (response.item_id || response.qty !== undefined)) {
+      const response = await makeSingleInventoryRequest(sku, config, params);
+      if (isValidInventoryResponse(response)) {
         return response;
       }
-
       throw new Error(`Invalid inventory response for SKU ${sku}`);
     } catch (error) {
       if (attempt === maxRetries) {
@@ -117,13 +102,38 @@ async function fetchSingleInventoryWithRetry(sku, config, params, trace = null, 
         );
         return null;
       }
-
-      // Wait before retry with exponential backoff
       await new Promise((resolve) => setTimeout(resolve, retryDelay * attempt));
     }
   }
 
   return null;
+}
+
+/**
+ * Make single inventory API request
+ * @purpose Execute single inventory request without retry logic
+ * @param {string} sku - Product SKU
+ * @param {Object} config - Configuration object
+ * @param {Object} params - Action parameters
+ * @returns {Promise<Object>} API response
+ * @usedBy fetchSingleInventoryWithRetry
+ */
+async function makeSingleInventoryRequest(sku, config, params) {
+  const { baseUrl } = getCommerceParameters(params, config);
+  const inventoryUrl = `${baseUrl}/rest/V1/stockItems/${sku}`;
+
+  return await executeAuthenticatedCommerceRequest(inventoryUrl, { method: 'GET' }, config, params);
+}
+
+/**
+ * Validate inventory response
+ * @purpose Check if response contains valid inventory data
+ * @param {Object} response - API response to validate
+ * @returns {boolean} True if valid inventory response
+ * @usedBy fetchSingleInventoryWithRetry
+ */
+function isValidInventoryResponse(response) {
+  return response && (response.item_id || response.qty !== undefined);
 }
 
 /**
@@ -169,10 +179,9 @@ function createFallbackInventoryData(sku, options = {}) {
 }
 
 module.exports = {
-  // Workflows (used by feature core)
   fetchInventoryDataWithBatching,
-
-  // Utilities (available for testing/extension)
   fetchSingleInventoryWithRetry,
+  makeSingleInventoryRequest,
+  isValidInventoryResponse,
   createFallbackInventoryData,
 };

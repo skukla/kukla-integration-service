@@ -3,6 +3,7 @@
  * All category data fetching and batch processing utilities
  */
 
+const { getCommerceParameters } = require('../../shared/utils/parameters');
 const { executeAuthenticatedCommerceRequest } = require('../admin-token-auth');
 
 // Batch Processing Workflows
@@ -104,7 +105,8 @@ async function fetchSingleCategoryWithRetry(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const categoryUrl = `${config.commerce.baseUrl}/rest/V1/categories/${categoryId}`;
+      const { baseUrl } = getCommerceParameters(params, config);
+      const categoryUrl = `${baseUrl}/rest/V1/categories/${categoryId}`;
 
       if (trace && trace.incrementApiCalls) {
         trace.incrementApiCalls();

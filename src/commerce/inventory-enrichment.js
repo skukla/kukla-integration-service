@@ -19,19 +19,13 @@ const { validateAndApplyStockRules } = require('./inventory-enrichment/stock-val
  * @param {Array} products - Array of product objects to enrich with inventory data
  * @param {Object} config - Complete configuration object with Commerce API settings and batching preferences
  * @param {Object} params - Action parameters containing admin credentials for Commerce API
- * @param {Object} [trace=null] - Optional trace context for API call tracking and performance monitoring
+
  * @param {Object} [options={}] - Enrichment options including stock validation and fallback strategies
  * @returns {Promise<Array>} Array of products enriched with complete inventory information
  * @throws {Error} When critical inventory fetching failures occur or validation errors prevent processing
  * @usedBy exportProducts in rest-export.js, fetchAndEnrichProducts in product-fetching.js, mesh export workflows
  */
-async function enrichProductsWithInventoryAndValidation(
-  products,
-  config,
-  params,
-  trace = null,
-  options = {}
-) {
+async function enrichProductsWithInventoryAndValidation(products, config, params, options = {}) {
   if (!Array.isArray(products) || products.length === 0) {
     return products || [];
   }
@@ -44,13 +38,7 @@ async function enrichProductsWithInventoryAndValidation(
     }
 
     // Step 2: Fetch inventory data with intelligent batching
-    const inventoryMap = await fetchInventoryDataWithBatching(
-      productSkus,
-      config,
-      params,
-      trace,
-      options
-    );
+    const inventoryMap = await fetchInventoryDataWithBatching(productSkus, config, params, options);
 
     // Step 3: Validate and apply stock rules
     const enhancedInventoryMap = validateAndApplyStockRules(inventoryMap, options);
@@ -91,12 +79,12 @@ async function enrichProductsWithInventory(products, config, params, trace = nul
  * @param {Array} skus - Product SKUs to fetch inventory for
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters with credentials
- * @param {Object} [trace=null] - Optional trace context
+
  * @returns {Promise<Object>} Map of inventory data for external consumption
  * @usedBy External API endpoints, integrations
  */
-async function fetchInventoryDataForExternalUse(skus, config, params, trace = null) {
-  return await fetchInventoryDataWithBatching(skus, config, params, trace, {
+async function fetchInventoryDataForExternalUse(skus, config, params) {
+  return await fetchInventoryDataWithBatching(skus, config, params, {
     externalUse: true,
     includeMetadata: true,
   });
