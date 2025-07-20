@@ -93,10 +93,22 @@ function buildFilesConfiguration(mainConfig) {
       binary: 'application/octet-stream',
     },
 
+    // MIME type mapping for file downloads
+    mimeTypes: {
+      csv: 'text/csv',
+      json: 'application/json',
+      log: 'text/plain',
+    },
+
+    // File deletion security settings
+    allowedDeletions: ['*.csv', '*.json', '*.log'],
+
+    protectedPatterns: ['system', 'config', '.env'],
+
     processing: {
-      minCompressionSize: 1024, // 1KB threshold
-      binaryThreshold: 1024, // Binary detection threshold
-      fileListTimeout: 300, // 5 minutes (technical setting)
+      minCompressionSize: 1024,
+      binaryThreshold: 1024,
+      fileListTimeout: 300,
     },
   };
 }

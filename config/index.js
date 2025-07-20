@@ -60,57 +60,159 @@ function validateRequiredConfig(config, domain) {
 }
 
 /**
- * Load configuration from all domains
+ * Action-specific configuration profiles
+ * Define which config domains each action type needs
+ */
+const ACTION_CONFIG_PROFILES = {
+  // File actions only need file-related configs
+  'browse-files': ['main', 'storage', 'files', 'runtime', 'performance', 'ui'],
+  'download-file': ['main', 'storage', 'files', 'runtime', 'performance'],
+  'delete-file': ['main', 'storage', 'files', 'runtime', 'performance'],
+
+  // Product actions need commerce + export configs
+  'get-products': ['main', 'commerce', 'products', 'storage', 'files', 'runtime', 'performance'],
+  'get-products-mesh': [
+    'main',
+    'commerce',
+    'products',
+    'storage',
+    'files',
+    'runtime',
+    'performance',
+    'mesh',
+  ],
+
+  // Health check needs minimal config
+  health: ['main', 'runtime'],
+
+  // Scripts need script-specific configs
+  scripts: ['main', 'runtime', 'performance', 'scripts', 'testing'],
+
+  // Default profile for unknown actions
+  default: ['main', 'runtime', 'performance'],
+};
+
+/**
+ * Load configuration based on action requirements
  * @param {Object} [params] - Action parameters
  * @param {boolean} [isProd] - Whether loading for production environment
- * @returns {Object} Complete configuration
+ * @param {string} [actionName] - Name of the action requesting config
+ * @returns {Object} Action-specific configuration
  */
-function loadConfig(params = {}, isProd = false) {
-  // MAIN CONFIG: Shared business settings only
+function loadConfig(params = {}, isProd = false, actionName = null) {
+  // Determine which config domains this action needs
+  const requiredDomains = getRequiredConfigDomains(actionName, params);
+
+  // Build only the required configurations
+  const config = buildRequiredConfigurations(requiredDomains, params, isProd);
+
+  return config;
+}
+
+/**
+ * Determine required config domains for an action
+ * @param {string} actionName - Name of the action
+ * @param {Object} params - Action parameters that might indicate config needs
+ * @returns {Array} Array of required config domain names
+ */
+function getRequiredConfigDomains(actionName, params) {
+  // Try to detect action name from params if not provided
+  if (!actionName && params.__ow_headers && params.__ow_headers['x-action-name']) {
+    actionName = params.__ow_headers['x-action-name'];
+  }
+
+  // Get profile for this action, or use default
+  const profile = ACTION_CONFIG_PROFILES[actionName] || ACTION_CONFIG_PROFILES['default'];
+
+  console.info(`Loading config profile for '${actionName || 'unknown'}': [${profile.join(', ')}]`);
+
+  return profile;
+}
+
+/**
+ * Build only the required configuration domains
+ * @param {Array} requiredDomains - List of config domains to build
+ * @param {Object} params - Action parameters
+ * @param {boolean} isProd - Whether loading for production
+ * @returns {Object} Configuration with only required domains
+ */
+function buildRequiredConfigurations(requiredDomains, params, isProd) {
+  const config = {};
+
+  // Always build main config first (others may depend on it)
   const mainConfig = buildMainConfig();
+  if (requiredDomains.includes('main')) {
+    config.main = mainConfig;
+  }
 
-  // 🏗️ BUILD DOMAINS: Only pass mainConfig to domains that need shared business settings
-  const commerceConfig = buildCommerceConfig(params);
-  const productsConfig = buildProductsConfig();
-  const filesConfig = buildFilesConfig(params, mainConfig); // Needs CSV filename
-  const runtimeConfig = buildRuntimeConfig(params, isProd);
-  const meshConfig = buildMeshConfig(params);
-  const performanceConfig = buildPerformanceConfig(); // Self-contained
-  const scriptsConfig = buildScriptsConfig(params, isProd); // Scripts configuration
-  const testingConfig = buildTestingConfig(params, mainConfig); // Needs expected product count
-  const uiConfig = buildUiConfig();
+  // Build each required domain
+  requiredDomains.forEach((domain) => {
+    switch (domain) {
+      case 'main':
+        // Already handled above
+        break;
 
-  return {
-    // SHARED CORE: Business settings only
-    main: mainConfig,
+      case 'commerce':
+        config.commerce = buildCommerceConfig(params);
+        break;
 
-    // 🏗️ BUSINESS DOMAINS
-    commerce: commerceConfig,
-    products: productsConfig,
+      case 'products':
+        config.products = buildProductsConfig();
+        break;
 
-    // 📁 STORAGE CONFIGURATION (combined from main and files domains)
-    storage: {
-      ...mainConfig.storage, // Include all storage config from main (provider, directory, s3, etc.)
-      ...filesConfig.storage, // File-specific storage settings (csv config)
-    },
-    files: {
-      extensions: filesConfig.extensions,
-      contentTypes: filesConfig.contentTypes,
-      processing: filesConfig.processing,
-    },
+      case 'files': {
+        const filesConfig = buildFilesConfig(params, mainConfig);
+        config.files = {
+          extensions: filesConfig.extensions,
+          contentTypes: filesConfig.contentTypes,
+          processing: filesConfig.processing,
+        };
+        // Merge file storage config with main storage config
+        if (requiredDomains.includes('storage') || !config.storage) {
+          config.storage = {
+            ...mainConfig.storage,
+            ...filesConfig.storage,
+          };
+        }
+        break;
+      }
 
-    // 🔧 INFRASTRUCTURE DOMAINS
-    runtime: runtimeConfig,
-    mesh: meshConfig,
-    performance: performanceConfig,
-    scripts: scriptsConfig,
-    testing: testingConfig,
+      case 'storage':
+        if (!config.storage) {
+          config.storage = mainConfig.storage;
+        }
+        break;
 
-    // 🎨 FRONTEND DOMAIN
-    ui: uiConfig,
+      case 'runtime':
+        config.runtime = buildRuntimeConfig(params);
+        break;
 
-    // 🔄 JSON SCHEMA DOMAIN
-  };
+      case 'mesh':
+        config.mesh = buildMeshConfig(params);
+        break;
+
+      case 'performance':
+        config.performance = buildPerformanceConfig();
+        break;
+
+      case 'scripts':
+        config.scripts = buildScriptsConfig(params, isProd);
+        break;
+
+      case 'testing':
+        config.testing = buildTestingConfig(params, mainConfig);
+        break;
+
+      case 'ui':
+        config.ui = buildUiConfig();
+        break;
+
+      default:
+        console.warn(`Unknown config domain requested: ${domain}`);
+    }
+  });
+
+  return config;
 }
 
 /**

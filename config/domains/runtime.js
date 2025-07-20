@@ -8,32 +8,14 @@
  * 📋 Environment settings: Requires RUNTIME_URL from environment
  */
 
+const { getRuntimeParameters } = require('../../src/shared/utils/parameters');
+
 /**
- * Build runtime configuration
- * @param {Object} [params] - Action parameters for environment values
- * @param {boolean} [isProd] - Whether building for production environment
- * @returns {Object} Runtime configuration
+ * Default runtime configuration object
+ * @returns {Object} Default runtime configuration
  */
-function buildRuntimeConfig(params = {}, isProd = false) {
-  // Select environment-specific runtime URL
-  let url;
-  if (isProd) {
-    url = params.RUNTIME_URL_PRODUCTION || process.env.RUNTIME_URL_PRODUCTION;
-  } else {
-    url = params.RUNTIME_URL_STAGING || process.env.RUNTIME_URL_STAGING;
-  }
-
-  // Fallback to generic RUNTIME_URL if environment-specific not found
-  if (!url) {
-    url = params.RUNTIME_URL || process.env.RUNTIME_URL || 'REQUIRED:RUNTIME_URL';
-  }
-
-  const namespace =
-    params.RUNTIME_NAMESPACE || process.env.RUNTIME_NAMESPACE || 'REQUIRED:RUNTIME_NAMESPACE';
-
+function getDefaultRuntimeConfig() {
   return {
-    url,
-    namespace,
     package: 'kukla-integration-service',
     version: 'v1',
     paths: {
@@ -53,6 +35,10 @@ function buildRuntimeConfig(params = {}, isProd = false) {
       debugLevels: ['debug', 'trace'],
       actionLoggerName: 'action',
     },
+    domains: {
+      expected: '.adobeio-static.net',
+      legacy: '.adobeioruntime.net',
+    },
     environment: {
       cli: {
         allowCliDetection: true,
@@ -61,6 +47,46 @@ function buildRuntimeConfig(params = {}, isProd = false) {
   };
 }
 
+/**
+ * Build runtime configuration
+ * @param {Object} [params] - Action parameters for environment values
+ * @returns {Object} Runtime configuration
+ */
+function buildRuntimeConfig(params = {}) {
+  const { url, namespace } = getRuntimeParameters(params, {});
+
+  return {
+    url,
+    namespace,
+    ...getDefaultRuntimeConfig(),
+  };
+}
+
+/**
+ * Build testing runtime configuration for scripts
+ * @returns {Object} Runtime configuration for testing
+ */
+function buildTestingRuntimeConfig() {
+  // Use smart parameter resolution for runtime connection
+  const { url, namespace } = getRuntimeParameters({}, {});
+
+  return {
+    url,
+    namespace,
+    package: 'kukla-integration-service',
+    version: 'v1',
+    paths: {
+      base: '/api',
+      web: '/web',
+    },
+    domains: {
+      expected: '.adobeio-static.net',
+      legacy: '.adobeioruntime.net',
+    },
+  };
+}
+
 module.exports = {
   buildRuntimeConfig,
+  buildTestingRuntimeConfig,
 };

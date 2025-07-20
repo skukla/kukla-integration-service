@@ -8,6 +8,8 @@
  * 📋 Environment settings: Requires COMMERCE_BASE_URL from environment
  */
 
+const { getCommerceParameters } = require('../../src/shared/utils/parameters');
+
 /**
  * Build commerce API configuration
  * @returns {Object} API configuration object
@@ -85,14 +87,12 @@ function buildQueryPatternsConfig() {
  * @returns {Object} Commerce configuration
  */
 function buildCommerceConfig(params = {}) {
-  // Get required values with clear descriptive fallbacks
-  const baseUrl =
-    params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL || 'REQUIRED:COMMERCE_BASE_URL';
+  const { baseUrl, adminUsername, adminPassword } = getCommerceParameters(params, {});
 
   return {
     baseUrl,
-    adminUsername: params.COMMERCE_ADMIN_USERNAME || process.env.COMMERCE_ADMIN_USERNAME,
-    adminPassword: params.COMMERCE_ADMIN_PASSWORD || process.env.COMMERCE_ADMIN_PASSWORD,
+    adminUsername,
+    adminPassword,
 
     /**
      * Token Management Configuration
@@ -139,25 +139,6 @@ function buildCommerceConfig(params = {}) {
      * Query Parameter Patterns - Commerce API specific patterns
      */
     queryPatterns: buildQueryPatternsConfig(),
-
-    /**
-     * Category Configuration
-     */
-    categories: {
-      rootCategoryId: 1,
-      includePath: true,
-      includeChildren: false,
-    },
-
-    /**
-     * Product Configuration
-     */
-    products: {
-      includeInventory: true,
-      includeCategories: true,
-      includeImages: true,
-      includeCustomAttributes: false,
-    },
   };
 }
 
