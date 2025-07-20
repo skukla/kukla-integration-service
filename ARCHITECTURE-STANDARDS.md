@@ -122,8 +122,9 @@ src/
 └── shared/                    # Cross-domain infrastructure
     ├── action/                # Action framework infrastructure
     ├── http/                  # HTTP utilities
+    ├── routing/               # URL factory and routing utilities
     ├── validation/            # Cross-domain validation
-    └── utils/                 # Universal utilities
+    └── utils/                 # Universal utilities including parameter resolution
 ```
 
 ### **Feature File Pattern**
@@ -215,10 +216,15 @@ module.exports = createAction(businessLogic, {
 **Clean dependency injection with trusted configuration patterns:**
 
 ```javascript
-// ✅ CORRECT: Features receive complete config objects
+// ✅ CORRECT: Use parameter resolution utilities with standardized names
 async function exportProducts(params, config) {
+  const { baseUrl, adminUsername, adminPassword } = getCommerceParameters(params, config);
+  // Parameters use environment variable format: COMMERCE_BASE_URL, COMMERCE_ADMIN_USERNAME
+}
+
+// ✅ CORRECT: Features receive complete config objects
+async function processData(params, config) {
   const timeout = config.commerce.api.timeout;  // Trust config
-  const baseUrl = config.commerce.baseUrl;      // No fallbacks
   // Use configuration without defensive programming
 }
 
@@ -461,13 +467,100 @@ async function featureFunction(params, config) {
 const timeout = config.commerce?.api?.timeout || 30000;
 ```
 
+### **Parameter Resolution System**
+
+**Consistent parameter resolution with clear fallback order: params → env → config**
+
+#### **Resolution Chain**
+
+1. **Action parameters** (clean names like `baseUrl`)
+2. **Action parameters** (env var names like `COMMERCE_BASE_URL`) 
+3. **Environment variables** (local development)
+4. **Configuration values** (config files)
+
+#### **Adobe I/O Runtime Compatibility**
+- Handles both clean names and environment variable names in action parameters
+- Reserved parameters (`url`, `namespace`, `AWS_*`) are provided by runtime environment
+- Use domain convenience functions for consistent parameter sets
+
+#### **Usage Patterns**
+
+```javascript
+// ✅ CORRECT: Use domain convenience functions
+async function exportProducts(params, config) {
+  const { baseUrl, adminUsername, adminPassword } = getCommerceParameters(params, config);
+  const { endpoint, apiKey } = getMeshParameters(params);
+  // Clean, consistent parameter access
+}
+
+// ✅ CORRECT: Individual parameter resolution
+const baseUrl = getRequiredParameter('baseUrl', { 
+  params, 
+  config, 
+  envKey: 'COMMERCE_BASE_URL',
+  configPath: 'commerce.baseUrl' 
+});
+
+// ✅ CORRECT: Storage-aware AWS parameters
+const awsParams = getAwsParameters(params, config);
+if (awsParams.isRequired) {
+  // S3 storage - AWS credentials required
+} else {
+  // App Builder storage - AWS credentials optional
+}
+```
+
+### **HTTP Headers Pattern**
+
+**When to centralize vs. domain-specific headers based on business and technical constraints:**
+
+#### **✅ CENTRALIZE: Domain Business Constraints**
+```javascript
+// Commerce Domain: All calls identical (business constraint)
+function buildAuthenticatedRequestOptions(requestOptions, token, config) {
+  return {
+    headers: {
+      ...config.commerce.defaultHeaders,  // Centralized
+      ...requestOptions.headers,
+      Authorization: `Bearer ${token}`,
+    },
+  };
+}
+```
+
+#### **✅ DOMAIN-SPECIFIC: Technical Constraints**  
+```javascript
+// Testing Domain: Needs identification (technical constraint)
+function buildApiRequestOptions(options) {
+  return {
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Adobe-App-Builder-API-Test',  // Domain-specific
+      ...options.headers,
+    },
+  };
+}
+
+// Mesh Domain: GraphQL vs REST differences (technical constraint)
+function buildMeshRequestOptions(query) {
+  return {
+    headers: {
+      'Content-Type': 'application/json',  // GraphQL-specific
+      // No Accept header - GraphQL doesn't use it
+    },
+  };
+}
+```
+
+
+
 ---
 
 ## URL Building Standards
 
 ### **URL Factory Pattern**
 
-**All URL building must use the centralized factory pattern to eliminate config repetition and provide purpose-driven function names:**
+**All URL building must use the centralized factory pattern (replaces legacy endpoint builders) to eliminate config repetition and provide purpose-driven function names:**
 
 ```javascript
 // ✅ CORRECT: URL Factory Pattern
