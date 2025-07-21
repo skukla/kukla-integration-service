@@ -4,10 +4,7 @@
  */
 
 const { buildEnrichedProductsQuery } = require('./mesh-export/graphql');
-const {
-  makeMeshRequestWithRetry,
-  fetchEnrichedProductsFromMesh,
-} = require('./mesh-export/mesh-requests');
+const { fetchEnrichedProductsFromMesh } = require('./mesh-export/mesh-requests');
 const { validateMeshInput } = require('./mesh-export/validation');
 const { extractProductMessage } = require('./shared/data-extraction');
 const { exportCsvWithStorage } = require('../files/csv-export');
@@ -15,8 +12,8 @@ const { exportCsvWithStorage } = require('../files/csv-export');
 // Business Workflows
 
 /**
- * Export mesh products with storage and fallback handling
- * @purpose Complete mesh product export with storage and error handling fallback
+ * Export mesh products with storage
+ * @purpose Complete mesh product export with storage
  * @param {Object} params - Export parameters with mesh configuration
  * @param {Object} config - Complete application configuration
  * @param {Object} core - Core utilities for step messaging
@@ -25,47 +22,35 @@ const { exportCsvWithStorage } = require('../files/csv-export');
  * @usedBy get-products-mesh action
  * @config mesh.endpoint, mesh.apiKey, commerce.credentials, storage.provider
  */
-async function exportMeshProductsWithStorageAndFallback(params, config, core) {
+async function exportMeshProductsWithStorage(params, config, core) {
   const steps = [];
 
-  try {
-    // Step 1: Execute complete mesh product export workflow
-    const exportResult = await exportMeshProducts(params, config);
+  // Step 1: Execute complete mesh product export workflow
+  const exportResult = await exportMeshProducts(params, config);
 
-    steps.push(
-      core.formatStepMessage('fetch-mesh', 'success', { count: exportResult.productCount })
-    );
+  steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: exportResult.productCount }));
 
-    steps.push(
-      core.formatStepMessage('build-products', 'success', { count: exportResult.productCount })
-    );
+  steps.push(
+    core.formatStepMessage('build-products', 'success', { count: exportResult.productCount })
+  );
 
-    steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
+  steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
 
-    // Step 2: Handle storage with fallback
-    const storageResult = await handleStorageWithFallback(
-      exportResult,
-      config,
-      params,
-      steps,
-      core
-    );
+  // Step 2: Store CSV with configured storage provider
+  const storageResult = await exportCsvWithStorage(exportResult.csvContent, config, params);
 
-    return {
-      success: true,
-      exportResult,
-      ...storageResult,
-      steps,
-    };
-  } catch (error) {
-    steps.push(
-      core.formatStepMessage('mesh-export', 'error', {
-        message: error.message,
-      })
-    );
+  steps.push(
+    core.formatStepMessage('store-csv', 'success', {
+      provider: JSON.parse(storageResult.body).storage,
+    })
+  );
 
-    throw new Error(`Mesh export failed: ${error.message}`);
-  }
+  return {
+    success: true,
+    exportResult,
+    storageResult,
+    steps,
+  };
 }
 
 /**
@@ -312,54 +297,6 @@ function formatStockStatus(isInStock) {
   return `"${isInStock ? 'Yes' : 'No'}"`;
 }
 
-/**
- * Handle storage with fallback logic
- * @purpose Store CSV file with comprehensive error handling and fallback options
- * @param {Object} exportResult - Export result containing CSV content
- * @param {Object} config - Application configuration
- * @param {Object} params - Export parameters
- * @param {Array} steps - Steps array to update
- * @param {Object} core - Core utilities for step messaging
- * @returns {Promise<Object>} Storage result with fallback indicator
- * @usedBy exportMeshProductsWithStorageAndFallback
- */
-async function handleStorageWithFallback(exportResult, config, params, steps, core) {
-  try {
-    const storageResult = await exportCsvWithStorage(
-      exportResult.csvContent,
-      config,
-      params,
-      undefined,
-      {
-        useCase: params.useCase,
-      }
-    );
-
-    steps.push(
-      core.formatStepMessage('store-csv', 'success', {
-        provider: storageResult.provider,
-        fileName: storageResult.fileName,
-      })
-    );
-
-    return {
-      storageResult,
-      fallback: false,
-    };
-  } catch (storageError) {
-    steps.push(
-      core.formatStepMessage('store-csv', 'warning', {
-        message: `Storage failed: ${storageError.message}`,
-      })
-    );
-
-    return {
-      storageError,
-      fallback: true,
-    };
-  }
-}
-
 // Feature Utilities
 
 /**
@@ -378,16 +315,19 @@ function transformImageEntry(imageEntry) {
 
 module.exports = {
   // Business workflows
-  exportMeshProductsWithStorageAndFallback,
+  exportMeshProductsWithStorage,
   exportMeshProducts,
 
   // Feature operations
-  makeMeshRequestWithRetry,
   buildProducts,
+  convertToCSV,
+  sortProductsBySku,
 
   // Feature utilities
-  sortProductsBySku,
   buildProductObject,
-  convertToCSV,
+  createCsvRow,
+  formatCsvField,
+  formatStockStatus,
+  formatArrayField,
   transformImageEntry,
 };

@@ -7,44 +7,11 @@
 const { convertToCSV } = require('./rest-export/csv-generation');
 const { enrichWithCategories, enrichWithInventory } = require('./rest-export/enrichment');
 const { buildProducts } = require('./rest-export/transformation');
-const {
-  validateInput,
-  getPaginationConfig,
-  shouldContinuePagination,
-} = require('./rest-export/validation');
+const { getPaginationConfig, shouldContinuePagination } = require('./rest-export/validation');
 const { executeAuthenticatedCommerceRequest } = require('../commerce/admin-token-auth');
 const { exportCsvWithStorage } = require('../files/csv-export');
 
 // Business Workflows
-
-/**
- * Export products with storage and fallback handling
- * @purpose Complete export workflow with storage and error fallback
- * @param {Object} params - Action parameters with OAuth credentials
- * @param {Object} config - Complete configuration object
- * @returns {Promise<Object>} Export result with storage info and fallback handling
- * @throws {Error} When Commerce API is unavailable or data is invalid
- * @usedBy get-products action
- * @config commerce.baseUrl, commerce.credentials, storage.provider, products.fields
- */
-async function exportProductsWithStorageAndFallback(params, config) {
-  try {
-    // Step 1: Validate input parameters and configuration
-    await validateInput(params, config);
-
-    // Step 2: Execute main export workflow
-    const exportResult = await exportProductsWithStorage(params, config);
-
-    return {
-      ...exportResult,
-      fallback: false,
-      method: 'primary-export',
-    };
-  } catch (error) {
-    // Step 3: Return error with context for higher-level fallback handling
-    throw new Error(`Product export with storage failed: ${error.message}`);
-  }
-}
 
 /**
  * Export products with storage
@@ -53,7 +20,7 @@ async function exportProductsWithStorageAndFallback(params, config) {
  * @param {Object} config - Complete configuration object
  * @returns {Promise<Object>} Export result with storage info
  * @throws {Error} When export or storage fails
- * @usedBy exportProductsWithStorageAndFallback
+ * @usedBy get-products action
  * @config commerce.baseUrl, commerce.credentials, storage.provider, products.fields
  */
 async function exportProductsWithStorage(params, config) {
@@ -61,13 +28,7 @@ async function exportProductsWithStorage(params, config) {
   const exportResult = await exportProducts(params, config);
 
   // Step 2: Store CSV with configured storage provider
-  const storageResult = await exportCsvWithStorage(
-    exportResult.csvContent,
-    config,
-    params,
-    undefined,
-    { useCase: params.useCase }
-  );
+  const storageResult = await exportCsvWithStorage(exportResult.csvContent, config, params);
 
   return {
     productCount: exportResult.productCount,
@@ -183,12 +144,8 @@ async function fetchProducts(params, config) {
 }
 
 module.exports = {
-  // Business workflows
-  exportProductsWithStorageAndFallback,
   exportProductsWithStorage,
   exportProducts,
-
-  // Feature operations
   fetchAndEnrichProducts,
   fetchProducts,
 };
