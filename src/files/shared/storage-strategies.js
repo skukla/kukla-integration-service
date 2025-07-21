@@ -10,8 +10,15 @@ const {
   GetObjectCommand,
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-const { createUrlBuilders } = require('../../shared/routing/url-factory');
+const { getAwsParameters } = require('../../shared/utils/cache');
+
+// Storage provider maximum expiry limits
+const STORAGE_EXPIRY_LIMITS = {
+  APP_BUILDER: 86400, // 24 hours - App Builder Files maximum
+  S3: 604800, // 7 days - AWS S3 maximum
+};
 
 /**
  * Initialize storage based on configuration
@@ -24,7 +31,7 @@ async function initializeStorageStrategy(config, params) {
 
   switch (provider) {
     case 'app-builder':
-      return await createAppBuilderStorage(config);
+      return await createAppBuilderStorage(config, params);
     case 's3':
       return await createS3Storage(config, params);
     default:
@@ -35,10 +42,9 @@ async function initializeStorageStrategy(config, params) {
 /**
  * Create App Builder storage interface
  */
-async function createAppBuilderStorage(config) {
+async function createAppBuilderStorage(config, params) {
   validateAppBuilderEnvironment();
-  const files = await createAppBuilderClient();
-  const { downloadUrl } = createUrlBuilders(config);
+  const files = await createAppBuilderClient(params);
 
   return {
     async list() {
@@ -46,7 +52,8 @@ async function createAppBuilderStorage(config) {
     },
 
     async read(fileName) {
-      return await files.read(fileName);
+      const fullFileName = `${config.storage.directory}${fileName}`;
+      return await files.read(fullFileName);
     },
 
     async deleteFile(fileName) {
@@ -55,19 +62,20 @@ async function createAppBuilderStorage(config) {
     },
 
     async getFileMetadata(fileName) {
-      return await appBuilderGetMetadata(files, fileName);
+      return await appBuilderGetMetadata(files, fileName, config);
     },
 
     async fileExists(fileName) {
-      return await appBuilderFileExists(files, fileName);
+      return await appBuilderFileExists(files, fileName, config);
     },
 
     async getProperties(fileName) {
-      return await files.getProperties(fileName);
+      const fullFileName = `${config.storage.directory}${fileName}`;
+      return await files.getProperties(fullFileName);
     },
 
     async store(storageParams) {
-      return await appBuilderStore(files, config, storageParams, downloadUrl);
+      return await appBuilderStore(files, config, storageParams);
     },
   };
 }
@@ -85,8 +93,9 @@ async function appBuilderList(files) {
   }));
 }
 
-async function appBuilderGetMetadata(files, fileName) {
-  const properties = await files.getProperties(fileName);
+async function appBuilderGetMetadata(files, fileName, config) {
+  const fullFileName = `${config.storage.directory}${fileName}`;
+  const properties = await files.getProperties(fullFileName);
   return {
     name: fileName,
     size: properties.size,
@@ -95,30 +104,40 @@ async function appBuilderGetMetadata(files, fileName) {
   };
 }
 
-async function appBuilderFileExists(files, fileName) {
+async function appBuilderFileExists(files, fileName, config) {
   try {
-    await files.getProperties(fileName);
+    const fullFileName = `${config.storage.directory}${fileName}`;
+    await files.getProperties(fullFileName);
     return true;
   } catch (error) {
     return false;
   }
 }
 
-async function appBuilderStore(files, config, storageParams, downloadUrl) {
-  const fullFileName = `${config.storage.directory}/${storageParams.fileName}`;
+async function appBuilderStore(files, config, storageParams) {
+  const fullFileName = `${config.storage.directory}${storageParams.fileName}`;
   await files.write(fullFileName, storageParams.content);
 
+  // Generate presigned URL for downloads using maximum available expiry
+  const expirySeconds = STORAGE_EXPIRY_LIMITS.APP_BUILDER;
+  const presignedUrl = await files.generatePresignURL(fullFileName, {
+    expiryInSeconds: expirySeconds,
+    permissions: 'r', // read-only for downloads
+  });
+
   return {
-    downloadUrl: downloadUrl(storageParams.fileName),
+    downloadUrl: presignedUrl,
     storage: 'app-builder',
     fileName: storageParams.fileName,
+    expirySeconds: STORAGE_EXPIRY_LIMITS.APP_BUILDER,
     properties: {
+      path: fullFileName,
+      mimeType: storageParams.mimeType,
       size: storageParams.size,
-      contentType: storageParams.mimeType,
     },
     management: {
-      fileExisted: false,
-      urlGenerated: true,
+      createdAt: new Date().toISOString(),
+      provider: 'Adobe I/O Files',
     },
   };
 }
@@ -131,7 +150,6 @@ async function createS3Storage(config, params) {
   const s3Client = await createS3Client(config, params);
   const bucket = config.storage.s3.bucket;
   const prefix = config.storage.s3.prefix || '';
-  const { downloadUrl } = createUrlBuilders(config);
 
   return {
     async list() {
@@ -159,7 +177,7 @@ async function createS3Storage(config, params) {
     },
 
     async store(storageParams) {
-      return await s3Store(s3Client, bucket, prefix, storageParams, downloadUrl);
+      return await s3Store(s3Client, bucket, prefix, config, storageParams);
     },
   };
 }
@@ -230,7 +248,7 @@ async function s3GetProperties(s3Client, bucket, prefix, fileName) {
   };
 }
 
-async function s3Store(s3Client, bucket, prefix, storageParams, downloadUrl) {
+async function s3Store(s3Client, bucket, prefix, config, storageParams) {
   const key = `${prefix}${storageParams.fileName}`;
   await s3Client.send(
     new PutObjectCommand({
@@ -241,19 +259,31 @@ async function s3Store(s3Client, bucket, prefix, storageParams, downloadUrl) {
     })
   );
 
+  // Generate presigned URL for downloads using maximum available expiry
+  const expirySeconds = STORAGE_EXPIRY_LIMITS.S3;
+  const presignedUrl = await getSignedUrl(
+    s3Client,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }),
+    { expiresIn: expirySeconds }
+  );
+
   return {
-    downloadUrl: downloadUrl(storageParams.fileName),
+    downloadUrl: presignedUrl,
     storage: 's3',
     fileName: storageParams.fileName,
+    expirySeconds: STORAGE_EXPIRY_LIMITS.S3,
     properties: {
+      bucket: bucket,
+      key: key,
+      mimeType: storageParams.mimeType,
       size: storageParams.size,
-      contentType: storageParams.mimeType,
-      bucket,
-      key,
     },
     management: {
-      fileExisted: false,
-      urlGenerated: true,
+      createdAt: new Date().toISOString(),
+      provider: 'AWS S3',
     },
   };
 }
@@ -262,11 +292,10 @@ async function s3Store(s3Client, bucket, prefix, storageParams, downloadUrl) {
  * Create S3 client with credentials
  */
 async function createS3Client(config, params) {
-  const { getAwsParameters } = require('../../shared/utils/parameters');
   const { accessKeyId, secretAccessKey, region } = getAwsParameters(params, config);
 
   return new S3Client({
-    region: region || config.storage.s3.region,
+    region,
     credentials: { accessKeyId, secretAccessKey },
   });
 }
@@ -274,9 +303,9 @@ async function createS3Client(config, params) {
 /**
  * Create App Builder Files client
  */
-async function createAppBuilderClient() {
+async function createAppBuilderClient(params) {
   const { Files } = require('@adobe/aio-sdk');
-  return await Files.init();
+  return await Files.init(params);
 }
 
 /**
@@ -298,10 +327,10 @@ function validateS3Environment(config, params) {
   }
 
   // Use parameter resolution to validate AWS credentials exist
-  const { getAwsParameters } = require('../../shared/utils/parameters');
   getAwsParameters(params, config); // This will throw if credentials are missing
 }
 
 module.exports = {
   initializeStorageStrategy,
+  STORAGE_EXPIRY_LIMITS,
 };
