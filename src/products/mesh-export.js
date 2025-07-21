@@ -6,8 +6,10 @@
 const { buildEnrichedProductsQuery } = require('./mesh-export/graphql');
 const { fetchEnrichedProductsFromMesh } = require('./mesh-export/mesh-requests');
 const { validateMeshInput } = require('./mesh-export/validation');
+const { enrichProductsWithInventory } = require('./product-enrichment');
 const { extractProductMessage } = require('./shared/data-extraction');
 const { exportCsvWithStorage } = require('../files/csv-export');
+const { convertToCSV } = require('./rest-export/csv-generation');
 
 // Business Workflows
 
@@ -16,41 +18,49 @@ const { exportCsvWithStorage } = require('../files/csv-export');
  * @purpose Complete mesh product export with storage
  * @param {Object} params - Export parameters with mesh configuration
  * @param {Object} config - Complete application configuration
- * @param {Object} core - Core utilities for step messaging
  * @returns {Promise<Object>} Complete export result with storage info and steps
  * @throws {Error} When mesh export fails
  * @usedBy get-products-mesh action
  * @config mesh.endpoint, mesh.apiKey, commerce.credentials, storage.provider
  */
-async function exportMeshProductsWithStorage(params, config, core) {
+async function exportMeshProductsWithStorage(params, config) {
   const steps = [];
 
-  // Step 1: Execute complete mesh product export workflow
-  const exportResult = await exportMeshProducts(params, config);
+  try {
+    // Step 1: Input validation (already done by action factory)
+    steps.push('Successfully validated API Mesh credentials and URL');
 
-  steps.push(core.formatStepMessage('fetch-mesh', 'success', { count: exportResult.productCount }));
+    // Step 2-5: Execute DDD export workflow and collect results
+    const exportResult = await exportMeshProducts(params, config);
 
-  steps.push(
-    core.formatStepMessage('build-products', 'success', { count: exportResult.productCount })
-  );
+    // Parse the CSV export response body to get download URLs
+    const csvExportData = JSON.parse(exportResult.storageResult.body);
 
-  steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
+    // Add human-readable steps for the workflow
+    steps.push(
+      `Successfully fetched and enriched ${exportResult.productCount} products with category and inventory data`
+    );
+    steps.push(`Successfully transformed ${exportResult.productCount} products for export`);
+    steps.push(`Successfully generated CSV file (${(exportResult.csvSize / 1024).toFixed(2)} KB)`);
+    steps.push('Successfully stored CSV file');
 
-  // Step 2: Store CSV with configured storage provider
-  const storageResult = await exportCsvWithStorage(exportResult.csvContent, config, params);
-
-  steps.push(
-    core.formatStepMessage('store-csv', 'success', {
-      provider: JSON.parse(storageResult.body).storage,
-    })
-  );
-
-  return {
-    success: true,
-    exportResult,
-    storageResult,
-    steps,
-  };
+    return {
+      steps,
+      productCount: exportResult.productCount,
+      csvSize: exportResult.csvSize,
+      storage: exportResult.storageResult.provider,
+      fileName: csvExportData.fileName,
+      downloadUrls: {
+        action: csvExportData.downloadUrls?.action || csvExportData.actionDownloadUrl,
+        presigned: csvExportData.downloadUrls?.presigned || csvExportData.presignedUrl,
+        expiryHours: csvExportData.downloadUrls?.expiryHours || csvExportData.expiryHours || 24,
+      },
+      message: 'Product export completed successfully',
+    };
+  } catch (error) {
+    steps.push(`Error occurred: ${error.message}`);
+    throw error;
+  }
 }
 
 /**
@@ -61,7 +71,7 @@ async function exportMeshProductsWithStorage(params, config, core) {
  * @param {boolean} [includeCSV=true] - Whether to generate CSV data
  * @returns {Promise<Object>} Export result with mesh data, built products, and optionally CSV
  * @throws {Error} When API Mesh is unavailable or data is invalid
- * @usedBy exportMeshProductsWithStorageAndFallback
+ * @usedBy exportMeshProductsWithStorage
  * @config mesh.endpoint, mesh.apiKey, commerce.credentials, products.fields
  */
 async function exportMeshProducts(params, config, includeCSV = true) {
@@ -71,22 +81,26 @@ async function exportMeshProducts(params, config, includeCSV = true) {
   // Step 2: Fetch enriched products from API Mesh
   const meshData = await fetchEnrichedProductsFromMesh(config, params, buildEnrichedProductsQuery);
 
-  // Step 3: Sort products and transform for export format
-  const sortedProducts = sortProductsBySku(meshData);
+  // Step 3: Enrich with real inventory data using working REST API calls
+  const inventoryEnrichedProducts = await enrichProductsWithInventory(meshData, config, params);
+
+  // Step 4: Sort products and transform for export format
+  const sortedProducts = sortProductsBySku(inventoryEnrichedProducts);
   const builtProducts = await buildProducts(sortedProducts, config);
 
-  // Step 4: Generate CSV if requested
+  // Step 5: Generate CSV if requested
   let csvResult = '';
   if (includeCSV) {
-    csvResult = await convertToCSV(builtProducts);
+    csvResult = await convertToCSV(builtProducts, config);
   }
+
+  // Step 6: Store CSV with configured storage provider
+  const storageResult = await exportCsvWithStorage(csvResult, config, params);
 
   return {
     productCount: builtProducts.length,
     csvSize: csvResult.length,
-    csvContent: csvResult,
-    products: builtProducts,
-    meshData: meshData,
+    storageResult,
   };
 }
 
@@ -187,116 +201,6 @@ function buildProductObject(product, categoryMap, config) {
   return result;
 }
 
-/**
- * Convert products to CSV format for mesh export
- * @purpose Transform product array into CSV string with headers
- * @param {Array} products - Array of built product objects
- * @returns {Promise<string>} CSV formatted string with headers and data
- * @usedBy exportMeshProducts
- */
-async function convertToCSV(products) {
-  const headers = createCsvHeaders();
-  const csvRows = [];
-
-  // Add header row
-  csvRows.push(headers.join(','));
-
-  // Add product rows
-  products.forEach((product) => {
-    const values = createCsvRow(product);
-    csvRows.push(values.join(','));
-  });
-
-  return csvRows.join('\n');
-}
-
-/**
- * Create CSV headers for mesh export
- * @purpose Define the column headers for CSV export
- * @returns {Array} Array of header strings
- * @usedBy convertToCSV
- */
-function createCsvHeaders() {
-  return [
-    'sku',
-    'name',
-    'price',
-    'qty',
-    'is_in_stock',
-    'categories',
-    'images',
-    'type_id',
-    'status',
-    'visibility',
-    'weight',
-    'created_at',
-    'updated_at',
-    'description',
-    'short_description',
-  ];
-}
-
-/**
- * Create CSV row from product data
- * @purpose Convert single product object to CSV row array
- * @param {Object} product - Built product object
- * @returns {Array} Array of values for CSV row
- * @usedBy convertToCSV
- */
-function createCsvRow(product) {
-  return [
-    formatCsvField(product.sku),
-    formatCsvField(product.name),
-    formatCsvField(product.price, '0'),
-    formatCsvField(product.qty, '0'),
-    formatStockStatus(product.is_in_stock),
-    formatArrayField(product.categories),
-    formatArrayField(product.images),
-    formatCsvField(product.type_id),
-    formatCsvField(product.status, '0'),
-    formatCsvField(product.visibility, '1'),
-    formatCsvField(product.weight, '0'),
-    formatCsvField(product.created_at),
-    formatCsvField(product.updated_at),
-    formatCsvField(product.description),
-    formatCsvField(product.short_description),
-  ];
-}
-
-/**
- * Format field value for CSV with quotes
- * @purpose Format individual field value for CSV output
- * @param {*} value - Field value to format
- * @param {string} defaultValue - Default value if field is empty
- * @returns {string} Formatted CSV field
- * @usedBy createCsvRow
- */
-function formatCsvField(value, defaultValue = '') {
-  return `"${value || defaultValue}"`;
-}
-
-/**
- * Format array field for CSV
- * @purpose Convert array to comma-separated string for CSV
- * @param {Array} arrayValue - Array value to format
- * @returns {string} Formatted CSV field
- * @usedBy createCsvRow
- */
-function formatArrayField(arrayValue) {
-  return `"${Array.isArray(arrayValue) ? arrayValue.join(', ') : ''}"`;
-}
-
-/**
- * Format stock status for CSV
- * @purpose Convert boolean stock status to Yes/No string
- * @param {boolean} isInStock - Stock status boolean
- * @returns {string} Formatted CSV field
- * @usedBy createCsvRow
- */
-function formatStockStatus(isInStock) {
-  return `"${isInStock ? 'Yes' : 'No'}"`;
-}
-
 // Feature Utilities
 
 /**
@@ -320,14 +224,9 @@ module.exports = {
 
   // Feature operations
   buildProducts,
-  convertToCSV,
   sortProductsBySku,
 
   // Feature utilities
   buildProductObject,
-  createCsvRow,
-  formatCsvField,
-  formatStockStatus,
-  formatArrayField,
   transformImageEntry,
 };
