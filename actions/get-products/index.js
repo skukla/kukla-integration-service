@@ -3,7 +3,7 @@
  * Business capability: Export Adobe Commerce product data as CSV using REST API
  */
 
-const { exportProductsWithStorageAndFallback } = require('../../src/products/rest-export');
+const { exportProductsWithStorage } = require('../../src/products/rest-export');
 const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
@@ -22,43 +22,33 @@ async function getProductsBusinessLogic(context) {
     steps.push(core.formatStepMessage('validate-input', 'success'));
 
     // Step 2-5: Execute DDD export workflow and collect results
-    const exportResult = await exportProductsWithStorageAndFallback(extractedParams, config);
+    const exportResult = await exportProductsWithStorage(extractedParams, config);
 
-    // Extract the storage result to build proper response
-    const storageResult = exportResult.storageResult;
-    const productCount = exportResult.productCount;
-    const csvSize = exportResult.csvSize;
+    // Parse the CSV export response body to get download URLs
+    const csvExportData = JSON.parse(exportResult.storageResult.body);
 
-    // Step 2: Fetch and enrich (simulated from our export result)
-    steps.push(core.formatStepMessage('fetch-and-enrich', 'success', { count: productCount }));
-
-    // Step 3: Build products (simulated from our export result)
-    steps.push(core.formatStepMessage('build-products', 'success', { count: productCount }));
-
-    // Step 4: Create CSV (simulated from our export result)
-    steps.push(core.formatStepMessage('create-csv', 'success', { size: csvSize }));
-
-    // Step 5: Store CSV (using actual storage result)
+    // Add steps for the workflow
     steps.push(
-      core.formatStepMessage('store-csv', 'success', {
-        provider: storageResult.storage || config.storage.provider,
-      })
+      core.formatStepMessage('fetch-and-enrich', 'success', { count: exportResult.productCount })
     );
+    steps.push(
+      core.formatStepMessage('build-products', 'success', { count: exportResult.productCount })
+    );
+    steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
+    steps.push(core.formatStepMessage('store-csv', 'success', { provider: csvExportData.storage }));
 
     return {
       message: 'Product export completed successfully',
       steps,
-      downloadUrl: storageResult.downloadUrl,
+      downloadUrls: csvExportData.downloadUrls,
       storage: {
-        provider: storageResult.storage || config.storage.provider,
-        location: storageResult.fileName,
-        properties: storageResult.properties || {},
-        management: storageResult.management || {},
+        provider: csvExportData.storage,
+        location: csvExportData.fileName,
       },
       performance: {
-        productCount: productCount,
-        csvSize: csvSize,
-        storage: storageResult.storage || config.storage.provider,
+        productCount: exportResult.productCount,
+        csvSize: exportResult.csvSize,
+        storage: csvExportData.storage,
       },
     };
   } catch (error) {

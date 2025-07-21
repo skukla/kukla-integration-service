@@ -14,7 +14,7 @@ const { createAction } = require('../../src/shared/action/action-factory');
  * @usedBy download-file action via createAction framework
  */
 async function downloadFileBusinessLogic(context) {
-  const { config, extractedParams } = context;
+  const { config, extractedParams, rawParams } = context;
 
   // Step 1: Validate required parameters
   const fileName = extractedParams.fileName;
@@ -22,8 +22,8 @@ async function downloadFileBusinessLogic(context) {
     throw new Error('fileName parameter is required');
   }
 
-  // Step 2: Execute complete download workflow
-  return await downloadFileWithResponse(fileName, config, extractedParams);
+  // Step 2: Execute complete download workflow with rawParams for runtime context
+  return await downloadFileWithResponse(fileName, config, rawParams);
 }
 
 module.exports = createAction(downloadFileBusinessLogic, {
