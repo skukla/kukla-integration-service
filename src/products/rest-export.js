@@ -159,21 +159,23 @@ async function fetchProducts(params, config) {
         params
       );
 
-      // Step 2: Process response
-      if (response && response.items && Array.isArray(response.items)) {
-        allProducts.push(...response.items);
+      // Step 2: Process response - Commerce API returns response.body.items
+      if (response && response.body && response.body.items && Array.isArray(response.body.items)) {
+        allProducts.push(...response.body.items);
 
         // Step 3: Check if we should continue pagination
-        if (!shouldContinuePagination(response, currentPage, pageSize, maxPages)) {
+        if (!shouldContinuePagination(response.body, currentPage, pageSize, maxPages)) {
           break;
         }
       } else {
+        console.warn(`No items in Commerce API response for page ${currentPage}:`, response);
         break;
       }
 
       currentPage++;
     }
 
+    console.info(`Fetched ${allProducts.length} products from Commerce API`);
     return allProducts;
   } catch (error) {
     throw new Error(`Product fetching failed: ${error.message}`);

@@ -119,7 +119,7 @@ function getPaginationConfig(config) {
 /**
  * Validate pagination continuation
  * @purpose Determine if pagination should continue based on response and limits
- * @param {Object} response - API response object
+ * @param {Object} response - API response body object (response.body passed from caller)
  * @param {number} currentPage - Current page number
  * @param {number} pageSize - Number of items per page
  * @param {number} maxPages - Maximum allowed pages
