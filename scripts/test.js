@@ -11,7 +11,6 @@ const format = require('./shared/formatting');
 const { executeScriptWithExit } = require('./shared/script-framework');
 const { createSpinner, succeedSpinner } = require('./shared/spinner');
 const { createUrlBuilders } = require('../src/shared/routing/url-factory');
-const { executeActionTestWorkflow } = require('../src/testing/action-testing');
 
 // Business Workflows
 
@@ -25,6 +24,7 @@ const { executeActionTestWorkflow } = require('../src/testing/action-testing');
 async function testAction(args) {
   const parsedArgs = parseTestArgs(args);
 
+  // Handle help flag
   if (parsedArgs.help) {
     displayHelp(
       'test',
@@ -82,7 +82,7 @@ async function executeTest(testType, target, options) {
 
 /**
  * Execute action test
- * @purpose Run action test using DDD modules with detailed status reporting
+ * @purpose Run action test using direct HTTP calls for reliability and speed
  * @param {string} actionName - Name of action to test
  * @param {Object} config - Configuration object
  * @param {Object} options - Test options
@@ -106,37 +106,33 @@ async function executeActionTest(actionName, config, options) {
     actionUrl = runtimeUrl(actionName);
     console.log(format.url(actionUrl));
 
-    // Step 3: Execute test with spinner during request
+    // Step 3: Execute direct HTTP request (like curl)
     requestSpinner = createSpinner('Making request...');
-    const testResult = await executeActionTestWorkflow(actionName, {
-      config,
-      params,
-      isProd,
-    });
 
-    // Step 4: Handle spinner result and display results
-    if (testResult.success) {
-      succeedSpinner(requestSpinner, 'Request successful');
+    const response = await makeDirectHttpRequest(actionUrl, params);
+
+    // Step 4: Handle response
+    if (response.success) {
+      succeedSpinner(requestSpinner, 'Complete');
     } else {
       requestSpinner.fail('Request failed');
     }
 
-    // Step 5: Display results using testing domain
-    displayTestResults(testResult);
+    // Step 5: Display results directly
+    displayTestResults(response);
 
     return {
-      success: testResult.success,
+      success: response.success,
       actionName,
       environment,
     };
   } catch (error) {
-    // Fail the spinner if request threw an error before test execution
     if (requestSpinner) {
-      requestSpinner.fail('Test setup failed');
+      requestSpinner.fail('Request failed');
     }
 
     console.log();
-    console.log('Status: ERROR (Setup failed)');
+    console.log('Status: ERROR');
     console.log(`Error: ${error.message}`);
 
     return {
@@ -183,64 +179,31 @@ function validateTestArguments(testType, target) {
 
 /**
  * Display test results with full response content
- * @purpose Format and display test results matching master branch format
- * @param {Object} testResult - Result from DDD test execution
+ * @purpose Format and display test results from direct HTTP calls
+ * @param {Object} response - Direct HTTP response
  * @usedBy executeActionTest
  */
-function displayTestResults(testResult) {
-  // Extract response body from test result - it's in response.data not response.body
-  const responseBody = testResult.response?.data || testResult;
-  const isSuccess = testResult.success;
+function displayTestResults(response) {
+  // Extract response data
+  const responseData = response.data || {};
+  const isSuccess = response.success;
 
-  // Display storage info if available - convert our simple string to rich format
-  if (responseBody && responseBody.storage) {
-    displayStorageInfo(responseBody.storage);
+  // Display storage info if available
+  if (responseData.storage) {
+    displayStorageInfo(responseData.storage);
     console.log();
   }
 
-  // Display status only for success (failure already shown by spinner)
-  if (isSuccess) {
-    console.log(format.status('SUCCESS', 200));
-  }
+  // Display status
+  console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', response.statusCode));
 
   // Display response content
-  if (isSuccess && responseBody) {
-    displaySuccessContent(responseBody);
+  if (isSuccess && responseData) {
+    displaySuccessContent(responseData);
   } else if (!isSuccess) {
-    const errorMessage = extractErrorMessage(testResult);
+    const errorMessage = response.error || responseData.error || 'Unknown error';
     console.log(format.error(`Error: ${errorMessage}`));
   }
-}
-
-/**
- * Extract error message from test result
- * @purpose Get the most relevant error message from multiple possible sources
- * @param {Object} testResult - Test result object
- * @returns {string} Error message
- * @usedBy displayTestResults
- */
-function extractErrorMessage(testResult) {
-  let errorMessage = testResult.error;
-
-  // Check for HTTP error details in the response
-  if (!errorMessage && testResult.response?.error) {
-    errorMessage = testResult.response.error;
-  }
-
-  // Check for validation errors
-  if (!errorMessage && testResult.validation?.errors?.length > 0) {
-    errorMessage = testResult.validation.errors[0];
-  }
-
-  // Check for response status information
-  if (!errorMessage && testResult.response?.statusCode) {
-    const status = testResult.response.statusCode;
-    const statusText = testResult.response.statusText || 'Server Error';
-    errorMessage = `${statusText} (${status})`;
-  }
-
-  // Fallback to generic message
-  return errorMessage || 'Test failed';
 }
 
 /**
@@ -292,18 +255,31 @@ function displaySuccessContent(body) {
     console.log(`${format.messageLabel('Message:')} ${body.message}`);
   }
 
-  if (body.downloadUrl) {
+  // Display both download URLs if available
+  if (body.downloadUrls) {
+    console.log();
+
+    if (body.downloadUrls.action) {
+      console.log(format.downloadHeader('🔗 Action Download URL:'));
+      console.log(`   ${format.downloadUrl(body.downloadUrls.action)}`);
+    }
+
+    // Check for presigned URL
+    if (body.downloadUrls.presigned && body.downloadUrls.presigned !== 'null') {
+      console.log();
+      // Calculate expiry hours dynamically
+      const expiryHours = body.downloadUrls.expiryHours;
+      console.log(
+        format.downloadHeader(`🌐 Presigned URL (Direct Access - ${expiryHours}h expiry):`)
+      );
+      console.log(`   ${format.downloadUrl(body.downloadUrls.presigned)}`);
+    }
+  }
+  // Fallback for legacy single downloadUrl
+  else if (body.downloadUrl) {
     console.log();
     console.log(format.downloadHeader('🔗 Download URL:'));
     console.log(`   ${format.downloadUrl(body.downloadUrl)}`);
-  }
-
-  if (body.storage?.properties?.presigned?.success) {
-    const presigned = body.storage.properties.presigned;
-    console.log();
-    console.log(format.downloadHeader('🌐 Presigned URL (Direct Access):'));
-    console.log(`   ${format.downloadUrl(presigned.presignedUrl)}`);
-    console.log(`   ${format.muted(`Expires: ${presigned.expiresAt} (${presigned.expiresIn}s)`)}`);
   }
 
   // Create realistic steps from our simpler response
@@ -329,6 +305,75 @@ function displaySuccessContent(body) {
       console.log(format.step(`${index + 1}. ${step}`));
     });
   }
+}
+
+/**
+ * Make direct HTTP request to action (like curl)
+ * @purpose Simple, reliable HTTP request without framework complexity
+ * @param {string} url - Action URL
+ * @param {Object} params - Request parameters
+ * @returns {Promise<Object>} Response data
+ */
+async function makeDirectHttpRequest(url, params = {}) {
+  const https = require('https');
+  const { URL } = require('url');
+
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+
+    // Add cache-busting query parameter
+    parsedUrl.searchParams.set('_cacheBust', Date.now().toString());
+
+    const postData = JSON.stringify(params);
+
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 443,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+        'X-Cache-Bypass': 'true',
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const parsedData = JSON.parse(data);
+          resolve({
+            success: res.statusCode === 200,
+            statusCode: res.statusCode,
+            data: parsedData,
+          });
+        } catch (error) {
+          resolve({
+            success: false,
+            statusCode: res.statusCode,
+            error: `Failed to parse response: ${error.message}`,
+            rawData: data,
+          });
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.write(postData);
+    req.end();
+  });
 }
 
 // CLI Entry Point

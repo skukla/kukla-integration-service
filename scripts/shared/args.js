@@ -19,15 +19,25 @@ function parseCommonArgs(args) {
   // Extract non-flag arguments
   const nonFlagArgs = args.filter((arg) => !arg.startsWith('-'));
 
-  // Extract custom flag values
+  // Extract custom flag values (handle both --flag=value and --flag value formats)
   const customFlags = {};
-  args.forEach((arg) => {
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
     if (arg.includes('=')) {
+      // Handle --flag=value format
       const [key, ...valueParts] = arg.replace(/^--/, '').split('=');
       const value = valueParts.join('=');
       customFlags[key] = value;
+    } else if (arg.startsWith('--') && i + 1 < args.length && !args[i + 1].startsWith('-')) {
+      // Handle --flag value format
+      const key = arg.replace(/^--/, '');
+      const value = args[i + 1];
+      customFlags[key] = value;
+      i++; // Skip the next argument since we consumed it as a value
     }
-  });
+  }
 
   return {
     ...commonFlags,
@@ -102,6 +112,16 @@ function parseTestArgs(args) {
   const common = parseCommonArgs(args);
   const [testType, target] = common.nonFlagArgs;
 
+  // Parse JSON params if provided
+  let params = {};
+  if (common.params) {
+    try {
+      params = JSON.parse(common.params);
+    } catch (error) {
+      throw new Error(`Invalid JSON in --params: ${error.message}`);
+    }
+  }
+
   return {
     ...common,
     testType: testType || 'action',
@@ -109,6 +129,7 @@ function parseTestArgs(args) {
     scenario: common.scenario || 'quick',
     timeout: parseInt(common.timeout) || 10000,
     retries: parseInt(common.retries) || 3,
+    params,
   };
 }
 
