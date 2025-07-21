@@ -46,15 +46,23 @@ async function auditAppWithAllComponents(options = {}) {
 
     // Step 2: Execute Tier 1 audits (High Reliability)
     console.log(format.info('Tier 1: High Reliability Rules (90-100% accurate)'));
-    await executeTier1Audits(files, auditResults.tier1);
+    const auditConfig = await loadAuditConfig();
+    await executeTier1Audits(files, auditResults.tier1, auditConfig);
 
-    // Step 3: Execute Tier 2 audits (Pattern Detection)
-    console.log(format.info('\nTier 2: Pattern Detection Rules (70-90% accurate)'));
-    await executeTier2Audits(files, auditResults.tier2);
+    if (options.tier1Only) {
+      const endTime = Date.now();
+      const duration = Math.round((endTime - startTime) / 1000);
+      console.log(format.info(`\nAudit completed in ${duration}s`));
+      return { exitCode: auditResults.tier1.failed > 0 ? 1 : 0, ...auditResults };
+    }
 
-    // Step 4: Execute Tier 3 audits (Manual Review Flags)
-    console.log(format.info('\nTier 3: Manual Review Flags (guidance only)'));
-    await executeTier3Audits(files, auditResults.tier3);
+    // Step 3: Execute Tier 2 audits (Medium Reliability)
+    console.log(format.info('\nTier 2: Medium Reliability Rules (70-89% accurate)'));
+    await executeTier2Audits(files, auditResults.tier2, auditConfig);
+
+    // Step 4: Execute Tier 3 audits (Lower Reliability)
+    console.log(format.info('\nTier 3: Lower Reliability Rules (50-69% accurate)'));
+    await executeTier3Audits(files, auditResults.tier3, auditConfig);
 
     // Step 5: Generate comprehensive report
     const duration = Date.now() - startTime;
@@ -99,7 +107,7 @@ async function auditApp(options = {}) {
  * @usedBy auditAppWithAllComponents
  */
 async function discoverAuditableFiles() {
-  const config = loadConfig({});
+  const config = await loadConfig({}, false, 'scripts');
   const auditConfig = config.scripts.audit;
 
   return await glob(auditConfig.patterns.include, {
@@ -113,8 +121,8 @@ async function discoverAuditableFiles() {
  * @returns {Object} Audit configuration
  * @usedBy All audit workflows
  */
-function loadAuditConfig() {
-  const config = loadConfig({});
+async function loadAuditConfig() {
+  const config = await loadConfig({}, false, 'scripts');
   return {
     ...config,
     audit: config.scripts.audit,

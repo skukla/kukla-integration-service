@@ -121,10 +121,15 @@ function buildStorageParams(fileName, config, params) {
 }
 
 module.exports = {
+  // Business workflows
+  buildStorageParams,
+
+  // Feature operations
   cleanFileName,
   removePublicPrefix,
   sanitizeFileName,
+
+  // Feature utilities
   buildSafeFilePath,
   extractFileName,
-  buildStorageParams,
 };

@@ -228,9 +228,12 @@ function getRuntimeParameters(params, config) {
 }
 
 module.exports = {
+  // Business workflows
+  getCommerceParameters,
+
+  // Feature operations
   getParameter,
   getRequiredParameter,
-  getCommerceParameters,
   getAwsParameters,
   getMeshParameters,
   getRuntimeParameters,

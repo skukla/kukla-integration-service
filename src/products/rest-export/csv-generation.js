@@ -175,10 +175,15 @@ function escapeCsvValue(value) {
 }
 
 module.exports = {
+  // Business workflows
   convertToCSV,
+
+  // Feature operations
   generateCsvConfig,
   createCsvRow,
   formatCsvWithRecsHeaders,
+
+  // Feature utilities
   escapeCsvValue,
   extractCsvCategoryId,
   extractProductMessage,
