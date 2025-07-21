@@ -32,7 +32,7 @@ function buildBaseProductFields(product) {
   return {
     id: product.id,
     sku: product.sku,
-    name: extractProductMessage(product, 'name'),
+    name: product.name || product.sku || '',
     description: extractProductMessage(product, 'description'),
     short_description: extractProductMessage(product, 'short_description'),
     type_id: product.type_id,
@@ -82,12 +82,16 @@ function buildProductPricing(product) {
  * @usedBy Product enrichment requiring inventory integration
  */
 function addInventoryFields(productObj, product) {
+  // Use enriched inventory data (from separate API calls) instead of extension_attributes
+  const inventory = product.inventory;
+  const qty = inventory?.qty || 0;
+
   return {
     ...productObj,
-    qty: product.inventory ? product.inventory.qty : '',
-    is_in_stock: product.inventory ? product.inventory.is_in_stock : '',
-    stock_status: product.inventory ? product.inventory.stock_status : '',
-    manage_stock: product.inventory ? product.inventory.manage_stock : '',
+    qty: qty,
+    is_in_stock: inventory?.is_in_stock || false,
+    stock_status: inventory?.is_in_stock ? 'In Stock' : 'Out of Stock',
+    manage_stock: inventory?.manage_stock || false,
   };
 }
 
@@ -100,12 +104,42 @@ function addInventoryFields(productObj, product) {
  * @usedBy Product enrichment requiring category integration
  */
 function addCategoryFields(productObj, product) {
+  // Use enriched categories first (from API with real names) - PREFERRED
+  if (product.categories && Array.isArray(product.categories) && product.categories.length > 0) {
+    // Categories are already enriched with real names from Commerce API
+    return {
+      ...productObj,
+      categories: product.categories, // Already has id, name, path, level, etc.
+      category_string: buildCategoryString(product.categories),
+      category_ids: product.categories.map((cat) => cat.id).join(','),
+    };
+  }
+
+  // Fallback: Use raw category_links (only if enrichment failed)
+  const categoryLinks = product.extension_attributes?.category_links || [];
+
+  if (categoryLinks.length === 0) {
+    return {
+      ...productObj,
+      categories: [],
+      category_string: '',
+      category_ids: '',
+    };
+  }
+
+  // Create basic category objects from raw data (fallback only)
+  const basicCategories = categoryLinks.map((link) => ({
+    id: link.category_id,
+    category_id: link.category_id,
+    name: `Category ${link.category_id}`, // Generic fallback name
+    position: link.position || 0,
+  }));
+
   return {
     ...productObj,
-    categories: buildCategoryString(product.categories || []),
-    category_ids: product.category_links
-      ? product.category_links.map((link) => link.category_id).join(',')
-      : '',
+    categories: basicCategories,
+    category_string: buildCategoryString(basicCategories),
+    category_ids: categoryLinks.map((link) => link.category_id).join(','),
   };
 }
 
@@ -138,7 +172,7 @@ function addImageFields(productObj, product) {
 function addCustomAttributes(productObj, product) {
   const customAttributes = {};
 
-  if (product.custom_attributes) {
+  if (product.custom_attributes && Array.isArray(product.custom_attributes)) {
     product.custom_attributes.forEach((attr) => {
       if (attr.attribute_code && attr.value !== undefined) {
         customAttributes[attr.attribute_code] = attr.value;
@@ -161,8 +195,17 @@ function addCustomAttributes(productObj, product) {
 function buildProductObject(product) {
   let productObj = buildBaseProductFields(product);
 
+  // Add pricing fields first
+  const pricingFields = buildProductPricing(product);
+  productObj = { ...productObj, ...pricingFields };
+
+  // Add inventory fields using extension_attributes data
   productObj = addInventoryFields(productObj, product);
+
+  // Add category fields using extension_attributes data
   productObj = addCategoryFields(productObj, product);
+
+  // Add image and custom attribute fields
   productObj = addImageFields(productObj, product);
   productObj = addCustomAttributes(productObj, product);
 
@@ -201,7 +244,7 @@ function getVisibilityText(visibility) {
 /**
  * Build category string representation
  * @purpose Convert category array to string representation for export
- * @param {Array} categories - Array of category objects
+ * @param {Array} categories - Array of category objects (from category_links or enriched categories)
  * @returns {string} Formatted category string for export
  * @usedBy Category field building requiring string representation
  */
@@ -210,7 +253,20 @@ function buildCategoryString(categories) {
     return '';
   }
 
-  return categories.map((cat) => cat.name || cat).join(', ');
+  return categories
+    .map((cat) => {
+      // Handle category_links format: { category_id: "9" }
+      if (cat.category_id) {
+        return cat.category_id;
+      }
+      // Handle enriched category format: { name: "Category Name" }
+      if (cat.name) {
+        return cat.name;
+      }
+      // Fallback for string categories
+      return cat;
+    })
+    .join(', ');
 }
 
 /**
