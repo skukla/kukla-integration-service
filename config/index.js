@@ -124,8 +124,6 @@ function getRequiredConfigDomains(actionName, params) {
   // Get profile for this action, or use default
   const profile = ACTION_CONFIG_PROFILES[actionName] || ACTION_CONFIG_PROFILES['default'];
 
-  console.info(`Loading config profile for '${actionName || 'unknown'}': [${profile.join(', ')}]`);
-
   return profile;
 }
 
