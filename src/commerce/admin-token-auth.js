@@ -25,7 +25,7 @@ const tokenStorage = new Map();
  * @usedBy All authenticated Commerce operations
  */
 async function executeAuthenticatedCommerceRequest(endpoint, requestOptions, config, params) {
-  const token = await getAdminToken(config);
+  const token = await getAdminToken(config, params);
   const options = buildAuthenticatedRequestOptions(requestOptions, token, config);
   const { commerceUrl } = createUrlBuilders(config);
   const url = commerceUrl(endpoint, {}, params);
@@ -142,12 +142,17 @@ async function generateAdminToken(config, params = {}) {
  * @param {string} url - Complete URL for the Commerce API request
  * @param {Object} options - HTTP request options with authentication headers
  * @param {Object} config - Application configuration for retry logic
- * @returns {Promise<Object>} Commerce API response data
+ * @returns {Promise<Object>} Commerce API response data with success property
  * @usedBy Authenticated request execution with automatic recovery
  */
 async function executeRequestWithAuthRetry(url, options, config) {
   try {
-    return await request(url, options);
+    const response = await request(url, options);
+
+    return {
+      ...response,
+      success: response.statusCode >= 200 && response.statusCode < 300,
+    };
   } catch (error) {
     if (isAuthenticationError(error)) {
       // Clear cached token and retry with fresh token
@@ -158,7 +163,13 @@ async function executeRequestWithAuthRetry(url, options, config) {
       const retryOptions = buildAuthenticatedRequestOptions(options, newToken, config);
 
       await sleep(1000); // Brief delay before retry
-      return await request(url, retryOptions);
+      const retryResponse = await request(url, retryOptions);
+
+      // Add success property to retry response as well
+      return {
+        ...retryResponse,
+        success: retryResponse.statusCode >= 200 && retryResponse.statusCode < 300,
+      };
     }
     throw error;
   }
