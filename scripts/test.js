@@ -154,7 +154,7 @@ async function executeActionTest(actionName, config, options) {
  */
 function resolveTestConfiguration(args) {
   const testType = 'action'; // Default to action testing
-  const target = args.action || args._[0];
+  const target = args.action || args.target || args.nonFlagArgs[0];
   const options = {
     params: args.params || {},
     isProd: args.prod || false,
