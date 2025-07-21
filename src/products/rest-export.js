@@ -4,8 +4,8 @@
  */
 
 // Import from feature sub-modules (same domain)
+const { enrichProductsWithAllData } = require('./product-enrichment');
 const { convertToCSV } = require('./rest-export/csv-generation');
-const { enrichWithCategories, enrichWithInventory } = require('./rest-export/enrichment');
 const { buildProducts } = require('./rest-export/transformation');
 const { getPaginationConfig, shouldContinuePagination } = require('./rest-export/validation');
 const { executeAuthenticatedCommerceRequest } = require('../commerce/admin-token-auth');
@@ -15,53 +15,67 @@ const { exportCsvWithStorage } = require('../files/csv-export');
 
 /**
  * Export products with storage
- * @purpose Product export workflow with storage integration
+ * @purpose Orchestrate complete product export workflow with file storage
  * @param {Object} params - Action parameters with OAuth credentials
- * @param {Object} config - Complete configuration object
- * @returns {Promise<Object>} Export result with storage info
- * @throws {Error} When export or storage fails
- * @usedBy get-products action
- * @config commerce.baseUrl, commerce.credentials, storage.provider, products.fields
+ * @param {Object} config - Configuration object with Commerce URL and storage settings
+ * @returns {Promise<Object>} Export result with product count, CSV size, and storage information
+ * @throws {Error} If any step of the export process fails
+ * @usedBy get-products action for complete export workflow
+ * @config commerce.baseUrl, storage.provider, products.csv
  */
 async function exportProductsWithStorage(params, config) {
-  // Step 1: Execute core export workflow
-  const exportResult = await exportProducts(params, config);
+  try {
+    // Step 1: Fetch and enrich product data (includes category/inventory enrichment)
+    const products = await fetchAndEnrichProducts(params, config);
 
-  // Step 2: Store CSV with configured storage provider
-  const storageResult = await exportCsvWithStorage(exportResult.csvContent, config, params);
+    // Step 2: Transform raw Commerce data to standardized format for CSV export
+    const builtProducts = buildProducts(products);
 
-  return {
-    productCount: exportResult.productCount,
-    csvSize: exportResult.csvSize,
-    storageResult,
-  };
+    // Step 3: Generate CSV content
+    const csvContent = await convertToCSV(builtProducts, config);
+
+    // Step 4: Store CSV file and get download URLs
+    const storageResult = await exportCsvWithStorage(csvContent, config, params);
+
+    return {
+      productCount: products.length,
+      csvSize: Buffer.byteLength(csvContent, 'utf8'),
+      storageResult,
+    };
+  } catch (error) {
+    throw new Error(`Product export with storage failed: ${error.message}`);
+  }
 }
 
 /**
- * Export products as CSV
- * @purpose Core product export functionality with REST API integration
+ * Export products workflow
+ * @purpose Product export workflow without storage integration
  * @param {Object} params - Action parameters with OAuth credentials
  * @param {Object} config - Complete configuration object
- * @returns {Promise<Object>} CSV export result with product data
- * @throws {Error} When Commerce API is unavailable or data is invalid
+ * @returns {Promise<Object>} Export result with CSV content and metadata
+ * @throws {Error} When export workflow fails
  * @usedBy exportProductsWithStorage
  * @config commerce.baseUrl, commerce.credentials, products.fields
  */
 async function exportProducts(params, config) {
-  // Step 1: Fetch and enrich products from Commerce API
-  const enrichedProducts = await fetchAndEnrichProducts(params, config);
+  try {
+    // Step 1: Fetch and enrich product data (category + inventory enrichment)
+    const products = await fetchAndEnrichProducts(params, config);
 
-  // Step 2: Transform products for export format
-  const builtProducts = await buildProducts(enrichedProducts, config);
+    // Step 2: Transform products to standardized format for CSV export
+    const builtProducts = buildProducts(products);
 
-  // Step 3: Convert to CSV format
-  const csvResult = await convertToCSV(builtProducts);
+    // Step 3: Generate CSV content with headers
+    const csvContent = await convertToCSV(builtProducts, config);
 
-  return {
-    productCount: builtProducts.length,
-    csvSize: csvResult.length,
-    csvContent: csvResult,
-  };
+    return {
+      productCount: products.length,
+      csvSize: Buffer.byteLength(csvContent, 'utf8'),
+      csvContent: csvContent,
+    };
+  } catch (error) {
+    throw new Error(`Product export failed: ${error.message}`);
+  }
 }
 
 // Feature Operations
@@ -81,11 +95,10 @@ async function fetchAndEnrichProducts(params, config) {
     // Step 1: Fetch base product data
     const products = await fetchProducts(params, config);
 
-    // Step 2: Enrich with categories first, then inventory
-    const categorizedProducts = await enrichWithCategories(products, config, params);
-    const fullyEnrichedProducts = await enrichWithInventory(categorizedProducts, config, params);
+    // Step 2: Enrich with both categories AND inventory - fetch actual category names from API
+    const enrichedProducts = await enrichProductsWithAllData(products, config, params);
 
-    return fullyEnrichedProducts;
+    return enrichedProducts;
   } catch (error) {
     throw new Error(`Product fetch and enrichment failed: ${error.message}`);
   }
@@ -108,10 +121,13 @@ async function fetchProducts(params, config) {
 
   try {
     while (currentPage <= maxPages) {
-      // Step 1: Make API request using proper query building
+      // Step 1: Make API request - categories work in bulk, inventory needs separate calls
       const query = {
         'searchCriteria[pageSize]': pageSize,
         'searchCriteria[currentPage]': currentPage,
+        // Categories work in bulk, but stock_item does NOT work in bulk calls
+        fields:
+          'items[id,sku,name,price,status,type_id,attribute_set_id,created_at,updated_at,weight,media_gallery_entries[file,url,position,types],custom_attributes,extension_attributes[category_links,website_ids]],total_count',
       };
       const response = await executeAuthenticatedCommerceRequest(
         'products',

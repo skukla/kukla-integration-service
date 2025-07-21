@@ -3,7 +3,7 @@
  * Business capability: Export product data as CSV using API Mesh with storage
  */
 
-const { exportMeshProductsWithStorageAndFallback } = require('../../src/products/mesh-export');
+const { exportMeshProductsWithStorage } = require('../../src/products/mesh-export');
 const { createAction } = require('../../src/shared/action/action-factory');
 
 /**
@@ -14,9 +14,11 @@ const { createAction } = require('../../src/shared/action/action-factory');
  * @usedBy get-products-mesh action via createAction framework
  */
 async function getProductsMeshBusinessLogic(context) {
-  const { config, extractedParams } = context;
+  const { config, extractedParams, response } = context;
 
-  return await exportMeshProductsWithStorageAndFallback(extractedParams, config);
+  const result = await exportMeshProductsWithStorage(extractedParams, config);
+
+  return response.success(result, result.message);
 }
 
 module.exports = createAction(getProductsMeshBusinessLogic, {

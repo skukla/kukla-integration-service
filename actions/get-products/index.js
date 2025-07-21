@@ -14,45 +14,43 @@ const { createAction } = require('../../src/shared/action/action-factory');
  * @usedBy get-products action via createAction framework
  */
 async function getProductsBusinessLogic(context) {
-  const { config, extractedParams, core } = context;
+  const { config, extractedParams, response } = context;
   const steps = [];
 
   try {
     // Step 1: Input validation (already done by action factory)
-    steps.push(core.formatStepMessage('validate-input', 'success'));
+    steps.push('Successfully validated Commerce API credentials and URL');
 
     // Step 2-5: Execute DDD export workflow and collect results
     const exportResult = await exportProductsWithStorage(extractedParams, config);
 
-    // Parse the CSV export response body to get download URLs
+    // Step 6: Parse the CSV export response body to get download URLs
     const csvExportData = JSON.parse(exportResult.storageResult.body);
 
-    // Add steps for the workflow
+    // Step 7: Add outputsteps
     steps.push(
-      core.formatStepMessage('fetch-and-enrich', 'success', { count: exportResult.productCount })
+      `Successfully fetched and enriched ${exportResult.productCount} products with category and inventory data`
     );
-    steps.push(
-      core.formatStepMessage('build-products', 'success', { count: exportResult.productCount })
-    );
-    steps.push(core.formatStepMessage('create-csv', 'success', { size: exportResult.csvSize }));
-    steps.push(core.formatStepMessage('store-csv', 'success', { provider: csvExportData.storage }));
+    steps.push(`Successfully transformed ${exportResult.productCount} products for export`);
+    steps.push(`Successfully generated CSV file (${(exportResult.csvSize / 1024).toFixed(2)} KB)`);
+    steps.push('Successfully stored CSV file');
 
-    return {
-      message: 'Product export completed successfully',
+    const responseData = {
       steps,
-      downloadUrls: csvExportData.downloadUrls,
-      storage: {
-        provider: csvExportData.storage,
-        location: csvExportData.fileName,
-      },
-      performance: {
-        productCount: exportResult.productCount,
-        csvSize: exportResult.csvSize,
-        storage: csvExportData.storage,
+      productCount: exportResult.productCount,
+      csvSize: exportResult.csvSize,
+      storage: exportResult.storageResult.provider,
+      fileName: csvExportData.fileName,
+      downloadUrls: {
+        action: csvExportData.downloadUrls?.action || csvExportData.actionDownloadUrl,
+        presigned: csvExportData.downloadUrls?.presigned || csvExportData.presignedUrl,
+        expiryHours: csvExportData.downloadUrls?.expiryHours || csvExportData.expiryHours || 24,
       },
     };
+
+    return response.success(responseData, 'Product export completed successfully');
   } catch (error) {
-    steps.push(core.formatStepMessage('error', 'error', { message: error.message }));
+    steps.push(`Error occurred: ${error.message}`);
     throw error;
   }
 }
