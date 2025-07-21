@@ -89,7 +89,7 @@ async function getFileContent(fileName, config, params) {
  * @usedBy downloadFileWithResponse, downloadFile, getFileContent
  */
 async function readFileContent(fileName, config, params) {
-  const storage = await initializeStorageStrategy(config.storage.provider, config, params);
+  const storage = await initializeStorageStrategy(config, params);
   return await storage.read(fileName);
 }
 
@@ -104,7 +104,7 @@ async function readFileContent(fileName, config, params) {
  */
 async function getFileMetadataForDownload(fileName, config, params) {
   try {
-    const storage = await initializeStorageStrategy(config.storage.provider, config, params);
+    const storage = await initializeStorageStrategy(config, params);
     const properties = await storage.getProperties(fileName);
 
     return {

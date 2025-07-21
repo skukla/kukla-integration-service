@@ -37,7 +37,10 @@ async function exportCsvWithStorageAndFallback(csvData, config, params) {
  * @usedBy Primary CSV export workflow with storage capabilities
  */
 async function exportCsvWithStorage(csvData, config, params) {
-  const fileName = params.fileName || generateDefaultCsvFileName();
+  // Use configured filename if available, otherwise generate timestamped filename
+  const configuredFilename = config.files?.storage?.csv?.filename;
+  const fileName = params.fileName || configuredFilename || generateDefaultCsvFileName();
+
   const storageParams = prepareCsvStorageParams(csvData, fileName, config, params);
 
   const storageResult = await storeCsvWithStrategy(storageParams, config);
@@ -55,7 +58,9 @@ async function exportCsvWithStorage(csvData, config, params) {
  * @usedBy Fallback export when storage is unavailable or fails
  */
 async function exportCsvDataOnly(csvData, config, params) {
-  const fileName = params.fileName || generateDefaultCsvFileName();
+  // Use configured filename if available, otherwise generate timestamped filename
+  const configuredFilename = config.files?.storage?.csv?.filename;
+  const fileName = params.fileName || configuredFilename || generateDefaultCsvFileName();
 
   return updateContentOnly(csvData, fileName);
 }
