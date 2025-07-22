@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"f70238cfc1afe302ba08493908e8d9c09956bfa0ec9ac862920e4ff62f7cdbc0","configHash":"c682ded0248e5204bf509da5b56adc2977a006503a531e158943c721322700ea","generatedAt":"2025-07-16T01:47:28.933Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"f70238cfc1afe302ba08493908e8d9c09956bfa0ec9ac862920e4ff62f7cdbc0","configHash":"2f225d61987d2cdb6e77594ba88dcdfb0ca0d115c87f7625ef5de06735919e78","generatedAt":"2025-07-22T17:37:43.686Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Optimized Implementation
  *
