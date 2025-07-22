@@ -5,7 +5,7 @@
         "name": "Products",
         "handler": {
           "JsonSchema": {
-            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
+            "baseUrl": "https://com774.adobedemo.com/rest/all/V1",
             "operationHeaders": {
               "Content-Type": "application/json",
               "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
@@ -31,7 +31,7 @@
         "name": "Categories",
         "handler": {
           "JsonSchema": {
-            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
+            "baseUrl": "https://com774.adobedemo.com/rest/all/V1",
             "operationHeaders": {
               "Content-Type": "application/json",
               "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
@@ -69,7 +69,7 @@
         "name": "Inventory",
         "handler": {
           "JsonSchema": {
-            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
+            "baseUrl": "https://com774.adobedemo.com/rest/all/V1",
             "operationHeaders": {
               "Content-Type": "application/json",
               "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
