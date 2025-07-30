@@ -30,13 +30,7 @@ const COMPONENT_CONFIG = {
     'aria-modal': 'true',
   },
   'delete-button': {
-    'hx-get': (el) =>
-      getActionUrl('delete-file', {
-        fileName: el.dataset.fileName,
-        fullPath: el.dataset.downloadUrl,
-      }),
-    'hx-target': '#modal-container',
-    'hx-swap': 'innerHTML',
+    'data-action': 'delete',
     'data-loading-class': 'is-loading',
     'data-loading-states': 'true',
     'data-success-message': (el) => `${el.dataset.fileName} deleted successfully`,
@@ -114,6 +108,15 @@ export function initializeHtmx() {
   initializeComponents();
   // Set up progressive loading
   setupProgressiveLoading();
+  // Set up component reinitialization after content swaps
+  window.htmx.on('htmx:afterSwap', function (evt) {
+    const target = evt.detail.target;
+    if (target && target.classList.contains('table-content')) {
+      target.querySelectorAll('[data-component]').forEach((element) => {
+        configureComponent(element, element.dataset.component);
+      });
+    }
+  });
 }
 /**
  * Initialize all HTMX components

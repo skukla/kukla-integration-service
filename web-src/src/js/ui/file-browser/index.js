@@ -139,10 +139,11 @@ function handleFileUpload(file) {
  */
 function initializeDeleteHandlers() {
   document.addEventListener('click', (e) => {
-    if (e.target.matches('[data-action="delete"]')) {
+    const deleteButton = e.target.closest('[data-action="delete"]');
+    if (deleteButton) {
       e.preventDefault();
-      const fileName = e.target.dataset.fileName;
-      const filePath = e.target.dataset.filePath;
+      const fileName = deleteButton.dataset.fileName;
+      const filePath = deleteButton.dataset.filePath;
       if (fileName && filePath) {
         createDeleteModal(fileName, filePath);
       }
@@ -174,14 +175,15 @@ function generateModalContent(fileName, filePath) {
                     <span class="btn-label">Cancel</span>
                 </button>
                 <button type="button"
-                        class="btn btn-danger btn-outline delete-confirm-button"
+                        class="btn btn-danger delete-confirm-button"
                         data-loading-class="is-loading"
                         data-success-message="File deleted successfully"
                         data-file-name="${fileName}"
-                        hx-post="${deleteUrl}"
+                        hx-delete="${deleteUrl}"
                         hx-target=".table-content"
                         hx-swap="innerHTML"
                         hx-trigger="click"
+                        hx-on="htmx:afterRequest: if(event.detail.successful) hideModal()"
                         aria-label="Confirm deletion of ${fileName}">
                     <span class="btn-label">Delete</span>
                 </button>

@@ -35,8 +35,6 @@ function generateFileRowHTML(file, config) {
   const fullPath = file.fullPath || addPublicPrefix(file.name);
   const downloadUrl =
     buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
-  const deleteUrl =
-    buildRuntimeUrl('delete-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
 
   return `
         <div class="table-row">
@@ -64,7 +62,7 @@ function generateFileRowHTML(file, config) {
                  title="Download ${file.name}">
                 <span class="btn-text btn-label">Download</span>
               </a>
-              <a href="${deleteUrl}"
+              <a href="#"
                  class="btn btn-sm btn-danger delete-button"
                  data-component="delete-button"
                  data-action="delete"
@@ -73,9 +71,6 @@ function generateFileRowHTML(file, config) {
                  data-loading-class="is-loading"
                  data-loading-states="true"
                  data-loading-text=""
-                 hx-get="${deleteUrl}"
-                 hx-target="#modal-container"
-                 hx-swap="innerHTML"
                  title="Delete ${file.name}">
                 <span class="btn-text btn-label">Delete</span>
               </a>
@@ -123,7 +118,7 @@ function generateCompleteFileBrowserHTML(files, config) {
  * @param {string} message - Confirmation message
  * @returns {string} HTML string for delete modal
  */
-function generateDeleteModalHTML(fileName, message) {
+function generateDeleteModalHTML(fileName, filePath) {
   return `
     <div class="modal-overlay">
       <div class="modal">
@@ -131,12 +126,21 @@ function generateDeleteModalHTML(fileName, message) {
           <h3>Confirm Deletion</h3>
         </div>
         <div class="modal-body">
-          <p>${message}</p>
+          <p>Are you sure you want to delete this file?</p>
           <p><strong>File:</strong> ${fileName}</p>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+          <button class="btn btn-secondary modal-close" 
+                  hx-on="click: hideModal()">Cancel</button>
+          <button class="btn btn-danger delete-confirm-button"
+                  data-loading-class="is-loading"
+                  data-loading-states="true"
+                  data-loading-text=""
+                  data-file-name="${fileName}"
+                  hx-delete="?fileName=${encodeURIComponent(filePath)}"
+                  hx-target=".table-content"
+                  hx-swap="innerHTML"
+                  hx-on="htmx:afterRequest: if(event.detail.successful) hideModal()">Delete</button>
         </div>
       </div>
     </div>
