@@ -307,7 +307,10 @@ function calculatePerformance(
   return {
     processedProducts: productCount,
     apiCalls: 1, // CLIENT API CALLS - Single GraphQL query to mesh
-    method: 'API Mesh', // Must match frontend detection logic
+    method:
+      batchInfo.categoriesBatched && batchInfo.inventoryBatched
+        ? 'API Mesh Custom Resolver (Native + Batch Optimized)'
+        : 'API Mesh', // Must match frontend detection logic
     executionTime: totalTime,
     totalTime: totalTime,
     productsApiCalls: 1,
