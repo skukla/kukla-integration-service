@@ -481,7 +481,7 @@ The mesh resolver returns comprehensive performance data:
   performance: {
     processedProducts: 119,
     apiCalls: 3,
-    method: "API Mesh Custom Resolver (Native + Batch Optimized)",
+    method: "API Mesh",
     executionTime: 750,
     totalTime: 750,
     productsApiCalls: 1,

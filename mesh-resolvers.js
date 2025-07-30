@@ -1,4 +1,4 @@
-/** METADATA: {"templateHash":"a56c542e8e0e63f3a15e43df074972684c85f3f8fb8d31aab8df075aef1ade3f","configHash":"c682ded0248e5204bf509da5b56adc2977a006503a531e158943c721322700ea","generatedAt":"2025-07-30T19:15:52.751Z","version":"1.0.0"} */
+/** METADATA: {"templateHash":"f70238cfc1afe302ba08493908e8d9c09956bfa0ec9ac862920e4ff62f7cdbc0","configHash":"c682ded0248e5204bf509da5b56adc2977a006503a531e158943c721322700ea","generatedAt":"2025-07-30T19:24:08.572Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Optimized Implementation
  *
@@ -308,10 +308,7 @@ function calculatePerformance(
   return {
     processedProducts: productCount,
     apiCalls: 1, // CLIENT API CALLS - Single GraphQL query to mesh
-    method:
-      batchInfo.categoriesBatched && batchInfo.inventoryBatched
-        ? 'API Mesh Custom Resolver (Native + Batch Optimized)'
-        : 'API Mesh', // Must match frontend detection logic
+    method: 'API Mesh', // Must match frontend detection logic
     executionTime: totalTime,
     totalTime: totalTime,
     productsApiCalls: 1,
