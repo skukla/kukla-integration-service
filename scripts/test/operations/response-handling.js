@@ -3,6 +3,7 @@
  * Operations for processing and displaying test responses
  */
 
+const { loadConfig } = require('../../../config');
 const format = require('../../core/formatting');
 const {
   isSuccessfulResponse,
@@ -31,13 +32,14 @@ function displayProgressResults(environment, actionName, response) {
   // Display response content
   displayResponseContent(isSuccess, response.body);
 
+  const errorMessage = isSuccess ? null : extractErrorMessage(response);
   return {
     success: isSuccess,
     environment,
     actionName,
     status: response.status,
-    message: isSuccess ? null : extractErrorMessage(response),
-    error: isSuccess ? null : extractErrorMessage(response),
+    message: errorMessage,
+    error: errorMessage,
   };
 }
 
@@ -67,13 +69,14 @@ function displayTestResults(environment, actionName, response) {
   // Display response content
   displayResponseContent(isSuccess, response.body);
 
+  const errorMessage = isSuccess ? null : extractErrorMessage(response);
   return {
     success: isSuccess,
     environment,
     actionName,
     status: response.status,
-    message: isSuccess ? null : extractErrorMessage(response),
-    error: isSuccess ? null : extractErrorMessage(response),
+    message: errorMessage,
+    error: errorMessage,
   };
 }
 
@@ -123,7 +126,9 @@ function displaySuccessContent(body) {
   if (body.downloadUrl) {
     console.log();
     console.log(format.downloadHeader('🔗 Download URL:'));
-    console.log(`   ${format.downloadUrl(body.downloadUrl)}`);
+    const config = loadConfig({});
+    const downloadUrl = body.downloadUrl.replace('REQUIRED:RUNTIME_URL', config.runtime.url);
+    console.log(`   ${format.downloadUrl(downloadUrl)}`);
   }
 
   if (body.storage?.properties?.presigned?.success) {

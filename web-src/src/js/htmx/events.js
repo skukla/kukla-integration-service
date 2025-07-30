@@ -100,15 +100,17 @@ function handleDeleteButtonAfterRequest(event, target, loadingClass) {
   }
 
   if (event.detail.successful) {
-    // Store success message for later use in swap handler
-    const successMessage = target.getAttribute('data-success-message');
-    if (successMessage) {
-      // Close modal immediately since request was successful
-      const modalContainer = document.getElementById('modal-container');
-      if (modalContainer && modalContainer.querySelector('.delete-confirm-button')) {
-        hideModal();
-        showNotification(successMessage, 'success');
-      }
+    // Get the filename from the button's dataset
+    const fileName = target.dataset.fileName;
+    const successMessage = fileName
+      ? `${fileName} deleted successfully`
+      : 'File deleted successfully';
+
+    // Close modal immediately since request was successful
+    const modalContainer = document.getElementById('modal-container');
+    if (modalContainer && modalContainer.querySelector('.delete-confirm-button')) {
+      hideModal();
+      showNotification(successMessage, 'success');
     }
   } else {
     // For failed requests, show error immediately since no swap will happen

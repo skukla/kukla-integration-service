@@ -11,25 +11,18 @@
 /**
  * Build runtime configuration
  * @param {Object} [params] - Action parameters for environment values
- * @param {boolean} [isProd] - Whether building for production environment
  * @returns {Object} Runtime configuration
  */
-function buildRuntimeConfig(params = {}, isProd = false) {
-  // Select environment-specific runtime URL
-  let url;
-  if (isProd) {
-    url = params.RUNTIME_URL_PRODUCTION || process.env.RUNTIME_URL_PRODUCTION;
-  } else {
-    url = params.RUNTIME_URL_STAGING || process.env.RUNTIME_URL_STAGING;
-  }
-
-  // Fallback to generic RUNTIME_URL if environment-specific not found
+function buildRuntimeConfig(params = {}) {
+  const url = params.RUNTIME_URL || process.env.RUNTIME_URL;
   if (!url) {
-    url = params.RUNTIME_URL || process.env.RUNTIME_URL || 'REQUIRED:RUNTIME_URL';
+    throw new Error('RUNTIME_URL is required in environment configuration');
   }
 
-  const namespace =
-    params.RUNTIME_NAMESPACE || process.env.RUNTIME_NAMESPACE || 'REQUIRED:RUNTIME_NAMESPACE';
+  const namespace = params.AIO_runtime_namespace || process.env.AIO_runtime_namespace;
+  if (!namespace) {
+    throw new Error('AIO_runtime_namespace is required in environment configuration');
+  }
 
   return {
     url,

@@ -18,9 +18,8 @@ application:
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
-              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
-              RUNTIME_NAMESPACE: $RUNTIME_NAMESPACE
+              RUNTIME_URL: $RUNTIME_URL
+              AIO_runtime_namespace: $AIO_runtime_namespace
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string
@@ -40,9 +39,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
-              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
-              RUNTIME_NAMESPACE: $RUNTIME_NAMESPACE
+              RUNTIME_URL: $RUNTIME_URL
+              AIO_runtime_namespace: $AIO_runtime_namespace
             annotations:
               require-adobe-auth: false
               final: true
@@ -55,9 +53,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
-              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
-              RUNTIME_NAMESPACE: $RUNTIME_NAMESPACE
+              RUNTIME_URL: $RUNTIME_URL
+              AIO_runtime_namespace: $AIO_runtime_namespace
             annotations:
               require-adobe-auth: false
               final: true
@@ -70,9 +67,8 @@ application:
               NODE_ENV: staging
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
-              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
-              RUNTIME_NAMESPACE: $RUNTIME_NAMESPACE
+              RUNTIME_URL: $RUNTIME_URL
+              AIO_runtime_namespace: $AIO_runtime_namespace
             annotations:
               require-adobe-auth: false
               final: true
@@ -90,9 +86,8 @@ application:
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               MESH_API_KEY: $MESH_API_KEY
               API_MESH_ENDPOINT: $API_MESH_ENDPOINT
-              RUNTIME_URL_STAGING: $RUNTIME_URL_STAGING
-              RUNTIME_URL_PRODUCTION: $RUNTIME_URL_PRODUCTION
-              RUNTIME_NAMESPACE: $RUNTIME_NAMESPACE
+              RUNTIME_URL: $RUNTIME_URL
+              AIO_runtime_namespace: $AIO_runtime_namespace
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string

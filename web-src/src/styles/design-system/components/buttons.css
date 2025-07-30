@@ -121,11 +121,15 @@
 
 /* Table-specific button adjustments */
 .table .btn {
-  min-height: var(--spacing-lg);
-  min-width: unset;
-  padding-block: var(--spacing-xs);
-  padding-inline: var(--spacing-md);
+  /* Set exact dimensions for all table buttons */
+  height: 28px;
+  width: 100px;
   font-size: var(--font-size-sm);
+  padding: 0 var(--spacing-md);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Ensure button colors are not overridden using specificity */
@@ -159,7 +163,9 @@
 .btn-outline {
   background-color: transparent;
   border: var(--border-thick) currentColor;
-  padding-inline: calc(var(--spacing-lg) - var(--border-sm));
+  /* Adjust padding to compensate for thick border */
+  padding-block: calc(var(--spacing-xs) - var(--border-thick));
+  padding-inline: calc(var(--spacing-md) - var(--border-thick));
 }
 
 /* Button Sizes */

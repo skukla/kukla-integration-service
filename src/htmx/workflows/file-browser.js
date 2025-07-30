@@ -64,7 +64,7 @@ async function generateFileDeletionResponse(deletedFileName, config, params) {
 
     // Step 3: Build file operation success response
     return buildFileOperationSuccessResponse(
-      `File "${deletedFileName}" deleted successfully`,
+      `${deletedFileName} deleted successfully`,
       fileBrowserHTML
     );
   } catch (error) {

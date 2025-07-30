@@ -39,7 +39,7 @@ const COMPONENT_CONFIG = {
     'hx-swap': 'innerHTML',
     'data-loading-class': 'is-loading',
     'data-loading-states': 'true',
-    'data-success-message': 'File deleted successfully',
+    'data-success-message': (el) => `${el.dataset.fileName} deleted successfully`,
   },
 };
 // HTMX configuration

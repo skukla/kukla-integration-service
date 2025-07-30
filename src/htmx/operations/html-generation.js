@@ -6,6 +6,7 @@
  */
 
 const { buildRuntimeUrl } = require('../../core/routing/operations/runtime');
+const { addPublicPrefix } = require('../../files/utils/paths');
 
 /**
  * Generate empty file list HTML (matches browse-files structure)
@@ -31,10 +32,11 @@ function generateEmptyFileListHTML() {
  * @returns {string} HTML string for file row
  */
 function generateFileRowHTML(file, config) {
-  // Use the full path for both download and delete to ensure consistency
-  const fullPath = file.fullPath || file.name;
+  const fullPath = file.fullPath || addPublicPrefix(file.name);
   const downloadUrl =
     buildRuntimeUrl('download-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
+  const deleteUrl =
+    buildRuntimeUrl('delete-file', null, config) + `?fileName=${encodeURIComponent(fullPath)}`;
 
   return `
         <div class="table-row">
@@ -48,20 +50,35 @@ function generateFileRowHTML(file, config) {
             <span class="file-date">${file.lastModified}</span>
           </div>
           <div class="table-cell">
-            <div class="table-actions">
+            <div class="actions-container">
               <a href="${downloadUrl}" 
-                 class="btn btn-sm btn-primary"
+                 class="btn btn-sm btn-primary download-button"
+                 hx-get="${downloadUrl}"
+                 hx-swap="none"
+                 data-loading-class="is-loading"
+                 data-loading-states="true"
+                 data-loading-text=""
                  download="${file.name}"
+                 data-file-name="${file.name}"
+                 data-file-path="${fullPath}"
                  title="Download ${file.name}">
-                Download
+                <span class="btn-text btn-label">Download</span>
               </a>
-              <button class="btn btn-sm btn-danger btn-outline"
-                      data-action="delete"
-                      data-file-name="${file.name}"
-                      data-file-path="${fullPath}"
-                      title="Delete ${file.name}">
-                Delete
-              </button>
+              <a href="${deleteUrl}"
+                 class="btn btn-sm btn-danger delete-button"
+                 data-component="delete-button"
+                 data-action="delete"
+                 data-file-name="${file.name}"
+                 data-file-path="${fullPath}"
+                 data-loading-class="is-loading"
+                 data-loading-states="true"
+                 data-loading-text=""
+                 hx-get="${deleteUrl}"
+                 hx-target="#modal-container"
+                 hx-swap="innerHTML"
+                 title="Delete ${file.name}">
+                <span class="btn-text btn-label">Delete</span>
+              </a>
             </div>
           </div>
         </div>

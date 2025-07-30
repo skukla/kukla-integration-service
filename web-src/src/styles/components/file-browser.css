@@ -92,7 +92,7 @@
 
 /* Actions Cell */
 .file-browser .table-cell:last-child {
-  padding: 0 var(--spacing-md);
+  padding: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -115,26 +115,23 @@
 }
 
 /* Actions Container */
-.actions-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: var(--file-browser-content-height);
-}
-
-/* Button Group */
-.btn-group {
+.table-cell .actions-container {
   display: flex;
   flex-direction: row;
   gap: var(--spacing-sm);
+  align-items: center;
+  justify-content: center;
   height: var(--file-browser-content-height);
+  margin: auto;
+  padding: 0 var(--spacing-md);
+  width: 100%;
 }
 
-/* Action Buttons */
+/* Base button styles */
 .actions-container .btn {
-  height: var(--file-browser-content-height);
-  width: calc(var(--size-button-min-width) * 1.5);
-  transition: none;
+  min-height: var(--size-button-min-height);
+  height: var(--size-button-min-height);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,4 +257,33 @@
   .storage-details {
     gap: 1px;
   }
+}
+
+/* Debug Styles */
+.debug-height {
+  outline: 2px solid red;
+  position: relative;
+  background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+.debug-height::before {
+  content: 'h:' attr(data-height) ' | p:' attr(data-padding);
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 10px;
+  white-space: nowrap;
+  color: blue;
+  z-index: 1000;
+}
+
+.debug-height::after {
+  content: attr(class);
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  font-size: 10px;
+  white-space: nowrap;
+  color: red;
+  z-index: 1000;
 }
