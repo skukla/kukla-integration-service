@@ -1,5 +1,18 @@
 # Kukla Integration Service
 
+## 🚨 REFACTORING IN PROGRESS (refactor/simplify branch)
+
+**This branch is migrating from over-engineered patterns to Adobe App Builder standard patterns.**
+
+📋 **Track Progress**: See [REFACTORING-PROGRESS.md](REFACTORING-PROGRESS.md)  
+📖 **Documentation Strategy**: See [DOCUMENTATION-STRATEGY.md](DOCUMENTATION-STRATEGY.md)  
+🤖 **Claude Guidance**: See [CLAUDE.md](CLAUDE.md)  
+👨‍💻 **Developer Rules**: See [.cursorrules](.cursorrules)
+
+**Goal**: 80% code reduction while maintaining all functionality by adopting Adobe standard patterns.
+
+---
+
 ## Overview
 
 A streamlined Adobe App Builder application that integrates with Adobe Commerce to provide product data management and file operations through a simple, maintainable architecture.
