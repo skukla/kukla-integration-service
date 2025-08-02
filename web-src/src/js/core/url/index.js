@@ -3,7 +3,7 @@
  * Frontend URL module generated from backend configuration
  */
 
-import config from '../../../config/generated/config.js';
+import { config } from '../../../config/generated/config.js';
 
 /**
  * Frontend URL utilities with absolute action URLs

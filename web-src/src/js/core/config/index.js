@@ -3,7 +3,7 @@
  * @module core/config
  */
 
-import generatedConfig from '../../../config/generated/config.js';
+import { config as generatedConfig } from '../../../config/generated/config.js';
 
 // Cache the loaded configuration
 let cachedConfig = null;
