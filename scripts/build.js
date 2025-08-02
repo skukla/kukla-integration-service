@@ -128,11 +128,11 @@ async function generateMeshResolver() {
   template = template.replace(/\{\{\{COMMERCE_BASE_URL\}\}\}/g, config.commerce.baseUrl);
   template = template.replace(
     /\{\{\{CATEGORY_BATCH_THRESHOLD\}\}\}/g,
-    config.mesh.batching.thresholds.categories
+    config.mesh.categoryBatchThreshold
   );
   template = template.replace(
     /\{\{\{INVENTORY_BATCH_THRESHOLD\}\}\}/g,
-    config.mesh.batching.thresholds.inventory
+    config.mesh.inventoryBatchThreshold
   );
   template = template.replace(
     /\{\{\{MAX_CATEGORIES_DISPLAY\}\}\}/g,
