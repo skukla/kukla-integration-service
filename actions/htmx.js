@@ -13,10 +13,12 @@
 function generateFileBrowserHTML(files) {
   if (!files || files.length === 0) {
     return `
-      <div class="file-browser">
-        <div class="empty-state">
-          <h2>No exported files found</h2>
-          <p>Use the export buttons above to create CSV files.</p>
+      <div class="table-row empty-state">
+        <div class="table-cell" colspan="4">
+          <div style="text-align: center; padding: 2rem;">
+            <h3>No exported files found</h3>
+            <p>Use the export buttons above to create CSV files.</p>
+          </div>
         </div>
       </div>
     `;
@@ -63,23 +65,8 @@ function generateFileBrowserHTML(files) {
     })
     .join('');
 
-  return `
-    <div id="file-browser" class="file-browser">
-      <div class="table-container">
-        <div class="table-header">
-          <div class="table-row header-row">
-            <div class="table-cell">Name</div>
-            <div class="table-cell">Size</div>
-            <div class="table-cell">Date</div>
-            <div class="table-cell">Actions</div>
-          </div>
-        </div>
-        <div class="table-body">
-          ${fileRows}
-        </div>
-      </div>
-    </div>
-  `;
+  // Return only the file rows for HTMX insertion into .table-content
+  return fileRows;
 }
 
 /**
