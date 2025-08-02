@@ -129,7 +129,7 @@ async function fetchCategories(context, info, categoryIds) {
   const result = { categoryMap: new Map(), apiCallsMade: 0, batched: false };
 
   // Use batch endpoint if available and we have multiple categories
-  if (categoryIds.length >= 1 /* 1 */) {
+  if (categoryIds.length >= 1) {
     try {
       const batchResponse = await context.Categories.Query.categories_batch({
         root: {},
@@ -193,7 +193,7 @@ async function fetchInventory(context, info, skus) {
   const result = { inventoryMap: new Map(), apiCallsMade: 0, batched: false };
 
   // Use batch endpoint if available and we have multiple SKUs
-  if (skus.length >= 1 /* 1 */) {
+  if (skus.length >= 1) {
     try {
       const batchResponse = await context.Inventory.Query.inventory_batch({
         root: {},
@@ -280,7 +280,7 @@ function enrichProducts(products, categoryMap, inventoryMap) {
       ? product.media_gallery_entries.map((entry) => ({
           ...entry,
           url: entry.file
-            ? `https://citisignal-com774.adobedemo.com/media/catalog/product${entry.file}`
+            ? 'https://citisignal-com774.adobedemo.com/media/catalog/product' + entry.file
             : '',
         }))
       : [];
@@ -418,7 +418,10 @@ module.exports = {
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
-              message: `Successfully enriched ${enrichedProducts.length} products with category and inventory data using native mesh optimizations`,
+              message:
+                'Successfully enriched ' +
+                enrichedProducts.length +
+                ' products with category and inventory data using native mesh optimizations',
               performance: performance,
             };
           } catch (error) {
@@ -427,7 +430,7 @@ module.exports = {
             return {
               products: [],
               total_count: 0,
-              message: `Error in mesh resolver: ${error.message}`,
+              message: 'Error in mesh resolver: ' + error.message,
               performance: {
                 processedProducts: 0,
                 apiCalls: 0,
@@ -470,7 +473,7 @@ module.exports = {
             return {
               products: products,
               total_count: products.length,
-              message: `Fetched ${products.length} basic products`,
+              message: 'Fetched ' + products.length + ' basic products',
             };
           } catch (error) {
             console.error('mesh_products_basic resolver error:', error);
@@ -478,7 +481,7 @@ module.exports = {
             return {
               products: [],
               total_count: 0,
-              message: `Error in basic products resolver: ${error.message}`,
+              message: 'Error in basic products resolver: ' + error.message,
               error: {
                 message: error.message,
                 stack: error.stack,
@@ -509,7 +512,7 @@ module.exports = {
                 const productCategoryIds = getCategoryIds(product);
                 productCategoryIds.forEach((id) => categoryIdSet.add(id));
               });
-              categoryIds = Array.from(categoryIdSet).slice(0, 10 /* 10 */); // Limit to first N for performance
+              categoryIds = Array.from(categoryIdSet).slice(0, 10); // Limit for performance
             }
 
             const categoryResult = await fetchCategories(context, info, categoryIds);
@@ -518,7 +521,7 @@ module.exports = {
             return {
               categories: categories,
               total_count: categories.length,
-              message: `Fetched ${categories.length} categories`,
+              message: 'Fetched ' + categories.length + ' categories',
             };
           } catch (error) {
             console.error('mesh_categories resolver error:', error);
@@ -526,7 +529,7 @@ module.exports = {
             return {
               categories: [],
               total_count: 0,
-              message: `Error in categories resolver: ${error.message}`,
+              message: 'Error in categories resolver: ' + error.message,
               error: {
                 message: error.message,
                 stack: error.stack,

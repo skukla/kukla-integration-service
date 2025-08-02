@@ -279,7 +279,7 @@ function enrichProducts(products, categoryMap, inventoryMap) {
     const enrichedMediaGallery = product.media_gallery_entries
       ? product.media_gallery_entries.map((entry) => ({
           ...entry,
-          url: entry.file ? `{{{COMMERCE_BASE_URL}}}/media/catalog/product${entry.file}` : '',
+          url: entry.file ? '{{{COMMERCE_BASE_URL}}}/media/catalog/product' + entry.file : '',
         }))
       : [];
 
@@ -416,7 +416,7 @@ module.exports = {
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
-              message: `Successfully enriched ${enrichedProducts.length} products with category and inventory data using native mesh optimizations`,
+              message: 'Successfully enriched ' + enrichedProducts.length + ' products with category and inventory data using native mesh optimizations',
               performance: performance,
             };
           } catch (error) {
@@ -425,7 +425,7 @@ module.exports = {
             return {
               products: [],
               total_count: 0,
-              message: `Error in mesh resolver: ${error.message}`,
+              message: 'Error in mesh resolver: ' + error.message,
               performance: {
                 processedProducts: 0,
                 apiCalls: 0,
@@ -468,7 +468,7 @@ module.exports = {
             return {
               products: products,
               total_count: products.length,
-              message: `Fetched ${products.length} basic products`,
+              message: 'Fetched ' + products.length + ' basic products',
             };
           } catch (error) {
             console.error('mesh_products_basic resolver error:', error);
@@ -476,7 +476,7 @@ module.exports = {
             return {
               products: [],
               total_count: 0,
-              message: `Error in basic products resolver: ${error.message}`,
+              message: 'Error in basic products resolver: ' + error.message,
               error: {
                 message: error.message,
                 stack: error.stack,
@@ -516,7 +516,7 @@ module.exports = {
             return {
               categories: categories,
               total_count: categories.length,
-              message: `Fetched ${categories.length} categories`,
+              message: 'Fetched ' + categories.length + ' categories',
             };
           } catch (error) {
             console.error('mesh_categories resolver error:', error);
@@ -524,7 +524,7 @@ module.exports = {
             return {
               categories: [],
               total_count: 0,
-              message: `Error in categories resolver: ${error.message}`,
+              message: 'Error in categories resolver: ' + error.message,
               error: {
                 message: error.message,
                 stack: error.stack,
