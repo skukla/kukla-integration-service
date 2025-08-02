@@ -69,6 +69,21 @@ async function generateFrontendConfig() {
     mesh: {
       endpoint: config.mesh.endpoint,
     },
+    performance: {
+      timeout: 30000, // 30 seconds default
+    },
+    runtime: {
+      url: '/api/v1/web/kukla-integration-service',
+      actions: {
+        'auth-token': '/api/v1/web/kukla-integration-service/auth-token',
+        'get-products': '/api/v1/web/kukla-integration-service/get-products',
+        'get-products-mesh': '/api/v1/web/kukla-integration-service/get-products-mesh',
+        'browse-files': '/api/v1/web/kukla-integration-service/browse-files',
+        'delete-file': '/api/v1/web/kukla-integration-service/delete-file',
+        'download-file': '/api/v1/web/kukla-integration-service/download-file',
+      },
+    },
+    environment: process.env.NODE_ENV === 'production' ? 'production' : 'staging',
   };
 
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify(frontendConfig, null, 2));
@@ -79,25 +94,6 @@ export const config = ${JSON.stringify(frontendConfig, null, 2)};
 `;
 
   fs.writeFileSync(path.join(configDir, 'config.js'), configJs);
-
-  // Generate URL configuration for actions
-  const urlConfig = {
-    actions: {
-      'auth-token': '/api/v1/web/kukla-integration-service/auth-token',
-      'get-products': '/api/v1/web/kukla-integration-service/get-products',
-      'get-products-mesh': '/api/v1/web/kukla-integration-service/get-products-mesh',
-      'browse-files': '/api/v1/web/kukla-integration-service/browse-files',
-      'delete-file': '/api/v1/web/kukla-integration-service/delete-file',
-      'download-file': '/api/v1/web/kukla-integration-service/download-file',
-    },
-  };
-
-  fs.writeFileSync(
-    path.join(configDir, 'urls.js'),
-    `// Auto-generated URL configuration
-export const urls = ${JSON.stringify(urlConfig, null, 2)};
-`
-  );
 
   spinner.stop();
   console.log(format.success('Frontend configuration generated'));
