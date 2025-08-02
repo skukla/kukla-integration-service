@@ -122,22 +122,42 @@ function getBearerToken(params) {
  *
  */
 function errorResponse(statusCode, message, logger) {
-  if (logger && typeof logger.info === 'function') {
-    logger.info(`${statusCode}: ${message}`);
+  if (logger && typeof logger.error === 'function') {
+    logger.error(`${statusCode}: ${message}`);
   }
   return {
-    error: {
-      statusCode,
-      body: {
-        error: message,
-      },
+    statusCode,
+    body: {
+      success: false,
+      error: message,
+    },
+  };
+}
+
+/**
+ * Returns a standard success response for Adobe App Builder actions
+ * @param {Object} data - Response data object
+ * @param {string} message - Success message
+ * @param {Object} logger - Adobe logger instance
+ * @returns {Object} Standard success response
+ */
+function successResponse(data, message, logger) {
+  if (logger && typeof logger.info === 'function') {
+    logger.info(message);
+  }
+  return {
+    statusCode: 200,
+    body: {
+      success: true,
+      message,
+      ...data,
     },
   };
 }
 
 /**
  * Build Commerce API URL with search criteria
- * @param {string} baseUrl - Commerce base URL  
+ * @param {string} baseUrl - Commerce base URL
  * @param {Object} api - API configuration
  * @param {string} endpoint - API endpoint path
  * @param {Object} filters - Filter criteria {field: values}
@@ -145,10 +165,12 @@ function errorResponse(statusCode, message, logger) {
  */
 function buildCommerceUrl(baseUrl, api, endpoint, filters) {
   const searchCriteria = Object.entries(filters)
-    .map(([field, values], index) => 
-      `searchCriteria[filter_groups][${index}][filters][0][field]=${field}&searchCriteria[filter_groups][${index}][filters][0][value]=${values}&searchCriteria[filter_groups][${index}][filters][0][condition_type]=in`
-    ).join('&');
-  
+    .map(
+      ([field, values], index) =>
+        `searchCriteria[filter_groups][${index}][filters][0][field]=${field}&searchCriteria[filter_groups][${index}][filters][0][value]=${values}&searchCriteria[filter_groups][${index}][filters][0][condition_type]=in`
+    )
+    .join('&');
+
   return `${baseUrl}/rest/${api.version}${endpoint}?${searchCriteria}`;
 }
 
@@ -169,12 +191,12 @@ async function fetchCommerceData(url, bearerToken, method = 'GET', dataType = 'd
         'Content-Type': 'application/json',
       },
     });
-    
+
     if (!response.ok) {
       console.warn(`${dataType} fetch failed: ${response.status}`);
       return [];
     }
-    
+
     const result = await response.json();
     return result.items || result || [];
   } catch (error) {
@@ -185,9 +207,24 @@ async function fetchCommerceData(url, bearerToken, method = 'GET', dataType = 'd
 
 module.exports = {
   errorResponse,
+  successResponse,
   getBearerToken,
   stringParameters,
   checkMissingRequestInputs,
   buildCommerceUrl,
   fetchCommerceData,
+  formatFileSize,
 };
+
+/**
+ * Format file size to human-readable format
+ * @param {number} bytes - File size in bytes
+ * @returns {string} Human-readable file size
+ */
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}

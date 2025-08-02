@@ -25,11 +25,11 @@ async function main(params) {
 
     // Step 1: Delete file from storage (simplified)
     const config = createConfig(params);
-    await deleteFile(params.fileName, config, params);
+    await deleteFile(params.fileName, params, config);
     logger.info('File deleted successfully', { fileName: params.fileName });
 
     // Step 2: Get updated file list and generate response
-    const remainingFiles = await listCsvFiles(config, params);
+    const remainingFiles = await listCsvFiles(params, config);
     const html = generateFileDeletionResponse(params.fileName, remainingFiles, config);
 
     return createHTMLResponse(html);

@@ -16,39 +16,39 @@ function createConfig(params = {}) {
       baseUrl: params.COMMERCE_BASE_URL,
       adminUsername: params.COMMERCE_ADMIN_USERNAME,
       adminPassword: params.COMMERCE_ADMIN_PASSWORD,
-    api: {
-      version: 'V1',
-      paths: {
-        products: '/products',
-        categories: '/categories',
-        stockItems: '/stockItems',
-        adminToken: '/integration/admin/token',
+      api: {
+        version: 'V1',
+        paths: {
+          products: '/products',
+          categories: '/categories',
+          stockItems: '/stockItems',
+          adminToken: '/integration/admin/token',
+        },
+      },
+      batching: {
+        inventory: 50,
+        categories: 20,
       },
     },
-    batching: {
-      inventory: 50,
-      categories: 20,
-    },
-  },
 
     // API Mesh Configuration
     mesh: {
       endpoint: params.API_MESH_ENDPOINT,
       apiKey: params.MESH_API_KEY,
-    batching: {
-      categoryDisplayLimit: 10,
-      thresholds: {
-        categories: 1,
-        inventory: 1,
+      batching: {
+        categoryDisplayLimit: 10,
+        thresholds: {
+          categories: 1,
+          inventory: 1,
+        },
       },
     },
-  },
 
-  // Storage Configuration
-  storage: {
-    provider: 's3', // 'app-builder' or 's3'
-    directory: 'public/',
-  },
+    // Storage Configuration
+    storage: {
+      provider: 's3', // 'app-builder' or 's3'
+      directory: 'public/',
+    },
 
     // S3 Configuration (when using S3 provider)
     s3: {
@@ -59,21 +59,22 @@ function createConfig(params = {}) {
       secretAccessKey: params.AWS_SECRET_ACCESS_KEY,
     },
 
-  // Product Export Configuration
-  products: {
-    expectedCount: 119,
-    fields: {
-      export: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
+    // Product Export Configuration
+    products: {
+      expectedCount: 119,
+      maxCategoriesDisplay: 10,
+      fields: {
+        export: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
+      },
     },
-  },
 
-  // File Configuration
-  files: {
-    extensions: {
-      csv: '.csv',
+    // File Configuration
+    files: {
+      extensions: {
+        csv: '.csv',
+      },
+      defaultFilename: 'products.csv',
     },
-    defaultFilename: 'products.csv',
-  },
 
     // Main Export Fields (used by buildProducts)
     main: {

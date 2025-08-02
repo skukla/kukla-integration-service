@@ -25,7 +25,7 @@ async function main(params) {
 
     // Step 1: Get list of CSV files from storage (simplified)
     const config = createConfig(params);
-    const fileList = await listCsvFiles(config, params);
+    const fileList = await listCsvFiles(params, config);
     logger.info('Retrieved file list', { count: fileList.length });
 
     // Step 2: Generate and return HTML for HTMX

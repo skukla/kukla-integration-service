@@ -1,9 +1,9 @@
-/** METADATA: {"templateHash":"f70238cfc1afe302ba08493908e8d9c09956bfa0ec9ac862920e4ff62f7cdbc0","configHash":"c682ded0248e5204bf509da5b56adc2977a006503a531e158943c721322700ea","generatedAt":"2025-07-30T19:24:08.572Z","version":"1.0.0"} */
 /**
  * API Mesh Resolver - Optimized Implementation
  *
  * Simplified resolver focused on performance and minimal data fetching.
  * Removes over-engineering while maintaining functionality.
+ * Enhanced with automatic URL enrichment for complete image paths.
  */
 
 // ============================================================================
@@ -129,7 +129,7 @@ async function fetchCategories(context, info, categoryIds) {
   const result = { categoryMap: new Map(), apiCallsMade: 0, batched: false };
 
   // Use batch endpoint if available and we have multiple categories
-  if (categoryIds.length >= 1) {
+  if (categoryIds.length >= 1 /* 1 */) {
     try {
       const batchResponse = await context.Categories.Query.categories_batch({
         root: {},
@@ -193,7 +193,7 @@ async function fetchInventory(context, info, skus) {
   const result = { inventoryMap: new Map(), apiCallsMade: 0, batched: false };
 
   // Use batch endpoint if available and we have multiple SKUs
-  if (skus.length >= 1) {
+  if (skus.length >= 1 /* 1 */) {
     try {
       const batchResponse = await context.Inventory.Query.inventory_batch({
         root: {},
@@ -275,6 +275,16 @@ function enrichProducts(products, categoryMap, inventoryMap) {
       }
     });
 
+    // Enrich media gallery entries with complete URLs
+    const enrichedMediaGallery = product.media_gallery_entries
+      ? product.media_gallery_entries.map((entry) => ({
+          ...entry,
+          url: entry.file
+            ? `https://citisignal-com774.adobedemo.com/media/catalog/product${entry.file}`
+            : '',
+        }))
+      : [];
+
     return {
       ...product,
       qty: inventory.qty,
@@ -283,6 +293,7 @@ function enrichProducts(products, categoryMap, inventoryMap) {
         qty: inventory.qty,
         is_in_stock: inventory.is_in_stock,
       },
+      media_gallery_entries: enrichedMediaGallery,
     };
   });
 }
@@ -498,7 +509,7 @@ module.exports = {
                 const productCategoryIds = getCategoryIds(product);
                 productCategoryIds.forEach((id) => categoryIdSet.add(id));
               });
-              categoryIds = Array.from(categoryIdSet).slice(0, 10); // Limit to first N for performance
+              categoryIds = Array.from(categoryIdSet).slice(0, 10 /* 10 */); // Limit to first N for performance
             }
 
             const categoryResult = await fetchCategories(context, info, categoryIds);

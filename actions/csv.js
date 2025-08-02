@@ -82,8 +82,74 @@ function createCsv(products) {
   };
 }
 
+/**
+ * Build products with standardized transformation
+ * Essential business logic preserved from original transformation.js
+ *
+ * @param {Array} products - Raw product data
+ * @returns {Promise<Array>} Transformed products ready for CSV
+ */
+async function buildProducts(products) {
+  if (!Array.isArray(products)) {
+    return [];
+  }
+
+  try {
+    // Transform each product
+    return products.map((product) => {
+      const transformed = {};
+
+      // Basic field mapping
+      transformed.sku = product.sku || '';
+      transformed.name = product.name || '';
+      transformed.price = parseFloat(product.price) || 0;
+      transformed.qty = parseInt(product.qty, 10) || 0;
+
+      // Category processing
+      if (product.categories && Array.isArray(product.categories)) {
+        const categoryNames = product.categories.map((cat) => cat.name || cat.id).filter(Boolean);
+        transformed.categories = categoryNames.join(', ');
+        transformed.category_id = product.categories[0]?.id || '';
+      } else {
+        transformed.categories = '';
+        transformed.category_id = '';
+      }
+
+      // Image processing
+      if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+        transformed.thumbnail_url = product.images[0].url || '';
+        transformed.images = product.images
+          .map((img) => img.url)
+          .filter(Boolean)
+          .join(', ');
+      } else {
+        transformed.thumbnail_url = '';
+        transformed.images = '';
+      }
+
+      // Additional CSV fields for RECS format
+      transformed.message = product.message || '';
+      transformed.value = product.price || 0;
+      transformed.page_url = product.page_url || '';
+      transformed.inventory = product.qty || 0;
+      transformed.margin = product.margin || '';
+      transformed.type = product.type || 'product';
+
+      // Custom fields (empty for now)
+      const emptyCustoms = Object.fromEntries(
+        Array.from({ length: 9 }, (_, i) => [`custom${i + 2}`, ''])
+      );
+
+      return { ...transformed, ...emptyCustoms };
+    });
+  } catch (error) {
+    throw new Error(`Product transformation failed: ${error.message}`);
+  }
+}
+
 module.exports = {
   createCsv,
+  buildProducts,
   mapProductToCsvRow,
   RECS_HEADERS,
   CSV_HEADERS,

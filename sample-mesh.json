@@ -1,0 +1,72 @@
+{
+  "meshConfig": {
+    "responseConfig": {
+      "CORS": {
+        "credentials": true,
+        "exposedHeaders": ["Content-Range", "X-Content-Range"],
+        "maxAge": 60480,
+        "methods": ["GET", "POST"],
+        "origin": "*"
+      },
+      "headers": {
+        "mode": "no-cors",
+        "x-include-metadata": "true"
+      },
+      "includeHTTPDetails": false
+    },
+    "sources": [
+      {
+        "name": "CommerceGraphQL",
+        "transforms": [
+          {
+            "prefix": {
+              "value": "Commerce_",
+              "includeRootOperations": true
+            }
+          }
+        ],
+        "handler": {
+          "graphql": {
+            "endpoint": "https://com774.adobedemo.com/graphql",
+            "operationHeaders": {
+              "Content-Type": "application/json",
+              "Store": "{context.headers['store']}"
+            }
+          }
+        }
+      },
+      {
+        "name": "CatalogService",
+        "transforms": [
+          {
+            "prefix": {
+              "value": "Catalog_",
+              "includeRootOperations": true
+            }
+          }
+        ],
+        "handler": {
+          "graphql": {
+            "endpoint": "https://catalog-service-sandbox.adobe.io/graphql",
+            "operationHeaders": {
+              "Content-Type": "application/json",
+              "Magento-Environment-Id": "{context.headers['magento-environment-id']}",
+              "Magento-Website-Code": "{context.headers['magento-website-code']}",
+              "Magento-Store-View-Code": "{context.headers['magento-store-view-code']}",
+              "Magento-Store-Code": "{context.headers['magento-store-code']}",
+              "Magento-Customer-Group": "{context.headers['magento-customer-group']}",
+              "x-api-key": "{context.headers['x-api-key']}",
+              "Authorization": "{context.headers['Authorization']}"
+            },
+            "schemaHeaders": {
+              "x-api-key": "storefront-widgets"
+            }
+          }
+        },
+        "responseConfig": {
+          "headers": ["X-Magento-Cache-Id"]
+        }
+      }
+    ]
+  }
+}

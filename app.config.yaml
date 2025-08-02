@@ -72,8 +72,8 @@ application:
             annotations:
               require-adobe-auth: false
               final: true
-          get-products-mesh:
-            function: actions/get-products-mesh/index.js
+          auth-token:
+            function: actions/auth-token/index.js
             web: 'yes'
             runtime: nodejs:18
             inputs:
@@ -82,10 +82,6 @@ application:
               COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
               COMMERCE_ADMIN_PASSWORD: $COMMERCE_ADMIN_PASSWORD
-              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-              MESH_API_KEY: $MESH_API_KEY
-              API_MESH_ENDPOINT: $API_MESH_ENDPOINT
               RUNTIME_URL: $RUNTIME_URL
               AIO_runtime_namespace: $AIO_runtime_namespace
             parameters:
@@ -95,6 +91,24 @@ application:
               COMMERCE_ADMIN_PASSWORD:
                 type: string
                 description: Admin password for authentication
+            annotations:
+              require-adobe-auth: false
+              final: true
+          get-products-mesh:
+            function: actions/get-products-mesh/index.js
+            web: 'yes'
+            runtime: nodejs:18
+            inputs:
+              LOG_LEVEL: debug
+              NODE_ENV: staging
+              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              MESH_API_KEY: $MESH_API_KEY
+              API_MESH_ENDPOINT: $API_MESH_ENDPOINT
+              RUNTIME_URL: $RUNTIME_URL
+              AIO_runtime_namespace: $AIO_runtime_namespace
+            parameters:
               MESH_API_KEY:
                 type: string
                 description: API key for API Mesh authentication

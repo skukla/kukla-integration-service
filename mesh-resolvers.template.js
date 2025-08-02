@@ -3,6 +3,7 @@
  *
  * Simplified resolver focused on performance and minimal data fetching.
  * Removes over-engineering while maintaining functionality.
+ * Enhanced with automatic URL enrichment for complete image paths.
  */
 
 // ============================================================================
@@ -274,6 +275,14 @@ function enrichProducts(products, categoryMap, inventoryMap) {
       }
     });
 
+    // Enrich media gallery entries with complete URLs
+    const enrichedMediaGallery = product.media_gallery_entries
+      ? product.media_gallery_entries.map((entry) => ({
+          ...entry,
+          url: entry.file ? `{{{COMMERCE_BASE_URL}}}/media/catalog/product${entry.file}` : '',
+        }))
+      : [];
+
     return {
       ...product,
       qty: inventory.qty,
@@ -282,6 +291,7 @@ function enrichProducts(products, categoryMap, inventoryMap) {
         qty: inventory.qty,
         is_in_stock: inventory.is_in_stock,
       },
+      media_gallery_entries: enrichedMediaGallery,
     };
   });
 }

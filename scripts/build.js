@@ -1,15 +1,149 @@
 #!/usr/bin/env node
 
 /**
- * Main Build Script
- * Entry point for build operations
+ * Simplified Build Script for Adobe App Builder
+ * Essential build functionality without over-engineered abstractions
  */
 
-const { generateMeshCore } = require('./build/operations/mesh-core-operations');
-const { generateFrontendConfig } = require('./build/workflows/frontend-generation');
-const format = require('./core/formatting');
-const { parseArgs, executeScriptWithExit } = require('./core/operations/script-framework');
-const { createSpinner, succeedSpinner } = require('./core/operations/spinner');
+const fs = require('fs');
+const path = require('path');
+
+const chalk = require('chalk');
+const dotenv = require('dotenv');
+const ora = require('ora');
+
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// Formatting functions matching master branch style
+const format = {
+  success: (message) => chalk.green(`✔ ${message}`),
+  majorSuccess: (message) => chalk.green(`✅ ${message}`),
+  error: (message) => chalk.red(`✖ ${message}`),
+  deploymentAction: (message) => `🔧 ${message}`,
+  deploymentStart: (message) => `🚀 ${message}`,
+  warning: (message) => chalk.yellow(`⚠ ${message}`),
+  muted: (message) => chalk.gray(message),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+};
+
+function parseArgs(args) {
+  const parsed = {};
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith('--')) {
+      const key = arg.substring(2);
+      parsed[key] = true;
+    }
+  }
+  return parsed;
+}
+
+async function generateFrontendConfig() {
+  const spinner = ora({
+    text: format.muted('Generating frontend configuration'),
+    spinner: 'dots',
+  }).start();
+
+  // Read the main config with environment variables
+  const createConfig = require('../config.js');
+  const config = createConfig(process.env);
+
+  // Generate frontend config files
+  const configDir = path.join(__dirname, '../web-src/src/config/generated');
+
+  // Ensure directory exists
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+
+  // Generate config.json for frontend
+  const frontendConfig = {
+    api: {
+      baseUrl: config.commerce.baseUrl,
+      version: config.commerce.api.version,
+    },
+    storage: {
+      provider: config.storage.provider,
+    },
+    mesh: {
+      endpoint: config.mesh.endpoint,
+    },
+  };
+
+  fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify(frontendConfig, null, 2));
+
+  // Generate config.js for imports
+  const configJs = `// Auto-generated frontend configuration
+export const config = ${JSON.stringify(frontendConfig, null, 2)};
+`;
+
+  fs.writeFileSync(path.join(configDir, 'config.js'), configJs);
+
+  // Generate URL configuration for actions
+  const urlConfig = {
+    actions: {
+      'auth-token': '/api/v1/web/kukla-integration-service/auth-token',
+      'get-products': '/api/v1/web/kukla-integration-service/get-products',
+      'get-products-mesh': '/api/v1/web/kukla-integration-service/get-products-mesh',
+      'browse-files': '/api/v1/web/kukla-integration-service/browse-files',
+      'delete-file': '/api/v1/web/kukla-integration-service/delete-file',
+      'download-file': '/api/v1/web/kukla-integration-service/download-file',
+    },
+  };
+
+  fs.writeFileSync(
+    path.join(configDir, 'urls.js'),
+    `// Auto-generated URL configuration
+export const urls = ${JSON.stringify(urlConfig, null, 2)};
+`
+  );
+
+  spinner.stop();
+  console.log(format.success('Frontend configuration generated'));
+}
+
+async function generateMeshResolver() {
+  const spinner = ora({
+    text: format.muted('Generating mesh resolver'),
+    spinner: 'dots',
+  }).start();
+
+  const templatePath = path.join(__dirname, '../mesh-resolvers.template.js');
+  const outputPath = path.join(__dirname, '../mesh-resolvers.js');
+
+  if (!fs.existsSync(templatePath)) {
+    spinner.stop();
+    console.log(format.warning('No mesh resolver template found, skipping'));
+    return;
+  }
+
+  // Read template and replace placeholders with configuration values
+  const createConfig = require('../config.js');
+  const config = createConfig(process.env);
+
+  let template = fs.readFileSync(templatePath, 'utf8');
+
+  // Replace configuration placeholders
+  template = template.replace(/\{\{\{COMMERCE_BASE_URL\}\}\}/g, config.commerce.baseUrl);
+  template = template.replace(
+    /\{\{\{CATEGORY_BATCH_THRESHOLD\}\}\}/g,
+    config.mesh.batching.thresholds.categories
+  );
+  template = template.replace(
+    /\{\{\{INVENTORY_BATCH_THRESHOLD\}\}\}/g,
+    config.mesh.batching.thresholds.inventory
+  );
+  template = template.replace(
+    /\{\{\{MAX_CATEGORIES_DISPLAY\}\}\}/g,
+    config.products.maxCategoriesDisplay
+  );
+
+  fs.writeFileSync(outputPath, template);
+
+  spinner.stop();
+  console.log(format.success('Mesh resolver generated'));
+}
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -23,55 +157,39 @@ Options:
   --config-only   Generate frontend config only
   --mesh-only     Generate mesh resolver only
 
-
 Note: For full deployment, use 'npm run deploy'
     `);
     return;
   }
 
-  // Use format domain facade for clean logging
-  const target = args['config-only'] ? 'config' : args['mesh-only'] ? 'mesh' : '';
-
-  if (!target) {
-    console.log(format.warning('No build target specified. Use --config-only or --mesh-only'));
-    console.log('For full deployment, use: npm run deploy');
-    return;
-  }
-
-  console.log(format.success('Build started'));
+  console.log(format.deploymentStart('Build started'));
+  console.log();
+  await format.sleep(500);
 
   try {
     if (args['config-only']) {
-      // Frontend config generation only
-      await generateFrontendConfig({});
-      console.log(format.success('Frontend configuration generated'));
+      await generateFrontendConfig();
     } else if (args['mesh-only']) {
-      // Mesh resolver generation only
-      const meshSpinner = createSpinner('Building mesh resolver...');
-
-      const result = await generateMeshCore({});
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      succeedSpinner(
-        meshSpinner,
-        `Mesh resolver ${result.generated ? 'regenerated' : 'validated'}`
-      );
-      console.log(format.success('Mesh configuration generated (mesh.json)'));
-      console.log(format.celebration('Mesh built successfully!'));
+      await generateMeshResolver();
+    } else {
+      console.log(format.warning('No build target specified. Use --config-only or --mesh-only'));
+      console.log('For full deployment, use: npm run deploy');
+      return;
     }
 
-    if (!args['config-only'] && !args['mesh-only']) {
-      console.log(format.success('Build completed'));
-    }
+    console.log();
+    console.log(format.majorSuccess('Build completed successfully'));
   } catch (error) {
-    console.log(format.error(`Build failed: ${error.message}`));
+    console.error(format.error('Build failed:'), error.message);
     process.exit(1);
   }
 }
 
 if (require.main === module) {
-  executeScriptWithExit('build', main);
+  main().catch((error) => {
+    console.error(format.error('Build failed:'), error.message);
+    process.exit(1);
+  });
 }
+
+module.exports = { main };

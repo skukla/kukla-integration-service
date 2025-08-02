@@ -21,15 +21,15 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
  * @param {Object} params - Action parameters
  * @returns {Promise<Object>} Storage result with download URL
  */
-async function storeCsv(csvContent, config, params) {
-  const provider = config.storage?.provider || 'app-builder';
-  const fileName = `products-${Date.now()}.csv`;
+async function storeCsv(csvContent, params, config) {
+  const provider = config.storage.provider;
+  const fileName = config.files.defaultFilename;
 
   try {
     if (provider === 'app-builder') {
       return await storeWithAppBuilder(csvContent, fileName, params);
     } else if (provider === 's3') {
-      return await storeWithS3(csvContent, fileName, config, params);
+      return await storeWithS3(csvContent, fileName, params, config);
     } else {
       throw new Error(`Unknown storage provider: ${provider}`);
     }
@@ -73,12 +73,12 @@ async function storeWithAppBuilder(csvContent, fileName, params) {
 /**
  * Store file using AWS S3
  */
-async function storeWithS3(csvContent, fileName, config, params) {
+async function storeWithS3(csvContent, fileName, params, config) {
   const s3Config = {
-    region: config.s3?.region || 'us-east-1',
+    region: config.s3.region,
     credentials: {
-      accessKeyId: config.s3?.accessKeyId || params.AWS_ACCESS_KEY_ID,
-      secretAccessKey: config.s3?.secretAccessKey || params.AWS_SECRET_ACCESS_KEY,
+      accessKeyId: config.s3.accessKeyId,
+      secretAccessKey: config.s3.secretAccessKey,
     },
   };
 
@@ -137,13 +137,13 @@ function getMaxExpirationTime(provider) {
  * List CSV files in storage
  * Simplified replacement for getCsvFiles
  */
-async function listCsvFiles(config, params) {
-  const provider = config.storage?.provider || 'app-builder';
+async function listCsvFiles(params, config) {
+  const provider = config.storage.provider;
 
   if (provider === 'app-builder') {
     return await listAppBuilderFiles(params);
   } else if (provider === 's3') {
-    return await listS3Files(config, params);
+    return await listS3Files(params, config);
   } else {
     throw new Error(`Unknown storage provider: ${provider}`);
   }
@@ -168,11 +168,13 @@ async function listAppBuilderFiles(params) {
 /**
  * List files from S3
  */
-async function listS3Files(config, params) {
+async function listS3Files(params, config) {
   const s3Config = {
-    accessKeyId: config.s3?.accessKeyId || params.S3_ACCESS_KEY_ID,
-    secretAccessKey: config.s3?.secretAccessKey || params.S3_SECRET_ACCESS_KEY,
-    region: config.s3?.region || 'us-east-1',
+    region: config.s3.region,
+    credentials: {
+      accessKeyId: config.s3.accessKeyId,
+      secretAccessKey: config.s3.secretAccessKey,
+    },
   };
 
   const s3Client = new S3Client(s3Config);
@@ -190,8 +192,8 @@ async function listS3Files(config, params) {
 /**
  * Delete file from storage
  */
-async function deleteFile(fileName, config, params) {
-  const provider = config.storage?.provider || 'app-builder';
+async function deleteFile(fileName, params, config) {
+  const provider = config.storage.provider;
 
   if (provider === 'app-builder') {
     const files = await Files.init({
@@ -204,9 +206,11 @@ async function deleteFile(fileName, config, params) {
     await files.delete(fileName);
   } else if (provider === 's3') {
     const s3Config = {
-      accessKeyId: config.s3?.accessKeyId || params.S3_ACCESS_KEY_ID,
-      secretAccessKey: config.s3?.secretAccessKey || params.S3_SECRET_ACCESS_KEY,
       region: config.s3?.region || 'us-east-1',
+      credentials: {
+        accessKeyId: config.s3?.accessKeyId || params.AWS_ACCESS_KEY_ID,
+        secretAccessKey: config.s3?.secretAccessKey || params.AWS_SECRET_ACCESS_KEY,
+      },
     };
     const s3Client = new S3Client(s3Config);
     const deleteCommand = new DeleteObjectCommand({

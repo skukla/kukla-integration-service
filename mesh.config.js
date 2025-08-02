@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const { loadConfig } = require('./config');
+const createConfig = require('./config');
 
-// Load configuration to get dynamic values
-const config = loadConfig();
+// Create configuration with environment defaults for mesh config generation
+const config = createConfig({
+  COMMERCE_BASE_URL: process.env.COMMERCE_BASE_URL || 'https://citisignal-com774.adobedemo.com',
+});
 
 // Load external GraphQL schema file
 const enrichedProductsSchema = fs.readFileSync(
@@ -71,7 +73,7 @@ module.exports = {
             {
               type: 'Query',
               field: 'categories_batch',
-              path: `/categories/list?searchCriteria[pageSize]=${config.performance.batching.categoryBatchSize}&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in`,
+              path: '/categories/list?searchCriteria[pageSize]=20&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in',
               method: 'GET',
               argTypeMap: {
                 categoryIds: {
@@ -110,7 +112,7 @@ module.exports = {
             {
               type: 'Query',
               field: 'inventory_batch',
-              path: `/stockItems?searchCriteria[pageSize]=${config.performance.batching.inventoryBatchSize}&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in`,
+              path: '/stockItems?searchCriteria[pageSize]=50&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in',
               method: 'GET',
               argTypeMap: {
                 skus: {
