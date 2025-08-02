@@ -1,46 +1,41 @@
 /**
- * Action for browsing and listing CSV files in storage
- * @module browse-files
+ * Adobe App Builder Action: Browse and list CSV files in storage
+ * Follows Adobe standard patterns with direct exports.main
  */
 
-const { createAction } = require('../../src/core/action/operations/action-factory');
-const { getCsvFiles } = require('../../src/files/workflows/file-management');
-const { generateCompleteFileBrowserHTML } = require('../../src/htmx/operations/html-generation');
+const { Core } = require('@adobe/aio-sdk');
 
-/**
- * Business logic for browse-files action
- * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} Response object
- */
-async function browseFilesBusinessLogic(context) {
-  const { core, config, extractedParams } = context;
-  const steps = [];
+const createConfig = require('../../config');
+const { generateFileBrowserHTML, createHTMLResponse } = require('../htmx');
+const { listCsvFiles } = require('../storage');
+const { errorResponse, checkMissingRequestInputs } = require('../utils');
 
-  // Step 1: Input has been validated in the action factory
-  steps.push(core.formatStepMessage('validate-input', 'success'));
+async function main(params) {
+  const logger = Core.Logger('browse-files', { level: params.LOG_LEVEL || 'info' });
 
-  // Step 2: Get list of CSV files from storage
-  const fileList = await getCsvFiles(config, extractedParams);
-  steps.push(core.formatStepMessage('browse-files', 'success', { count: fileList.length }));
+  try {
+    // Validate required parameters using Adobe standard
+    const requiredParams = [];
+    const missingParams = checkMissingRequestInputs(params, requiredParams);
+    if (missingParams) {
+      return errorResponse(400, missingParams, logger);
+    }
 
-  // Step 3: Generate HTML using the HTML generation operations
-  const html = generateCompleteFileBrowserHTML(fileList, config);
+    logger.info('Starting file browse');
 
-  // Return HTML response for HTMX
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache',
-    },
-    body: html,
-  };
+    // Step 1: Get list of CSV files from storage (simplified)
+    const config = createConfig(params);
+    const fileList = await listCsvFiles(config, params);
+    logger.info('Retrieved file list', { count: fileList.length });
+
+    // Step 2: Generate and return HTML for HTMX
+    const html = generateFileBrowserHTML(fileList, config);
+
+    return createHTMLResponse(html);
+  } catch (error) {
+    logger.error('Action failed', { error: error.message, stack: error.stack });
+    return errorResponse(500, error.message, logger);
+  }
 }
 
-// Export the action with proper configuration
-module.exports = createAction(browseFilesBusinessLogic, {
-  actionName: 'browse-files',
-  withTracing: false,
-  withLogger: false,
-  description: 'Browse files in storage',
-});
+exports.main = main;

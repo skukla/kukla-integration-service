@@ -1,48 +1,45 @@
 /**
- * Action for deleting files from storage
- * @module delete-file
+ * Adobe App Builder Action: Delete files from storage
+ * Follows Adobe standard patterns with direct exports.main
  */
 
-const { createAction } = require('../../src/core/action/operations/action-factory');
-const { deleteStoredFile } = require('../../src/files/workflows/file-management');
-const { buildFileOperationErrorResponse } = require('../../src/htmx/operations/response-building');
-const { generateFileDeletionResponse } = require('../../src/htmx/workflows/file-browser');
+const { Core } = require('@adobe/aio-sdk');
 
-/**
- * Business logic for delete-file action
- * @param {Object} context - Initialized action context
- * @returns {Promise<Object>} HTMX response object
- */
-async function deleteFileBusinessLogic(context) {
-  const { config, extractedParams } = context;
+const createConfig = require('../../config');
+const { generateFileDeletionResponse, generateErrorHTML, createHTMLResponse } = require('../htmx');
+const { deleteFile, listCsvFiles } = require('../storage');
+const { errorResponse, checkMissingRequestInputs } = require('../utils');
+
+async function main(params) {
+  const logger = Core.Logger('delete-file', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // Validate fileName parameter
-    if (!extractedParams.fileName) {
-      // If no fileName, return current file list
-      const { generateFileBrowserUI } = require('../../src/htmx/workflows/file-browser');
-      return await generateFileBrowserUI(config, extractedParams);
+    // Validate required parameters using Adobe standard
+    const requiredParams = ['fileName'];
+    const missingParams = checkMissingRequestInputs(params, requiredParams);
+    if (missingParams) {
+      return errorResponse(400, missingParams, logger);
     }
 
-    // Step 1: Delete file from storage
-    await deleteStoredFile(extractedParams.fileName, config, extractedParams);
+    logger.info('Starting file deletion', { fileName: params.fileName });
 
-    // Step 2: Generate updated file browser HTML response for HTMX
-    return await generateFileDeletionResponse(extractedParams.fileName, config, extractedParams);
+    // Step 1: Delete file from storage (simplified)
+    const config = createConfig(params);
+    await deleteFile(params.fileName, config, params);
+    logger.info('File deleted successfully', { fileName: params.fileName });
+
+    // Step 2: Get updated file list and generate response
+    const remainingFiles = await listCsvFiles(config, params);
+    const html = generateFileDeletionResponse(params.fileName, remainingFiles, config);
+
+    return createHTMLResponse(html);
   } catch (error) {
-    // Step 3: Return error response with proper HTMX format
-    return buildFileOperationErrorResponse(
-      `Failed to delete file: ${error.message}`,
-      'file-deletion',
-      extractedParams.fileName
-    );
+    logger.error('Action failed', { error: error.message, fileName: params.fileName });
+
+    // Return simplified error response for HTMX
+    const errorHTML = generateErrorHTML(`Failed to delete file: ${error.message}`, 'file-deletion');
+    return createHTMLResponse(errorHTML, 500);
   }
 }
 
-// Export the action with proper configuration
-module.exports = createAction(deleteFileBusinessLogic, {
-  actionName: 'delete-file',
-  withTracing: false,
-  withLogger: false,
-  description: 'Delete file from storage',
-});
+exports.main = main;
