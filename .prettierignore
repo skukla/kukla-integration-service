@@ -10,4 +10,7 @@ dist/
 build/
 
 # Generated files
-web-src/src/config/generated/ 
+web-src/src/config/generated/
+
+# Template files with placeholders
+mesh-resolvers.template.js 

@@ -35,18 +35,14 @@ function createConfig(params = {}) {
     mesh: {
       endpoint: params.API_MESH_ENDPOINT,
       apiKey: params.MESH_API_KEY,
-      batching: {
-        categoryDisplayLimit: 10,
-        thresholds: {
-          categories: 1,
-          inventory: 1,
-        },
-      },
+      categoryDisplayLimit: 10,
+      categoryBatchThreshold: 1,
+      inventoryBatchThreshold: 1,
     },
 
     // Storage Configuration
     storage: {
-      provider: 's3', // 'app-builder' or 's3'
+      provider: 's3',
       directory: 'public/',
     },
 
@@ -63,22 +59,8 @@ function createConfig(params = {}) {
     products: {
       expectedCount: 119,
       maxCategoriesDisplay: 10,
-      fields: {
-        export: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
-      },
-    },
-
-    // File Configuration
-    files: {
-      extensions: {
-        csv: '.csv',
-      },
-      defaultFilename: 'products.csv',
-    },
-
-    // Main Export Fields (used by buildProducts)
-    main: {
       exportFields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
+      defaultFilename: 'products.csv',
     },
   };
 }

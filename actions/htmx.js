@@ -91,14 +91,14 @@ function generateFileBrowserHTML(files) {
  * @param {Object} config - Configuration object
  * @returns {string} Updated file browser HTML
  */
-function generateFileDeletionResponse(deletedFileName, remainingFiles, config) {
+function generateFileDeletionResponse(deletedFileName, remainingFiles) {
   const successMessage = `
     <div class="success-message">
       File "${deletedFileName}" deleted successfully.
     </div>
   `;
 
-  const fileBrowserHTML = generateFileBrowserHTML(remainingFiles, config);
+  const fileBrowserHTML = generateFileBrowserHTML(remainingFiles);
 
   return successMessage + fileBrowserHTML;
 }

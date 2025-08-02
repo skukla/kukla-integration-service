@@ -6,7 +6,7 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
-const { fetchEnrichedProductsFromMesh } = require('../business-logic');
+const { getProductsFromMesh } = require('../commerce');
 const { createCsv, buildProducts } = require('../csv');
 const { storeCsv } = require('../storage');
 const {
@@ -34,7 +34,7 @@ async function main(params) {
 
     // Step 1: Fetch products from API Mesh
     const config = createConfig(params);
-    const meshData = await fetchEnrichedProductsFromMesh(params, config);
+    const meshData = await getProductsFromMesh(params, config);
     steps.push(`✔ Fetched ${meshData.products.length} enriched products via API Mesh`);
     logger.info('Fetched products from mesh', { count: meshData.products.length });
 
