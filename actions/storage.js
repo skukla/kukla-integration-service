@@ -3,7 +3,13 @@
  */
 
 const { Files } = require('@adobe/aio-sdk');
-const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectCommand,
+} = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 /**
@@ -75,7 +81,6 @@ async function storeWithS3(csvContent, fileName, config, params) {
       secretAccessKey: config.s3?.secretAccessKey || params.AWS_SECRET_ACCESS_KEY,
     },
   };
-
 
   const s3Client = new S3Client(s3Config);
   const bucketName = config.s3?.bucketName;

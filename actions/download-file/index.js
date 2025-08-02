@@ -4,6 +4,7 @@
  */
 
 const { Core, Files } = require('@adobe/aio-sdk');
+
 const { errorResponse, checkMissingRequestInputs } = require('../utils');
 
 async function main(params) {

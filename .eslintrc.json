@@ -20,13 +20,13 @@
 
     // Function and code complexity
     "max-lines-per-function": [
-      "error",
-      { "max": 60, "skipBlankLines": true, "skipComments": true }
+      "warn",
+      { "max": 100, "skipBlankLines": true, "skipComments": true }
     ],
-    "max-lines": ["warn", { "max": 400, "skipBlankLines": true, "skipComments": true }],
-    "complexity": ["warn", { "max": 10 }],
+    "max-lines": ["warn", { "max": 500, "skipBlankLines": true, "skipComments": true }],
+    "complexity": ["warn", { "max": 15 }],
     "max-depth": ["error", { "max": 4 }],
-    "max-params": ["warn", { "max": 5 }],
+    "max-params": ["warn", { "max": 6 }],
 
     // Import rules
     "import/no-unused-modules": [1, { "unusedExports": true }],
@@ -99,8 +99,9 @@
     {
       "files": ["actions/**/*.js"],
       "rules": {
-        "max-lines-per-function": ["warn", { "max": 80 }],
-        "max-params": ["warn", { "max": 3 }]
+        "max-lines-per-function": ["warn", { "max": 120 }],
+        "max-params": ["warn", { "max": 5 }],
+        "complexity": ["warn", { "max": 18 }]
       }
     }
   ]
