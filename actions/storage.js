@@ -13,19 +13,17 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
  * @param {string} csvContent - CSV content to store
  * @param {Object} config - Configuration object
  * @param {Object} params - Action parameters
- * @param {Object} options - Reserved for future options
  * @returns {Promise<Object>} Storage result with download URL
  */
-async function storeCsv(csvContent, config, params, options = {}) {
+async function storeCsv(csvContent, config, params) {
   const provider = config.storage?.provider || 'app-builder';
   const fileName = `products-${Date.now()}.csv`;
 
-
   try {
     if (provider === 'app-builder') {
-      return await storeWithAppBuilder(csvContent, fileName, params, options);
+      return await storeWithAppBuilder(csvContent, fileName, params);
     } else if (provider === 's3') {
-      return await storeWithS3(csvContent, fileName, config, params, options);
+      return await storeWithS3(csvContent, fileName, config, params);
     } else {
       throw new Error(`Unknown storage provider: ${provider}`);
     }
@@ -40,7 +38,7 @@ async function storeCsv(csvContent, config, params, options = {}) {
 /**
  * Store file using Adobe I/O Files SDK (App Builder)
  */
-async function storeWithAppBuilder(csvContent, fileName, params, options) {
+async function storeWithAppBuilder(csvContent, fileName, params) {
   const files = await Files.init({
     ow: {
       apihost: params.__ow_api_host,
@@ -69,7 +67,7 @@ async function storeWithAppBuilder(csvContent, fileName, params, options) {
 /**
  * Store file using AWS S3
  */
-async function storeWithS3(csvContent, fileName, config, params, options) {
+async function storeWithS3(csvContent, fileName, config, params) {
   const s3Config = {
     region: config.s3?.region || 'us-east-1',
     credentials: {
