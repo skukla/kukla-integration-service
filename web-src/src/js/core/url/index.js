@@ -16,13 +16,18 @@ import { config } from '../../../config/generated/config.js';
  * @returns {string} Absolute action URL
  */
 export function getActionUrl(action, params = {}) {
-  if (!config.runtime?.url) {
-    console.warn('Runtime URL not configured, falling back to relative URLs');
+  // Use pre-built action URLs from configuration
+  if (!config.runtime?.actions) {
+    console.warn('Runtime actions not configured, falling back to relative URLs');
     return '/api/' + action;
   }
 
-  // Build absolute URL: https://namespace.adobeioruntime.net/api/v1/web/package/action
-  let url = config.runtime.url + '/api/v1/web/' + config.runtime.package + '/' + action;
+  // Get the pre-built action URL
+  let url = config.runtime.actions[action];
+  if (!url) {
+    console.warn(`Action '${action}' not found in configuration, falling back to constructed URL`);
+    url = config.runtime?.url ? `${config.runtime.url}/${action}` : `/api/${action}`;
+  }
 
   // Add query parameters if provided
   if (params && Object.keys(params).length > 0) {
