@@ -180,9 +180,14 @@ async function deployApp(isProd = false) {
     return false;
   }
 
-  // Step 2: Generate mesh resolver and check for changes
+  // Step 2: Check mesh resolver for changes
   const oldMeshHash = getStoredMeshHash();
-  if (!(await runBuildCommand('node scripts/build.js --mesh-only', 'Generating mesh resolver'))) {
+  if (
+    !(await runBuildCommand(
+      'node scripts/build.js --mesh-only',
+      'Checking mesh resolver for changes'
+    ))
+  ) {
     return false;
   }
   const newMeshHash = getMeshResolverHash();
@@ -196,9 +201,11 @@ async function deployApp(isProd = false) {
   }
 
   // Step 4: Update mesh if resolver changed (following master branch patterns)
+  let additionalWorkDone = false;
   if (meshChanged && newMeshHash) {
     console.log();
     console.log(format.deploymentAction('Mesh resolver changed, updating deployed mesh...'));
+    additionalWorkDone = true;
     try {
       const meshUpdateSuccess = await updateMeshWithPolling(isProd);
       if (meshUpdateSuccess) {
@@ -224,11 +231,13 @@ async function deployApp(isProd = false) {
     console.log(format.warning('Could not determine mesh resolver status'));
   }
 
-  // Final celebration
-  console.log();
-  console.log(
-    format.celebration(`Application deployed successfully to ${environment.toLowerCase()}!`)
-  );
+  // Final celebration only if we did additional work beyond basic app deployment
+  if (additionalWorkDone) {
+    console.log();
+    console.log(
+      format.celebration(`Application deployed successfully to ${environment.toLowerCase()}!`)
+    );
+  }
   return true;
 }
 
