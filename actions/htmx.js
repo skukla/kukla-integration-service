@@ -3,6 +3,27 @@
  * Direct HTML generation without over-engineered abstractions
  */
 
+const { formatFileSize } = require('./utils');
+
+/**
+ * Format timestamp to human-readable format without timezone
+ * @param {string} timestamp - ISO timestamp
+ * @returns {string} Formatted date/time
+ */
+function formatTimestamp(timestamp) {
+  if (!timestamp) return 'Unknown';
+  try {
+    const date = new Date(timestamp);
+    return (
+      date.toLocaleDateString() +
+      ' ' +
+      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
+  } catch (error) {
+    return 'Invalid date';
+  }
+}
+
 /**
  * Generate file browser HTML
  * Simplified version without complex routing and response builders
@@ -28,7 +49,6 @@ function generateFileBrowserHTML(files) {
     .map((file) => {
       // Simple URL construction without over-engineered routing
       const downloadUrl = `/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(file.name)}`;
-      const deleteUrl = `/api/v1/web/kukla-integration-service/delete-file?fileName=${encodeURIComponent(file.name)}`;
 
       return `
       <div class="table-row">
@@ -36,25 +56,26 @@ function generateFileBrowserHTML(files) {
           <span class="file-name">${file.name}</span>
         </div>
         <div class="table-cell">
-          <span class="file-size">${file.size || 'Unknown'}</span>
+          <span class="file-size">${file.size ? formatFileSize(file.size) : 'Unknown'}</span>
         </div>
         <div class="table-cell">
-          <span class="file-date">${file.lastModified || 'Unknown'}</span>
+          <span class="file-date">${formatTimestamp(file.lastModified)}</span>
         </div>
         <div class="table-cell">
           <div class="actions-container">
             <a href="${downloadUrl}" 
                class="btn btn-sm btn-primary download-button"
                download="${file.name}"
-               title="Download ${file.name}">
+               title="Download ${file.name}"
+               onclick="setTimeout(() => showDownloadNotification('${file.name}'), 500)">
               <span class="btn-text btn-label">Download</span>
             </a>
             <button type="button"
                class="btn btn-sm btn-danger delete-button"
-               hx-delete="${deleteUrl}"
-               hx-confirm="Are you sure you want to delete ${file.name}?"
-               hx-target="#file-browser"
-               hx-swap="outerHTML"
+               data-component="delete-button"
+               data-action="delete"
+               data-file-name="${file.name}"
+               data-file-path="${file.name}"
                title="Delete ${file.name}">
               <span class="btn-text btn-label">Delete</span>
             </button>
@@ -79,15 +100,32 @@ function generateFileBrowserHTML(files) {
  * @returns {string} Updated file browser HTML
  */
 function generateFileDeletionResponse(deletedFileName, remainingFiles) {
-  const successMessage = `
-    <div class="success-message">
-      File "${deletedFileName}" deleted successfully.
+  // For delete response, we need to return the complete file browser structure
+  // since we're replacing the entire .file-browser element
+  const fileRows = generateFileBrowserHTML(remainingFiles);
+
+  return `
+    <div class="file-browser">
+      <div class="table-wrapper">
+        <div class="table">
+          <!-- Header Row -->
+          <div class="table-row header">
+            <div class="table-header">File Name</div>
+            <div class="table-header">Size</div>
+            <div class="table-header">Last Modified</div>
+            <div class="table-header">Actions</div>
+          </div>
+          <!-- Content Area -->
+          <div class="table-content" data-component="file-list">
+            ${fileRows}
+          </div>
+        </div>
+      </div>
+      <div class="success-message" style="margin-top: 1rem; padding: 0.75rem; background: #d4edda; color: #155724; border-radius: 4px;">
+        File "${deletedFileName}" deleted successfully.
+      </div>
     </div>
   `;
-
-  const fileBrowserHTML = generateFileBrowserHTML(remainingFiles);
-
-  return successMessage + fileBrowserHTML;
 }
 
 /**
