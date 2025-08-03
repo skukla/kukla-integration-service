@@ -3,8 +3,9 @@
  * Follows Adobe standard patterns with direct exports.main
  */
 
-const { Core, Files } = require('@adobe/aio-sdk');
+const { Core } = require('@adobe/aio-sdk');
 
+const createConfig = require('../../config');
 const { errorResponse, checkMissingRequestInputs } = require('../utils');
 
 async function main(params) {
@@ -20,42 +21,65 @@ async function main(params) {
 
     logger.info('Starting file download', { fileName: params.fileName });
 
-    // Initialize Adobe I/O Files
-    const files = await Files.init({
-      ow: {
-        apihost: params.__ow_api_host,
-        apiversion: params.__ow_api_version,
-        namespace: params.__ow_namespace,
-      },
-    });
+    // Get configuration and use the same storage provider as other actions
+    const config = createConfig(params);
+    const provider = config.storage.provider;
 
     // Clean the filename (remove public/ prefix if present)
     const cleanFileName = params.fileName.replace(/^public\//, '');
 
-    // Read file content
-    const fileContent = await files.read(cleanFileName);
-    logger.info('File download completed', { fileName: params.fileName });
+    let fileContent;
+
+    if (provider === 's3') {
+      // Use S3 storage
+      const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+      const s3Config = {
+        region: config.s3.region,
+        credentials: {
+          accessKeyId: config.s3.accessKeyId,
+          secretAccessKey: config.s3.secretAccessKey,
+        },
+      };
+      const s3Client = new S3Client(s3Config);
+      const getCommand = new GetObjectCommand({
+        Bucket: config.s3.bucketName,
+        Key: cleanFileName,
+      });
+      const response = await s3Client.send(getCommand);
+      fileContent = await response.Body.transformToByteArray();
+    } else {
+      // Use Adobe I/O Files
+      const { Files } = require('@adobe/aio-sdk');
+      const files = await Files.init({
+        ow: {
+          namespace: params.__ow_namespace,
+          auth: params.__ow_api_key,
+        },
+      });
+      fileContent = await files.read(cleanFileName);
+    }
+
+    logger.info('File download completed', { fileName: params.fileName, provider });
 
     // Ensure content is properly encoded
     const contentBuffer = Buffer.isBuffer(fileContent)
       ? fileContent
       : Buffer.from(fileContent, 'utf-8');
-    const contentLength = contentBuffer.length;
 
-    // Return download response with proper headers
+    // Determine content type and encoding based on file type (using master branch approach)
+    const isCsvFile = cleanFileName.endsWith('.csv');
+    const contentType = isCsvFile ? 'text/csv' : 'application/octet-stream';
+
+    // Return download response with proper headers (simplified approach from master)
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/octet-stream', // Generic binary type for reliable downloads
+        'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${cleanFileName}"`,
-        'Content-Length': contentLength.toString(),
-        'Accept-Ranges': 'bytes', // Enable resume capability
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
+        'Cache-Control': 'no-cache',
       },
-      body: contentBuffer.toString('base64'),
-      isBase64Encoded: true, // Ensure proper binary handling
+      body: isCsvFile ? contentBuffer.toString('utf8') : contentBuffer.toString('base64'),
+      isBase64Encoded: !isCsvFile,
     };
   } catch (error) {
     logger.error('Action failed', { error: error.message, fileName: params.fileName });

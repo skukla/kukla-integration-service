@@ -544,14 +544,12 @@ function initializeModal() {
   });
 }
 
-// Download handler with immediate and accurate feedback
+// Download handler with success notification
 function handleDownloadClick(filename) {
-  // Show immediate feedback that download has been initiated
-  // This is accurate since the download starts immediately when clicked
-  showNotification(`Download started: ${filename}`, {
-    type: 'success',
-    duration: 3000, // Standard duration for download confirmation
-  });
+  // Show success notification after a brief delay to allow download to start
+  setTimeout(() => {
+    showNotification(`${filename} downloaded successfully`, 'success');
+  }, 500); // 500ms delay to let download initiate
 }
 
 // Make functions globally available for HTMX handlers

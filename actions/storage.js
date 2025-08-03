@@ -47,9 +47,8 @@ async function storeCsv(csvContent, params, config) {
 async function storeWithAppBuilder(csvContent, fileName, params) {
   const files = await Files.init({
     ow: {
-      apihost: params.__ow_api_host,
-      apiversion: params.__ow_api_version,
       namespace: params.__ow_namespace,
+      auth: params.__ow_api_key,
     },
   });
 
@@ -155,9 +154,8 @@ async function listCsvFiles(params, config) {
 async function listAppBuilderFiles(params) {
   const files = await Files.init({
     ow: {
-      apihost: params.__ow_api_host,
-      apiversion: params.__ow_api_version,
       namespace: params.__ow_namespace,
+      auth: params.__ow_api_key,
     },
   });
 
@@ -210,9 +208,8 @@ async function deleteFile(fileName, params, config) {
   if (provider === 'app-builder') {
     const files = await Files.init({
       ow: {
-        apihost: params.__ow_api_host,
-        apiversion: params.__ow_api_version,
         namespace: params.__ow_namespace,
+        auth: params.__ow_api_key,
       },
     });
     await files.delete(fileName);
