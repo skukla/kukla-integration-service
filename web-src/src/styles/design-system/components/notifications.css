@@ -40,7 +40,7 @@
   top: var(--notification-offset);
   right: var(--notification-offset);
   z-index: var(--z-index-toast, 9999);
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: var(--notification-spacing);
   max-width: var(--notification-max-width);
@@ -138,6 +138,17 @@
 .notification.hide {
   transform: translateX(100%);
   opacity: 0;
+}
+
+/* Hover pause state */
+.notification.notification-paused {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-xl);
+}
+
+.notification:hover {
+  transform: scale(1.01);
+  transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
 }
 
 /* Responsive Design */

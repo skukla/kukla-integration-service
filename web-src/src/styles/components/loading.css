@@ -190,25 +190,10 @@
 }
 
 /* ============================================================================
- * HTMX INTEGRATION - Connect loading states to HTMX requests
+ * HTMX INTEGRATION - Connect loading states to HTMX requests  
  * ============================================================================ */
 
-/* Hide all loaders by default when used as HTMX indicators */
-.htmx-indicator {
-  display: none;
-}
-
-/* Content Loader HTMX Integration */
-.htmx-request .content-loader.htmx-indicator,
-.htmx-request.content-loader.htmx-indicator {
-  display: flex !important;
-}
-
-/* Process Loader HTMX Integration */
-.htmx-request .process-loader.htmx-indicator,
-.htmx-request.process-loader.htmx-indicator {
-  display: flex !important;
-}
+/* Note: Export loaders are now controlled manually via JavaScript event handlers */
 
 /* Button Loader HTMX Integration - Handled above in main button loading styles */
 

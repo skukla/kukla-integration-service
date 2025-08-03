@@ -35,11 +35,9 @@ function generateFileBrowserHTML(files) {
   if (!files || files.length === 0) {
     return `
       <div class="table-row empty-state">
-        <div class="table-cell" colspan="4">
-          <div style="text-align: center; padding: 2rem;">
-            <h3>No exported files found</h3>
-            <p>Use the export buttons above to create CSV files.</p>
-          </div>
+        <div class="table-cell empty-state-content">
+          <h3>No exported files found</h3>
+          <p>Use the export buttons above to create CSV files.</p>
         </div>
       </div>
     `;
@@ -47,8 +45,8 @@ function generateFileBrowserHTML(files) {
 
   const fileRows = files
     .map((file) => {
-      // Simple URL construction without over-engineered routing
-      const downloadUrl = `/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(file.name)}`;
+      // Use absolute URL for downloads to avoid routing issues
+      const downloadUrl = `https://285361-188maroonwallaby-stage.adobeio-static.net/api/v1/web/kukla-integration-service/download-file?fileName=${encodeURIComponent(file.name)}`;
 
       return `
       <div class="table-row">
@@ -67,7 +65,7 @@ function generateFileBrowserHTML(files) {
                class="btn btn-sm btn-primary download-button"
                download="${file.name}"
                title="Download ${file.name}"
-               onclick="setTimeout(() => showDownloadNotification('${file.name}'), 500)">
+               onclick="handleDownloadClick('${file.name}')">
               <span class="btn-text btn-label">Download</span>
             </a>
             <button type="button"

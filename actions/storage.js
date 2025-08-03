@@ -23,7 +23,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
  */
 async function storeCsv(csvContent, params, config) {
   const provider = config.storage.provider;
-  const fileName = config.files.defaultFilename;
+  const fileName = config.products.defaultFilename;
 
   try {
     if (provider === 'app-builder') {
@@ -162,6 +162,12 @@ async function listAppBuilderFiles(params) {
   });
 
   const fileList = await files.list();
+
+  // Handle case where fileList is undefined or null
+  if (!fileList || !Array.isArray(fileList)) {
+    return [];
+  }
+
   return fileList.filter((file) => file.name.endsWith('.csv'));
 }
 
@@ -182,6 +188,12 @@ async function listS3Files(params, config) {
 
   const listCommand = new ListObjectsV2Command({ Bucket: bucketName });
   const response = await s3Client.send(listCommand);
+
+  // Handle case where Contents is undefined or null
+  if (!response.Contents || !Array.isArray(response.Contents)) {
+    return [];
+  }
+
   return response.Contents.filter((obj) => obj.Key.endsWith('.csv')).map((obj) => ({
     name: obj.Key,
     size: obj.Size,

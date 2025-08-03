@@ -288,13 +288,15 @@
 }
 
 /* Special loading state for danger buttons */
-.btn.btn-danger.is-loading {
+.btn.btn-danger.is-loading,
+.btn.btn-danger.htmx-request {
   background-color: var(--color-danger);
   border-color: var(--color-danger);
   color: var(--color-white);
 }
 
-.btn.btn-danger.is-loading::after {
+.btn.btn-danger.is-loading::after,
+.btn.btn-danger.htmx-request::after {
   border-color: var(--color-white-20);
   border-top-color: var(--color-white);
 }

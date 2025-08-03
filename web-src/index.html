@@ -10,9 +10,6 @@
 
     <!-- External Dependencies -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <!-- HTMX Extensions -->
-    <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
-    <script src="https://unpkg.com/htmx.org/dist/ext/class-tools.js"></script>
 
     <!-- Application Entry Point -->
     <script type="module" src="./src/js/main.js"></script>
@@ -37,38 +34,26 @@
         <!-- Export buttons -->
         <div class="export-actions-compact" id="export-container">
           <button
-            class="btn btn-primary"
-            hx-post="./api/v1/web/kukla-integration-service/get-products"
-            hx-trigger="click"
-            hx-target="#export-result"
-            hx-swap="innerHTML"
-            hx-indicator="#export-loader"
+            class="btn btn-primary export-btn"
+            data-action="get-products"
             data-export-method="rest-api"
-            data-loading-states
-            data-loading-class="is-loading"
           >
-            <span class="btn-label" data-loading-disable>Export via REST API</span>
-            <div class="btn-subtitle" data-loading-disable>Multiple API calls</div>
+            <span class="btn-label">Export via REST API</span>
+            <div class="btn-subtitle">Multiple API calls</div>
           </button>
 
           <button
-            class="btn btn-secondary"
-            hx-post="./api/v1/web/kukla-integration-service/get-products-mesh"
-            hx-trigger="click"
-            hx-target="#export-result"
-            hx-swap="innerHTML"
-            hx-indicator="#export-loader"
+            class="btn btn-secondary export-btn"
+            data-action="get-products-mesh"
             data-export-method="api-mesh"
-            data-loading-states
-            data-loading-class="is-loading"
           >
-            <span class="btn-label" data-loading-disable>Export via API Mesh</span>
-            <div class="btn-subtitle" data-loading-disable>Single GraphQL query</div>
+            <span class="btn-label">Export via API Mesh</span>
+            <div class="btn-subtitle">Single GraphQL query</div>
           </button>
         </div>
 
-        <!-- Export loader (minimal) -->
-        <div id="export-loader" class="process-loader htmx-indicator">
+        <!-- Export loader (manual control) -->
+        <div id="export-loader" class="process-loader" style="display: none;">
           <div class="process-loader-spinner"></div>
           <span class="process-loader-text">Processing export...</span>
         </div>
@@ -131,8 +116,8 @@
             <!-- Hidden loader -->
             <div
               id="content-loader"
-              class="content-loader htmx-indicator"
-              data-component="content-loader"
+              class="content-loader"
+              style="display: none; visibility: hidden;"
             >
               <div class="content-loader-spinner"></div>
               <span class="content-loader-text">Loading files...</span>
@@ -154,23 +139,27 @@
         </div>
       </div>
 
-      <!-- Notification Container -->
-      <div
-        id="notification-container"
-        class="notification-container"
-        role="status"
-        aria-live="polite"
-        style="
-          position: fixed;
-          top: var(--notification-offset, 16px);
-          right: var(--notification-offset, 16px);
-          z-index: var(--z-index-toast, 9999);
-          display: flex;
-          flex-direction: column;
-          gap: var(--notification-spacing, 8px);
-          pointer-events: none;
-        "
-      ></div>
+      <!-- Templates -->
+      <template id="delete-modal-template">
+        <div class="modal-content">
+          <h2>Delete File</h2>
+          <div class="modal-body">
+            <p>Are you sure you want to delete "<span class="file-name"></span>"?</p>
+            <p class="modal-warning">This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <div class="btn-group">
+              <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+              <button type="button" class="btn btn-danger delete-confirm-btn">
+                <span class="btn-text btn-label">Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+
+      <!-- Notification Container (managed by JavaScript) -->
     </div>
   </body>
 </html>

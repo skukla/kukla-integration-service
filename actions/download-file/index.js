@@ -36,15 +36,26 @@ async function main(params) {
     const fileContent = await files.read(cleanFileName);
     logger.info('File download completed', { fileName: params.fileName });
 
-    // Return download response
+    // Ensure content is properly encoded
+    const contentBuffer = Buffer.isBuffer(fileContent)
+      ? fileContent
+      : Buffer.from(fileContent, 'utf-8');
+    const contentLength = contentBuffer.length;
+
+    // Return download response with proper headers
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'text/csv',
+        'Content-Type': 'application/octet-stream', // Generic binary type for reliable downloads
         'Content-Disposition': `attachment; filename="${cleanFileName}"`,
-        'Cache-Control': 'no-cache',
+        'Content-Length': contentLength.toString(),
+        'Accept-Ranges': 'bytes', // Enable resume capability
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
-      body: fileContent,
+      body: contentBuffer.toString('base64'),
+      isBase64Encoded: true, // Ensure proper binary handling
     };
   } catch (error) {
     logger.error('Action failed', { error: error.message, fileName: params.fileName });

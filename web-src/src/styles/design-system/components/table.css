@@ -189,6 +189,12 @@ th > * {
   transition: var(--table-loading-transition);
 }
 
+/* Updating States for smooth file list refresh */
+.table-content.is-updating {
+  opacity: var(--opacity-70);
+  transition: var(--table-loading-transition);
+}
+
 /* Cell Alignments */
 .text-start,
 .text-center,
@@ -251,21 +257,36 @@ th > * {
   background-color: var(--table-background);
   border-end-start-radius: var(--radius-md);
   border-end-end-radius: var(--radius-md);
-  padding-block: var(--table-empty-padding-block);
-  padding-inline: var(--table-empty-padding-inline);
 }
 
 .empty-state .table-cell {
-  padding-block: var(--spacing-2xl);
+  padding-block: var(--table-empty-padding-block);
+  padding-inline: var(--table-empty-padding-inline);
+  /* Span full width across all columns */
+  width: 100%;
+  grid-column: 1 / -1;
 }
 
-.empty-state h2 {
-  margin-block-end: var(--spacing-md);
+.empty-state-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.empty-state h2,
+.empty-state h3 {
+  margin: 0;
   color: var(--table-empty-title-color);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
 }
 
 .empty-state p {
+  margin: 0;
   color: var(--table-empty-text-color);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
 }
 
 /* High Contrast Mode */
