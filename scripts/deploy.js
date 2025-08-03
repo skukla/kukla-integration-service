@@ -56,13 +56,15 @@ async function runBuildCommand(command, description) {
   }
 }
 
-async function runDeployCommand(command, description) {
+async function runDeployCommand(command, description, suppressCompletion = false) {
   console.log(format.deploymentAction(description));
   await format.sleep(500);
 
   try {
     execSync(command, { stdio: 'inherit', cwd: process.cwd() });
-    console.log(format.success(`${description} completed`));
+    if (!suppressCompletion) {
+      console.log(format.success(`${description} completed`));
+    }
     return true;
   } catch (error) {
     console.error(format.error(`${description} failed: ${error.message}`));
@@ -196,7 +198,10 @@ async function deployApp(isProd = false) {
   // Step 3: Deploy to Adobe I/O Runtime
   console.log();
   const deployCommand = `aio app deploy${isProd ? ' --prod' : ''}`;
-  if (!(await runDeployCommand(deployCommand, `Deploying to ${environment}`))) {
+  try {
+    execSync(deployCommand, { stdio: 'inherit', cwd: process.cwd() });
+  } catch (error) {
+    console.error(format.error(`Deployment to ${environment} failed: ${error.message}`));
     return false;
   }
 
@@ -223,10 +228,7 @@ async function deployApp(isProd = false) {
       console.log(format.warning('Deployment completed but mesh may need manual update'));
       console.log(format.muted('   → You can run: npm run deploy:mesh'));
     }
-  } else if (newMeshHash) {
-    console.log();
-    console.log(format.success('Mesh resolver unchanged, skipping mesh update'));
-  } else {
+  } else if (!newMeshHash) {
     console.log();
     console.log(format.warning('Could not determine mesh resolver status'));
   }
