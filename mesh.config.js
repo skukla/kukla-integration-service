@@ -99,7 +99,7 @@ module.exports = {
             {
               type: 'Query',
               field: 'inventory_items',
-              path: '/stockItems/{args.sku}',
+              path: '/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.sku}&searchCriteria[filter_groups][0][filters][0][condition_type]=eq',
               method: 'GET',
               argTypeMap: {
                 sku: {
@@ -112,7 +112,7 @@ module.exports = {
             {
               type: 'Query',
               field: 'inventory_batch',
-              path: '/stockItems?searchCriteria[pageSize]=50&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in',
+              path: '/inventory/source-items?searchCriteria[pageSize]=50&searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.skus}&searchCriteria[filter_groups][0][filters][0][condition_type]=in',
               method: 'GET',
               argTypeMap: {
                 skus: {

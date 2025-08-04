@@ -130,10 +130,10 @@ async function buildProducts(products) {
       // Additional CSV fields for RECS format
       transformed.message = product.message || '';
       transformed.value = product.price || 0;
-      transformed.page_url = product.page_url || '';
+      transformed.page_url = '';
       transformed.inventory = product.qty || 0;
       transformed.margin = product.margin || '';
-      transformed.type = product.type || 'product';
+      transformed.type = product.type || '';
 
       // Custom fields (empty for now)
       const emptyCustoms = Object.fromEntries(

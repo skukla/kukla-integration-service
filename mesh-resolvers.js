@@ -203,8 +203,8 @@ async function fetchInventory(context, info, skus) {
         selectionSet: `{
           items {
             sku
-            qty
-            is_in_stock
+            quantity
+            status
           }
         }`,
       });
@@ -212,8 +212,8 @@ async function fetchInventory(context, info, skus) {
       if (batchResponse?.items) {
         batchResponse.items.forEach((item) => {
           result.inventoryMap.set(item.sku, {
-            qty: item.qty || 0,
-            is_in_stock: item.is_in_stock || false,
+            qty: parseFloat(item.quantity) || 0,
+            is_in_stock: item.status === 1,
           });
         });
       }
@@ -227,7 +227,7 @@ async function fetchInventory(context, info, skus) {
     }
   }
 
-  // Fallback to individual stockItems calls
+  // Fallback to individual source-items calls
   const inventoryPromises = skus.map((sku) =>
     context.Inventory.Query.inventory_items({
       root: {},
@@ -235,9 +235,11 @@ async function fetchInventory(context, info, skus) {
       context: context,
       info: info,
       selectionSet: `{
-        sku
-        qty
-        is_in_stock
+        items {
+          sku
+          quantity
+          status
+        }
       }`,
     })
   );
@@ -245,11 +247,17 @@ async function fetchInventory(context, info, skus) {
   const responses = await Promise.allSettled(inventoryPromises);
 
   responses.forEach((response, index) => {
-    if (response.status === 'fulfilled' && response.value) {
+    if (response.status === 'fulfilled' && response.value && response.value.items) {
       const sku = skus[index];
+      const sourceItems = response.value.items || [];
+
+      // Sum quantities from all source items for this SKU
+      const totalQty = sourceItems.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+      const isInStock = sourceItems.some((item) => item.status === 1); // 1 = enabled/in stock
+
       result.inventoryMap.set(sku, {
-        qty: response.value.qty || 0,
-        is_in_stock: response.value.is_in_stock || false,
+        qty: totalQty,
+        is_in_stock: isInStock,
       });
       result.apiCallsMade++;
     }

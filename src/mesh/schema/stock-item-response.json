@@ -1,20 +1,19 @@
 {
   "type": "object",
   "properties": {
-    "item_id": { "type": "integer" },
-    "sku": { "type": "string" },
-    "qty": { "type": "number" },
-    "is_in_stock": { "type": "boolean" },
-    "min_qty": { "type": "number" },
-    "use_config_min_qty": { "type": "boolean" },
-    "is_qty_decimal": { "type": "boolean" },
-    "backorders": { "type": "integer" },
-    "use_config_backorders": { "type": "boolean" },
-    "min_sale_qty": { "type": "number" },
-    "use_config_min_sale_qty": { "type": "boolean" },
-    "max_sale_qty": { "type": "number" },
-    "use_config_max_sale_qty": { "type": "boolean" },
-    "is_decimal_divided": { "type": "boolean" },
-    "stock_id": { "type": "integer" }
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sku": { "type": "string" },
+          "quantity": { "type": "number" },
+          "status": { "type": "integer" },
+          "source_code": { "type": "string" }
+        }
+      }
+    },
+    "search_criteria": { "type": "object" },
+    "total_count": { "type": "integer" }
   }
 }

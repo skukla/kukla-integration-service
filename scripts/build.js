@@ -141,6 +141,40 @@ async function generateMeshResolver() {
   console.log(format.success('Mesh resolver generated'));
 }
 
+async function generateMeshConfig() {
+  const spinner = ora({
+    text: format.muted('Generating mesh configuration'),
+    spinner: 'dots',
+  }).start();
+
+  try {
+    // Load mesh.config.js
+    const meshConfigPath = path.join(__dirname, '../mesh.config.js');
+    if (!fs.existsSync(meshConfigPath)) {
+      spinner.stop();
+      console.log(format.warning('No mesh.config.js found, skipping'));
+      return;
+    }
+
+    // Load and execute mesh.config.js
+    const meshConfig = require(meshConfigPath);
+
+    // Generate mesh.json from mesh.config.js
+    const meshJson = {
+      meshConfig: meshConfig,
+    };
+
+    fs.writeFileSync(path.join(__dirname, '../mesh.json'), JSON.stringify(meshJson, null, 2));
+
+    spinner.stop();
+    console.log(format.success('Mesh configuration generated (mesh.json)'));
+  } catch (error) {
+    spinner.stop();
+    console.log(format.error(`Mesh config generation failed: ${error.message}`));
+    throw error;
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -167,6 +201,7 @@ Note: For full deployment, use 'npm run deploy'
       await generateFrontendConfig();
     } else if (args['mesh-only']) {
       await generateMeshResolver();
+      await generateMeshConfig();
     } else {
       console.log(format.warning('No build target specified. Use --config-only or --mesh-only'));
       console.log('For full deployment, use: npm run deploy');
