@@ -544,12 +544,24 @@ function initializeModal() {
   });
 }
 
-// Download handler with success notification
+// Download handler with spinner and timed success notification
+function handleDownloadWithSpinner(buttonElement, filename) {
+  // Show loading state immediately
+  buttonElement.classList.add('is-loading');
+
+  // Give the browser download a moment to start, then show success and remove spinner
+  setTimeout(() => {
+    buttonElement.classList.remove('is-loading');
+    showNotification(`${filename} downloaded successfully`, 'success');
+  }, 1500); // 1.5 seconds - enough time for download to start
+}
+
+// Legacy download handler (kept for compatibility)
 function handleDownloadClick(filename) {
-  // Show success notification after a brief delay to allow download to start
+  // Fallback to simple notification if HTMX tracking fails
   setTimeout(() => {
     showNotification(`${filename} downloaded successfully`, 'success');
-  }, 500); // 500ms delay to let download initiate
+  }, 500);
 }
 
 // Make functions globally available for HTMX handlers
@@ -557,6 +569,7 @@ window.showDownloadNotification = function (filename) {
   showNotification(`${filename} downloaded successfully`, 'success');
 };
 window.handleDownloadClick = handleDownloadClick;
+window.handleDownloadWithSpinner = handleDownloadWithSpinner;
 window.hideModal = hideModal;
 window.showNotification = showNotification;
 window.refreshFileList = refreshFileList;

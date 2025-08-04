@@ -63,9 +63,11 @@ function generateFileBrowserHTML(files) {
           <div class="actions-container">
             <a href="${downloadUrl}" 
                class="btn btn-sm btn-primary download-button"
+               data-file-name="${file.name}"
+               data-download-url="${downloadUrl}"
                download="${file.name}"
                title="Download ${file.name}"
-               onclick="handleDownloadClick('${file.name}')">
+               onclick="handleDownloadWithSpinner(this, '${file.name}'); return true;">
               <span class="btn-text btn-label">Download</span>
             </a>
             <button type="button"
