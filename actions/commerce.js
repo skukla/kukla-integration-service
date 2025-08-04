@@ -17,8 +17,8 @@ async function fetchAndEnrichProducts(params, config) {
   try {
     let apiCallCount = 0;
 
-    // Step 1: Get admin token
-    const bearerToken = await getAdminToken(params, config);
+    // Step 1: Get admin token using centralized approach
+    const bearerToken = await getCommerceToken(params);
     apiCallCount += 1; // Token API call
 
     // Step 2: Fetch products from Commerce API
@@ -96,7 +96,7 @@ async function fetchProducts(params, config, bearerToken) {
   const { baseUrl, api } = config.commerce;
   const productsUrl = `${baseUrl}/rest/${api.version}${api.paths.products}?searchCriteria[pageSize]=${config.products.expectedCount}`;
 
-  const products = await fetchCommerceData(productsUrl, bearerToken, 'GET', 'Products');
+  const products = await fetchCommerceData(productsUrl, bearerToken, 'GET', 'Products', params);
 
   // fetchCommerceData handles empty arrays, but let's ensure we have items
   if (!Array.isArray(products)) {
@@ -180,7 +180,8 @@ async function enrichProducts(products, params, config, bearerToken) {
     if (product.extension_attributes && product.extension_attributes.category_links) {
       enriched.categories = product.extension_attributes.category_links.map((link) => {
         // Try both string and number versions of the category ID
-        const categoryInfo = categoryMap.get(link.category_id) || categoryMap.get(link.category_id.toString());
+        const categoryInfo =
+          categoryMap.get(link.category_id) || categoryMap.get(link.category_id.toString());
         return {
           id: link.category_id,
           name: categoryInfo ? categoryInfo.name : `Category ${link.category_id}`,
@@ -231,10 +232,10 @@ async function enrichProducts(products, params, config, bearerToken) {
  */
 async function fetchCategoryById(categoryId, bearerToken, baseUrl, api) {
   const url = `${baseUrl}/rest/${api.version}/categories/${categoryId}`;
-  
+
   try {
     const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${bearerToken}` }
+      headers: { Authorization: `Bearer ${bearerToken}` },
     });
 
     if (!response.ok) {
@@ -266,35 +267,35 @@ async function fetchCategoryById(categoryId, bearerToken, baseUrl, api) {
 async function fetchInventoryForProducts(products, bearerToken, baseUrl, api) {
   const inventoryPromises = products.map(async (product) => {
     const url = `${baseUrl}/rest/${api.version}/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]=${product.sku}&searchCriteria[filter_groups][0][filters][0][condition_type]=eq`;
-    
+
     try {
       const response = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${bearerToken}` }
+        headers: { Authorization: `Bearer ${bearerToken}` },
       });
-      
+
       if (!response.ok) {
         return { product_id: product.id, sku: product.sku, qty: 0, is_in_stock: false };
       }
-      
+
       const result = await response.json();
       const sourceItems = result.items || [];
-      
+
       // Sum quantities from all source items for this SKU
       const totalQty = sourceItems.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
-      const isInStock = sourceItems.some(item => item.status === 1); // 1 = enabled/in stock
-      
+      const isInStock = sourceItems.some((item) => item.status === 1); // 1 = enabled/in stock
+
       return {
         product_id: product.id,
         sku: product.sku,
         qty: totalQty,
-        is_in_stock: isInStock
+        is_in_stock: isInStock,
       };
     } catch (error) {
       console.warn(`Inventory fetch failed for ${product.sku}: ${error.message}`);
       return { product_id: product.id, sku: product.sku, qty: 0, is_in_stock: false };
     }
   });
-  
+
   return await Promise.all(inventoryPromises);
 }
 
@@ -319,8 +320,8 @@ function transformMeshProductsToRestFormat(products, config) {
     },
     status: product.status || 1,
     type_id: product.type_id || 'simple',
-    qty: product.qty || 0,
-    stock_status: product.stock_status || 'IN_STOCK',
+    qty: product.inventory?.qty || product.qty || 0,
+    stock_status: product.inventory?.is_in_stock ? 'IN_STOCK' : 'OUT_OF_STOCK',
     categories: product.categories,
     // Map images correctly for buildProducts function
     images: product.media_gallery_entries
@@ -356,14 +357,8 @@ async function getProductsFromMesh(params, config) {
     throw new Error('API Mesh credentials not provided');
   }
 
-  // Extract Commerce admin token from Authorization header (Adobe standard pattern)
-  const { getBearerToken } = require('./utils');
-  const commerceToken = getBearerToken(params);
-  if (!commerceToken) {
-    throw new Error(
-      'Commerce admin token required. Call auth-token action first to generate token.'
-    );
-  }
+  // Generate Commerce admin token using centralized approach
+  const commerceToken = await getCommerceToken(params);
 
   // Use custom resolver with full API call tracking and optimization
   const query = `
@@ -460,6 +455,22 @@ async function getProductsFromMesh(params, config) {
   }
 }
 
+/**
+ * Get Commerce admin token using the dedicated auth-token action
+ * @param {Object} params - Action parameters
+ * @returns {Promise<string>} Commerce admin bearer token
+ */
+async function getCommerceToken(params) {
+  const authTokenAction = require('./auth-token/index');
+  const result = await authTokenAction.main(params);
+
+  if (result.statusCode !== 200) {
+    throw new Error(`Token generation failed: ${result.body?.error}`);
+  }
+
+  return result.body.token;
+}
+
 module.exports = {
   fetchAndEnrichProducts,
   getAdminToken,
@@ -467,4 +478,5 @@ module.exports = {
   enrichProducts,
   getProductsFromMesh,
   transformMeshProductsToRestFormat,
+  getCommerceToken,
 };

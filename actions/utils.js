@@ -175,14 +175,21 @@ function buildCommerceUrl(baseUrl, api, endpoint, filters) {
 }
 
 /**
- * Generic Commerce API fetch with Adobe I/O Runtime error handling
+ * Generic Commerce API fetch with Adobe I/O Runtime error handling and token retry
  * @param {string} url - Request URL
  * @param {string} bearerToken - Authorization token
  * @param {string} method - HTTP method
  * @param {string} dataType - Data type for error messages
+ * @param {Object} params - Action parameters for token retry (optional)
  * @returns {Promise<Array>} API response items
  */
-async function fetchCommerceData(url, bearerToken, method = 'GET', dataType = 'data') {
+async function fetchCommerceData(
+  url,
+  bearerToken,
+  method = 'GET',
+  dataType = 'data',
+  params = null
+) {
   try {
     const response = await fetch(url, {
       method,
@@ -191,6 +198,29 @@ async function fetchCommerceData(url, bearerToken, method = 'GET', dataType = 'd
         'Content-Type': 'application/json',
       },
     });
+
+    // If 401 and we have params, try once with fresh token
+    if (response.status === 401 && params) {
+      console.log(`${dataType} call failed with 401, refreshing token and retrying...`);
+      const { getCommerceToken } = require('./commerce');
+      const freshToken = await getCommerceToken(params);
+
+      const retryResponse = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${freshToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!retryResponse.ok) {
+        console.warn(`${dataType} retry fetch failed: ${retryResponse.status}`);
+        return [];
+      }
+
+      const retryResult = await retryResponse.json();
+      return retryResult.items || retryResult || [];
+    }
 
     if (!response.ok) {
       console.warn(`${dataType} fetch failed: ${response.status}`);
