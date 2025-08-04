@@ -21,15 +21,19 @@ async function main(params) {
   const steps = [];
 
   try {
-    // Validate required parameters
-    const requiredParams = ['API_MESH_ENDPOINT', 'MESH_API_KEY'];
-    const requiredHeaders = ['authorization']; // Commerce admin token required in Authorization header
-    const missingParams = checkMissingRequestInputs(params, requiredParams, requiredHeaders);
+    // Validate required parameters (including Commerce admin credentials)
+    const requiredParams = [
+      'API_MESH_ENDPOINT',
+      'MESH_API_KEY',
+      'COMMERCE_ADMIN_USERNAME',
+      'COMMERCE_ADMIN_PASSWORD',
+    ];
+    const missingParams = checkMissingRequestInputs(params, requiredParams);
     if (missingParams) {
       return errorResponse(400, missingParams, logger);
     }
 
-    steps.push('✔ Validated input parameters and authorization token');
+    steps.push('✔ Validated input parameters and Commerce admin credentials');
     logger.info('Starting mesh product export', { useCase: params.useCase });
 
     // Step 1: Fetch products from API Mesh
