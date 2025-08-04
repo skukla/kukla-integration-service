@@ -109,7 +109,7 @@ async function buildProducts(products) {
       if (product.categories && Array.isArray(product.categories)) {
         const categoryNames = product.categories.map((cat) => cat.name || cat.id).filter(Boolean);
         transformed.categories = categoryNames.join(', ');
-        transformed.category_id = product.categories[0]?.id || '';
+        transformed.category_id = product.categories[0]?.name || '';
       } else {
         transformed.categories = '';
         transformed.category_id = '';

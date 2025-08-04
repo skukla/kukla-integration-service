@@ -3,7 +3,7 @@
  * Handles authentication, product fetching, and data enrichment with standardized Adobe patterns
  */
 
-const { buildCommerceUrl, fetchCommerceData } = require('./utils');
+const { fetchCommerceData } = require('./utils');
 
 /**
  * Fetch and enrich products from Adobe Commerce
@@ -117,15 +117,18 @@ async function fetchProducts(params, config, bearerToken) {
 async function enrichProducts(products, params, config, bearerToken) {
   const { baseUrl, api, batching } = config.commerce;
 
-  // Fetch categories and inventory in batches for performance
-  const categoryPromises = [];
-  const inventoryPromises = [];
+  // Extract unique category IDs from all products
+  const categoryIds = new Set();
+  products.forEach((product) => {
+    if (product.extension_attributes && product.extension_attributes.category_links) {
+      product.extension_attributes.category_links.forEach((link) => {
+        categoryIds.add(link.category_id);
+      });
+    }
+  });
 
-  // Batch category fetches
-  for (let i = 0; i < products.length; i += batching.categories) {
-    const batch = products.slice(i, i + batching.categories);
-    categoryPromises.push(fetchCategoriesForProducts(batch, bearerToken, baseUrl, api));
-  }
+  // Fetch inventory in batches for performance
+  const inventoryPromises = [];
 
   // Batch inventory fetches
   for (let i = 0; i < products.length; i += batching.inventory) {
@@ -133,32 +136,35 @@ async function enrichProducts(products, params, config, bearerToken) {
     inventoryPromises.push(fetchInventoryForProducts(batch, bearerToken, baseUrl, api));
   }
 
+  // Fetch category names for all unique category IDs
+  const categoryPromises = Array.from(categoryIds).map((categoryId) =>
+    fetchCategoryById(categoryId, bearerToken, baseUrl, api)
+  );
+
   // Wait for all enrichment data
-  const [categoryResults, inventoryResults] = await Promise.all([
-    Promise.all(categoryPromises),
+  const [inventoryResults, categoryResults] = await Promise.all([
     Promise.all(inventoryPromises),
+    Promise.all(categoryPromises),
   ]);
 
-  // Flatten results
-  const allCategories = categoryResults.flat();
+  // Flatten inventory results
   const allInventory = inventoryResults.flat();
 
   // Create lookup maps for performance
-  const categoryMap = new Map();
   const inventoryMap = new Map();
-
-  allCategories.forEach((cat) => {
-    if (cat.product_id && cat.category_id) {
-      if (!categoryMap.has(cat.product_id)) {
-        categoryMap.set(cat.product_id, []);
-      }
-      categoryMap.get(cat.product_id).push(cat);
-    }
-  });
+  const categoryMap = new Map();
 
   allInventory.forEach((inv) => {
     if (inv.product_id) {
       inventoryMap.set(inv.product_id, inv);
+    }
+  });
+
+  categoryResults.forEach((cat) => {
+    if (cat && cat.id) {
+      // Ensure both string and number keys are handled
+      categoryMap.set(cat.id.toString(), cat);
+      categoryMap.set(cat.id, cat);
     }
   });
 
@@ -170,12 +176,20 @@ async function enrichProducts(products, params, config, bearerToken) {
   const enrichedProducts = products.map((product) => {
     const enriched = { ...product };
 
-    // Add category data
-    const productCategories = categoryMap.get(product.id) || [];
-    enriched.categories = productCategories.map((cat) => ({
-      id: cat.category_id,
-      name: cat.name || `Category ${cat.category_id}`,
-    }));
+    // Add category data from extension_attributes.category_links with fetched names
+    if (product.extension_attributes && product.extension_attributes.category_links) {
+      enriched.categories = product.extension_attributes.category_links.map((link) => {
+        // Try both string and number versions of the category ID
+        const categoryInfo = categoryMap.get(link.category_id) || categoryMap.get(link.category_id.toString());
+        return {
+          id: link.category_id,
+          name: categoryInfo ? categoryInfo.name : `Category ${link.category_id}`,
+          position: link.position,
+        };
+      });
+    } else {
+      enriched.categories = [];
+    }
 
     // Add inventory data
     const inventory = inventoryMap.get(product.id);
@@ -208,17 +222,37 @@ async function enrichProducts(products, params, config, bearerToken) {
 }
 
 /**
- * Fetch categories for a batch of products
- * @param {Array} products - Product batch
+ * Fetch category by ID
+ * @param {string} categoryId - Category ID
  * @param {string} bearerToken - Admin bearer token
  * @param {string} baseUrl - Commerce base URL
  * @param {Object} api - API configuration
- * @returns {Promise<Array>} Category data
+ * @returns {Promise<Object|null>} Category data
  */
-async function fetchCategoriesForProducts(products, bearerToken, baseUrl, api) {
-  const productIds = products.map((p) => p.id).join(',');
-  const url = buildCommerceUrl(baseUrl, api, '/products/categories', { product_id: productIds });
-  return await fetchCommerceData(url, bearerToken, 'GET', 'Categories');
+async function fetchCategoryById(categoryId, bearerToken, baseUrl, api) {
+  const url = `${baseUrl}/rest/${api.version}/categories/${categoryId}`;
+  
+  try {
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${bearerToken}` }
+    });
+
+    if (!response.ok) {
+      console.warn(`Category fetch failed for ID ${categoryId}: ${response.status}`);
+      return null;
+    }
+
+    const category = await response.json();
+    return {
+      id: category.id,
+      name: category.name,
+      level: category.level,
+      path: category.path,
+    };
+  } catch (error) {
+    console.warn(`Category fetch failed for ID ${categoryId}: ${error.message}`);
+    return null;
+  }
 }
 
 /**
@@ -230,9 +264,38 @@ async function fetchCategoriesForProducts(products, bearerToken, baseUrl, api) {
  * @returns {Promise<Array>} Inventory data
  */
 async function fetchInventoryForProducts(products, bearerToken, baseUrl, api) {
-  const skus = products.map((p) => p.sku).join(',');
-  const url = buildCommerceUrl(baseUrl, api, api.paths.stockItems, { product_sku: skus });
-  return await fetchCommerceData(url, bearerToken, 'GET', 'Inventory');
+  const inventoryPromises = products.map(async (product) => {
+    const url = `${baseUrl}/rest/${api.version}/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]=${product.sku}&searchCriteria[filter_groups][0][filters][0][condition_type]=eq`;
+    
+    try {
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${bearerToken}` }
+      });
+      
+      if (!response.ok) {
+        return { product_id: product.id, sku: product.sku, qty: 0, is_in_stock: false };
+      }
+      
+      const result = await response.json();
+      const sourceItems = result.items || [];
+      
+      // Sum quantities from all source items for this SKU
+      const totalQty = sourceItems.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+      const isInStock = sourceItems.some(item => item.status === 1); // 1 = enabled/in stock
+      
+      return {
+        product_id: product.id,
+        sku: product.sku,
+        qty: totalQty,
+        is_in_stock: isInStock
+      };
+    } catch (error) {
+      console.warn(`Inventory fetch failed for ${product.sku}: ${error.message}`);
+      return { product_id: product.id, sku: product.sku, qty: 0, is_in_stock: false };
+    }
+  });
+  
+  return await Promise.all(inventoryPromises);
 }
 
 /**
