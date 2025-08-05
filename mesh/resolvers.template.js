@@ -6,6 +6,15 @@
  * Enhanced with automatic URL enrichment for complete image paths.
  */
 
+// GraphQL query fragments (inlined during build - API Mesh doesn't support require())
+const QUERIES = {
+  productsList: {{{PRODUCTS_LIST_QUERY}}},
+  categoriesBatch: {{{CATEGORIES_BATCH_QUERY}}},
+  categoryIndividual: {{{CATEGORY_INDIVIDUAL_QUERY}}},
+  inventoryBatch: {{{INVENTORY_BATCH_QUERY}}},
+  inventoryIndividual: {{{INVENTORY_INDIVIDUAL_QUERY}}},
+};
+
 // ============================================================================
 // CORE RESOLVER FUNCTIONS - Simplified approach
 // ============================================================================
@@ -86,33 +95,7 @@ async function fetchProducts(context, info, pageSize = 100) {
     args: { pageSize: pageSize },
     context: context,
     info: info,
-    selectionSet: `{
-      items {
-        sku
-        name
-        price
-        status
-        type_id
-        created_at
-        updated_at
-        custom_attributes {
-          attribute_code
-          value
-        }
-        extension_attributes {
-          category_links {
-            category_id
-            position
-          }
-        }
-        media_gallery_entries {
-          file
-          position
-          types
-        }
-      }
-      total_count
-    }`,
+    selectionSet: QUERIES.productsList,
   });
 
   if (!response?.items || !Array.isArray(response.items)) {
@@ -136,12 +119,7 @@ async function fetchCategories(context, info, categoryIds) {
         args: { categoryIds: categoryIds.join(',') },
         context: context,
         info: info,
-        selectionSet: `{
-          items {
-            id
-            name
-          }
-        }`,
+        selectionSet: QUERIES.categoriesBatch,
       });
 
       if (batchResponse?.items) {
@@ -166,10 +144,7 @@ async function fetchCategories(context, info, categoryIds) {
       args: { categoryId: categoryId },
       context: context,
       info: info,
-      selectionSet: `{
-        id
-        name
-      }`,
+      selectionSet: QUERIES.categoryIndividual,
     })
   );
 
@@ -200,13 +175,7 @@ async function fetchInventory(context, info, skus) {
         args: { skus: skus.join(',') },
         context: context,
         info: info,
-        selectionSet: `{
-          items {
-            sku
-            quantity
-            status
-          }
-        }`,
+        selectionSet: QUERIES.inventoryBatch,
       });
 
       if (batchResponse?.items) {
@@ -234,13 +203,7 @@ async function fetchInventory(context, info, skus) {
       args: { sku: sku },
       context: context,
       info: info,
-      selectionSet: `{
-        items {
-          sku
-          quantity
-          status
-        }
-      }`,
+      selectionSet: QUERIES.inventoryIndividual,
     })
   );
 
