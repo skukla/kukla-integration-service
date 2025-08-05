@@ -81,3 +81,4 @@ dev.log
 # Workspace
 kukla-integration-service.code-workspace
 workspace.json.mesh-hash
+.mesh-hash
