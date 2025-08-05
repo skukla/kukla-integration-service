@@ -1,18 +1,22 @@
 const fs = require('fs');
 const path = require('path');
 
-const createConfig = require('./config');
+const createConfig = require('../config');
 
 // Create configuration with environment defaults for mesh config generation
 const config = createConfig({
   COMMERCE_BASE_URL: process.env.COMMERCE_BASE_URL || 'https://citisignal-com774.adobedemo.com',
 });
 
-// Load external GraphQL schema file
-const enrichedProductsSchema = fs.readFileSync(
-  path.join(__dirname, 'src/mesh/schema/enriched-products.graphql'),
-  'utf8'
-);
+// Load external GraphQL resolver types from multiple files
+const typesDir = path.join(__dirname, 'types');
+const productTypes = fs.readFileSync(path.join(typesDir, 'products.graphql'), 'utf8');
+const responseTypes = fs.readFileSync(path.join(typesDir, 'responses.graphql'), 'utf8');
+const performanceTypes = fs.readFileSync(path.join(typesDir, 'performance.graphql'), 'utf8');
+const queryTypes = fs.readFileSync(path.join(typesDir, 'queries.graphql'), 'utf8');
+
+// Combine all type definitions
+const resolverTypes = [productTypes, responseTypes, performanceTypes, queryTypes].join('\n\n');
 
 module.exports = {
   // Enhanced response configuration with native mesh features
@@ -41,7 +45,7 @@ module.exports = {
                   type: 'integer',
                 },
               },
-              responseSchema: './src/mesh/schema/products-response.json',
+              responseSchema: './schema/products-response.json',
             },
           ],
         },
@@ -67,7 +71,7 @@ module.exports = {
                   type: 'integer',
                 },
               },
-              responseSchema: './src/mesh/schema/cat-response.json',
+              responseSchema: './schema/category-response.json',
             },
             // Add batch category endpoint for better performance
             {
@@ -80,7 +84,7 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/cat-batch-response.json',
+              responseSchema: './schema/category-batch-resp.json',
             },
           ],
         },
@@ -106,7 +110,7 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/stock-item-response.json',
+              responseSchema: './schema/stock-item-response.json',
             },
             // Add batch inventory endpoint for better performance
             {
@@ -119,14 +123,14 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/inv-batch-resp.json',
+              responseSchema: './schema/inventory-batch-resp.json',
             },
           ],
         },
       },
     },
   ],
-  // External GraphQL schema file for custom resolver types
-  additionalTypeDefs: enrichedProductsSchema,
-  additionalResolvers: ['./mesh-resolvers.js'],
+  // External GraphQL resolver types for custom resolvers
+  additionalTypeDefs: resolverTypes,
+  additionalResolvers: ['./resolvers.js'],
 };

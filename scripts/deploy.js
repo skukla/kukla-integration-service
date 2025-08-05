@@ -95,7 +95,7 @@ function storeMeshHash(hash) {
 
 async function updateMeshWithPolling(isProd = false) {
   const environment = isProd ? 'production' : 'staging';
-  const meshCommand = `echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
+  const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
 
   if (!(await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`))) {
     return false;
@@ -258,7 +258,7 @@ async function deployMesh(isProd = false) {
   }
 
   // Step 2: Update mesh configuration
-  const meshCommand = `echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
+  const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
   if (!(await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`))) {
     return false;
   }

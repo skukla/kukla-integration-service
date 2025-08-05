@@ -57,7 +57,7 @@ const NOTIFICATION_CONFIG = {
  * @param {Function} [options.onClose] - Close button callback
  */
 export function showNotification(message, options = {}) {
-  // Handle legacy format where options was just the type
+  // Handle string shorthand for type
   if (typeof options === 'string') {
     options = { type: options };
   }

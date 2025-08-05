@@ -6,15 +6,15 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
-const { getProductsFromMesh } = require('../commerce');
-const { createCsv, buildProducts } = require('../csv');
-const { storeCsv } = require('../storage');
+const { getProductsFromMesh } = require('../../lib/commerce');
+const { createCsv, buildProducts } = require('../../lib/csv');
+const { storeCsv } = require('../../lib/storage');
 const {
   errorResponse,
   successResponse,
   checkMissingRequestInputs,
   formatFileSize,
-} = require('../utils');
+} = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('get-products-mesh', { level: params.LOG_LEVEL || 'info' });
@@ -53,7 +53,7 @@ async function main(params) {
     logger.info('Created CSV', { size: csvData.content.length });
 
     // Step 4: Store CSV file
-    const storageResult = await storeCsv(csvData.content, params, config);
+    const storageResult = await storeCsv(csvData.content, config);
 
     if (!storageResult.stored) {
       const errorMsg = `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`;

@@ -105,8 +105,8 @@ async function generateMeshResolver() {
     spinner: 'dots',
   }).start();
 
-  const templatePath = path.join(__dirname, '../mesh-resolvers.template.js');
-  const outputPath = path.join(__dirname, '../mesh-resolvers.js');
+  const templatePath = path.join(__dirname, '../mesh/resolvers.template.js');
+  const outputPath = path.join(__dirname, '../mesh/resolvers.js');
 
   if (!fs.existsSync(templatePath)) {
     spinner.stop();
@@ -119,6 +119,20 @@ async function generateMeshResolver() {
   const config = createConfig(process.env);
 
   let template = fs.readFileSync(templatePath, 'utf8');
+
+  // Load GraphQL queries for inlining (API Mesh doesn't support require())
+  const queriesDir = path.join(__dirname, '../mesh/queries');
+  const queries = {
+    productsList: fs.readFileSync(path.join(queriesDir, 'products-list.gql'), 'utf8').trim(),
+    categoriesBatch: fs.readFileSync(path.join(queriesDir, 'categories-batch.gql'), 'utf8').trim(),
+    categoryIndividual: fs
+      .readFileSync(path.join(queriesDir, 'category-individual.gql'), 'utf8')
+      .trim(),
+    inventoryBatch: fs.readFileSync(path.join(queriesDir, 'inventory-batch.gql'), 'utf8').trim(),
+    inventoryIndividual: fs
+      .readFileSync(path.join(queriesDir, 'inventory-individual.gql'), 'utf8')
+      .trim(),
+  };
 
   // Replace configuration placeholders
   template = template.replace(/\{\{\{COMMERCE_BASE_URL\}\}\}/g, config.commerce.baseUrl);
@@ -135,6 +149,28 @@ async function generateMeshResolver() {
     config.products.maxCategoriesDisplay
   );
 
+  // Replace GraphQL query placeholders with inlined queries
+  template = template.replace(
+    /\{\{\{PRODUCTS_LIST_QUERY\}\}\}/g,
+    JSON.stringify(queries.productsList)
+  );
+  template = template.replace(
+    /\{\{\{CATEGORIES_BATCH_QUERY\}\}\}/g,
+    JSON.stringify(queries.categoriesBatch)
+  );
+  template = template.replace(
+    /\{\{\{CATEGORY_INDIVIDUAL_QUERY\}\}\}/g,
+    JSON.stringify(queries.categoryIndividual)
+  );
+  template = template.replace(
+    /\{\{\{INVENTORY_BATCH_QUERY\}\}\}/g,
+    JSON.stringify(queries.inventoryBatch)
+  );
+  template = template.replace(
+    /\{\{\{INVENTORY_INDIVIDUAL_QUERY\}\}\}/g,
+    JSON.stringify(queries.inventoryIndividual)
+  );
+
   fs.writeFileSync(outputPath, template);
 
   spinner.stop();
@@ -149,7 +185,7 @@ async function generateMeshConfig() {
 
   try {
     // Load mesh.config.js
-    const meshConfigPath = path.join(__dirname, '../mesh.config.js');
+    const meshConfigPath = path.join(__dirname, '../mesh/config.js');
     if (!fs.existsSync(meshConfigPath)) {
       spinner.stop();
       console.log(format.warning('No mesh.config.js found, skipping'));
@@ -164,7 +200,7 @@ async function generateMeshConfig() {
       meshConfig: meshConfig,
     };
 
-    fs.writeFileSync(path.join(__dirname, '../mesh.json'), JSON.stringify(meshJson, null, 2));
+    fs.writeFileSync(path.join(__dirname, '../mesh/mesh.json'), JSON.stringify(meshJson, null, 2));
 
     spinner.stop();
     console.log(format.success('Mesh configuration generated (mesh.json)'));

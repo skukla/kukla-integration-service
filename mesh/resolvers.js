@@ -6,6 +6,16 @@
  * Enhanced with automatic URL enrichment for complete image paths.
  */
 
+// GraphQL query fragments (inlined during build - API Mesh doesn't support require())
+const QUERIES = {
+  productsList:
+    '{\n  items {\n    sku\n    name\n    price\n    status\n    type_id\n    created_at\n    updated_at\n    custom_attributes {\n      attribute_code\n      value\n    }\n    extension_attributes {\n      category_links {\n        category_id\n        position\n      }\n    }\n    media_gallery_entries {\n      file\n      position\n      types\n    }\n  }\n  total_count\n}',
+  categoriesBatch: '{\n  items {\n    id\n    name\n  }\n}',
+  categoryIndividual: '{\n  id\n  name\n}',
+  inventoryBatch: '{\n  items {\n    sku\n    quantity\n    status\n  }\n}',
+  inventoryIndividual: '{\n  items {\n    sku\n    quantity\n    status\n  }\n}',
+};
+
 // ============================================================================
 // CORE RESOLVER FUNCTIONS - Simplified approach
 // ============================================================================
@@ -86,33 +96,7 @@ async function fetchProducts(context, info, pageSize = 100) {
     args: { pageSize: pageSize },
     context: context,
     info: info,
-    selectionSet: `{
-      items {
-        sku
-        name
-        price
-        status
-        type_id
-        created_at
-        updated_at
-        custom_attributes {
-          attribute_code
-          value
-        }
-        extension_attributes {
-          category_links {
-            category_id
-            position
-          }
-        }
-        media_gallery_entries {
-          file
-          position
-          types
-        }
-      }
-      total_count
-    }`,
+    selectionSet: QUERIES.productsList,
   });
 
   if (!response?.items || !Array.isArray(response.items)) {
@@ -136,12 +120,7 @@ async function fetchCategories(context, info, categoryIds) {
         args: { categoryIds: categoryIds.join(',') },
         context: context,
         info: info,
-        selectionSet: `{
-          items {
-            id
-            name
-          }
-        }`,
+        selectionSet: QUERIES.categoriesBatch,
       });
 
       if (batchResponse?.items) {
@@ -166,10 +145,7 @@ async function fetchCategories(context, info, categoryIds) {
       args: { categoryId: categoryId },
       context: context,
       info: info,
-      selectionSet: `{
-        id
-        name
-      }`,
+      selectionSet: QUERIES.categoryIndividual,
     })
   );
 
@@ -200,13 +176,7 @@ async function fetchInventory(context, info, skus) {
         args: { skus: skus.join(',') },
         context: context,
         info: info,
-        selectionSet: `{
-          items {
-            sku
-            quantity
-            status
-          }
-        }`,
+        selectionSet: QUERIES.inventoryBatch,
       });
 
       if (batchResponse?.items) {
@@ -234,13 +204,7 @@ async function fetchInventory(context, info, skus) {
       args: { sku: sku },
       context: context,
       info: info,
-      selectionSet: `{
-        items {
-          sku
-          quantity
-          status
-        }
-      }`,
+      selectionSet: QUERIES.inventoryIndividual,
     })
   );
 
@@ -285,12 +249,26 @@ function enrichProducts(products, categoryMap, inventoryMap) {
 
     // Enrich media gallery entries with complete URLs
     const enrichedMediaGallery = product.media_gallery_entries
-      ? product.media_gallery_entries.map((entry) => ({
-          ...entry,
-          url: entry.file
-            ? 'https://citisignal-com774.adobedemo.com/media/catalog/product' + entry.file
-            : '',
-        }))
+      ? product.media_gallery_entries.map((entry) => {
+          let url = '';
+
+          // If entry.file is already a full URL (Adobe Assets), use it as-is
+          if (
+            entry.file &&
+            (entry.file.startsWith('http://') || entry.file.startsWith('https://'))
+          ) {
+            url = entry.file;
+          }
+          // Otherwise, construct the URL from file path (legacy Commerce media)
+          else if (entry.file) {
+            url = 'https://citisignal-com774.adobedemo.com/media/catalog/product' + entry.file;
+          }
+
+          return {
+            ...entry,
+            url,
+          };
+        })
       : [];
 
     return {

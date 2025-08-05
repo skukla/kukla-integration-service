@@ -9,6 +9,7 @@
  * @param {Object} params - Action parameters containing environment variables
  * @returns {Object} Configuration object
  */
+// eslint-disable-next-line max-lines-per-function
 function createConfig(params = {}) {
   return {
     // Commerce API Configuration
@@ -59,8 +60,12 @@ function createConfig(params = {}) {
     products: {
       expectedCount: 119,
       maxCategoriesDisplay: 10,
-      exportFields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
       defaultFilename: 'products.csv',
+    },
+
+    // CSV Export Configuration (format-specific data moved to format implementations)
+    csv: {
+      // Future: configuration for multiple formats could go here
     },
   };
 }

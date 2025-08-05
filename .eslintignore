@@ -1,8 +1,11 @@
 # Template files with template syntax
 mesh-resolvers.template.js
+mesh/resolvers.template.js
 
 # Generated files  
 mesh-resolvers.js
+mesh/resolvers.js
+mesh/mesh.json
 web-src/src/config/generated/
 
 # Dependencies

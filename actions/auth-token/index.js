@@ -9,8 +9,8 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
-const { getAdminToken } = require('../commerce');
-const { errorResponse, successResponse, checkMissingRequestInputs } = require('../utils');
+const { getCommerceToken } = require('../../lib/commerce');
+const { errorResponse, successResponse, checkMissingRequestInputs } = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('auth-token', { level: params.LOG_LEVEL || 'info' });
@@ -27,7 +27,7 @@ async function main(params) {
 
     // Generate Commerce admin token
     const config = createConfig(params);
-    const token = await getAdminToken(params, config);
+    const token = await getCommerceToken(params, config);
 
     logger.info('Commerce admin token generated successfully');
 

@@ -1,0 +1,37 @@
+query GetEnrichedProducts($pageSize: Int) {
+  mesh_products_enriched(pageSize: $pageSize) {
+    products {
+      sku
+      name
+      price
+      qty
+      categories {
+        id
+        name
+      }
+      media_gallery_entries {
+        file
+        url
+        position
+        types
+      }
+      inventory {
+        qty
+        is_in_stock
+      }
+    }
+    total_count
+    message
+    performance {
+      processedProducts
+      apiCalls
+      method
+      totalApiCalls
+      productsApiCalls
+      categoriesApiCalls
+      inventoryApiCalls
+      clientCalls
+      dataSourcesUnified
+    }
+  }
+}
