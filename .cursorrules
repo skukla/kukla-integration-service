@@ -116,6 +116,30 @@ const data = await client.request(gql`query { ... }`);
 - No mesh integration abstractions
 - No custom GraphQL wrappers
 
+## URL Management
+
+### ✅ CORRECT: Configuration-Based URLs
+```javascript
+// Backend Actions: Use config directly
+const productsUrl = `${config.commerce.baseUrl}/rest/${config.commerce.api.version}/products`;
+const meshData = await client.request(config.mesh.endpoint, query);
+```
+
+### ✅ CORRECT: HTMX Dynamic URLs Only
+```javascript
+// HTMX HTML generation: Only place that builds URLs
+function buildDownloadUrl(fileName, params) {
+  const host = params.__OW_API_HOST || 'adobeioruntime.net';
+  const namespace = params.__OW_NAMESPACE || params.AIO_runtime_namespace;
+  return `https://${host}/api/v1/web/${namespace}/kukla-integration-service/download-file?fileName=${encodeURIComponent(fileName)}`;
+}
+```
+
+### ❌ WRONG: URL Builder Abstractions
+- No `buildRuntimeUrl()` utilities
+- No `buildCommerceUrl()` helpers
+- No URL building in backend actions
+
 ## What to Keep (Valuable Business Logic)
 - ✅ `buildProducts()` transformation logic
 - ✅ `createCsv()` generation

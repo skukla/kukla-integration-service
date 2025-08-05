@@ -109,9 +109,13 @@ This project is migrating from over-engineered patterns to Adobe App Builder sta
 
 ### URL Management
 
-- **Frontend Actions**: Always use absolute URLs via `getActionUrl()` from `web-src/src/js/core/url.js`
-- **Backend Actions**: Use `buildRuntimeUrl()` from `src/core/routing/index.js`
-- **Commerce APIs**: Use `buildCommerceUrl()` for proper Commerce API URLs
+- **Backend Actions**: Use configuration objects directly - no URL builders needed
+  - Commerce APIs: `config.commerce.baseUrl` + simple concatenation
+  - API Mesh: `config.mesh.endpoint` directly
+  - Example: `${config.commerce.baseUrl}/rest/${config.commerce.api.version}/products`
+- **HTMX HTML Generation**: Use `buildDownloadUrl()` for dynamic runtime URLs only
+  - Required for server-side HTML that generates client-side download links
+  - Handles dynamic namespace/host resolution
 
 ### Storage Operations
 
