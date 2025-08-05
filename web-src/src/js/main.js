@@ -8,7 +8,7 @@ import { config } from '../config/generated/config.js';
 // NOTIFICATION SYSTEM
 // ============================================================================
 function showNotification(message, options = {}) {
-  // Handle legacy format where options was just the type
+  // Handle string shorthand for type
   if (typeof options === 'string') {
     options = { type: options };
   }
@@ -556,9 +556,9 @@ function handleDownloadWithSpinner(buttonElement, filename) {
   }, 1500); // 1.5 seconds - enough time for download to start
 }
 
-// Legacy download handler (kept for compatibility)
+// Download handler
 function handleDownloadClick(filename) {
-  // Fallback to simple notification if HTMX tracking fails
+  // Show notification after download initiated
   setTimeout(() => {
     showNotification(`${filename} downloaded successfully`, 'success');
   }, 500);
