@@ -7,7 +7,6 @@
 // URL management
 export {
   getActionUrl,
-  getDownloadUrl,
   getDeleteUrl,
   buildDownloadUrl,
   getConfig as getUrlConfig,

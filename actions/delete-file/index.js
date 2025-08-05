@@ -6,9 +6,9 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
-const { generateErrorHTML, createHTMLResponse } = require('../htmx');
-const { deleteFile, listCsvFiles } = require('../storage');
-const { errorResponse, checkMissingRequestInputs } = require('../utils');
+const { generateErrorHTML, createHTMLResponse } = require('../../lib/htmx');
+const { deleteFile, listCsvFiles } = require('../../lib/storage');
+const { errorResponse, checkMissingRequestInputs } = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('delete-file', { level: params.LOG_LEVEL || 'info' });
@@ -25,13 +25,13 @@ async function main(params) {
 
     // Step 1: Delete file from storage (simplified)
     const config = createConfig(params);
-    await deleteFile(params.fileName, params, config);
+    await deleteFile(params.fileName, config);
     logger.info('File deleted successfully', { fileName: params.fileName });
 
     // Step 2: Get updated file list and generate response
-    const remainingFiles = await listCsvFiles(params, config);
+    const remainingFiles = await listCsvFiles(config);
     // For modal delete workflow, return just the file rows (not complete browser structure)
-    const { generateFileBrowserHTML } = require('../htmx');
+    const { generateFileBrowserHTML } = require('../../lib/htmx');
     const html = generateFileBrowserHTML(remainingFiles);
 
     return createHTMLResponse(html);

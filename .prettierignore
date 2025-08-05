@@ -13,4 +13,5 @@ build/
 web-src/src/config/generated/
 
 # Template files with placeholders
-mesh-resolvers.template.js 
+mesh-resolvers.template.js
+mesh/resolvers.template.js 

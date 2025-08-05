@@ -6,15 +6,15 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
-const { fetchAndEnrichProducts } = require('../commerce');
-const { createCsv, buildProducts } = require('../csv');
-const { storeCsv } = require('../storage');
+const { fetchAndEnrichProducts } = require('../../lib/commerce');
+const { createCsv, buildProducts } = require('../../lib/csv');
+const { storeCsv } = require('../../lib/storage');
 const {
   errorResponse,
   successResponse,
   checkMissingRequestInputs,
   formatFileSize,
-} = require('../utils');
+} = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('get-products', { level: params.LOG_LEVEL || 'info' });
@@ -43,17 +43,17 @@ async function main(params) {
     });
 
     // Step 2: Build products with proper transformation
-    const builtProducts = await buildProducts(result.products);
+    const builtProducts = await buildProducts(result.products, config);
     steps.push(`✔ Built ${builtProducts.length} products for export`);
     logger.info('Built products', { count: builtProducts.length });
 
     // Step 3: Create CSV
-    const csvData = await createCsv(builtProducts);
+    const csvData = await createCsv(builtProducts, config);
     steps.push(`✔ Created CSV (${formatFileSize(csvData.content.length)})`);
     logger.info('Created CSV', { size: csvData.content.length });
 
     // Step 4: Store CSV file
-    const storageResult = await storeCsv(csvData.content, params, config);
+    const storageResult = await storeCsv(csvData.content, config);
 
     if (!storageResult.stored) {
       const errorMsg = `Storage operation failed: ${storageResult.error?.message || 'Unknown storage error'}`;

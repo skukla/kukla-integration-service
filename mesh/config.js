@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const createConfig = require('./config');
+const createConfig = require('../config');
 
 // Create configuration with environment defaults for mesh config generation
 const config = createConfig({
@@ -10,7 +10,7 @@ const config = createConfig({
 
 // Load external GraphQL schema file
 const enrichedProductsSchema = fs.readFileSync(
-  path.join(__dirname, 'src/mesh/schema/enriched-products.graphql'),
+  path.join(__dirname, 'schema/enriched-products.graphql'),
   'utf8'
 );
 
@@ -41,7 +41,7 @@ module.exports = {
                   type: 'integer',
                 },
               },
-              responseSchema: './src/mesh/schema/products-response.json',
+              responseSchema: './mesh/schema/products-response.json',
             },
           ],
         },
@@ -67,7 +67,7 @@ module.exports = {
                   type: 'integer',
                 },
               },
-              responseSchema: './src/mesh/schema/cat-response.json',
+              responseSchema: './mesh/schema/cat-response.json',
             },
             // Add batch category endpoint for better performance
             {
@@ -80,7 +80,7 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/cat-batch-response.json',
+              responseSchema: './mesh/schema/cat-batch-response.json',
             },
           ],
         },
@@ -106,7 +106,7 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/stock-item-response.json',
+              responseSchema: './mesh/schema/stock-item-response.json',
             },
             // Add batch inventory endpoint for better performance
             {
@@ -119,7 +119,7 @@ module.exports = {
                   type: 'string',
                 },
               },
-              responseSchema: './src/mesh/schema/inv-batch-resp.json',
+              responseSchema: './mesh/schema/inv-batch-resp.json',
             },
           ],
         },
@@ -128,5 +128,5 @@ module.exports = {
   ],
   // External GraphQL schema file for custom resolver types
   additionalTypeDefs: enrichedProductsSchema,
-  additionalResolvers: ['./mesh-resolvers.js'],
+  additionalResolvers: ['./mesh/resolvers.js'],
 };

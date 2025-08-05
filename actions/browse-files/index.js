@@ -6,9 +6,9 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
-const { generateFileBrowserHTML, createHTMLResponse } = require('../htmx');
-const { listCsvFiles } = require('../storage');
-const { errorResponse, checkMissingRequestInputs } = require('../utils');
+const { generateFileBrowserHTML, createHTMLResponse } = require('../../lib/htmx');
+const { listCsvFiles } = require('../../lib/storage');
+const { errorResponse, checkMissingRequestInputs } = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('browse-files', { level: params.LOG_LEVEL || 'info' });
@@ -25,7 +25,7 @@ async function main(params) {
 
     // Step 1: Get list of CSV files from storage (simplified)
     const config = createConfig(params);
-    const fileList = await listCsvFiles(params, config);
+    const fileList = await listCsvFiles(config);
     logger.info('Retrieved file list', { count: fileList.length });
 
     // Step 2: Generate and return HTML for HTMX

@@ -1,12 +1,14 @@
 /**
- * Adobe App Builder Action: Download files from storage
+ * Adobe App Builder Action: Download files from S3 storage
  * Follows Adobe standard patterns with direct exports.main
  */
 
 const { Core } = require('@adobe/aio-sdk');
+const { GetObjectCommand } = require('@aws-sdk/client-s3');
 
 const createConfig = require('../../config');
-const { errorResponse, checkMissingRequestInputs } = require('../utils');
+const { createS3Client } = require('../../lib/storage');
+const { errorResponse, checkMissingRequestInputs } = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('download-file', { level: params.LOG_LEVEL || 'info' });
@@ -21,45 +23,23 @@ async function main(params) {
 
     logger.info('Starting file download', { fileName: params.fileName });
 
-    // Get configuration and use the same storage provider as other actions
+    // Get configuration for S3
     const config = createConfig(params);
-    const provider = config.storage.provider;
 
     // Clean the filename (remove public/ prefix if present)
     const cleanFileName = params.fileName.replace(/^public\//, '');
 
-    let fileContent;
+    // Download from S3 using centralized client
+    const s3Client = createS3Client(config);
+    const getCommand = new GetObjectCommand({
+      Bucket: config.s3.bucketName,
+      Key: cleanFileName,
+    });
 
-    if (provider === 's3') {
-      // Use S3 storage
-      const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
-      const s3Config = {
-        region: config.s3.region,
-        credentials: {
-          accessKeyId: config.s3.accessKeyId,
-          secretAccessKey: config.s3.secretAccessKey,
-        },
-      };
-      const s3Client = new S3Client(s3Config);
-      const getCommand = new GetObjectCommand({
-        Bucket: config.s3.bucketName,
-        Key: cleanFileName,
-      });
-      const response = await s3Client.send(getCommand);
-      fileContent = await response.Body.transformToByteArray();
-    } else {
-      // Use Adobe I/O Files
-      const { Files } = require('@adobe/aio-sdk');
-      const files = await Files.init({
-        ow: {
-          namespace: params.__ow_namespace,
-          auth: params.__ow_api_key,
-        },
-      });
-      fileContent = await files.read(cleanFileName);
-    }
+    const response = await s3Client.send(getCommand);
+    const fileContent = await response.Body.transformToByteArray();
 
-    logger.info('File download completed', { fileName: params.fileName, provider });
+    logger.info('File download completed', { fileName: params.fileName });
 
     // Ensure content is properly encoded
     const contentBuffer = Buffer.isBuffer(fileContent)

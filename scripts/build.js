@@ -105,8 +105,8 @@ async function generateMeshResolver() {
     spinner: 'dots',
   }).start();
 
-  const templatePath = path.join(__dirname, '../mesh-resolvers.template.js');
-  const outputPath = path.join(__dirname, '../mesh-resolvers.js');
+  const templatePath = path.join(__dirname, '../mesh/resolvers.template.js');
+  const outputPath = path.join(__dirname, '../mesh/resolvers.js');
 
   if (!fs.existsSync(templatePath)) {
     spinner.stop();
@@ -149,7 +149,7 @@ async function generateMeshConfig() {
 
   try {
     // Load mesh.config.js
-    const meshConfigPath = path.join(__dirname, '../mesh.config.js');
+    const meshConfigPath = path.join(__dirname, '../mesh/config.js');
     if (!fs.existsSync(meshConfigPath)) {
       spinner.stop();
       console.log(format.warning('No mesh.config.js found, skipping'));
@@ -164,7 +164,7 @@ async function generateMeshConfig() {
       meshConfig: meshConfig,
     };
 
-    fs.writeFileSync(path.join(__dirname, '../mesh.json'), JSON.stringify(meshJson, null, 2));
+    fs.writeFileSync(path.join(__dirname, '../mesh/mesh.json'), JSON.stringify(meshJson, null, 2));
 
     spinner.stop();
     console.log(format.success('Mesh configuration generated (mesh.json)'));
