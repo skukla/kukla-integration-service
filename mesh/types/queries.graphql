@@ -1,0 +1,5 @@
+extend type Query {
+  mesh_products_enriched(pageSize: Int): EnrichedProductsResponse
+  mesh_products_basic: BasicProductsResponse
+  mesh_categories(categoryIds: [Int]): CategoriesResponse
+}

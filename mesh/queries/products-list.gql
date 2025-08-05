@@ -1,0 +1,27 @@
+{
+  items {
+    sku
+    name
+    price
+    status
+    type_id
+    created_at
+    updated_at
+    custom_attributes {
+      attribute_code
+      value
+    }
+    extension_attributes {
+      category_links {
+        category_id
+        position
+      }
+    }
+    media_gallery_entries {
+      file
+      position
+      types
+    }
+  }
+  total_count
+}

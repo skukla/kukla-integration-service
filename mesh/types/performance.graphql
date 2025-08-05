@@ -1,0 +1,27 @@
+type PerformanceMetrics {
+  processedProducts: Int
+  apiCalls: Int
+  method: String
+  executionTime: Int
+  totalTime: Int
+  productsApiCalls: Int
+  categoriesApiCalls: Int
+  inventoryApiCalls: Int
+  totalApiCalls: Int
+  uniqueCategories: Int
+  productCount: Int
+  clientCalls: Int
+  dataSourcesUnified: Int
+  cacheHitRate: Float
+  categoriesCached: Int
+  categoriesFetched: Int
+  dataFreshness: String
+  meshOptimizations: String
+  batchOptimizations: BatchOptimizations
+}
+
+type BatchOptimizations {
+  categoriesBatched: Boolean
+  inventoryBatched: Boolean
+  apiCallsReduced: Int
+}
