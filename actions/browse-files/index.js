@@ -29,7 +29,7 @@ async function main(params) {
     logger.info('Retrieved file list', { count: fileList.length });
 
     // Step 2: Generate and return HTML for HTMX
-    const html = generateFileBrowserHTML(fileList, config);
+    const html = generateFileBrowserHTML(fileList, params);
 
     return createHTMLResponse(html);
   } catch (error) {

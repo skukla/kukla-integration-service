@@ -32,7 +32,7 @@ async function main(params) {
     const remainingFiles = await listCsvFiles(config);
     // For modal delete workflow, return just the file rows (not complete browser structure)
     const { generateFileBrowserHTML } = require('../../lib/htmx');
-    const html = generateFileBrowserHTML(remainingFiles);
+    const html = generateFileBrowserHTML(remainingFiles, params);
 
     return createHTMLResponse(html);
   } catch (error) {
