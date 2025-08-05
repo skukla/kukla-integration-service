@@ -60,89 +60,12 @@ function createConfig(params = {}) {
     products: {
       expectedCount: 119,
       maxCategoriesDisplay: 10,
-      exportFields: ['sku', 'name', 'price', 'qty', 'categories', 'images'],
       defaultFilename: 'products.csv',
     },
 
-    // CSV Export Configuration
+    // CSV Export Configuration (format-specific data moved to format implementations)
     csv: {
-      // RECS header rows that must appear before the data
-      recsHeaders: [
-        '## RECSRecommendations Upload File',
-        "## RECS''## RECS'' indicates a Recommendations pre-process header. Please do not remove these lines.",
-        '## RECS',
-        '## RECSUse this file to upload product display information to Recommendations. Each product has its own row. Each line must contain 19 values and if not all are filled a space should be left.',
-        "## RECSThe last 100 columns (entity.custom1 - entity.custom100) are custom. The name 'customN' can be replaced with a custom name such as 'onSale' or 'brand'.",
-        "## RECSIf the products already exist in Recommendations then changes uploaded here will override the data in Recommendations. Any new attributes entered here will be added to the product''s entry in Recommendations.",
-      ],
-
-      // CSV header definitions for product export
-      headers: [
-        { id: 'sku', title: '##RECSentity.id' },
-        { id: 'name', title: 'entity.name' },
-        { id: 'category_id', title: 'entity.categoryId' },
-        { id: 'message', title: 'entity.message' },
-        { id: 'thumbnail_url', title: 'entity.thumbnailUrl' },
-        { id: 'value', title: 'entity.value' },
-        { id: 'page_url', title: 'entity.pageUrl' },
-        { id: 'inventory', title: 'entity.inventory' },
-        { id: 'margin', title: 'entity.margin' },
-        { id: 'type', title: 'entity.type' },
-        { id: 'custom2', title: 'entity.custom2' },
-        { id: 'custom3', title: 'entity.custom3' },
-        { id: 'custom4', title: 'entity.custom4' },
-        { id: 'custom5', title: 'entity.custom5' },
-        { id: 'custom6', title: 'entity.custom6' },
-        { id: 'custom7', title: 'entity.custom7' },
-        { id: 'custom8', title: 'entity.custom8' },
-        { id: 'custom9', title: 'entity.custom9' },
-        { id: 'custom10', title: 'entity.custom10' },
-      ],
-
-      // Product field mappings for transformation
-      fieldMappings: {
-        // Basic field mappings
-        basic: {
-          sku: 'sku',
-          name: 'name',
-          price: 'price',
-          qty: 'qty',
-        },
-
-        // Category processing configuration
-        categories: {
-          sourceField: 'categories',
-          nameField: 'name',
-          fallbackField: 'id',
-          joinSeparator: ', ',
-          categoryIdSource: 0, // Use first category for category_id
-        },
-
-        // Image processing configuration
-        images: {
-          sourceField: 'images',
-          urlField: 'url',
-          thumbnailIndex: 0, // Use first image for thumbnail
-          joinSeparator: ', ',
-        },
-
-        // RECS-specific field mappings
-        recs: {
-          message: 'message',
-          value: 'price', // Map to price
-          page_url: '', // Empty by default
-          inventory: 'qty', // Map to qty
-          margin: 'margin',
-          type: 'type',
-        },
-
-        // Custom fields configuration
-        custom: {
-          count: 9, // custom2 through custom10
-          startIndex: 2,
-          defaultValue: '',
-        },
-      },
+      // Future: configuration for multiple formats could go here
     },
   };
 }

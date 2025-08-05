@@ -43,12 +43,12 @@ async function main(params) {
     });
 
     // Step 2: Build products with proper transformation
-    const builtProducts = await buildProducts(result.products, config);
+    const builtProducts = await buildProducts(result.products);
     steps.push(`✔ Built ${builtProducts.length} products for export`);
     logger.info('Built products', { count: builtProducts.length });
 
     // Step 3: Create CSV
-    const csvData = await createCsv(builtProducts, config);
+    const csvData = await createCsv(builtProducts);
     steps.push(`✔ Created CSV (${formatFileSize(csvData.content.length)})`);
     logger.info('Created CSV', { size: csvData.content.length });
 

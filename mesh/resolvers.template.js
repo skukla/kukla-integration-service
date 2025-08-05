@@ -248,10 +248,23 @@ function enrichProducts(products, categoryMap, inventoryMap) {
 
     // Enrich media gallery entries with complete URLs
     const enrichedMediaGallery = product.media_gallery_entries
-      ? product.media_gallery_entries.map((entry) => ({
-          ...entry,
-          url: entry.file ? '{{{COMMERCE_BASE_URL}}}/media/catalog/product' + entry.file : '',
-        }))
+      ? product.media_gallery_entries.map((entry) => {
+          let url = '';
+          
+          // If entry.file is already a full URL (Adobe Assets), use it as-is
+          if (entry.file && (entry.file.startsWith('http://') || entry.file.startsWith('https://'))) {
+            url = entry.file;
+          }
+          // Otherwise, construct the URL from file path (legacy Commerce media)
+          else if (entry.file) {
+            url = '{{{COMMERCE_BASE_URL}}}/media/catalog/product' + entry.file;
+          }
+
+          return {
+            ...entry,
+            url,
+          };
+        })
       : [];
 
     return {
