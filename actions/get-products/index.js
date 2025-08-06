@@ -19,6 +19,7 @@ const {
 async function main(params) {
   const logger = Core.Logger('get-products', { level: params.LOG_LEVEL || 'info' });
   const steps = [];
+  const startTime = Date.now();
 
   try {
     // Validate required parameters using Adobe standard
@@ -75,10 +76,11 @@ async function main(params) {
           management: storageResult.management,
         },
         performance: {
-          method: 'REST',
+          method: 'REST API',
           productCount: builtProducts.length,
           apiCalls: result.apiCalls.total,
           dataSourcesUnified: 3,
+          executionTime: Date.now() - startTime,
           productsApiCalls: result.apiCalls.products,
           categoriesApiCalls: result.apiCalls.categories,
           inventoryApiCalls: result.apiCalls.inventory,

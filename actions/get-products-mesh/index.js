@@ -19,6 +19,7 @@ const {
 async function main(params) {
   const logger = Core.Logger('get-products-mesh', { level: params.LOG_LEVEL || 'info' });
   const steps = [];
+  const startTime = Date.now();
 
   try {
     // Validate required parameters (including Commerce admin credentials)
@@ -77,11 +78,12 @@ async function main(params) {
         performance: {
           method: 'API Mesh',
           productCount: meshData.products.length,
-          clientCalls: 1,
-          dataSourcesUnified: meshData.performance.totalApiCalls,
-          productsApiCalls: meshData.performance.productsApiCalls,
-          categoriesApiCalls: meshData.performance.categoriesApiCalls,
-          inventoryApiCalls: meshData.performance.inventoryApiCalls,
+          clientCalls: meshData.performance.apiCalls || 1,
+          dataSourcesUnified: meshData.performance.dataSourcesUnified || 3,
+          executionTime: Date.now() - startTime,
+          productsApiCalls: 1, // Single batch call for products
+          categoriesApiCalls: 1, // Single batch call for categories
+          inventoryApiCalls: 1, // Single batch call for inventory
         },
       },
       'Mesh product export completed successfully',
