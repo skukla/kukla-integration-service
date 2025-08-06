@@ -3,6 +3,7 @@ type EnrichedProduct {
   name: String
   price: Float
   qty: Int
+  type_id: String
   categories: [ProductCategory]
   media_gallery_entries: [MediaGalleryEntry]
   inventory: ProductInventory

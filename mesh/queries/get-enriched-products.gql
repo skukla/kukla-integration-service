@@ -5,6 +5,7 @@ query GetEnrichedProducts($pageSize: Int) {
       name
       price
       qty
+      type_id
       categories {
         id
         name
