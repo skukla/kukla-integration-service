@@ -1,7 +1,0 @@
-{
-  items {
-    sku
-    quantity
-    status
-  }
-}

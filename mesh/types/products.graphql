@@ -8,16 +8,6 @@ type EnrichedProduct {
   media_gallery_entries: [MediaGalleryEntry!]!
 }
 
-type BasicProduct {
-  sku: String!
-  name: String
-  price: Float
-  status: Int
-  type_id: String
-  created_at: String
-  updated_at: String
-}
-
 type ProductCategory {
   id: Int
   name: String

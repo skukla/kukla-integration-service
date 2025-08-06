@@ -230,22 +230,8 @@ function displayPerformanceData(perf) {
   console.log(`   Method: ${perf.method || 'Unknown'}`);
   console.log(`   Products: ${perf.productCount || 0}`);
 
-  if (perf.method === 'API Mesh') {
-    console.log(`   Client Calls: ${perf.clientCalls || 0}`);
-    console.log(`   Data Sources Unified: ${perf.dataSourcesUnified || 0}`);
-  } else {
-    console.log(`   Total API Calls: ${perf.apiCalls || 0}`);
-    console.log(`   Data Sources: ${perf.dataSourcesUnified || 0}`);
-    if (perf.productsApiCalls !== undefined) {
-      console.log(`   → Products: ${perf.productsApiCalls} calls`);
-    }
-    if (perf.categoriesApiCalls !== undefined) {
-      console.log(`   → Categories: ${perf.categoriesApiCalls} calls`);
-    }
-    if (perf.inventoryApiCalls !== undefined) {
-      console.log(`   → Inventory: ${perf.inventoryApiCalls} calls`);
-    }
-  }
+  console.log(`   API Calls: ${perf.apiCalls || 0}`);
+  console.log(`   Data Sources Unified: ${perf.dataSourcesUnified || 0}`);
 
   // Show execution time for both methods
   if (perf.executionTime !== undefined) {

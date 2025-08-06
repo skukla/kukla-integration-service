@@ -63,19 +63,6 @@ module.exports = {
           operations: [
             {
               type: 'Query',
-              field: 'category_info',
-              path: '/categories/{args.categoryId}',
-              method: 'GET',
-              argTypeMap: {
-                categoryId: {
-                  type: 'integer',
-                },
-              },
-              responseSchema: './schema/category-response.json',
-            },
-            // Add batch category endpoint for better performance
-            {
-              type: 'Query',
               field: 'categories_batch',
               path: '/categories/list?searchCriteria[pageSize]=20&searchCriteria[filter_groups][0][filters][0][field]=entity_id&searchCriteria[filter_groups][0][filters][0][value]={args.categoryIds}&searchCriteria[filter_groups][0][filters][0][condition_type]=in',
               method: 'GET',
@@ -100,19 +87,6 @@ module.exports = {
             Authorization: 'Bearer {context.headers.x-commerce-admin-token}',
           },
           operations: [
-            {
-              type: 'Query',
-              field: 'inventory_items',
-              path: '/inventory/source-items?searchCriteria[filter_groups][0][filters][0][field]=sku&searchCriteria[filter_groups][0][filters][0][value]={args.sku}&searchCriteria[filter_groups][0][filters][0][condition_type]=eq',
-              method: 'GET',
-              argTypeMap: {
-                sku: {
-                  type: 'string',
-                },
-              },
-              responseSchema: './schema/stock-item-response.json',
-            },
-            // Add batch inventory endpoint for better performance
             {
               type: 'Query',
               field: 'inventory_batch',

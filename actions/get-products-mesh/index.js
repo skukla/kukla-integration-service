@@ -76,14 +76,11 @@ async function main(params) {
           management: storageResult.management,
         },
         performance: {
-          method: 'API Mesh',
-          productCount: meshData.products.length,
-          clientCalls: meshData.performance.apiCalls || 1,
-          dataSourcesUnified: meshData.performance.dataSourcesUnified || 3,
+          method: meshData.performance.method || 'API Mesh',
+          productCount: meshData.performance.productCount || meshData.products.length,
           executionTime: Date.now() - startTime,
-          productsApiCalls: 1, // Single batch call for products
-          categoriesApiCalls: 1, // Single batch call for categories
-          inventoryApiCalls: 1, // Single batch call for inventory
+          apiCalls: meshData.performance.apiCalls || 1,
+          dataSourcesUnified: meshData.performance.dataSourcesUnified || 3,
         },
       },
       'Mesh product export completed successfully',

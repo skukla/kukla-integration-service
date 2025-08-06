@@ -125,13 +125,7 @@ async function generateMeshResolver() {
   const queries = {
     productsList: fs.readFileSync(path.join(queriesDir, 'products-list.gql'), 'utf8').trim(),
     categoriesBatch: fs.readFileSync(path.join(queriesDir, 'categories-batch.gql'), 'utf8').trim(),
-    categoryIndividual: fs
-      .readFileSync(path.join(queriesDir, 'category-individual.gql'), 'utf8')
-      .trim(),
     inventoryBatch: fs.readFileSync(path.join(queriesDir, 'inventory-batch.gql'), 'utf8').trim(),
-    inventoryIndividual: fs
-      .readFileSync(path.join(queriesDir, 'inventory-individual.gql'), 'utf8')
-      .trim(),
   };
 
   // Replace configuration placeholders
@@ -159,16 +153,8 @@ async function generateMeshResolver() {
     JSON.stringify(queries.categoriesBatch)
   );
   template = template.replace(
-    /\{\{\{CATEGORY_INDIVIDUAL_QUERY\}\}\}/g,
-    JSON.stringify(queries.categoryIndividual)
-  );
-  template = template.replace(
     /\{\{\{INVENTORY_BATCH_QUERY\}\}\}/g,
     JSON.stringify(queries.inventoryBatch)
-  );
-  template = template.replace(
-    /\{\{\{INVENTORY_INDIVIDUAL_QUERY\}\}\}/g,
-    JSON.stringify(queries.inventoryIndividual)
   );
 
   fs.writeFileSync(outputPath, template);

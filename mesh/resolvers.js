@@ -175,7 +175,7 @@ module.exports = {
             // Enrich products
             const enrichedProducts = enrichProducts(products, categoryMap, inventoryMap);
 
-            // Simple performance metrics
+            // Mesh resolver execution time (action uses its own total time for fair comparison)
             const executionTime = Date.now() - startTime;
 
             return {

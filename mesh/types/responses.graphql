@@ -4,15 +4,3 @@ type EnrichedProductsResponse {
   message: String
   performance: PerformanceMetrics
 }
-
-type BasicProductsResponse {
-  products: [BasicProduct]
-  total_count: Int
-  message: String
-}
-
-type CategoriesResponse {
-  categories: [ProductCategory]
-  total_count: Int
-  message: String
-}
