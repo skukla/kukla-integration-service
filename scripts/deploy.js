@@ -95,6 +95,10 @@ function storeMeshHash(hash) {
 
 async function updateMeshWithPolling(isProd = false) {
   const environment = isProd ? 'production' : 'staging';
+
+  // Cache purge disabled - Adobe API issue with zone cache
+  // TODO: Re-enable when resolved: aio api-mesh:cache:purge -a -c
+
   const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
 
   if (!(await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`))) {
