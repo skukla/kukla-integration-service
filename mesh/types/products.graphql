@@ -3,6 +3,7 @@ type EnrichedProduct {
   name: String
   price: Float
   type_id: String
+  custom_attributes: [CustomAttribute]
   inventory: ProductInventory!
   categories: [ProductCategory!]!
   media_gallery_entries: [MediaGalleryEntry!]!
@@ -23,4 +24,9 @@ type MediaGalleryEntry {
 type ProductInventory {
   quantity: Int!
   is_in_stock: Boolean!
+}
+
+type CustomAttribute {
+  attribute_code: String
+  value: JSON
 }
