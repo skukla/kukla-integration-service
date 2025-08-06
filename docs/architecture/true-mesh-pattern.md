@@ -1,38 +1,70 @@
-# JsonSchema Sources Architecture Pattern
+# Hybrid JsonSchema + Custom Resolvers Pattern
 
-**The JsonSchema Sources Pattern is our current implementation** for integrating API Mesh with Adobe App Builder using native mesh sources that consolidate multiple Commerce API calls into a single GraphQL query.
+**The Hybrid JsonSchema + Custom Resolvers Pattern is our current implementation** for integrating API Mesh with Adobe App Builder using native mesh sources combined with custom resolvers for data enrichment and consolidation.
 
 ## Overview
 
-**JsonSchema Sources Pattern**: Native mesh sources that use JsonSchema handlers to consolidate data from multiple Commerce APIs (products, categories, inventory) with admin token authentication.
+**Hybrid Pattern**: JsonSchema sources provide raw Commerce API access (products, categories, inventory) with admin token authentication, while custom resolvers handle data enrichment, batching optimizations, and performance tracking.
 
 ## Architecture Diagram
 
 ```text
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   User Request  │ -> │   API Mesh      │ -> │ JsonSchema      │ -> │  Commerce APIs  │
-│                 │    │                 │    │ Sources         │    │  (Products,     │
-│                 │    │                 │    │                 │    │   Categories,   │
+│                 │    │ Custom Resolvers│    │ Sources         │    │  (Products,     │
+│                 │    │ (Enrichment)    │    │ (Raw Data)      │    │   Categories,   │
 │                 │    │                 │    │                 │    │   Inventory)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ## Key Benefits
 
-| Metric | REST API | JsonSchema Sources | Improvement |
-|--------|----------|-------------------|-------------|
+| Metric | REST API | Hybrid JsonSchema + Resolvers | Improvement |
+|--------|----------|-------------------------------|-------------|
 | **API Calls** | 200+ sequential | 1 GraphQL query | 99.5% reduction |
 | **Authentication** | OAuth 1.0 | Admin token | Simplified |
-| **Configuration** | Custom resolvers | JsonSchema sources | Declarative |
-| **Maintenance** | Complex resolver code | Schema files | Easier |
+| **Data Sources** | Custom API code | JsonSchema sources | Native optimization |
+| **Data Processing** | Embedded logic | Custom resolvers | Separation of concerns |
+| **Maintenance** | Monolithic actions | Modular components | Better maintainability |
 
 ## Implementation
 
-### Current Implementation (JsonSchema Sources)
+### Current Implementation (Hybrid Approach)
+
+**JsonSchema Sources** provide raw data access:
 
 ```javascript
-// mesh.config.js - Configuration-driven approach
-const { loadConfig } = require('./config');
+// mesh/mesh.json - JsonSchema sources configuration  
+{
+  "meshConfig": {
+    "responseConfig": {
+      "cache": true,
+      "includeHTTPDetails": true
+    },
+    "sources": [
+      {
+        "name": "Products",
+        "handler": {
+          "JsonSchema": {
+            "baseUrl": "https://citisignal-com774.adobedemo.com/rest/all/V1",
+            "operationHeaders": {
+              "Authorization": "Bearer {context.headers.x-commerce-admin-token}"
+            },
+            "operations": [
+              {
+                "type": "Query",
+                "field": "products_list", 
+                "path": "/products?searchCriteria[pageSize]={args.pageSize}",
+                "responseSchema": "./schema/products-response.json"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "additionalResolvers": ["./resolvers.js"]
+  }
+}
 
 const config = loadConfig();
 
