@@ -153,12 +153,22 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
     <div class="notification-metrics-grid">
       <div class="notification-metric">
         <span class="metric-value">${clientCalls}</span>
-        <span class="metric-label">Client API Calls</span>
+        <span class="metric-label">Calls</span>
       </div>
       <div class="notification-metric highlight">
         <span class="metric-value">${internalApiCalls}</span>
-        <span class="metric-label">API Endpoints</span>
+        <span class="metric-label">Endpoints</span>
       </div>
+      ${
+        performance.executionTime !== undefined
+          ? `
+      <div class="notification-metric">
+        <span class="metric-value">${formatExecutionTime(performance.executionTime)}</span>
+        <span class="metric-label">Time</span>
+      </div>
+      `
+          : ''
+      }
     </div>
     <div class="notification-endpoints">
       <button class="endpoints-toggle">
@@ -186,17 +196,27 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
 /**
  * Create REST API metrics HTML
  */
-function createRestApiMetrics(apiCalls, dataSources) {
+function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
   return `
     <div class="notification-metrics-grid">
       <div class="notification-metric">
         <span class="metric-value">${apiCalls}</span>
-        <span class="metric-label">Client API Calls</span>
+        <span class="metric-label">Calls</span>
       </div>
       <div class="notification-metric">
         <span class="metric-value">${dataSources}</span>
-        <span class="metric-label">API Endpoints</span>
+        <span class="metric-label">Endpoints</span>
       </div>
+      ${
+        performance.executionTime !== undefined
+          ? `
+      <div class="notification-metric">
+        <span class="metric-value">${formatExecutionTime(performance.executionTime)}</span>
+        <span class="metric-label">Time</span>
+      </div>
+      `
+          : ''
+      }
     </div>
     <div class="notification-endpoints">
       <button class="endpoints-toggle">
@@ -222,6 +242,24 @@ function createRestApiMetrics(apiCalls, dataSources) {
 }
 
 /**
+ * Format execution time in human-readable format
+ * @param {number} ms - Time in milliseconds
+ * @returns {string} Formatted time string
+ */
+function formatExecutionTime(ms) {
+  if (!ms) return '';
+  if (ms < 1000) {
+    return `${ms}ms`;
+  } else if (ms < 60000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  } else {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = ((ms % 60000) / 1000).toFixed(1);
+    return `${minutes}m ${seconds}s`;
+  }
+}
+
+/**
  * Create enhanced success notification with comprehensive metrics
  */
 function createSuccessNotificationContent(response) {
@@ -239,7 +277,7 @@ function createSuccessNotificationContent(response) {
         performance.dataSourcesUnified || performance.totalApiCalls || 1,
         performance
       )
-    : createRestApiMetrics(apiCalls, performance.dataSourcesUnified || 3);
+    : createRestApiMetrics(apiCalls, performance.dataSourcesUnified || 3, performance);
 
   return `
     <div class="notification-metrics">
