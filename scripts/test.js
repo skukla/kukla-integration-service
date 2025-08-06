@@ -212,6 +212,19 @@ function displayTestResults(response) {
   }
 }
 
+// Format execution time in human-readable format
+function formatExecutionTime(ms) {
+  if (ms < 1000) {
+    return `${ms}ms`;
+  } else if (ms < 60000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  } else {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = ((ms % 60000) / 1000).toFixed(1);
+    return `${minutes}m ${seconds}s`;
+  }
+}
+
 // Display performance data in human-readable format
 function displayPerformanceData(perf) {
   console.log(`   Method: ${perf.method || 'Unknown'}`);
@@ -220,15 +233,6 @@ function displayPerformanceData(perf) {
   if (perf.method === 'API Mesh') {
     console.log(`   Client Calls: ${perf.clientCalls || 0}`);
     console.log(`   Data Sources Unified: ${perf.dataSourcesUnified || 0}`);
-    if (perf.productsApiCalls !== undefined) {
-      console.log(`   → Products API: ${perf.productsApiCalls} calls`);
-    }
-    if (perf.categoriesApiCalls !== undefined) {
-      console.log(`   → Categories API: ${perf.categoriesApiCalls} calls`);
-    }
-    if (perf.inventoryApiCalls !== undefined) {
-      console.log(`   → Inventory API: ${perf.inventoryApiCalls} calls`);
-    }
   } else {
     console.log(`   Total API Calls: ${perf.apiCalls || 0}`);
     console.log(`   Data Sources: ${perf.dataSourcesUnified || 0}`);
@@ -241,6 +245,11 @@ function displayPerformanceData(perf) {
     if (perf.inventoryApiCalls !== undefined) {
       console.log(`   → Inventory: ${perf.inventoryApiCalls} calls`);
     }
+  }
+
+  // Show execution time for both methods
+  if (perf.executionTime !== undefined) {
+    console.log(`   Execution Time: ${formatExecutionTime(perf.executionTime)}`);
   }
 }
 
