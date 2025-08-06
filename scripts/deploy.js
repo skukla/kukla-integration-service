@@ -96,8 +96,11 @@ function storeMeshHash(hash) {
 async function updateMeshWithPolling(isProd = false) {
   const environment = isProd ? 'production' : 'staging';
 
-  // Cache purge disabled - Adobe API issue with zone cache
-  // TODO: Re-enable when resolved: aio api-mesh:cache:purge -a -c
+  // Purge API Mesh cache before updating to ensure fresh data
+  const cacheCommand = `aio api-mesh:cache:purge -a -c${isProd ? ' --prod' : ''}`;
+  if (!(await runDeployCommand(cacheCommand, `Purging mesh cache in ${environment}`))) {
+    console.log(format.warning('Cache purge failed, proceeding with mesh update anyway'));
+  }
 
   const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
 
@@ -261,7 +264,13 @@ async function deployMesh(isProd = false) {
     return false;
   }
 
-  // Step 2: Update mesh configuration
+  // Step 2: Purge API Mesh cache before updating
+  const cacheCommand = `aio api-mesh:cache:purge -a -c${isProd ? ' --prod' : ''}`;
+  if (!(await runDeployCommand(cacheCommand, `Purging mesh cache in ${environment}`))) {
+    console.log(format.warning('Cache purge failed, proceeding with mesh update anyway'));
+  }
+
+  // Step 3: Update mesh configuration
   const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
   if (!(await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`))) {
     return false;
