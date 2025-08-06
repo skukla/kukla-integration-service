@@ -51,7 +51,7 @@ async function fetchProducts(context, pageSize) {
  */
 async function fetchCategories(context, categoryIds) {
   if (categoryIds.length === 0) {
-    return new Map();
+    return { categoryMap: new Map(), apiCalls: 0 };
   }
 
   const response = await context.Categories.Query.categories_batch({
@@ -68,35 +68,45 @@ async function fetchCategories(context, categoryIds) {
     });
   }
 
-  return categoryMap;
+  return { categoryMap, apiCalls: 1 };
 }
 
 /**
- * Fetch inventory using batch endpoint
+ * Fetch inventory using batch endpoint with chunking for large product sets
  */
 async function fetchInventory(context, skus) {
   if (skus.length === 0) {
-    return new Map();
+    return { inventoryMap: new Map(), apiCalls: 0 };
   }
 
-  const response = await context.Inventory.Query.inventory_batch({
-    root: {},
-    args: { skus: skus.join(',') },
-    context,
-    selectionSet: QUERIES.inventoryBatch,
-  });
-
+  const batchSize = 50; // Match Commerce API pageSize limit
   const inventoryMap = new Map();
-  if (response?.items) {
-    response.items.forEach((item) => {
-      inventoryMap.set(item.sku, {
-        qty: parseFloat(item.quantity) || 0,
-        is_in_stock: item.status === 1,
-      });
+  let apiCalls = 0;
+
+  // Split SKUs into batches
+  for (let i = 0; i < skus.length; i += batchSize) {
+    const batchSkus = skus.slice(i, i + batchSize);
+    
+    const response = await context.Inventory.Query.inventory_batch({
+      root: {},
+      args: { skus: batchSkus.join(',') },
+      context,
+      selectionSet: QUERIES.inventoryBatch,
     });
+    apiCalls++;
+
+    // Add batch results to map
+    if (response?.items) {
+      response.items.forEach((item) => {
+        inventoryMap.set(item.sku, {
+          qty: parseFloat(item.quantity) || 0,
+          is_in_stock: item.status === 1,
+        });
+      });
+    }
   }
 
-  return inventoryMap;
+  return { inventoryMap, apiCalls };
 }
 
 /**
@@ -133,8 +143,8 @@ function enrichProducts(products, categoryMap, inventoryMap) {
     return {
       ...product,
       inventory: {
-        quantity: inventory.qty,
-        is_in_stock: inventory.is_in_stock,
+        quantity: Number(inventory.qty) || 0,
+        is_in_stock: Boolean(inventory.is_in_stock),
       },
       categories,
       media_gallery_entries: enrichedMedia,
@@ -166,27 +176,32 @@ module.exports = {
             });
 
             // Fetch categories and inventory in parallel
-            const [categoryMap, inventoryMap] = await Promise.all([
+            const [categoryResult, inventoryResult] = await Promise.all([
               fetchCategories(context, Array.from(categoryIds)),
               fetchInventory(context, skus),
             ]);
 
             // Enrich products
-            const enrichedProducts = enrichProducts(products, categoryMap, inventoryMap);
+            const enrichedProducts = enrichProducts(products, categoryResult.categoryMap, inventoryResult.inventoryMap);
 
             // Simple performance metrics
             const executionTime = Date.now() - startTime;
+            const totalApiCalls = 1 + categoryResult.apiCalls + inventoryResult.apiCalls; // Products + Categories + Inventory
 
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
-              message: `Successfully enriched ${enrichedProducts.length} products`,
+              message: "Successfully enriched " + enrichedProducts.length + " products",
               performance: {
                 method: 'API Mesh',
                 productCount: enrichedProducts.length,
                 executionTime,
-                apiCalls: 1,
+                apiCalls: totalApiCalls,
                 dataSourcesUnified: 3,
+                // Backend API call breakdown for toast details
+                productsApiCalls: 1,
+                categoriesApiCalls: categoryResult.apiCalls,
+                inventoryApiCalls: inventoryResult.apiCalls,
               },
             };
           } catch (error) {
