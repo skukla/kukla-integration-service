@@ -2,11 +2,10 @@ type EnrichedProduct {
   sku: String!
   name: String
   price: Float
-  qty: Int
   type_id: String
-  categories: [ProductCategory]
-  media_gallery_entries: [MediaGalleryEntry]
-  inventory: ProductInventory
+  inventory: ProductInventory!
+  categories: [ProductCategory!]!
+  media_gallery_entries: [MediaGalleryEntry!]!
 }
 
 type BasicProduct {
@@ -32,6 +31,6 @@ type MediaGalleryEntry {
 }
 
 type ProductInventory {
-  qty: Int
-  is_in_stock: Boolean
+  quantity: Int!
+  is_in_stock: Boolean!
 }

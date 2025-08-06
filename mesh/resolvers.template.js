@@ -269,12 +269,11 @@ function enrichProducts(products, categoryMap, inventoryMap) {
 
     return {
       ...product,
-      qty: inventory.qty,
-      categories: categories,
       inventory: {
-        qty: inventory.qty,
+        quantity: inventory.qty,
         is_in_stock: inventory.is_in_stock,
       },
+      categories: categories,
       media_gallery_entries: enrichedMediaGallery,
     };
   });

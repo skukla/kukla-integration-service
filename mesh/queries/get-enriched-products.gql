@@ -4,8 +4,11 @@ query GetEnrichedProducts($pageSize: Int) {
       sku
       name
       price
-      qty
       type_id
+      inventory {
+        quantity
+        is_in_stock
+      }
       categories {
         id
         name
@@ -15,10 +18,6 @@ query GetEnrichedProducts($pageSize: Int) {
         url
         position
         types
-      }
-      inventory {
-        qty
-        is_in_stock
       }
     }
     total_count
