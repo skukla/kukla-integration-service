@@ -81,6 +81,10 @@ async function main(params) {
           executionTime: Date.now() - startTime,
           apiCalls: meshData.performance.apiCalls || 1,
           dataSourcesUnified: meshData.performance.dataSourcesUnified || 3,
+          productsApiCalls: meshData.performance.productsApiCalls || 1,
+          categoriesApiCalls: meshData.performance.categoriesApiCalls || 1,
+          inventoryApiCalls:
+            meshData.performance.inventoryApiCalls || meshData.performance.inventoryApiCalls,
         },
       },
       'Mesh product export completed successfully',

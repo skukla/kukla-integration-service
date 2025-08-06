@@ -4,4 +4,7 @@ type PerformanceMetrics {
   executionTime: Int
   apiCalls: Int
   dataSourcesUnified: Int
+  productsApiCalls: Int
+  categoriesApiCalls: Int
+  inventoryApiCalls: Int
 }
