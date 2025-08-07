@@ -2,22 +2,22 @@
 
 ## Current Documentation Conflicts Identified
 
-### **Major Conflicts Between CLAUDE.md and .cursorrules:**
+### **Major Conflicts Between DEVELOPMENT-GUIDE.md and .cursorrules:**
 
 1. **Authentication Method**:
-   - **CLAUDE.md**: Claims admin token authentication
+   - **DEVELOPMENT-GUIDE.md**: Claims admin token authentication
    - **.cursorrules**: Extensively documents OAuth 1.0 patterns
    - **Reality**: Based on code analysis, uses admin token authentication
    - **Resolution**: Update both to reflect admin token authentication
 
 2. **Action Patterns**:
-   - **CLAUDE.md**: Documents simplified Adobe standard patterns
+   - **DEVELOPMENT-GUIDE.md**: Documents simplified Adobe standard patterns
    - **.cursorrules**: Documents complex `createAction` factory patterns
    - **Reality**: Current code uses over-engineered factory patterns
    - **Resolution**: Both should migrate to Adobe standard patterns
 
 3. **Step Functions**:
-   - **CLAUDE.md**: Mentions step functions but doesn't emphasize them
+   - **DEVELOPMENT-GUIDE.md**: Mentions step functions but doesn't emphasize them
    - **.cursorrules**: Heavily emphasizes `buildProducts`, `createCsv`, `storeCsv` reuse
    - **Reality**: These are valuable business logic, should be preserved
    - **Resolution**: Preserve valuable step functions, eliminate factory abstractions
@@ -41,7 +41,7 @@
 ### **1. Documentation Hierarchy**
 
 ```text
-CLAUDE.md                    # Primary guide for Claude Code instances
+DEVELOPMENT-GUIDE.md         # Primary development guide
 ├── Focus: Adobe standard patterns
 ├── Audience: AI assistance
 └── Content: Implementation patterns, critical rules
@@ -64,7 +64,7 @@ REFACTORING-PROGRESS.md     # Progress tracking
 
 ### **2. Content Allocation Strategy**
 
-#### **CLAUDE.md Should Contain:**
+#### **DEVELOPMENT-GUIDE.md Should Contain:**
 
 - Adobe App Builder standard patterns
 - Critical implementation rules
@@ -92,7 +92,7 @@ REFACTORING-PROGRESS.md     # Progress tracking
 
 #### **Phase 1: Align Core Documentation (Week 1)**
 
-**Update CLAUDE.md**:
+**Update DEVELOPMENT-GUIDE.md**:
 
 ```markdown
 # Priority fixes:
@@ -148,14 +148,14 @@ REFACTORING-PROGRESS.md     # Progress tracking
 
 #### **During Refactoring:**
 
-1. **CLAUDE.md takes precedence** for implementation patterns
+1. **DEVELOPMENT-GUIDE.md takes precedence** for implementation patterns
 2. **.cursorrules should reflect current reality** (update as code changes)
-3. **docs/ should be comprehensive** but defer to CLAUDE.md for patterns
+3. **docs/ should be comprehensive** but defer to DEVELOPMENT-GUIDE.md for patterns
 4. **REFACTORING-PROGRESS.md tracks the transition**
 
 #### **After Refactoring:**
 
-1. **CLAUDE.md becomes the definitive pattern guide**
+1. **DEVELOPMENT-GUIDE.md becomes the definitive pattern guide**
 2. **.cursorrules reflects the new simplified architecture**
 3. **docs/ provides comprehensive context and explanation**
 4. **Legacy documentation moved to docs/legacy/ for reference**
@@ -173,14 +173,14 @@ REFACTORING-PROGRESS.md     # Progress tracking
 
 - [ ] Monthly review of documentation accuracy
 - [ ] Update documentation when patterns change
-- [ ] Maintain alignment between CLAUDE.md and .cursorrules
+- [ ] Maintain alignment between DEVELOPMENT-GUIDE.md and .cursorrules
 - [ ] Archive outdated patterns in docs/legacy/
 
 ### **6. Implementation Checklist**
 
 #### **Week 1: Core Alignment**
 
-- [ ] Update CLAUDE.md authentication section
+- [ ] Update DEVELOPMENT-GUIDE.md authentication section
 - [ ] Update .cursorrules to remove OAuth references  
 - [ ] Align action pattern documentation
 - [ ] Create REFACTORING-PROGRESS.md tracking
@@ -210,7 +210,7 @@ REFACTORING-PROGRESS.md     # Progress tracking
 
 ### **Documentation Alignment Achieved When:**
 
-1. ✅ No conflicts between CLAUDE.md and .cursorrules
+1. ✅ No conflicts between DEVELOPMENT-GUIDE.md and .cursorrules
 2. ✅ All documentation reflects actual code patterns
 3. ✅ Adobe standard patterns consistently documented
 4. ✅ Clear hierarchy and purpose for each documentation type

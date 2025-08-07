@@ -5,7 +5,7 @@
 **This branch has successfully migrated from over-engineered patterns to Adobe App Builder standard patterns.**
 
 📖 **Documentation Strategy**: See [DOCUMENTATION-STRATEGY.md](DOCUMENTATION-STRATEGY.md)  
-🤖 **Claude Guidance**: See [CLAUDE.md](CLAUDE.md)  
+🤖 **Development Guide**: See [DEVELOPMENT-GUIDE.md](DEVELOPMENT-GUIDE.md)  
 👨‍💻 **Developer Rules**: See [.cursorrules](.cursorrules)
 
 **Achieved**: Significant code reduction while maintaining all functionality by adopting Adobe standard patterns.
