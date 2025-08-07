@@ -72,10 +72,36 @@ async function runDeployCommand(command, description, suppressCompletion = false
   }
 }
 
-function getMeshResolverHash() {
+function getMeshSourceHash() {
   try {
-    const resolverContent = fs.readFileSync('mesh-resolvers.js', 'utf8');
-    return crypto.createHash('md5').update(resolverContent).digest('hex');
+    const sourceFiles = [
+      // Templates and config
+      'mesh/resolvers.template.js',
+      'mesh/config.js',
+      'config.js',
+      // GraphQL queries and types
+      'mesh/queries/products-list.gql',
+      'mesh/queries/categories-batch.gql',
+      'mesh/queries/inventory-batch.gql',
+      'mesh/queries/get-enriched-products.gql',
+      'mesh/types/products.graphql',
+      'mesh/types/responses.graphql',
+      'mesh/types/performance.graphql',
+      'mesh/types/queries.graphql',
+      // Schema files
+      'mesh/schema/products-response.json',
+      'mesh/schema/category-batch-resp.json',
+      'mesh/schema/inventory-batch-resp.json',
+    ];
+
+    let combinedContent = '';
+    for (const file of sourceFiles) {
+      if (fs.existsSync(file)) {
+        combinedContent += fs.readFileSync(file, 'utf8');
+      }
+    }
+
+    return crypto.createHash('md5').update(combinedContent).digest('hex');
   } catch (error) {
     return null;
   }
@@ -93,30 +119,51 @@ function storeMeshHash(hash) {
   fs.writeFileSync('.mesh-hash', hash);
 }
 
-async function updateMeshWithPolling(isProd = false) {
-  const environment = isProd ? 'production' : 'staging';
-
-  // Purge API Mesh cache before updating to ensure fresh data
+async function purgeMeshCache(isProd, environment) {
   const cacheCommand = `aio api-mesh:cache:purge -a -c${isProd ? ' --prod' : ''}`;
   if (!(await runDeployCommand(cacheCommand, `Purging mesh cache in ${environment}`))) {
     console.log(format.warning('Cache purge failed, proceeding with mesh update anyway'));
   }
+}
 
+async function updateMeshConfiguration(isProd, environment) {
   const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
+  return await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`);
+}
 
-  if (!(await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`))) {
-    return false;
+function checkMeshStatus(statusOutput) {
+  // Success detection
+  if (statusOutput.includes('Mesh provisioned successfully.')) {
+    return 'success';
   }
 
-  // Poll for mesh deployment completion using aio api-mesh:status
+  // Failure detection
+  if (
+    statusOutput.includes('failed') ||
+    statusOutput.includes('error') ||
+    statusOutput.includes('Failed') ||
+    statusOutput.includes('ERROR')
+  ) {
+    return 'failed';
+  }
+
+  // Continue polling
+  if (statusOutput.includes('provisioning') || statusOutput.includes('Provisioning')) {
+    return 'provisioning';
+  }
+
+  return 'unknown';
+}
+
+async function pollMeshStatus() {
+  const maxTimeout = 10 * 60 * 1000; // 10 minutes
+  const pollInterval = 30 * 1000; // 30 seconds
+  const maxAttempts = Math.ceil(maxTimeout / pollInterval);
+
   const spinner = ora({
     text: format.muted('Provisioning mesh...'),
     spinner: 'dots',
   }).start();
-
-  const maxTimeout = 10 * 60 * 1000; // 10 minutes total (following master branch)
-  const pollInterval = 30 * 1000; // 30 seconds between polls (following master branch)
-  const maxAttempts = Math.ceil(maxTimeout / pollInterval);
 
   let attempts = 0;
   while (attempts < maxAttempts) {
@@ -125,45 +172,36 @@ async function updateMeshWithPolling(isProd = false) {
     try {
       await format.sleep(pollInterval);
 
-      // Check mesh status using Adobe CLI
-      const statusCommand = 'aio api-mesh:status';
-      const statusOutput = execSync(statusCommand, {
+      const statusOutput = execSync('aio api-mesh:status', {
         encoding: 'utf8',
         stdio: 'pipe',
-        timeout: 10000, // 10 second timeout for status check
+        timeout: 10000, // 10 seconds
       });
 
-      // Success detection (following master branch patterns)
-      if (statusOutput.includes('Mesh provisioned successfully.')) {
+      const status = checkMeshStatus(statusOutput);
+
+      if (status === 'success') {
         spinner.stop();
         console.log(format.success('Mesh provisioned and ready'));
         return true;
       }
 
-      // Failure detection
-      if (
-        statusOutput.includes('failed') ||
-        statusOutput.includes('error') ||
-        statusOutput.includes('Failed') ||
-        statusOutput.includes('ERROR')
-      ) {
+      if (status === 'failed') {
         spinner.stop();
         console.log(format.error('Mesh deployment failed - check status manually'));
         return false;
       }
 
-      // Continue polling for unclear status or provisioning state
-      if (statusOutput.includes('provisioning') || statusOutput.includes('Provisioning')) {
+      if (status === 'provisioning') {
         spinner.text = format.muted('Mesh still provisioning...');
-        continue;
       }
     } catch (error) {
-      // Only fail if we're near the end and can't get status
+      // Only fail if near timeout
       if (attempts >= maxAttempts - 2) {
         spinner.stop();
         console.log(format.warning(`Mesh status polling failed: ${error.message}`));
         console.log(format.warning('Mesh update may still be in progress - check manually'));
-        return true; // Don't fail deployment for status check issues
+        return true;
       }
     }
   }
@@ -171,38 +209,65 @@ async function updateMeshWithPolling(isProd = false) {
   spinner.stop();
   console.log(format.warning('Mesh deployment timed out (10 minutes)'));
   console.log(format.warning('You may need to check mesh status manually'));
-  return true; // Don't fail deployment for timeout
+  return true;
+}
+
+async function updateMeshWithPolling(isProd = false) {
+  const environment = isProd ? 'production' : 'staging';
+
+  await purgeMeshCache(isProd, environment);
+
+  if (!(await updateMeshConfiguration(isProd, environment))) {
+    return false;
+  }
+
+  return await pollMeshStatus();
 }
 
 async function deployApp(isProd = false) {
   const environment = isProd ? 'production' : 'staging';
 
-  // Display initial setup with environment info (matching master branch)
+  // Display environment info
   console.log(format.success(`Environment: ${format.environment(environment)}`));
   console.log();
   console.log(format.deploymentStart(`Deploying application to ${environment.toLowerCase()}...`));
   console.log();
   await format.sleep(800);
 
-  // Step 1: Build frontend config
+  // Build frontend config
   if (!(await runBuildCommand('node scripts/build.js --config-only', 'Building frontend config'))) {
     return false;
   }
 
-  // Step 2: Check mesh resolver for changes
+  // Check and update mesh configuration
   const oldMeshHash = getStoredMeshHash();
-  if (
-    !(await runBuildCommand(
-      'node scripts/build.js --mesh-only',
-      'Checking mesh resolver for changes'
-    ))
-  ) {
+  let meshChanged = false;
+  let newMeshHash = null;
+
+  const spinner = ora({
+    text: format.muted('Checking mesh configuration for changes...'),
+    spinner: 'dots',
+  }).start();
+
+  try {
+    execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
+    newMeshHash = getMeshSourceHash();
+    meshChanged = oldMeshHash !== newMeshHash;
+
+    if (meshChanged) {
+      spinner.stop();
+      console.log(format.success('Mesh configuration (updated)'));
+    } else {
+      spinner.stop();
+      console.log(format.success('Mesh configuration (no changes)'));
+    }
+  } catch (error) {
+    spinner.stop();
+    console.error(format.error(`Mesh configuration check failed: ${error.message}`));
     return false;
   }
-  const newMeshHash = getMeshResolverHash();
-  const meshChanged = oldMeshHash !== newMeshHash;
 
-  // Step 3: Deploy to Adobe I/O Runtime
+  // Deploy to Adobe I/O Runtime
   console.log();
   const deployCommand = `aio app deploy${isProd ? ' --prod' : ''}`;
   try {
@@ -212,11 +277,11 @@ async function deployApp(isProd = false) {
     return false;
   }
 
-  // Step 4: Update mesh if resolver changed (following master branch patterns)
+  // Update mesh if configuration changed
   let additionalWorkDone = false;
   if (meshChanged && newMeshHash) {
     console.log();
-    console.log(format.deploymentAction('Mesh resolver changed, updating deployed mesh...'));
+    console.log(format.deploymentAction('Mesh configuration changed, updating deployed mesh...'));
     additionalWorkDone = true;
     try {
       const meshUpdateSuccess = await updateMeshWithPolling(isProd);
@@ -237,10 +302,10 @@ async function deployApp(isProd = false) {
     }
   } else if (!newMeshHash) {
     console.log();
-    console.log(format.warning('Could not determine mesh resolver status'));
+    console.log(format.warning('Could not determine mesh configuration status'));
   }
 
-  // Final celebration only if we did additional work beyond basic app deployment
+  // Success message if additional work was done
   if (additionalWorkDone) {
     console.log();
     console.log(
@@ -264,16 +329,17 @@ async function deployMesh(isProd = false) {
     return false;
   }
 
-  // Step 2: Purge API Mesh cache before updating
-  const cacheCommand = `aio api-mesh:cache:purge -a -c${isProd ? ' --prod' : ''}`;
-  if (!(await runDeployCommand(cacheCommand, `Purging mesh cache in ${environment}`))) {
-    console.log(format.warning('Cache purge failed, proceeding with mesh update anyway'));
+  // Step 2: Update mesh configuration with polling
+  const meshUpdateSuccess = await updateMeshWithPolling(isProd);
+  if (!meshUpdateSuccess) {
+    console.log(format.error('Mesh deployment failed'));
+    return false;
   }
 
-  // Step 3: Update mesh configuration
-  const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
-  if (!(await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`))) {
-    return false;
+  // Step 3: Store the new mesh hash
+  const newMeshHash = getMeshSourceHash();
+  if (newMeshHash) {
+    storeMeshHash(newMeshHash);
   }
 
   console.log();
