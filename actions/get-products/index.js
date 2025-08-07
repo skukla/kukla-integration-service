@@ -7,7 +7,7 @@ const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
 const { fetchAndEnrichProducts } = require('../../lib/commerce');
-const { createCsv, buildProducts } = require('../../lib/csv');
+const { createCsv } = require('../../lib/csv');
 const { storeCsv } = require('../../lib/storage');
 const {
   errorResponse,
@@ -43,17 +43,12 @@ async function main(params) {
       apiCalls: result.apiCalls.total,
     });
 
-    // Step 2: Build products with proper transformation
-    const builtProducts = await buildProducts(result.products);
-    steps.push(`✔ Built ${builtProducts.length} products for export`);
-    logger.info('Built products', { count: builtProducts.length });
-
-    // Step 3: Create CSV
-    const csvData = await createCsv(builtProducts);
+    // Step 2: Create CSV
+    const csvData = await createCsv(result.products);
     steps.push(`✔ Created CSV (${formatFileSize(csvData.content.length)})`);
     logger.info('Created CSV', { size: csvData.content.length });
 
-    // Step 4: Store CSV file
+    // Step 3: Store CSV file
     const storageResult = await storeCsv(csvData.content, config);
 
     if (!storageResult.stored) {
@@ -77,7 +72,7 @@ async function main(params) {
         },
         performance: {
           method: 'REST API',
-          productCount: builtProducts.length,
+          productCount: result.products.length,
           apiCalls: result.apiCalls.total,
           dataSourcesUnified: 3,
           executionTime: Date.now() - startTime,

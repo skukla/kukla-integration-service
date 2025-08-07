@@ -7,7 +7,7 @@ const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
 const { getProductsFromMesh } = require('../../lib/commerce');
-const { createCsv, buildProducts } = require('../../lib/csv');
+const { createCsv } = require('../../lib/csv');
 const { storeCsv } = require('../../lib/storage');
 const {
   errorResponse,
@@ -43,17 +43,12 @@ async function main(params) {
     steps.push(`✔ Fetched ${meshData.products.length} enriched products via API Mesh`);
     logger.info('Fetched products from mesh', { count: meshData.products.length });
 
-    // Step 2: Build products with proper transformation
-    const builtProducts = await buildProducts(meshData.products);
-    steps.push(`✔ Built ${builtProducts.length} products for export`);
-    logger.info('Built products', { count: builtProducts.length });
-
-    // Step 3: Create CSV
-    const csvData = await createCsv(builtProducts);
+    // Step 2: Create CSV
+    const csvData = await createCsv(meshData.products);
     steps.push(`✔ Created CSV (${formatFileSize(csvData.content.length)})`);
     logger.info('Created CSV', { size: csvData.content.length });
 
-    // Step 4: Store CSV file
+    // Step 3: Store CSV file
     const storageResult = await storeCsv(csvData.content, config);
 
     if (!storageResult.stored) {
