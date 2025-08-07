@@ -19,7 +19,6 @@
     }
     media_gallery_entries {
       file
-      position
       types
     }
   }

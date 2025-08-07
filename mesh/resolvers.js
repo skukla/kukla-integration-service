@@ -6,7 +6,7 @@
 // GraphQL query fragments (inlined during build - API Mesh doesn't support require())
 const QUERIES = {
   productsList:
-    '{\n  items {\n    sku\n    name\n    price\n    status\n    type_id\n    created_at\n    updated_at\n    custom_attributes {\n      attribute_code\n      value\n    }\n    extension_attributes {\n      category_links {\n        category_id\n        position\n      }\n    }\n    media_gallery_entries {\n      file\n      position\n      types\n    }\n  }\n  total_count\n}',
+    '{\n  items {\n    sku\n    name\n    price\n    status\n    type_id\n    created_at\n    updated_at\n    custom_attributes {\n      attribute_code\n      value\n    }\n    extension_attributes {\n      category_links {\n        category_id\n        position\n      }\n    }\n    media_gallery_entries {\n      file\n      types\n    }\n  }\n  total_count\n}',
   categoriesBatch: '{\n  items {\n    id\n    name\n  }\n}',
   inventoryBatch: '{\n  items {\n    sku\n    quantity\n    status\n  }\n}',
 };
@@ -145,7 +145,6 @@ function enrichProducts(products, categoryMap, inventoryMap) {
       ...product,
       inventory: {
         quantity: Number(inventory.qty) || 0,
-        is_in_stock: Boolean(inventory.is_in_stock),
       },
       categories,
       media_gallery_entries: enrichedMedia,

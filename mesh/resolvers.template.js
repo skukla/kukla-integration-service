@@ -144,7 +144,6 @@ function enrichProducts(products, categoryMap, inventoryMap) {
       ...product,
       inventory: {
         quantity: Number(inventory.qty) || 0,
-        is_in_stock: Boolean(inventory.is_in_stock),
       },
       categories,
       media_gallery_entries: enrichedMedia,
