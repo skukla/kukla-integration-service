@@ -21,8 +21,8 @@ const resolverTypes = [productTypes, responseTypes, performanceTypes, queryTypes
 module.exports = {
   // Enhanced response configuration with native mesh caching
   responseConfig: {
-    cache: true, // Enable native mesh caching - 62% performance improvement
-    includeHTTPDetails: true, // Include HTTP response details for debugging and monitoring
+    cache: true,
+    includeHTTPDetails: true,
   },
   sources: [
     {
