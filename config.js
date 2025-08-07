@@ -62,11 +62,6 @@ function createConfig(params = {}) {
       maxCategoriesDisplay: 10,
       defaultFilename: 'products.csv',
     },
-
-    // CSV Export Configuration (format-specific data moved to format implementations)
-    csv: {
-      // Future: configuration for multiple formats could go here
-    },
   };
 }
 
