@@ -5,18 +5,18 @@ query GetEnrichedProducts($pageSize: Int) {
       name
       price
       type_id
+      custom_attributes {
+        attribute_code
+        value
+      }
       inventory {
         quantity
-        is_in_stock
       }
       categories {
-        id
         name
       }
       media_gallery_entries {
-        file
         url
-        position
         types
       }
     }
