@@ -17,13 +17,11 @@ type ProductCategory {
 type MediaGalleryEntry {
   file: String
   url: String
-  position: Int
   types: [String]
 }
 
 type ProductInventory {
   quantity: Int!
-  is_in_stock: Boolean!
 }
 
 type CustomAttribute {
