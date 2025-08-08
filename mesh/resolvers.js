@@ -5,10 +5,9 @@
 
 // GraphQL query fragments (inlined during build - API Mesh doesn't support require())
 const QUERIES = {
-  productsList:
-    '{\n  items {\n    sku\n    name\n    price\n    status\n    type_id\n    created_at\n    updated_at\n    custom_attributes {\n      attribute_code\n      value\n    }\n    extension_attributes {\n      category_links {\n        category_id\n        position\n      }\n    }\n    media_gallery_entries {\n      file\n      types\n    }\n  }\n  total_count\n}',
-  categoriesBatch: '{\n  items {\n    id\n    name\n  }\n}',
-  inventoryBatch: '{\n  items {\n    sku\n    quantity\n    status\n  }\n}',
+  productsList: "{\n  items {\n    sku\n    name\n    price\n    status\n    type_id\n    created_at\n    updated_at\n    custom_attributes {\n      attribute_code\n      value\n    }\n    extension_attributes {\n      category_links {\n        category_id\n        position\n      }\n    }\n    media_gallery_entries {\n      file\n      types\n    }\n  }\n  total_count\n}",
+  categoriesBatch: "{\n  items {\n    id\n    name\n  }\n}",
+  inventoryBatch: "{\n  items {\n    sku\n    quantity\n    status\n  }\n}",
 };
 
 /**
@@ -16,7 +15,7 @@ const QUERIES = {
  */
 function getCategoryIds(product) {
   const categoryIds = [];
-
+  
   // Commerce API provides category IDs via extension_attributes.category_links
   if (product.extension_attributes?.category_links?.length) {
     product.extension_attributes.category_links.forEach((link) => {
@@ -25,7 +24,7 @@ function getCategoryIds(product) {
       }
     });
   }
-
+  
   return categoryIds;
 }
 
@@ -87,7 +86,7 @@ async function fetchInventory(context, skus) {
   // Split SKUs into batches
   for (let i = 0; i < skus.length; i += batchSize) {
     const batchSkus = skus.slice(i, i + batchSize);
-
+    
     const response = await context.Inventory.Query.inventory_batch({
       root: {},
       args: { skus: batchSkus.join(',') },
@@ -182,11 +181,7 @@ module.exports = {
             ]);
 
             // Enrich products
-            const enrichedProducts = enrichProducts(
-              products,
-              categoryResult.categoryMap,
-              inventoryResult.inventoryMap
-            );
+            const enrichedProducts = enrichProducts(products, categoryResult.categoryMap, inventoryResult.inventoryMap);
 
             // Simple performance metrics
             const executionTime = Date.now() - startTime;
@@ -195,7 +190,7 @@ module.exports = {
             return {
               products: enrichedProducts,
               total_count: enrichedProducts.length,
-              message: 'Successfully enriched ' + enrichedProducts.length + ' products',
+              message: "Successfully enriched " + enrichedProducts.length + " products",
               performance: {
                 method: 'API Mesh',
                 productCount: enrichedProducts.length,
