@@ -270,3 +270,6 @@ function createSuccessNotificationContent(response) {
     </div>
   `;
 }
+
+// Export function for use in main.js
+export { createSuccessNotificationContent };
