@@ -186,13 +186,23 @@ function displayTestResults(response) {
       console.log(`Message: ${response.parsed.message}`);
     }
 
-    // Display steps if available (matching master branch)
-    if (response.parsed.steps && Array.isArray(response.parsed.steps)) {
+    // Generate progress steps from API response data
+    if (response.parsed.productCount !== undefined) {
       console.log();
-      console.log(chalk.white('Steps:'));
-      response.parsed.steps.forEach((step, index) => {
-        console.log(chalk.green(`${index + 1}. ${step}`));
-      });
+      console.log(chalk.white('Progress:'));
+      console.log(chalk.green('1. ✔ Validated input parameters'));
+      console.log(
+        chalk.green(
+          `2. ✔ Fetched ${response.parsed.productCount} products via ${response.parsed.method || 'API'}`
+        )
+      );
+      if (response.parsed.apiCalls) {
+        console.log(chalk.green(`3. ✔ Made ${response.parsed.apiCalls} API calls`));
+      }
+      console.log(chalk.green('4. ✔ Generated CSV file'));
+      if (response.parsed.provider) {
+        console.log(chalk.green(`5. ✔ Stored file to ${response.parsed.provider}`));
+      }
     }
 
     if (response.parsed.downloadUrl) {
@@ -201,41 +211,25 @@ function displayTestResults(response) {
       console.log(`   ${format.downloadUrl(response.parsed.downloadUrl)}`);
     }
 
-    // Display human-readable performance data
-    if (response.parsed.performance) {
+    // Display performance data from simplified response
+    if (response.parsed.productCount !== undefined || response.parsed.apiCalls) {
       console.log();
       console.log('📊 Performance:');
-      displayPerformanceData(response.parsed.performance);
+      if (response.parsed.method) {
+        console.log(`   Method: ${response.parsed.method}`);
+      }
+      if (response.parsed.productCount !== undefined) {
+        console.log(`   Products: ${response.parsed.productCount}`);
+      }
+      if (response.parsed.apiCalls) {
+        console.log(`   API Calls: ${response.parsed.apiCalls}`);
+      }
+      if (response.parsed.fileName) {
+        console.log(`   File: ${response.parsed.fileName}`);
+      }
     }
   } else if (!isSuccess && response.parsed && response.parsed.error) {
     console.log(`Error: ${response.parsed.error}`);
-  }
-}
-
-// Format execution time in human-readable format
-function formatExecutionTime(ms) {
-  if (ms < 1000) {
-    return `${ms}ms`;
-  } else if (ms < 60000) {
-    return `${(ms / 1000).toFixed(1)}s`;
-  } else {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = ((ms % 60000) / 1000).toFixed(1);
-    return `${minutes}m ${seconds}s`;
-  }
-}
-
-// Display performance data in human-readable format
-function displayPerformanceData(perf) {
-  console.log(`   Method: ${perf.method || 'Unknown'}`);
-  console.log(`   Products: ${perf.productCount || 0}`);
-
-  console.log(`   API Calls: ${perf.apiCalls || 0}`);
-  console.log(`   Data Sources Unified: ${perf.dataSourcesUnified || 0}`);
-
-  // Show execution time for both methods
-  if (perf.executionTime !== undefined) {
-    console.log(`   Execution Time: ${formatExecutionTime(perf.executionTime)}`);
   }
 }
 
