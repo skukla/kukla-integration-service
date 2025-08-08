@@ -152,20 +152,37 @@ function formatExecutionTime(ms) {
  */
 function createSuccessNotificationContent(response) {
   const performance = response.performance || {};
+
+  // Check both response and performance object for product count
   const productCount =
-    performance.processedProducts || performance.totalProducts || performance.productCount || 0;
-  const apiCalls = performance.apiCalls || 1;
-  const method = performance.method || 'Export';
+    response.productCount ||
+    response.totalProducts ||
+    response.processedProducts ||
+    performance.processedProducts ||
+    performance.totalProducts ||
+    performance.productCount ||
+    0;
+  const apiCalls = response.apiCalls || performance.apiCalls || 1;
+  const method = response.method || performance.method || 'Export';
+
+  // Note: Backend is not currently sending execution time data
   const isApiMesh = method === 'API Mesh';
 
   // Build metrics HTML based on method type
+  // Combine response and performance data for metrics
+  const combinedPerformance = {
+    ...performance,
+    executionTime:
+      response.executionTime || response.duration || response.time || performance.executionTime,
+  };
+
   const metricsHTML = isApiMesh
     ? createApiMeshMetrics(
         performance.clientCalls || 1,
         performance.dataSourcesUnified || performance.totalApiCalls || 1,
-        performance
+        combinedPerformance
       )
-    : createRestApiMetrics(apiCalls, performance.dataSourcesUnified || 3, performance);
+    : createRestApiMetrics(apiCalls, performance.dataSourcesUnified || 3, combinedPerformance);
 
   return `
     <div class="notification-metrics">
