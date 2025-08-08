@@ -1,6 +1,7 @@
 # Template files with template syntax
 mesh-resolvers.template.js
 mesh/resolvers.template.js
+mesh/templates/
 
 # Generated files  
 mesh-resolvers.js

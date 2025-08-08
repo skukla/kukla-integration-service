@@ -105,7 +105,7 @@ async function generateMeshResolver() {
     spinner: 'dots',
   }).start();
 
-  const templatePath = path.join(__dirname, '../mesh/resolvers.template.js');
+  const templatePath = path.join(__dirname, '../mesh/templates/resolvers.template.js');
   const outputPath = path.join(__dirname, '../mesh/resolvers.js');
 
   if (!fs.existsSync(templatePath)) {
@@ -161,6 +161,42 @@ async function generateMeshResolver() {
 
   spinner.stop();
   console.log(format.success('Mesh resolver generated'));
+}
+
+async function generateMeshIntegration() {
+  const spinner = ora({
+    text: format.muted('Generating mesh client module'),
+    spinner: 'dots',
+  }).start();
+
+  const templatePath = path.join(__dirname, '../mesh/templates/mesh.template.js');
+  const outputPath = path.join(__dirname, '../lib/commerce/mesh-client.js');
+
+  if (!fs.existsSync(templatePath)) {
+    spinner.stop();
+    console.log(format.warning('No mesh integration template found, skipping'));
+    return;
+  }
+
+  // Load template
+  let template = fs.readFileSync(templatePath, 'utf8');
+
+  // Load external GraphQL query for inlining
+  const queriesDir = path.join(__dirname, '../mesh/queries');
+  const enrichedProductsQuery = fs
+    .readFileSync(path.join(queriesDir, 'get-enriched-products.gql'), 'utf8')
+    .trim();
+
+  // Replace query placeholder with inlined query
+  template = template.replace(
+    /\{\{\{GET_ENRICHED_PRODUCTS_QUERY\}\}\}/g,
+    JSON.stringify(enrichedProductsQuery)
+  );
+
+  fs.writeFileSync(outputPath, template);
+
+  spinner.stop();
+  console.log(format.success('Mesh client module generated'));
 }
 
 async function generateMeshConfig() {
@@ -223,6 +259,7 @@ Note: For full deployment, use 'npm run deploy'
       await generateFrontendConfig();
     } else if (args['mesh-only']) {
       await generateMeshResolver();
+      await generateMeshIntegration();
       await generateMeshConfig();
     } else {
       console.log(format.warning('No build target specified. Use --config-only or --mesh-only'));

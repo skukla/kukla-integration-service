@@ -11,6 +11,8 @@ dist/
 # Generated files
 web-src/src/config/generated/
 web-src/src/js/core/url/index.js
+mesh/resolvers.js
+lib/commerce/mesh-client.js
 mesh.json
 
 # IDE and OS files
