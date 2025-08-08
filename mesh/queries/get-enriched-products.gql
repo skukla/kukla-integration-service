@@ -28,6 +28,9 @@ query GetEnrichedProducts($pageSize: Int) {
       executionTime
       apiCalls
       dataSourcesUnified
+      productsApiCalls
+      categoriesApiCalls
+      inventoryApiCalls
     }
   }
 }
