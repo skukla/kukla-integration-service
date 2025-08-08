@@ -84,7 +84,7 @@ function getMeshSourceHash() {
       'mesh/queries/categories-batch.gql',
       'mesh/queries/inventory-batch.gql',
       'mesh/queries/get-enriched-products.gql',
-      'mesh/types/schema.graphql',
+      'mesh/types/types.graphql',
       // Schema files
       'mesh/schema/products-response.json',
       'mesh/schema/category-batch-resp.json',

@@ -10,7 +10,7 @@ const config = createConfig({
 
 // Load external GraphQL resolver types from consolidated schema file
 const typesDir = path.join(__dirname, 'types');
-const resolverTypes = fs.readFileSync(path.join(typesDir, 'schema.graphql'), 'utf8');
+const resolverTypes = fs.readFileSync(path.join(typesDir, 'types.graphql'), 'utf8');
 
 module.exports = {
   // Enhanced response configuration with native mesh caching

@@ -1,0 +1,56 @@
+# Core product types
+type EnrichedProduct {
+  sku: String!
+  name: String
+  price: Float
+  type_id: String
+  custom_attributes: [CustomAttribute]
+  inventory: ProductInventory!
+  categories: [ProductCategory!]!
+  media_gallery_entries: [MediaGalleryEntry!]!
+}
+
+type ProductCategory {
+  id: Int
+  name: String
+}
+
+type MediaGalleryEntry {
+  file: String
+  url: String
+  types: [String]
+}
+
+type ProductInventory {
+  quantity: Int!
+}
+
+type CustomAttribute {
+  attribute_code: String
+  value: JSON
+}
+
+# Response wrappers
+type EnrichedProductsResponse {
+  products: [EnrichedProduct]
+  total_count: Int
+  message: String
+  performance: PerformanceMetrics
+}
+
+# Performance tracking
+type PerformanceMetrics {
+  method: String
+  productCount: Int
+  executionTime: Int
+  apiCalls: Int
+  dataSourcesUnified: Int
+  productsApiCalls: Int
+  categoriesApiCalls: Int
+  inventoryApiCalls: Int
+}
+
+# Query extensions
+extend type Query {
+  mesh_products_enriched(pageSize: Int): EnrichedProductsResponse
+}
