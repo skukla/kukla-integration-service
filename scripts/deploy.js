@@ -43,7 +43,9 @@ async function runDeployCommand(command, description, suppressCompletion = false
     return true;
   } catch (error) {
     console.error(format.error(`${description} failed: ${error.message}`));
-    return false;
+
+    // Re-throw error so caller can access error details for better messaging
+    throw new Error(error.message);
   }
 }
 
@@ -93,14 +95,18 @@ function storeMeshHash(hash) {
 
 async function purgeMeshCache(isProd, environment) {
   const cacheCommand = `aio api-mesh:cache:purge -a -c${isProd ? ' --prod' : ''}`;
-  if (!(await runDeployCommand(cacheCommand, `Purging mesh cache in ${environment}`))) {
+  try {
+    await runDeployCommand(cacheCommand, `Purging mesh cache in ${environment}`);
+  } catch (error) {
+    // Don't fail deployment for cache purge issues - just warn and continue
     console.log(format.warning('Cache purge failed, proceeding with mesh update anyway'));
   }
 }
 
 async function updateMeshConfiguration(isProd, environment) {
   const meshCommand = `cd mesh && echo "y" | aio api-mesh update mesh.json${isProd ? ' --prod' : ''}`;
-  return await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`);
+  await runDeployCommand(meshCommand, `Updating mesh configuration in ${environment}`);
+  return true;
 }
 
 function checkMeshStatus(statusOutput) {
@@ -187,13 +193,101 @@ async function pollMeshStatus() {
 async function updateMeshWithPolling(isProd = false) {
   const environment = isProd ? 'production' : 'staging';
 
-  await purgeMeshCache(isProd, environment);
+  // Try to purge cache, but don't fail if it doesn't exist
+  try {
+    await purgeMeshCache(isProd, environment);
+  } catch (error) {
+    console.log(format.warning('Cache purge failed, proceeding with mesh update anyway'));
+  }
 
-  if (!(await updateMeshConfiguration(isProd, environment))) {
+  // This will throw an error if mesh update fails, allowing caller to handle it
+  const meshUpdateSuccess = await updateMeshConfiguration(isProd, environment);
+  if (!meshUpdateSuccess) {
     return false;
   }
 
   return await pollMeshStatus();
+}
+
+async function checkMeshChanges() {
+  const oldMeshHash = getStoredMeshHash();
+  const spinner = ora({
+    text: format.muted('Checking mesh configuration for changes...'),
+    spinner: 'dots',
+  }).start();
+
+  try {
+    execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
+    const newMeshHash = getMeshSourceHash();
+    const meshChanged = oldMeshHash !== newMeshHash;
+
+    spinner.stop();
+    if (meshChanged) {
+      console.log(format.success('Mesh configuration (updated)'));
+    } else {
+      console.log(format.success('Mesh configuration (no changes)'));
+    }
+
+    return { meshChanged, newMeshHash };
+  } catch (error) {
+    spinner.stop();
+    console.error(format.error(`Mesh configuration check failed: ${error.message}`));
+    throw error;
+  }
+}
+
+async function handleMeshUpdate(isProd, environment, meshChanged, newMeshHash) {
+  if (!meshChanged || !newMeshHash) {
+    return { success: true, failed: false };
+  }
+
+  console.log();
+  console.log(format.deploymentAction('Mesh configuration changed, updating deployed mesh...'));
+
+  try {
+    const meshUpdateSuccess = await updateMeshWithPolling(isProd);
+    if (meshUpdateSuccess) {
+      storeMeshHash(newMeshHash);
+      return { success: true, failed: false };
+    } else {
+      return { success: false, failed: true, reason: 'Mesh update failed' };
+    }
+  } catch (error) {
+    let reason = error.message;
+    if (error.message.includes('No mesh found') || error.message.includes('Unable to update')) {
+      reason = 'No mesh provisioned in workspace';
+    }
+    return { success: false, failed: true, reason };
+  }
+}
+
+function displayFinalResults(environment, meshResult) {
+  console.log();
+
+  if (meshResult.failed) {
+    console.log(
+      format.warning(
+        `Application deployed to ${environment.toLowerCase()} with mesh configuration issues`
+      )
+    );
+    console.log(`   → App deployment: ${format.success('SUCCESS')}`);
+    console.log(`   → Mesh deployment: ${format.error('FAILED')} (${meshResult.reason})`);
+    console.log();
+    console.log(format.muted('Next steps:'));
+    if (meshResult.reason.includes('No mesh') || meshResult.reason.includes('workspace')) {
+      console.log(format.muted('   • Provision mesh via Adobe Developer Console'));
+      console.log(format.muted('   • Verify workspace configuration'));
+    }
+    console.log(format.muted('   • Run: npm run deploy:mesh'));
+    console.log();
+    console.log(
+      format.warning('⚠ Mesh-dependent features will not work until mesh is provisioned')
+    );
+  } else {
+    console.log(
+      format.celebration(`Application deployed successfully to ${environment.toLowerCase()}!`)
+    );
+  }
 }
 
 async function deployApp(isProd = false) {
@@ -211,33 +305,8 @@ async function deployApp(isProd = false) {
     return false;
   }
 
-  // Check and update mesh configuration
-  const oldMeshHash = getStoredMeshHash();
-  let meshChanged = false;
-  let newMeshHash = null;
-
-  const spinner = ora({
-    text: format.muted('Checking mesh configuration for changes...'),
-    spinner: 'dots',
-  }).start();
-
-  try {
-    execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
-    newMeshHash = getMeshSourceHash();
-    meshChanged = oldMeshHash !== newMeshHash;
-
-    if (meshChanged) {
-      spinner.stop();
-      console.log(format.success('Mesh configuration (updated)'));
-    } else {
-      spinner.stop();
-      console.log(format.success('Mesh configuration (no changes)'));
-    }
-  } catch (error) {
-    spinner.stop();
-    console.error(format.error(`Mesh configuration check failed: ${error.message}`));
-    return false;
-  }
+  // Check for mesh changes
+  const { meshChanged, newMeshHash } = await checkMeshChanges();
 
   // Deploy to Adobe I/O Runtime
   console.log();
@@ -249,41 +318,12 @@ async function deployApp(isProd = false) {
     return false;
   }
 
-  // Update mesh if configuration changed
-  let additionalWorkDone = false;
-  if (meshChanged && newMeshHash) {
-    console.log();
-    console.log(format.deploymentAction('Mesh configuration changed, updating deployed mesh...'));
-    additionalWorkDone = true;
-    try {
-      const meshUpdateSuccess = await updateMeshWithPolling(isProd);
-      if (meshUpdateSuccess) {
-        storeMeshHash(newMeshHash);
-      } else {
-        console.log(
-          format.warning(
-            'Mesh update failed - deployment succeeded but mesh may need manual update'
-          )
-        );
-        console.log(format.muted('   → You can run: npm run deploy:mesh'));
-      }
-    } catch (error) {
-      console.log(format.warning(`Mesh update encountered issues: ${error.message}`));
-      console.log(format.warning('Deployment completed but mesh may need manual update'));
-      console.log(format.muted('   → You can run: npm run deploy:mesh'));
-    }
-  } else if (!newMeshHash) {
-    console.log();
-    console.log(format.warning('Could not determine mesh configuration status'));
-  }
+  // Handle mesh update if needed
+  const meshResult = await handleMeshUpdate(isProd, environment, meshChanged, newMeshHash);
 
-  // Success message if additional work was done
-  if (additionalWorkDone) {
-    console.log();
-    console.log(
-      format.celebration(`Application deployed successfully to ${environment.toLowerCase()}!`)
-    );
-  }
+  // Display final results
+  displayFinalResults(environment, meshResult);
+
   return true;
 }
 
