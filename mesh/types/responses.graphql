@@ -1,6 +1,0 @@
-type EnrichedProductsResponse {
-  products: [EnrichedProduct]
-  total_count: Int
-  message: String
-  performance: PerformanceMetrics
-}

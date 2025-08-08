@@ -8,15 +8,9 @@ const config = createConfig({
   COMMERCE_BASE_URL: process.env.COMMERCE_BASE_URL || 'https://citisignal-com774.adobedemo.com',
 });
 
-// Load external GraphQL resolver types from multiple files
+// Load external GraphQL resolver types from consolidated schema file
 const typesDir = path.join(__dirname, 'types');
-const productTypes = fs.readFileSync(path.join(typesDir, 'products.graphql'), 'utf8');
-const responseTypes = fs.readFileSync(path.join(typesDir, 'responses.graphql'), 'utf8');
-const performanceTypes = fs.readFileSync(path.join(typesDir, 'performance.graphql'), 'utf8');
-const queryTypes = fs.readFileSync(path.join(typesDir, 'queries.graphql'), 'utf8');
-
-// Combine all type definitions
-const resolverTypes = [productTypes, responseTypes, performanceTypes, queryTypes].join('\n\n');
+const resolverTypes = fs.readFileSync(path.join(typesDir, 'schema.graphql'), 'utf8');
 
 module.exports = {
   // Enhanced response configuration with native mesh caching
