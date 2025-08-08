@@ -37,6 +37,9 @@
             class="btn btn-primary export-btn"
             data-action="get-products"
             data-export-method="rest-api"
+            hx-post="/api/get-products"
+            hx-target="#export-result"
+            hx-swap="innerHTML"
           >
             <span class="btn-label">Export via REST API</span>
             <div class="btn-subtitle">Multiple API calls</div>
@@ -46,6 +49,9 @@
             class="btn btn-secondary export-btn"
             data-action="get-products-mesh"
             data-export-method="api-mesh"
+            hx-post="/api/get-products-mesh"
+            hx-target="#export-result"
+            hx-swap="innerHTML"
           >
             <span class="btn-label">Export via API Mesh</span>
             <div class="btn-subtitle">Single GraphQL query</div>
@@ -149,8 +155,12 @@
           </div>
           <div class="modal-footer">
             <div class="btn-group">
-              <button type="button" class="btn btn-secondary modal-close">Cancel</button>
-              <button type="button" class="btn btn-danger delete-confirm-btn">
+              <button type="button" class="btn btn-secondary modal-close" 
+                      onclick="hideModal()">Cancel</button>
+              <button type="button" class="btn btn-danger delete-confirm-btn"
+                      hx-delete="/api/delete-file"
+                      hx-target=".table-content"
+                      hx-swap="innerHTML">
                 <span class="btn-text btn-label">Delete</span>
               </button>
             </div>
