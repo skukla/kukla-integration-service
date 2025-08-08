@@ -42,6 +42,7 @@ async function main(params) {
         method: 'REST API',
         apiCalls: result.apiCalls.total,
       },
+      'Products exported successfully',
       logger
     );
   } catch (error) {
