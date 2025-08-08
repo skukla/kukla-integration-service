@@ -184,6 +184,23 @@ function setupDownloadErrorHandler(htmx) {
 }
 
 /**
+ * Handle download with spinner - called by backend-generated onclick handlers
+ * Uses timing-based approach for reliable UX feedback
+ * @param {HTMLElement} button - Download button element
+ * @param {string} fileName - File name being downloaded
+ */
+function handleDownloadWithSpinner(button, fileName) {
+  // Show loading state immediately
+  button.classList.add('is-loading');
+
+  // Give the browser download a moment to start, then show success and remove spinner
+  setTimeout(() => {
+    button.classList.remove('is-loading');
+    showNotification(`${fileName} downloaded successfully`, 'success');
+  }, 800); // 800ms - quick feedback for immediate downloads
+}
+
+/**
  * Initialize HTMX download handlers
  * @param {Object} htmx - HTMX instance
  */
@@ -191,4 +208,7 @@ export function initializeDownloadHandlers(htmx) {
   setupDownloadClickHandler(htmx);
   setupDownloadResponseHandler(htmx);
   setupDownloadErrorHandler(htmx);
+
+  // Make handleDownloadWithSpinner globally available for backend-generated onclick handlers
+  window.handleDownloadWithSpinner = handleDownloadWithSpinner;
 }
