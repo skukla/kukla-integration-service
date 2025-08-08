@@ -47,6 +47,7 @@ async function main(params) {
         method: 'API Mesh',
         apiCalls: meshData.performance?.apiCalls || 1,
       },
+      'Products exported successfully',
       logger
     );
   } catch (error) {

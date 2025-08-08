@@ -3,17 +3,9 @@
  * @module ui/components/notifications
  */
 
-import { getConfig } from '../../../core/config/index.js';
-
+// Notification defaults - no config dependency needed
 const NotificationDefaults = {
-  DEFAULT_DURATION: (() => {
-    try {
-      const config = getConfig();
-      return config.ui.notifications.default;
-    } catch (error) {
-      return 5000; // Fallback if config fails
-    }
-  })(),
+  DEFAULT_DURATION: 5000, // 5 seconds default
 };
 
 // Notification configuration
@@ -109,6 +101,9 @@ export function showNotification(message, options = {}) {
 function addNotificationToContainer(container, message, options) {
   const notification = createNotificationElement(message, options);
   container.appendChild(notification);
+
+  // Make container visible when adding notifications
+  container.style.display = 'flex';
 
   // Set up removal if not an error with retry
   if (!(options.type === 'error' && options.canRetry)) {
@@ -207,7 +202,13 @@ function removeNotification(notification) {
 
   setTimeout(() => {
     if (notification.parentNode) {
-      notification.parentNode.removeChild(notification);
+      const container = notification.parentNode;
+      container.removeChild(notification);
+
+      // Hide container if no more notifications
+      if (container.children.length === 0) {
+        container.style.display = 'none';
+      }
     }
   }, NOTIFICATION_CONFIG.ANIMATION_DURATION);
 }

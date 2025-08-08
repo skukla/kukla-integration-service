@@ -183,7 +183,6 @@ function generateModalContent(fileName, filePath) {
                         hx-target=".table-content"
                         hx-swap="innerHTML"
                         hx-trigger="click"
-                        hx-on="htmx:afterRequest: if(event.detail.successful) { hideModal(); showNotification('File deleted successfully', 'success'); }"
                         aria-label="Confirm deletion of ${fileName}">
                     <span class="btn-label">Delete</span>
                 </button>

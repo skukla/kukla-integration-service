@@ -12,20 +12,3 @@ export * as ui from './ui/index.js';
 
 // HTMX integration
 export * as htmx from './htmx/index.js';
-
-// Individual module exports for convenience
-export { initializeHtmx } from './htmx/index.js';
-export {
-  initializeModal,
-  initializeFileBrowser,
-  showNotification,
-  showModal,
-  hideModal,
-} from './ui/index.js';
-export {
-  getActionUrl,
-  loadConfig,
-  getRuntimeConfig,
-  isStaging,
-  isProduction,
-} from './core/index.js';
