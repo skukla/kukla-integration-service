@@ -13,6 +13,7 @@ const { errorResponse, successResponse, checkMissingRequestInputs } = require('.
 
 async function main(params) {
   const logger = Core.Logger('get-products', { level: params.LOG_LEVEL || 'info' });
+  const startTime = Date.now();
 
   try {
     // Validate required parameters
@@ -41,6 +42,16 @@ async function main(params) {
         fileName: storageResult.fileName,
         method: 'REST API',
         apiCalls: result.apiCalls.total,
+        performance: {
+          method: 'REST API',
+          productCount: result.products.length,
+          executionTime: Date.now() - startTime,
+          apiCalls: result.apiCalls.total,
+          dataSourcesUnified: 3,
+          productsApiCalls: result.apiCalls.products,
+          categoriesApiCalls: result.apiCalls.categories,
+          inventoryApiCalls: result.apiCalls.inventory,
+        },
       },
       'Products exported successfully',
       logger

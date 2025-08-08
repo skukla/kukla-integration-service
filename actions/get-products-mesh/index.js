@@ -13,6 +13,7 @@ const { errorResponse, successResponse, checkMissingRequestInputs } = require('.
 
 async function main(params) {
   const logger = Core.Logger('get-products-mesh', { level: params.LOG_LEVEL || 'info' });
+  const startTime = Date.now();
 
   try {
     // Validate required parameters
@@ -46,6 +47,16 @@ async function main(params) {
         fileName: storageResult.fileName,
         method: 'API Mesh',
         apiCalls: meshData.performance?.apiCalls || 1,
+        performance: {
+          method: meshData.performance?.method || 'API Mesh',
+          productCount: meshData.performance?.productCount || meshData.products.length,
+          executionTime: Date.now() - startTime,
+          apiCalls: meshData.performance?.apiCalls || 1,
+          dataSourcesUnified: meshData.performance?.dataSourcesUnified || 3,
+          productsApiCalls: meshData.performance?.productsApiCalls || 1,
+          categoriesApiCalls: meshData.performance?.categoriesApiCalls || 1,
+          inventoryApiCalls: meshData.performance?.inventoryApiCalls || 1,
+        },
       },
       'Products exported successfully',
       logger
