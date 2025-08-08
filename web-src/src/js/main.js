@@ -2,7 +2,10 @@
  * Main application entry point - Adobe App Builder frontend
  * Simplified frontend with HTMX integration and rich notifications
  */
-import { createSuccessNotificationContent } from './components/export-products-ui.js';
+import {
+  createSuccessNotificationContent,
+  toggleEndpoints,
+} from './components/export-products-ui.js';
 import { config } from '../config/generated/config.js';
 
 // ============================================================================
@@ -328,20 +331,6 @@ function refreshFileList(callback) {
   }
 }
 
-// Toggle function for collapsible endpoints list
-function toggleEndpoints(button) {
-  const endpointsList = button.nextElementSibling;
-  const toggleIcon = button.querySelector('.toggle-icon');
-
-  if (endpointsList.style.display === 'none' || endpointsList.style.display === '') {
-    endpointsList.style.display = 'block';
-    toggleIcon.textContent = '▲';
-  } else {
-    endpointsList.style.display = 'none';
-    toggleIcon.textContent = '▼';
-  }
-}
-
 // Simple file browser initialization
 function initializeFileBrowser() {
   // Load initial file list
@@ -428,35 +417,9 @@ function initializeModal() {
   });
 }
 
-// Download handler with spinner and timed success notification
-function handleDownloadWithSpinner(buttonElement, filename) {
-  // Show loading state immediately
-  buttonElement.classList.add('is-loading');
-
-  // Give the browser download a moment to start, then show success and remove spinner
-  setTimeout(() => {
-    buttonElement.classList.remove('is-loading');
-    showNotification(`${filename} downloaded successfully`, 'success');
-  }, 1500); // 1.5 seconds - enough time for download to start
-}
-
-// Download handler
-function handleDownloadClick(filename) {
-  // Show notification after download initiated
-  setTimeout(() => {
-    showNotification(`${filename} downloaded successfully`, 'success');
-  }, 500);
-}
-
 // Make functions globally available for HTMX handlers
-window.showDownloadNotification = function (filename) {
-  showNotification(`${filename} downloaded successfully`, 'success');
-};
-window.handleDownloadClick = handleDownloadClick;
-window.handleDownloadWithSpinner = handleDownloadWithSpinner;
 window.hideModal = hideModal;
 window.showNotification = showNotification;
-window.refreshFileList = refreshFileList;
 
 // ============================================================================
 // APPLICATION INITIALIZATION
