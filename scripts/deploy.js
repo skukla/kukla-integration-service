@@ -9,34 +9,9 @@ const { execSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 
-const chalk = require('chalk');
 const ora = require('ora');
 
-// Formatting functions matching master branch style
-const format = {
-  success: (message) => chalk.green(`✔ ${message}`),
-  error: (message) => chalk.red(`✖ ${message}`),
-  warning: (message) => chalk.yellow(`⚠ ${message}`),
-  deploymentStart: (message) => `🚀 ${message}`,
-  deploymentAction: (message) => `🔧 ${message}`,
-  celebration: (message) => `🎉 ${message}`,
-  majorSuccess: (message) => chalk.green(`✅ ${message}`),
-  environment: (env) => env.charAt(0).toUpperCase() + env.slice(1),
-  muted: (message) => chalk.gray(message),
-  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-};
-
-function parseArgs(args) {
-  const parsed = {};
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg.startsWith('--')) {
-      const [key, value] = arg.substring(2).split('=');
-      parsed[key] = value || true;
-    }
-  }
-  return parsed;
-}
+const { format, parseArgs, isProdEnvironment } = require('./utils/shared');
 
 async function runBuildCommand(command, description) {
   const spinner = ora({
@@ -367,7 +342,7 @@ Examples:
     return;
   }
 
-  const isProd = args.environment === 'production';
+  const isProd = isProdEnvironment(args);
 
   try {
     let success;

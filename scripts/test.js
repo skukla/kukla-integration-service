@@ -11,47 +11,11 @@ const path = require('path');
 
 const chalk = require('chalk');
 const dotenv = require('dotenv');
-const ora = require('ora');
+
+const { format, parseArgs, withSpinner } = require('./utils/shared');
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
-// Formatting functions matching master branch style
-const format = {
-  success: (message) => chalk.green(`✔ ${message}`),
-  error: (message) => chalk.red(`✖ ${message}`),
-  url: (url) => `🔗 URL: ${chalk.blue(url)}`,
-  environment: (env) => env.charAt(0).toUpperCase() + env.slice(1),
-  status: (status, code) => {
-    const color = code >= 200 && code < 300 ? 'green' : 'red';
-    return chalk[color](`Status: ${status.toUpperCase()} (${code})`);
-  },
-  storage: (storageInfo) => `📦 Storage: ${storageInfo}`,
-  muted: (message) => chalk.gray(message),
-  downloadUrl: (url) => chalk.blue(url),
-  downloadHeader: (header) => chalk.white(header),
-  deploymentStart: (message) => `🚀 ${message}`,
-  info: (message) => `📊 ${message}`,
-};
-
-// Spinner utilities matching master branch pattern
-async function withSpinner(spinnerText, asyncFn) {
-  const spinner = ora({
-    text: format.muted(spinnerText),
-    spinner: 'dots',
-  }).start();
-
-  try {
-    const result = await asyncFn();
-    spinner.stop();
-    // Remove the "Request completed" message - if no error, it completed
-    return result;
-  } catch (error) {
-    spinner.stop();
-    console.log(format.error(`Failed: ${error.message}`));
-    throw error;
-  }
-}
 
 // Human-readable formatting utilities
 function formatFileSize(bytes) {
@@ -69,24 +33,6 @@ function formatDuration(seconds) {
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
   return `${hours}h ${minutes}m ${secs}s`;
-}
-
-function parseArgs(args) {
-  const parsed = { params: {} };
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg.startsWith('--')) {
-      const [key, value] = arg.substring(2).split('=');
-      if (value) {
-        parsed[key] = value;
-      } else {
-        parsed[key] = true;
-      }
-    } else if (!parsed.action && !parsed.type) {
-      parsed.action = arg;
-    }
-  }
-  return parsed;
 }
 
 function buildActionUrl(actionName, params = {}, isProd = false) {
@@ -156,54 +102,68 @@ async function makeRequest(url, method = 'GET') {
   });
 }
 
-// Display test results matching master branch layout
+// Display storage information section
+function displayStorageInfo(storage) {
+  if (!storage) return;
+
+  const storageInfo = `${storage.provider} (${storage.location})`;
+  console.log(format.storage(storageInfo));
+
+  if (storage.properties?.size) {
+    console.log(format.muted(`   → Size: ${formatFileSize(storage.properties.size)}`));
+  }
+  if (storage.management?.expiresIn) {
+    console.log(format.muted(`   → Expires: ${formatDuration(storage.management.expiresIn)}`));
+  }
+  console.log();
+}
+
+// Display progress steps based on API response data
+function displayProgressSteps(data) {
+  if (data.productCount === undefined) return;
+
+  console.log();
+  console.log(chalk.white('Progress:'));
+  console.log(chalk.green('1. ✔ Validated input parameters'));
+  console.log(
+    chalk.green(`2. ✔ Fetched ${data.productCount} products via ${data.method || 'API'}`)
+  );
+  if (data.apiCalls) {
+    console.log(chalk.green(`3. ✔ Made ${data.apiCalls} API calls`));
+  }
+  console.log(chalk.green('4. ✔ Generated CSV file'));
+  if (data.provider) {
+    console.log(chalk.green(`5. ✔ Stored file to ${data.provider}`));
+  }
+}
+
+// Display performance metrics
+function displayPerformanceInfo(data) {
+  if (!data.productCount && !data.apiCalls) return;
+
+  console.log();
+  console.log('📊 Performance:');
+  if (data.method) console.log(`   Method: ${data.method}`);
+  if (data.productCount !== undefined) console.log(`   Products: ${data.productCount}`);
+  if (data.apiCalls) console.log(`   API Calls: ${data.apiCalls}`);
+  if (data.fileName) console.log(`   File: ${data.fileName}`);
+}
+
+// Main display function - simplified and focused
 function displayTestResults(response) {
   console.log();
 
-  // Display storage info if available
-  if (response.parsed && response.parsed.storage) {
-    const storage = response.parsed.storage;
-    const storageInfo = `${storage.provider} (${storage.location})`;
-    console.log(format.storage(storageInfo));
+  displayStorageInfo(response.parsed?.storage);
 
-    if (storage.properties && storage.properties.size) {
-      console.log(format.muted(`   → Size: ${formatFileSize(storage.properties.size)}`));
-    }
-
-    if (storage.management && storage.management.expiresIn) {
-      console.log(format.muted(`   → Expires: ${formatDuration(storage.management.expiresIn)}`));
-    }
-    console.log();
-  }
-
-  // Display status
   const isSuccess = response.statusCode < 400;
   console.log(format.status(isSuccess ? 'SUCCESS' : 'ERROR', response.statusCode));
 
-  // Display response content
   if (isSuccess && response.parsed) {
     if (response.parsed.message) {
       console.log(`Message: ${response.parsed.message}`);
     }
 
-    // Generate progress steps from API response data
-    if (response.parsed.productCount !== undefined) {
-      console.log();
-      console.log(chalk.white('Progress:'));
-      console.log(chalk.green('1. ✔ Validated input parameters'));
-      console.log(
-        chalk.green(
-          `2. ✔ Fetched ${response.parsed.productCount} products via ${response.parsed.method || 'API'}`
-        )
-      );
-      if (response.parsed.apiCalls) {
-        console.log(chalk.green(`3. ✔ Made ${response.parsed.apiCalls} API calls`));
-      }
-      console.log(chalk.green('4. ✔ Generated CSV file'));
-      if (response.parsed.provider) {
-        console.log(chalk.green(`5. ✔ Stored file to ${response.parsed.provider}`));
-      }
-    }
+    displayProgressSteps(response.parsed);
 
     if (response.parsed.downloadUrl) {
       console.log();
@@ -211,24 +171,8 @@ function displayTestResults(response) {
       console.log(`   ${format.downloadUrl(response.parsed.downloadUrl)}`);
     }
 
-    // Display performance data from simplified response
-    if (response.parsed.productCount !== undefined || response.parsed.apiCalls) {
-      console.log();
-      console.log('📊 Performance:');
-      if (response.parsed.method) {
-        console.log(`   Method: ${response.parsed.method}`);
-      }
-      if (response.parsed.productCount !== undefined) {
-        console.log(`   Products: ${response.parsed.productCount}`);
-      }
-      if (response.parsed.apiCalls) {
-        console.log(`   API Calls: ${response.parsed.apiCalls}`);
-      }
-      if (response.parsed.fileName) {
-        console.log(`   File: ${response.parsed.fileName}`);
-      }
-    }
-  } else if (!isSuccess && response.parsed && response.parsed.error) {
+    displayPerformanceInfo(response.parsed);
+  } else if (!isSuccess && response.parsed?.error) {
     console.log(`Error: ${response.parsed.error}`);
   }
 }

@@ -8,36 +8,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const chalk = require('chalk');
 const dotenv = require('dotenv');
 const ora = require('ora');
 
+const { format, parseArgs } = require('./utils/shared');
+
 // Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
-
-// Formatting functions matching master branch style
-const format = {
-  success: (message) => chalk.green(`✔ ${message}`),
-  majorSuccess: (message) => chalk.green(`✅ ${message}`),
-  error: (message) => chalk.red(`✖ ${message}`),
-  deploymentAction: (message) => `🔧 ${message}`,
-  deploymentStart: (message) => `🚀 ${message}`,
-  warning: (message) => chalk.yellow(`⚠ ${message}`),
-  muted: (message) => chalk.gray(message),
-  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-};
-
-function parseArgs(args) {
-  const parsed = {};
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg.startsWith('--')) {
-      const key = arg.substring(2);
-      parsed[key] = true;
-    }
-  }
-  return parsed;
-}
 
 async function generateFrontendConfig() {
   const spinner = ora({
