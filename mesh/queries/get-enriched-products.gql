@@ -5,10 +5,7 @@ query GetEnrichedProducts {
       name
       price
       type_id
-      custom_attributes {
-        attribute_code
-        value
-      }
+      url_key
       inventory {
         quantity
       }
@@ -19,9 +16,12 @@ query GetEnrichedProducts {
         url
         types
       }
+      custom_attributes {
+        attribute_code
+        value
+      }
     }
     total_count
-    message
     performance {
       method
       productCount

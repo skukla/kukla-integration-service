@@ -130,6 +130,10 @@ function enrichProducts(products, categoryMap, inventoryMap) {
       }
     });
 
+    // Extract url_key from custom_attributes
+    const urlKeyAttr = product.custom_attributes?.find((attr) => attr.attribute_code === 'url_key');
+    const url_key = urlKeyAttr?.value || '';
+
     // Enrich media URLs
     const enrichedMedia = product.media_gallery_entries
       ? product.media_gallery_entries.map((entry) => {
@@ -145,6 +149,7 @@ function enrichProducts(products, categoryMap, inventoryMap) {
 
     return {
       ...product,
+      url_key,
       inventory: {
         quantity: Number(inventory.qty) || 0,
       },
