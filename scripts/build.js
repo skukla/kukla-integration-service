@@ -119,6 +119,7 @@ async function generateMeshResolver() {
     /\{\{\{MAX_CATEGORIES_DISPLAY\}\}\}/g,
     config.products.maxCategoriesDisplay
   );
+  template = template.replace(/\{\{\{MESH_PAGE_SIZE\}\}\}/g, config.mesh.pagination.pageSize);
 
   // Replace GraphQL query placeholders with inlined queries
   template = template.replace(
@@ -158,11 +159,25 @@ async function generateMeshIntegration() {
   // Load template
   let template = fs.readFileSync(templatePath, 'utf8');
 
+  // Read the main config with environment variables
+  const createConfig = require('../config.js');
+  const config = createConfig(process.env);
+
   // Load external GraphQL query for inlining
   const queriesDir = path.join(__dirname, '../mesh/queries');
-  const enrichedProductsQuery = fs
+  let enrichedProductsQuery = fs
     .readFileSync(path.join(queriesDir, 'get-enriched-products.gql'), 'utf8')
     .trim();
+
+  // Replace pagination placeholders in the GraphQL query with config values
+  enrichedProductsQuery = enrichedProductsQuery.replace(
+    /\{\{\{MESH_PAGE_SIZE\}\}\}/g,
+    config.mesh.pagination.pageSize
+  );
+  enrichedProductsQuery = enrichedProductsQuery.replace(
+    /\{\{\{MESH_DEFAULT_PAGE\}\}\}/g,
+    config.mesh.pagination.defaultPage
+  );
 
   // Replace query placeholder with inlined query
   template = template.replace(

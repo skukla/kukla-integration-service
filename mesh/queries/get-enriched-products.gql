@@ -1,5 +1,5 @@
-query GetEnrichedProducts($pageSize: Int) {
-  mesh_products_enriched(pageSize: $pageSize) {
+query GetEnrichedProducts {
+  mesh_products_enriched {
     products {
       sku
       name

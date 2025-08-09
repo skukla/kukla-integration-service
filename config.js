@@ -30,6 +30,10 @@ function createConfig(params = {}) {
         inventory: 50,
         categories: 20,
       },
+      pagination: {
+        pageSize: 50,
+        defaultPage: 1,
+      },
     },
 
     // API Mesh Configuration
@@ -39,6 +43,10 @@ function createConfig(params = {}) {
       categoryDisplayLimit: 10,
       categoryBatchThreshold: 1,
       inventoryBatchThreshold: 1,
+      pagination: {
+        pageSize: 50,
+        defaultPage: 1,
+      },
     },
 
     // Storage Configuration
@@ -58,7 +66,6 @@ function createConfig(params = {}) {
 
     // Product Export Configuration
     products: {
-      expectedCount: 119,
       maxCategoriesDisplay: 10,
       defaultFilename: 'products.csv',
     },

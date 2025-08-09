@@ -31,10 +31,10 @@ function getCategoryIds(product) {
 /**
  * Fetch products from Commerce API
  */
-async function fetchProducts(context, pageSize) {
+async function fetchProducts(context, pageSize, currentPage) {
   const response = await context.Products.Query.products_list({
     root: {},
-    args: { pageSize },
+    args: { pageSize, currentPage },
     context,
     selectionSet: QUERIES.productsList,
   });
@@ -43,7 +43,10 @@ async function fetchProducts(context, pageSize) {
     throw new Error('Failed to fetch products');
   }
 
-  return response.items;
+  return {
+    items: response.items,
+    total_count: response.total_count || 0
+  };
 }
 
 /**
@@ -162,14 +165,33 @@ module.exports = {
           try {
             const startTime = Date.now();
 
-            // Fetch products
-            const products = await fetchProducts(context, args.pageSize);
+            // Use configured pageSize for internal pagination
+            const pageSize = {{{MESH_PAGE_SIZE}}};
+            let currentPage = 1;
+            let allProducts = [];
+            let totalCount = 0;
+            let hasMorePages = true;
 
-            // Extract category IDs and SKUs
+            // Pagination loop - fetch all products internally
+            while (hasMorePages) {
+              const productsResult = await fetchProducts(context, pageSize, currentPage);
+              const products = productsResult.items;
+              
+              allProducts = allProducts.concat(products);
+              totalCount = productsResult.total_count;
+              
+              // Check if we have more pages
+              const currentItemCount = currentPage * pageSize;
+              hasMorePages = products.length === pageSize && currentItemCount < totalCount;
+              
+              currentPage++;
+            }
+
+            // Extract category IDs and SKUs from all products
             const categoryIds = new Set();
             const skus = [];
 
-            products.forEach((product) => {
+            allProducts.forEach((product) => {
               skus.push(product.sku);
               getCategoryIds(product).forEach((id) => categoryIds.add(id));
             });
@@ -181,16 +203,16 @@ module.exports = {
             ]);
 
             // Enrich products
-            const enrichedProducts = enrichProducts(products, categoryResult.categoryMap, inventoryResult.inventoryMap);
+            const enrichedProducts = enrichProducts(allProducts, categoryResult.categoryMap, inventoryResult.inventoryMap);
 
             // Simple performance metrics
             const executionTime = Date.now() - startTime;
-            const totalApiCalls = 1 + categoryResult.apiCalls + inventoryResult.apiCalls; // Products + Categories + Inventory
+            const totalApiCalls = (currentPage - 1) + categoryResult.apiCalls + inventoryResult.apiCalls; // Multiple product calls + Categories + Inventory
 
             return {
               products: enrichedProducts,
-              total_count: enrichedProducts.length,
-              message: "Successfully enriched " + enrichedProducts.length + " products",
+              total_count: totalCount,
+              message: "Successfully enriched " + enrichedProducts.length + " products (all pages)",
               performance: {
                 method: 'API Mesh',
                 productCount: enrichedProducts.length,

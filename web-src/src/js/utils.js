@@ -232,7 +232,7 @@ export function getPerformanceConfig() {
   return {
     timeout: config.performance?.timeout || 30000,
     retries: config.performance?.retries || 3,
-    expectedCount: config.products?.expectedCount || 100,
+    // Remove expectedCount - products should be fetched via pagination, not limited
   };
 }
 
