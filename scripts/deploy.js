@@ -223,7 +223,6 @@ async function checkMeshChanges() {
   try {
     execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
     spinner.stop();
-    console.log(format.success('Mesh resolver regenerated'));
 
     const checkSpinner = ora({
       text: format.muted('Checking mesh configuration for changes...'),
@@ -235,9 +234,9 @@ async function checkMeshChanges() {
 
     checkSpinner.stop();
     if (meshChanged) {
-      console.log(format.success('Mesh configuration (updated)'));
+      console.log(format.success('Mesh configuration: updated (deployment required)'));
     } else {
-      console.log(format.success('Mesh configuration (no changes)'));
+      console.log(format.success('Mesh configuration: up-to-date (no deployment needed)'));
     }
 
     return { meshChanged, newMeshHash };
