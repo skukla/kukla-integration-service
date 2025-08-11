@@ -23,12 +23,12 @@ async function main(params) {
 
     logger.info('Starting file deletion', { fileName: params.fileName });
 
-    // Step 1: Delete file from storage (simplified)
+    // Delete file from storage
     const config = createConfig(params);
     await deleteFile(params.fileName, config);
     logger.info('File deleted successfully', { fileName: params.fileName });
 
-    // Step 2: Get updated file list and generate response
+    // Get updated file list and generate response
     const remainingFiles = await listCsvFiles(config);
     // For modal delete workflow, return just the file rows (not complete browser structure)
     const { generateFileBrowserHTML } = require('../../lib/htmx');

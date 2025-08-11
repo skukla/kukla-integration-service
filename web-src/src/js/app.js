@@ -92,8 +92,6 @@ export function initializeApp() {
     initializeExportButtons();
     initializeModal();
     initializeFileBrowser();
-
-    console.log('Application initialized successfully');
   } catch (error) {
     console.error('Application initialization failed:', error);
     showNotification('Application initialization failed', 'error');

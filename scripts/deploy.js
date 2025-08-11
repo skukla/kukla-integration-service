@@ -347,19 +347,19 @@ async function deployMesh(isProd = false) {
   console.log();
   await format.sleep(800);
 
-  // Step 1: Generate mesh resolver
+  // Generate mesh resolver
   if (!(await runBuildCommand('node scripts/build.js --mesh-only', 'Generating mesh resolver'))) {
     return false;
   }
 
-  // Step 2: Update mesh configuration with polling
+  // Update mesh configuration with polling
   const meshUpdateSuccess = await updateMeshWithPolling(isProd);
   if (!meshUpdateSuccess) {
     console.log(format.error('Mesh deployment failed'));
     return false;
   }
 
-  // Step 3: Store the new mesh hash
+  // Store the new mesh hash
   const newMeshHash = getMeshSourceHash();
   if (newMeshHash) {
     storeMeshHash(newMeshHash);
