@@ -83,6 +83,9 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
  * @returns {string} HTML for REST API metrics
  */
 function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
+  const cacheHits = performance.cacheHits || 0;
+  const cachingEnabled = performance.cachingEnabled || false;
+
   return `
     <div class="notification-metrics-grid">
       <div class="notification-metric">
@@ -103,6 +106,16 @@ function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
       `
           : ''
       }
+      ${
+        cachingEnabled
+          ? `
+      <div class="notification-metric cache-metric ${cacheHits > 0 ? 'highlight' : ''}">
+        <span class="metric-value">${cacheHits}</span>
+        <span class="metric-label">HITS</span>
+      </div>
+      `
+          : ''
+      }
     </div>
     <div class="notification-endpoints">
       <button class="endpoints-toggle">
@@ -112,16 +125,26 @@ function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
       <div class="endpoints-list">
         <div class="endpoint-item">
           <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Products API (${Math.ceil(apiCalls * 0.3)} calls)</span>
+          <span class="endpoint-url">Products API (${performance.productsApiCalls || Math.ceil(apiCalls * 0.3)} calls)</span>
         </div>
         <div class="endpoint-item">
           <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Categories API (${Math.ceil(apiCalls * 0.4)} calls)</span>
+          <span class="endpoint-url">Categories API (${performance.categoriesApiCalls || Math.ceil(apiCalls * 0.4)} calls)</span>
         </div>
         <div class="endpoint-item">
           <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Inventory API (${Math.floor(apiCalls * 0.3)} calls)</span>
+          <span class="endpoint-url">Inventory API (${performance.inventoryApiCalls || Math.floor(apiCalls * 0.3)} calls)</span>
         </div>
+        ${
+          cachingEnabled
+            ? `
+        <div class="endpoint-item cache-status">
+          <span class="endpoint-method">CACHE</span>
+          <span class="endpoint-url">Commerce API Caching: ${cacheHits > 0 ? `${cacheHits} hits` : 'Enabled'}</span>
+        </div>
+        `
+            : ''
+        }
       </div>
     </div>
   `;

@@ -23,8 +23,8 @@
   --notification-spacing: var(--spacing-sm);
   --notification-border-width: var(--border-md);
   --notification-close-size: var(--font-size-xl);
-  --notification-min-width: var(--size-notification-min-width, 300px);
-  --notification-max-width: var(--size-notification-max-width, 400px);
+  --notification-min-width: var(--size-notification-min-width, 320px);
+  --notification-max-width: var(--size-notification-max-width, 450px);
 
   /* Positions */
   --notification-offset: var(--spacing-lg);
@@ -271,13 +271,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-md);
   margin: var(--spacing-md) 0;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-md);
   background: var(--color-success-background);
   border-radius: var(--radius-md);
   border: var(--border-xs) solid var(--color-gray-200);
   box-sizing: border-box;
+  flex-wrap: wrap;
   max-width: 100%;
 }
 
@@ -301,15 +302,16 @@
 }
 
 .notification-metric .metric-label {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-2xs);
   color: var(--color-gray-600);
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
   letter-spacing: 0.025em;
   line-height: 1.2;
   text-align: center;
-  white-space: normal;
-  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   hyphens: none;
 }
 
@@ -421,6 +423,80 @@
 .notification-metric.highlight .metric-label {
   color: var(--color-success-active);
   font-weight: var(--font-weight-semibold);
+}
+
+/* Cache Status Styling */
+.endpoint-item.cache-status {
+  background-color: var(--color-success-background, rgba(45, 157, 120, 0.1));
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.endpoint-item.cache-status .endpoint-method {
+  background-color: var(--color-success-active, #2d9d78);
+  color: var(--color-white);
+  font-weight: var(--font-weight-medium);
+}
+
+.endpoint-item.cache-status .endpoint-url {
+  color: var(--color-success-active, #2d9d78);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Individual Metric Color Coding */
+
+/* Calls Metric (1st) - Orange */
+.notification-metric:nth-child(1) .metric-value {
+  color: var(--color-warning, #e68619);
+}
+
+.notification-metric:nth-child(1) .metric-label {
+  color: var(--color-warning, #e68619);
+}
+
+/* Endpoints Metric (2nd) - Purple */
+.notification-metric:nth-child(2) .metric-value {
+  color: var(--color-purple-primary, #9038e4);
+}
+
+.notification-metric:nth-child(2) .metric-label {
+  color: var(--color-purple-primary, #9038e4);
+}
+
+/* Time Metric (3rd) - Blue */
+.notification-metric:nth-child(3) .metric-value {
+  color: var(--color-blue-primary, #1473e6);
+}
+
+.notification-metric:nth-child(3) .metric-label {
+  color: var(--color-blue-primary, #1473e6);
+}
+
+/* Cache Metric (4th) - Green */
+.notification-metric.cache-metric .metric-value {
+  color: var(--color-success-active, #2d9d78);
+}
+
+.notification-metric.cache-metric .metric-label {
+  color: var(--color-success-active, #2d9d78);
+}
+
+/* Compact layout improvements */
+.notification-metrics-grid {
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.notification-metric {
+  min-width: 60px;
+  max-width: 80px;
+}
+
+.notification-metric .metric-label {
+  font-size: var(--font-size-3xs, 10px);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* Mobile Responsive for Enhanced Metrics */

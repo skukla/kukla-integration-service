@@ -3,12 +3,12 @@
  * Consolidated HTMX functionality for Adobe App Builder frontend
  */
 
+import { config } from '../config/generated/config.js';
+import { handleError } from './core/errors/index.js';
 import {
   createSuccessNotificationContent,
   toggleEndpoints,
-} from './components/export-products-ui.js';
-import { config } from '../config/generated/config.js';
-import { handleError } from './core/errors/index.js';
+} from './ui/components/export-products/index.js';
 import { handleModalContentSwap } from './ui/components/modal/index.js';
 import { showNotification } from './ui/components/notifications/index.js';
 import { initializeDownloadHandlers } from './ui/downloads/index.js';
