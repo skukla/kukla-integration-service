@@ -40,18 +40,13 @@ function formatEndpoint(name, calls, total) {
 }
 
 function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
-  // Extract API call counts - Mesh may not provide admin token info
-  const adminTokenApiCalls = performance.adminTokenApiCalls; // Can be null/undefined
-  const productsApiCalls = performance.productsApiCalls !== undefined 
-    ? performance.productsApiCalls 
-    : 1;
-  const categoriesApiCalls = performance.categoriesApiCalls !== undefined
-    ? performance.categoriesApiCalls
-    : 0;
-  const inventoryApiCalls = performance.inventoryApiCalls !== undefined
-    ? performance.inventoryApiCalls
-    : 0;
-  const totalProductPages = performance.totalProductPages || 1;
+  // Extract API call counts - Mesh operations
+  const productsApiCalls =
+    performance.productsApiCalls !== undefined ? performance.productsApiCalls : 1;
+  const categoriesApiCalls =
+    performance.categoriesApiCalls !== undefined ? performance.categoriesApiCalls : 0;
+  const inventoryApiCalls =
+    performance.inventoryApiCalls !== undefined ? performance.inventoryApiCalls : 0;
 
   return `
     <div class="notification-metrics-grid">
@@ -111,20 +106,22 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
 function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
   const cacheHits = performance.cacheHits || 0;
   const cachingEnabled = performance.cachingEnabled || false;
-  
+
   // Extract API call counts with fallbacks for older responses
-  const adminTokenApiCalls = performance.adminTokenApiCalls !== undefined
-    ? performance.adminTokenApiCalls
-    : 1; // Default to 1 if not provided
-  const productsApiCalls = performance.productsApiCalls !== undefined 
-    ? performance.productsApiCalls 
-    : Math.ceil(apiCalls * 0.3);
-  const categoriesApiCalls = performance.categoriesApiCalls !== undefined 
-    ? performance.categoriesApiCalls 
-    : Math.ceil(apiCalls * 0.4);
-  const inventoryApiCalls = performance.inventoryApiCalls !== undefined 
-    ? performance.inventoryApiCalls 
-    : Math.floor(apiCalls * 0.3);
+  const adminTokenApiCalls =
+    performance.adminTokenApiCalls !== undefined ? performance.adminTokenApiCalls : 1; // Default to 1 if not provided
+  const productsApiCalls =
+    performance.productsApiCalls !== undefined
+      ? performance.productsApiCalls
+      : Math.ceil(apiCalls * 0.3);
+  const categoriesApiCalls =
+    performance.categoriesApiCalls !== undefined
+      ? performance.categoriesApiCalls
+      : Math.ceil(apiCalls * 0.4);
+  const inventoryApiCalls =
+    performance.inventoryApiCalls !== undefined
+      ? performance.inventoryApiCalls
+      : Math.floor(apiCalls * 0.3);
   const totalProductPages = performance.totalProductPages || 1;
 
   return `
