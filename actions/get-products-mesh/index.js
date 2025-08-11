@@ -39,23 +39,8 @@ async function main(params) {
       bypassCache: config.cache.bypassCache,
     });
 
-    // Fetch products via mesh (no caching currently)
+    // Fetch products via mesh with pagination
     const meshData = await getProductsFromMesh(params, config, logger);
-
-    // Debug: Log first product structure for comparison
-    if (meshData.products && meshData.products.length > 0) {
-      logger.info('Mesh API product sample', {
-        productCount: meshData.products.length,
-        firstProductKeys: Object.keys(meshData.products[0]),
-        firstProductSample: {
-          sku: meshData.products[0].sku,
-          name: meshData.products[0].name,
-          categories: meshData.products[0].categories?.length || 0,
-          inventory: meshData.products[0].inventory,
-          customAttributes: meshData.products[0].custom_attributes?.length || 0,
-        },
-      });
-    }
 
     const csvData = await createCsv(meshData.products);
     const storageResult = await storeCsv(csvData.content, config);

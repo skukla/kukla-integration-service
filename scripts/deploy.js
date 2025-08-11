@@ -54,6 +54,7 @@ function getMeshSourceHash() {
     const sourceFiles = [
       // Templates and config
       'mesh/resolvers.template.js',
+      'mesh/templates/mesh.template.js',
       'mesh/config.js',
       'config.js',
       // GraphQL queries and types
@@ -66,6 +67,9 @@ function getMeshSourceHash() {
       'mesh/schema/products-response.json',
       'mesh/schema/category-batch-resp.json',
       'mesh/schema/inventory-batch-resp.json',
+      // Generated files that affect mesh deployment
+      'mesh/resolvers.js',
+      'mesh/mesh.json',
     ];
 
     let combinedContent = '';
@@ -218,7 +222,8 @@ async function checkMeshChanges() {
 
   try {
     execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
-    spinner.succeed(format.success('Mesh resolver regenerated'));
+    spinner.stop();
+    console.log(format.success('Mesh resolver regenerated'));
 
     const checkSpinner = ora({
       text: format.muted('Checking mesh configuration for changes...'),
