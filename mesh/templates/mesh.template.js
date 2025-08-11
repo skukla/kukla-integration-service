@@ -6,7 +6,6 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const { getCommerceToken } = require('./auth');
-const { transformMeshProductsToRestFormat } = require('./products');
 
 // GraphQL query for enriched products (build-time inlined from .gql file)
 const GET_ENRICHED_PRODUCTS_QUERY = {{{GET_ENRICHED_PRODUCTS_QUERY}}};
@@ -34,91 +33,59 @@ async function getProductsFromMesh(params, config, logger = null) {
     log.info('Starting mesh product fetch with pagination');
 
     // Generate Commerce admin token using centralized approach
-    const commerceToken = await getCommerceToken(params, config, log);
+    const commerceTokenResult = await getCommerceToken(params, config, log);
+    const commerceToken = commerceTokenResult?.token || commerceTokenResult;
 
-    // Pagination setup from configuration
-    const pageSize = config.mesh.pagination.pageSize;
-    let currentPage = config.mesh.pagination.defaultPage;
-    let allProducts = [];
-    let apiCallCount = 0;
-    let hasMorePages = true;
-    let totalPerformance = null;
-
-    while (hasMorePages) {
-      const query = GET_ENRICHED_PRODUCTS_QUERY;
-      const variables = {
-        pageSize,
-        currentPage,
-      };
-      
-      // Allow explicit pageSize override for testing
-      if (params.pageSize) {
-        variables.pageSize = params.pageSize;
-      }
-
-      log.info('Making GraphQL mesh request', { pageSize: variables.pageSize, currentPage });
-      
-      const response = await fetch(params.API_MESH_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': params.MESH_API_KEY,
-          'x-commerce-admin-token': commerceToken,
-          'User-Agent': 'Adobe-App-Builder/kukla-integration-service',
-        },
-        body: JSON.stringify({
-          query,
-          variables,
-        }),
-      });
-
-      apiCallCount++;
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        const errorMsg = `Mesh API request failed on page ${currentPage}: ${response.status} ${response.statusText} - ${errorText}`;
-        log.error('Mesh API request failed', { status: response.status, error: errorText, currentPage });
-        throw new Error(errorMsg);
-      }
-
-      const result = await response.json();
-
-      if (result.errors) {
-        const errorMsg = `GraphQL errors on page ${currentPage}: ${result.errors.map((e) => e.message).join(', ')}`;
-        log.error('GraphQL errors in mesh response', { errors: result.errors, currentPage });
-        throw new Error(errorMsg);
-      }
-
-      const meshData = result.data?.mesh_products_enriched;
-      if (!meshData) {
-        const error = `No mesh_products_enriched data in response on page ${currentPage}`;
-        log.error('Invalid mesh response', { error, response: result, currentPage });
-        throw new Error(error);
-      }
-
-      const products = meshData.products || [];
-      allProducts = allProducts.concat(products);
-
-      // Store performance data from first request (most comprehensive)
-      if (currentPage === 1) {
-        totalPerformance = meshData.performance;
-      }
-
-      // Check if we have more pages
-      const totalItems = meshData.total_count || 0;
-      const currentItemCount = currentPage * pageSize;
-      hasMorePages = products.length === pageSize && currentItemCount < totalItems;
-
-      log.info('Mesh page retrieved', {
-        currentPage,
-        productCount: products.length,
-        totalProducts: allProducts.length,
-        totalCount: totalItems,
-        hasMorePages,
-      });
-
-      currentPage++;
+    // The mesh resolver handles pagination internally, so we make a single request
+    const query = GET_ENRICHED_PRODUCTS_QUERY;
+    const apiCallCount = 1;
+    
+    // Optional pageSize override for testing
+    const variables = {};
+    if (params.pageSize) {
+      variables.pageSize = params.pageSize;
     }
+
+    log.info('Making GraphQL mesh request (resolver handles pagination internally)', variables);
+    
+    const response = await fetch(params.API_MESH_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': params.MESH_API_KEY,
+        'x-commerce-admin-token': commerceToken,
+        'User-Agent': 'Adobe-App-Builder/kukla-integration-service',
+      },
+      body: JSON.stringify({
+        query,
+        variables: Object.keys(variables).length > 0 ? variables : undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const errorMsg = `Mesh API request failed: ${response.status} ${response.statusText} - ${errorText}`;
+      log.error('Mesh API request failed', { status: response.status, error: errorText });
+      throw new Error(errorMsg);
+    }
+
+    const result = await response.json();
+
+    if (result.errors) {
+      const errorMsg = `GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`;
+      log.error('GraphQL errors in mesh response', { errors: result.errors });
+      throw new Error(errorMsg);
+    }
+
+    const meshData = result.data?.mesh_products_enriched;
+    if (!meshData) {
+      const error = 'No mesh_products_enriched data in response';
+      log.error('Invalid mesh response', { error, response: result });
+      throw new Error(error);
+    }
+
+    const allProducts = meshData.products || [];
+    const totalPerformance = meshData.performance;
 
     log.info('Mesh data retrieved successfully', {
       totalProductCount: allProducts.length,
@@ -147,6 +114,19 @@ async function getProductsFromMesh(params, config, logger = null) {
   }
 }
 
+/**
+ * Simple transformation function for mesh products
+ * @param {Array} products - Mesh product data
+ * @param {Object} config - Configuration object
+ * @returns {Array} Products (minimal transformation)
+ */
+function transformMeshProductsToRestFormat(products, config) {
+  // For now, return products as-is since mesh already provides well-formatted data
+  // This function exists to maintain compatibility with mesh integration
+  return products;
+}
+
 module.exports = {
   getProductsFromMesh,
+  transformMeshProductsToRestFormat,
 };

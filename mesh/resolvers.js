@@ -170,8 +170,8 @@ module.exports = {
           try {
             const startTime = Date.now();
 
-            // Use configured pageSize for internal pagination
-            const pageSize = 50;
+            // Use configured pageSize for internal pagination (with optional override)
+            const pageSize = args.pageSize || 50;
             let currentPage = 1;
             let allProducts = [];
             let totalCount = 0;

@@ -32,10 +32,13 @@ module.exports = {
             {
               type: 'Query',
               field: 'products_list',
-              path: '/products?searchCriteria[pageSize]={args.pageSize}',
+              path: '/products?searchCriteria[pageSize]={args.pageSize}&searchCriteria[currentPage]={args.currentPage}',
               method: 'GET',
               argTypeMap: {
                 pageSize: {
+                  type: 'integer',
+                },
+                currentPage: {
                   type: 'integer',
                 },
               },

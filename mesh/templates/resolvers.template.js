@@ -170,8 +170,8 @@ module.exports = {
           try {
             const startTime = Date.now();
 
-            // Use configured pageSize for internal pagination
-            const pageSize = {{{MESH_PAGE_SIZE}}};
+            // Use configured pageSize for internal pagination (with optional override)
+            const pageSize = args.pageSize || {{{MESH_PAGE_SIZE}}};
             let currentPage = 1;
             let allProducts = [];
             let totalCount = 0;
