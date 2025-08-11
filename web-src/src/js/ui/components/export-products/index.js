@@ -35,18 +35,18 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
     <div class="notification-metrics-grid">
       <div class="notification-metric">
         <span class="metric-value">${clientCalls}</span>
-        <span class="metric-label">Calls</span>
+        <span class="metric-label">CLIENT CALLS</span>
       </div>
       <div class="notification-metric highlight">
         <span class="metric-value">${internalApiCalls}</span>
-        <span class="metric-label">Endpoints</span>
+        <span class="metric-label">API ENDPOINTS</span>
       </div>
       ${
         performance.executionTime !== undefined
           ? `
       <div class="notification-metric">
         <span class="metric-value">${formatExecutionTime(performance.executionTime)}</span>
-        <span class="metric-label">Time</span>
+        <span class="metric-label">EXECUTION TIME</span>
       </div>
       `
           : ''
@@ -90,28 +90,18 @@ function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
     <div class="notification-metrics-grid">
       <div class="notification-metric">
         <span class="metric-value">${apiCalls}</span>
-        <span class="metric-label">Calls</span>
+        <span class="metric-label">CLIENT CALLS</span>
       </div>
       <div class="notification-metric">
         <span class="metric-value">${dataSources}</span>
-        <span class="metric-label">Endpoints</span>
+        <span class="metric-label">API ENDPOINTS</span>
       </div>
       ${
         performance.executionTime !== undefined
           ? `
       <div class="notification-metric">
         <span class="metric-value">${formatExecutionTime(performance.executionTime)}</span>
-        <span class="metric-label">Time</span>
-      </div>
-      `
-          : ''
-      }
-      ${
-        cachingEnabled
-          ? `
-      <div class="notification-metric cache-metric ${cacheHits > 0 ? 'highlight' : ''}">
-        <span class="metric-value">${cacheHits}</span>
-        <span class="metric-label">HITS</span>
+        <span class="metric-label">EXECUTION TIME</span>
       </div>
       `
           : ''

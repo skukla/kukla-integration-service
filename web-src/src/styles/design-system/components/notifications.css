@@ -446,13 +446,13 @@
 
 /* Individual Metric Color Coding */
 
-/* Calls Metric (1st) - Orange */
+/* Calls Metric (1st) - Black */
 .notification-metric:nth-child(1) .metric-value {
-  color: var(--color-warning, #e68619);
+  color: var(--color-gray-900, #000000);
 }
 
 .notification-metric:nth-child(1) .metric-label {
-  color: var(--color-warning, #e68619);
+  color: var(--color-gray-900, #000000);
 }
 
 /* Endpoints Metric (2nd) - Purple */
@@ -484,13 +484,13 @@
 
 /* Compact layout improvements */
 .notification-metrics-grid {
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
 .notification-metric {
-  min-width: 60px;
-  max-width: 80px;
+  min-width: 80px;
+  max-width: 100px;
 }
 
 .notification-metric .metric-label {
