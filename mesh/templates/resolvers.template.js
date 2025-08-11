@@ -197,9 +197,14 @@ module.exports = {
             // Enrich products
             const enrichedProducts = enrichProducts(allProducts, categoryResult.categoryMap, inventoryResult.inventoryMap);
 
-            // Simple performance metrics
+            // Calculate metrics
             const executionTime = Date.now() - startTime;
-            const totalApiCalls = 1 + categoryResult.apiCalls + inventoryResult.apiCalls; // Single product call + Categories + Inventory
+            
+            // Count Mesh operations (not actual API calls - Mesh handles caching internally)
+            const productsOperations = 1; // Always 1 products fetch
+            const categoriesOperations = categoryResult.apiCalls; // 0 or 1 depending on if categories exist
+            const inventoryOperations = inventoryResult.apiCalls; // Number of inventory batches
+            const totalOperations = productsOperations + categoriesOperations + inventoryOperations;
 
             return {
               products: enrichedProducts,
@@ -209,12 +214,13 @@ module.exports = {
                 method: 'API Mesh',
                 productCount: enrichedProducts.length,
                 executionTime,
-                apiCalls: totalApiCalls,
+                apiCalls: totalOperations, // These are Mesh operations, not actual API calls
                 dataSourcesUnified: 3,
-                // Backend API call breakdown for toast details
-                productsApiCalls: 1,
-                categoriesApiCalls: categoryResult.apiCalls,
-                inventoryApiCalls: inventoryResult.apiCalls,
+                // Mesh operation counts (not actual backend API calls)
+                productsApiCalls: productsOperations, // Keeping field name for compatibility
+                categoriesApiCalls: categoriesOperations,
+                inventoryApiCalls: inventoryOperations,
+                // Note: Actual API calls and caching are handled internally by Mesh
               },
             };
           } catch (error) {

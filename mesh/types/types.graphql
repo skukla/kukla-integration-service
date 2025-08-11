@@ -43,9 +43,9 @@ type PerformanceMetrics {
   method: String
   productCount: Int
   executionTime: Int
-  apiCalls: Int
+  apiCalls: Int  # For Mesh: operation count, For REST: actual API calls
   dataSourcesUnified: Int
-  productsApiCalls: Int
+  productsApiCalls: Int  # For Mesh: operations, For REST: API calls
   categoriesApiCalls: Int
   inventoryApiCalls: Int
 }

@@ -30,9 +30,8 @@ async function main(params) {
 
     logger.info('Cache initialization status', {
       enabled: cache.enabled,
-      state: cache.state ? 'initialized' : 'null',
+      stateInitialized: !!cache.state,
       bypassCache: config.cache.bypassCache,
-      memCacheSize: cache.state ? 'N/A' : 'fallback memory cache active',
     });
 
     // Fetch products with caching, create CSV, and store
@@ -86,9 +85,11 @@ async function main(params) {
           executionTime: Date.now() - startTime,
           apiCalls: result.apiCalls.total,
           dataSourcesUnified: 3,
+          adminTokenApiCalls: result.apiCalls.adminToken,
           productsApiCalls: result.apiCalls.products,
           categoriesApiCalls: result.apiCalls.categories,
           inventoryApiCalls: result.apiCalls.inventory,
+          totalProductPages: result.apiCalls.totalProductPages || 1,
           cacheHits: result.cacheHits || 0,
           cachingEnabled: cache && cache.enabled,
         },

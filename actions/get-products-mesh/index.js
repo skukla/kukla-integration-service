@@ -35,7 +35,7 @@ async function main(params) {
 
     logger.info('Cache initialization status', {
       enabled: cache.enabled,
-      state: cache.state ? 'initialized' : 'null',
+      stateInitialized: !!cache.state,
       bypassCache: config.cache.bypassCache,
     });
 
