@@ -212,16 +212,23 @@ async function updateMeshWithPolling(isProd = false) {
 async function checkMeshChanges() {
   const oldMeshHash = getStoredMeshHash();
   const spinner = ora({
-    text: format.muted('Checking mesh configuration for changes...'),
+    text: format.muted('Regenerating mesh resolver from templates...'),
     spinner: 'dots',
   }).start();
 
   try {
     execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
+    spinner.succeed(format.success('Mesh resolver regenerated'));
+
+    const checkSpinner = ora({
+      text: format.muted('Checking mesh configuration for changes...'),
+      spinner: 'dots',
+    }).start();
+
     const newMeshHash = getMeshSourceHash();
     const meshChanged = oldMeshHash !== newMeshHash;
 
-    spinner.stop();
+    checkSpinner.stop();
     if (meshChanged) {
       console.log(format.success('Mesh configuration (updated)'));
     } else {
