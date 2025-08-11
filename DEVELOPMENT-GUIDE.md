@@ -77,6 +77,12 @@ actions/
 
 This project is migrating from over-engineered patterns to Adobe App Builder standard patterns. Follow Adobe standards, not legacy patterns.
 
+### Git Commit Standards
+
+- **NO Claude Attribution**: Never include Claude attribution or co-authored-by lines in commit messages
+- **Standard Format**: Use conventional commit format with clear, concise messages
+- **Focus on Impact**: Describe what the change accomplishes, not how it was created
+
 ### Adobe Standard Action Pattern
 
 - **Use Direct Exports**: `exports.main = main` (NOT action factories)
