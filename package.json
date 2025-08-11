@@ -50,7 +50,10 @@
     "test:perf": "node scripts/test.js --type=performance --action=get-products --scenario=quick",
     "test:perf:list": "node scripts/test.js --type=performance --list",
     "test:suite": "node scripts/test.js --type=suite",
-    "test:suite:list": "node scripts/test.js --type=suite --list"
+    "test:suite:list": "node scripts/test.js --type=suite --list",
+    "cache:status": "node scripts/cache-control.js status",
+    "cache:disable": "node scripts/cache-control.js disable",
+    "cache:enable": "node scripts/cache-control.js enable"
   },
   "engines": {
     "node": ">=18"

@@ -95,6 +95,17 @@ application:
             annotations:
               require-adobe-auth: false
               final: true
+          cache-control:
+            function: actions/cache-control/index.js
+            web: 'yes'
+            runtime: nodejs:18
+            inputs:
+              LOG_LEVEL: info
+              NODE_ENV: staging
+              AIO_runtime_namespace: $AIO_runtime_namespace
+            annotations:
+              require-adobe-auth: false
+              final: true
           get-products-mesh:
             function: actions/get-products-mesh/index.js
             web: 'yes'
