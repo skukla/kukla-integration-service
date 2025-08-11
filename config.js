@@ -69,6 +69,13 @@ function createConfig(params = {}) {
       maxCategoriesDisplay: 10,
       defaultFilename: 'products.csv',
     },
+
+    // Cache Configuration
+    cache: {
+      adminTokenTtl: 900, // 15 minutes
+      apiResponseTtl: 1800, // 30 minutes
+      bypassCache: false,
+    },
   };
 }
 
