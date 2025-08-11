@@ -120,11 +120,8 @@ async function getProductsFromMesh(params, config, logger = null) {
       performance: totalPerformance,
     });
 
-    // Transform mesh response to match REST API format exactly
-    const transformedProducts = transformMeshProductsToRestFormat(allProducts, config);
-
     return {
-      products: transformedProducts,
+      products: allProducts,
       performance: {
         ...totalPerformance,
         meshApiCalls: apiCallCount // Add mesh-specific API call tracking
@@ -141,19 +138,6 @@ async function getProductsFromMesh(params, config, logger = null) {
   }
 }
 
-/**
- * Simple transformation function for mesh products
- * @param {Array} products - Mesh product data
- * @param {Object} config - Configuration object
- * @returns {Array} Products (minimal transformation)
- */
-function transformMeshProductsToRestFormat(products, config) {
-  // For now, return products as-is since mesh already provides well-formatted data
-  // This function exists to maintain compatibility with mesh integration
-  return products;
-}
-
 module.exports = {
   getProductsFromMesh,
-  transformMeshProductsToRestFormat,
 };
