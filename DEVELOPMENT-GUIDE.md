@@ -119,7 +119,7 @@ This project is migrating from over-engineered patterns to Adobe App Builder sta
 
 ### Storage Operations
 
-- **Function Signature**: `storeCsv(csvData, actionParams)` - exactly 2 parameters
+- **Function Signature**: `storeCsv(csvContent, config)` - exactly 2 parameters (csvContent string, config object)
 - **Error Checking**: Always verify `storageResult.stored` before proceeding
 - **No Manual Initialization**: Let `storeCsv()` handle storage initialization internally
 
@@ -200,3 +200,114 @@ Comprehensive documentation available in `docs/`:
 - `docs/development/` - Development workflows and standards
 - `docs/deployment/` - Environment configuration and deployment
 - `docs/getting-started/` - Setup and overview guides
+
+## Cache Implementation Testing & Debugging
+
+### Testing Adobe I/O Runtime Action Caching
+
+To test the `get-products` action and analyze caching behavior:
+
+**Method 1: Direct Action Invocation (Recommended)**
+
+```bash
+# Invoke action directly and wait for completion
+aio rt action invoke kukla-integration-service/get-products --blocking
+
+# Get logs from the most recent activation
+aio rt activation get --last
+aio rt logs [ACTIVATION_ID_FROM_ABOVE]
+```
+
+**Method 2: Web Interface + Log Analysis**
+
+1. **Run the Action**:
+
+   ```bash
+   # Run get-products export via the web interface or API call
+   # The action will be triggered and execute
+   ```
+
+2. **Check Recent Activations**:
+
+   ```bash
+   aio rt activation list --limit 5
+   ```
+
+3. **Get Detailed Logs**:
+
+   ```bash
+   aio rt logs [ACTIVATION_ID]
+   ```
+
+   Replace `[ACTIVATION_ID]` with the actual activation ID from step 2.
+
+**Note**: The direct invocation method is more reliable for testing as it immediately returns results and activation IDs, avoiding issues with cached activation lists.
+
+### Cache Analysis from Recent Logs
+
+From the latest activation (e0a7e366789c4fc7a7e366789c7fc7c0), the cache analysis shows:
+
+**✅ Working Elements:**
+
+- Cache initialization: `Commerce API cache initialized successfully`
+- Admin token caching: `State Cache HIT for admin_token` (working correctly)
+- Cache enabled: `enabled: true, state: 'initialized'`
+
+**❌ Issues Found:**
+
+- **Corrupted Products Cache**: `Unexpected token o in JSON at position 1` - corrupted JSON in Adobe I/O State
+- **401 Error**: `Products fetch failed: 401` - token expiration or authentication issue
+- **Cache Hit Count**: Logs show `Total Commerce API cache hits: 1` but performance metrics show 0
+
+### Cache Fixes Applied
+
+1. **Fixed auth.js method mismatch** (`lib/commerce/auth.js:20,63`):
+   - Changed `cache.getString()` → `cache.get()`
+   - Changed `cache.putString()` → `cache.put()` with proper TTL
+
+2. **Improved cache enablement logic** (`lib/cache.js:137`):
+   - Cache falls back to memory when Adobe I/O State fails
+   - Cache enabled based on BYPASS_CACHE flag, not state availability
+
+3. **Added debug logging** for cache operations to diagnose issues
+
+### Performance Observations
+
+- **First run**: 12s execution time, 0 cache hits (expected)
+- **Second run**: 8s execution time, 0 cache hits (unexpected - should have cache hits)
+- **Cache hits working**: Admin token cache hit logged but not reflected in final metrics
+
+### Debug Commerce API Connection
+
+```bash
+node debug-commerce.js
+```
+
+This script tests Commerce API connection and token generation directly.
+
+### Environment Variables Required for Commerce
+
+```bash
+COMMERCE_BASE_URL=https://citisignal-com774.adobedemo.com
+COMMERCE_ADMIN_USERNAME=admin
+COMMERCE_ADMIN_PASSWORD=[password]
+```
+
+### Cache Control Configuration
+
+You can now control cache behavior directly in `config.js`:
+
+```javascript
+// In config.js
+cache: {
+  adminTokenTtl: 900,  // 15 minutes
+  apiResponseTtl: 1800, // 30 minutes
+  bypassCache: false, // Set to true to bypass all caching for debugging
+}
+```
+
+**Cache Bypass Usage:**
+
+1. **Clear corrupted cache**: Set `bypassCache: true` in config.js, deploy, and run action once
+2. **Normal operation**: Set `bypassCache: false` in config.js and deploy
+3. **No environment variables needed** - just edit the config file directly
