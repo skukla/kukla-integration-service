@@ -170,27 +170,14 @@ module.exports = {
           try {
             const startTime = Date.now();
 
-            // Use configured pageSize for internal pagination (with optional override)
+            // Use external pagination - return only the requested page
             const pageSize = args.pageSize || {{{MESH_PAGE_SIZE}}};
-            let currentPage = 1;
-            let allProducts = [];
-            let totalCount = 0;
-            let hasMorePages = true;
+            const currentPage = args.currentPage || 1;
 
-            // Pagination loop - fetch all products internally
-            while (hasMorePages) {
-              const productsResult = await fetchProducts(context, pageSize, currentPage);
-              const products = productsResult.items;
-              
-              allProducts = allProducts.concat(products);
-              totalCount = productsResult.total_count;
-              
-              // Check if we have more pages
-              const currentItemCount = currentPage * pageSize;
-              hasMorePages = products.length === pageSize && currentItemCount < totalCount;
-              
-              currentPage++;
-            }
+            // Fetch only the requested page of products
+            const productsResult = await fetchProducts(context, pageSize, currentPage);
+            const allProducts = productsResult.items;
+            const totalCount = productsResult.total_count;
 
             // Extract category IDs and SKUs from all products
             const categoryIds = new Set();
@@ -212,12 +199,12 @@ module.exports = {
 
             // Simple performance metrics
             const executionTime = Date.now() - startTime;
-            const totalApiCalls = (currentPage - 1) + categoryResult.apiCalls + inventoryResult.apiCalls; // Multiple product calls + Categories + Inventory
+            const totalApiCalls = 1 + categoryResult.apiCalls + inventoryResult.apiCalls; // Single product call + Categories + Inventory
 
             return {
               products: enrichedProducts,
               total_count: totalCount,
-              message: "Successfully enriched " + enrichedProducts.length + " products (all pages)",
+              message: "Successfully enriched " + enrichedProducts.length + " products (page " + currentPage + ")",
               performance: {
                 method: 'API Mesh',
                 productCount: enrichedProducts.length,

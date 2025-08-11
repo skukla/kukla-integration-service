@@ -52,5 +52,5 @@ type PerformanceMetrics {
 
 # Query extensions
 extend type Query {
-  mesh_products_enriched(pageSize: Int): EnrichedProductsResponse
+  mesh_products_enriched(pageSize: Int, currentPage: Int): EnrichedProductsResponse
 }
