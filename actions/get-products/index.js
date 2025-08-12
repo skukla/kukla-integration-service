@@ -89,6 +89,7 @@ async function main(params) {
           categoriesApiCalls: result.apiCalls.categories,
           inventoryApiCalls: result.apiCalls.inventory,
           totalProductPages: result.apiCalls.totalProductPages || 1,
+          totalInventoryBatches: result.apiCalls.totalInventoryBatches || 1,
           cacheHits: result.cacheHits || 0,
           cachingEnabled: cache && cache.enabled,
         },

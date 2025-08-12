@@ -123,6 +123,7 @@ function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
       ? performance.inventoryApiCalls
       : Math.floor(apiCalls * 0.3);
   const totalProductPages = performance.totalProductPages || 1;
+  const totalInventoryBatches = performance.totalInventoryBatches || 1;
 
   return `
     <div class="notification-metrics-grid">
@@ -165,7 +166,7 @@ function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
         </div>
         <div class="endpoint-item">
           <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">${formatEndpoint('Inventory API', inventoryApiCalls, 1)}</span>
+          <span class="endpoint-url">${formatEndpoint('Inventory API', inventoryApiCalls, totalInventoryBatches)}</span>
         </div>
         ${
           cachingEnabled
