@@ -26,10 +26,9 @@ async function controlCache(action) {
     const result = await response.json();
 
     if (result.success) {
+      // Use the message directly from the action - it already has the icon
       console.log(
-        result.killSwitchActive
-          ? chalk.red('✗ ' + result.message)
-          : chalk.green('✓ ' + result.message)
+        result.killSwitchActive ? chalk.red(result.message) : chalk.green(result.message)
       );
 
       // Show additional info for status command
