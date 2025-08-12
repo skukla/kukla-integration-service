@@ -64,7 +64,7 @@ async function main(params) {
 
     // Add HTTP response caching (gateway level) for fair comparison with API Mesh
     if (cache.enabled) {
-      responseHeaders['Cache-Control'] = 'public, max-age=1800'; // 30 minutes
+      responseHeaders['Cache-Control'] = `public, max-age=${config.cache.httpCacheMaxAge}`;
       responseHeaders['Vary'] = 'Authorization'; // Cache per token
     } else {
       responseHeaders['Cache-Control'] = 'no-cache, no-store, must-revalidate';

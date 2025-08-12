@@ -6,13 +6,15 @@
 const stateLib = require('@adobe/aio-lib-state');
 const { Core } = require('@adobe/aio-sdk');
 
+const createConfig = require('../../config');
 const { errorResponse, successResponse } = require('../../lib/utils');
 
 async function main(params) {
   const logger = Core.Logger('cache-control', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // Initialize state
+    // Initialize configuration and state
+    const config = createConfig(params);
     const state = await stateLib.init();
 
     // Handle different actions
@@ -20,7 +22,7 @@ async function main(params) {
 
     switch (action) {
       case 'disable':
-        await state.put('cache_kill_switch', 'true', { ttl: 86400 * 365 }); // 1 year TTL
+        await state.put('cache_kill_switch', 'true', { ttl: config.cache.killSwitchTtl });
         logger.warn('Cache kill switch ACTIVATED - all caching disabled');
         return successResponse({
           success: true,
