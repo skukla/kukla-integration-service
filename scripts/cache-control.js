@@ -6,6 +6,10 @@
  */
 
 const chalk = require('chalk');
+const dotenv = require('dotenv');
+
+// Load environment variables from .env file
+dotenv.config();
 
 const { buildActionUrl } = require('./utils/shared');
 
