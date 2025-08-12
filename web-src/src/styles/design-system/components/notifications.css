@@ -50,6 +50,7 @@
 
 /* Base Notification */
 .notification {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -148,9 +149,11 @@
 
 .notification:hover {
   transform: scale(1.01);
+  box-shadow: var(--shadow-xl);
   transition:
     transform 150ms var(--ease-out),
     box-shadow 150ms var(--ease-out);
+  cursor: pointer;
 }
 
 /* Responsive Design */

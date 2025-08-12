@@ -107,10 +107,40 @@ function addNotificationToContainer(container, message, options) {
 
   // Set up removal if not an error with retry
   if (!(options.type === 'error' && options.canRetry)) {
-    const timeout = setTimeout(() => {
-      removeNotification(notification);
-    }, options.duration);
-    notification.dataset.timeout = timeout;
+    let timeoutId;
+    let removeDelayTimeout;
+    
+    // Function to start the timeout
+    const startTimeout = () => {
+      timeoutId = setTimeout(() => {
+        removeNotification(notification);
+      }, options.duration);
+      notification.dataset.timeout = timeoutId;
+    };
+    
+    // Function to pause the timeout
+    const pauseTimeout = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (removeDelayTimeout) {
+        clearTimeout(removeDelayTimeout);
+      }
+    };
+    
+    // Function to remove with a delay on mouse leave
+    const removeWithDelay = () => {
+      removeDelayTimeout = setTimeout(() => {
+        removeNotification(notification);
+      }, 500);
+    };
+    
+    // Add hover event listeners
+    notification.addEventListener('mouseenter', pauseTimeout);
+    notification.addEventListener('mouseleave', removeWithDelay);
+    
+    // Start initial timeout
+    startTimeout();
   }
 }
 
