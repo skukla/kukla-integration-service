@@ -75,7 +75,7 @@ async function fetchCategories(context, categoryIds) {
 }
 
 /**
- * Fetch inventory using batch endpoint with chunking for large product sets
+ * Fetch inventory using parallel batch processing for better performance
  */
 async function fetchInventory(context, skus) {
   if (skus.length === 0) {
@@ -84,21 +84,28 @@ async function fetchInventory(context, skus) {
 
   const batchSize = 50; // Match Commerce API pageSize limit
   const inventoryMap = new Map();
-  let apiCalls = 0;
-
-  // Split SKUs into batches
+  
+  // Create promises for all batches
+  const batchPromises = [];
   for (let i = 0; i < skus.length; i += batchSize) {
     const batchSkus = skus.slice(i, i + batchSize);
     
-    const response = await context.Inventory.Query.inventory_batch({
+    const promise = context.Inventory.Query.inventory_batch({
       root: {},
       args: { skus: batchSkus.join(',') },
       context,
       selectionSet: QUERIES.inventoryBatch,
     });
-    apiCalls++;
-
-    // Add batch results to map
+    
+    batchPromises.push(promise);
+  }
+  
+  // Fetch all batches in parallel
+  const batchResults = await Promise.all(batchPromises);
+  const apiCalls = batchPromises.length;
+  
+  // Process all batch results
+  batchResults.forEach(response => {
     if (response?.items) {
       response.items.forEach((item) => {
         inventoryMap.set(item.sku, {
@@ -107,7 +114,7 @@ async function fetchInventory(context, skus) {
         });
       });
     }
-  }
+  });
 
   return { inventoryMap, apiCalls };
 }
