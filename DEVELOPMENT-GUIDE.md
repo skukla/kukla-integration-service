@@ -115,13 +115,31 @@ This project is migrating from over-engineered patterns to Adobe App Builder sta
 
 ### URL Management
 
-- **Backend Actions**: Use configuration objects directly - no URL builders needed
-  - Commerce APIs: `config.commerce.baseUrl` + simple concatenation
-  - API Mesh: `config.mesh.endpoint` directly
-  - Example: `${config.commerce.baseUrl}/rest/${config.commerce.api.version}/products`
-- **HTMX HTML Generation**: Use `buildDownloadUrl()` for dynamic runtime URLs only
-  - Required for server-side HTML that generates client-side download links
-  - Handles dynamic namespace/host resolution
+#### Runtime URL Pattern
+
+- Adobe I/O Runtime: `https://{namespace}.adobeioruntime.net/api/v1/web/{package}/{action}`
+- Environment variables set by `aio app deploy`: `AIO_runtime_namespace`, `AIO_runtime_apihost`
+- **Never hardcode URLs or namespaces** - always use environment variables
+
+#### When to Use URL Builders
+
+**Use `buildActionUrl()` from `scripts/utils/shared.js`**:
+
+- Test scripts (`scripts/test.js`)
+- Build scripts (`scripts/build.js`)
+- Any script calling deployed actions
+
+**Use Direct Config**:
+
+- Backend actions calling Commerce APIs: `${config.commerce.baseUrl}/rest/...`
+- Backend actions calling API Mesh: `config.mesh.endpoint`
+- Frontend JavaScript: Use relative URLs from generated config
+
+**Key Requirements**:
+
+- No hardcoded fallbacks - require `AIO_runtime_namespace` or fail with clear error
+- Read package name from `package.json` for reusability
+- Support custom API hosts for enterprise deployments
 
 ### Storage Operations
 
