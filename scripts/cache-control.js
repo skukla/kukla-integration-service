@@ -26,15 +26,15 @@ async function controlCache(action) {
     const result = await response.json();
 
     if (result.success) {
-      // Use the message directly from the action - it already has the icon
-      console.log(
-        result.killSwitchActive ? chalk.red(result.message) : chalk.green(result.message)
-      );
-
-      // Show additional info for status command
+      // Always show success in green with checkmark for successful operations
       if (action === 'status') {
-        console.log(chalk.gray(`Kill switch: ${result.killSwitchActive ? 'ACTIVE' : 'INACTIVE'}`));
-        console.log(chalk.gray(`Cache enabled: ${result.cacheEnabled ? 'YES' : 'NO'}`));
+        // For status, color based on cache state
+        console.log(
+          result.cacheEnabled ? chalk.green(result.message) : chalk.yellow(result.message)
+        );
+      } else {
+        // For enable/disable actions, always green checkmark for success
+        console.log(chalk.green(result.message));
       }
     } else {
       console.log(chalk.red('Failed:', result.error || result.message));

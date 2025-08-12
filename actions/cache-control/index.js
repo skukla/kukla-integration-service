@@ -25,7 +25,7 @@ async function main(params) {
         return successResponse({
           success: true,
           cacheEnabled: false,
-          message: '✖ Cache disabled globally via kill switch',
+          message: '✔ Cache disabled successfully',
         });
 
       case 'enable':
@@ -34,7 +34,7 @@ async function main(params) {
         return successResponse({
           success: true,
           cacheEnabled: true,
-          message: '✔ Cache enabled - kill switch removed',
+          message: '✔ Cache enabled successfully',
         });
 
       case 'status': {
@@ -44,9 +44,7 @@ async function main(params) {
           success: true,
           cacheEnabled: !isDisabled,
           killSwitchActive: isDisabled,
-          message: isDisabled
-            ? '✖ Cache is DISABLED via kill switch'
-            : '✔ Cache is ENABLED (normal operation)',
+          message: isDisabled ? 'Cache is currently DISABLED' : 'Cache is currently ENABLED',
         });
       }
 
