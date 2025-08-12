@@ -74,7 +74,6 @@ function createConfig(params = {}) {
     cache: {
       adminTokenTtl: 900, // 15 minutes
       apiResponseTtl: 1800, // 30 minutes
-      bypassCache: false,
     },
   };
 }

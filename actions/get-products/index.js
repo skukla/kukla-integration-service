@@ -31,7 +31,6 @@ async function main(params) {
     logger.info('Cache initialization status', {
       enabled: cache.enabled,
       stateInitialized: !!cache.state,
-      bypassCache: config.cache.bypassCache,
     });
 
     // Fetch products with caching, create CSV, and store
@@ -64,7 +63,7 @@ async function main(params) {
     const responseHeaders = {};
 
     // Add HTTP response caching (gateway level) for fair comparison with API Mesh
-    if (!config.cache.bypassCache) {
+    if (cache.enabled) {
       responseHeaders['Cache-Control'] = 'public, max-age=1800'; // 30 minutes
       responseHeaders['Vary'] = 'Authorization'; // Cache per token
     } else {

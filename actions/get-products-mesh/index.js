@@ -36,7 +36,6 @@ async function main(params) {
     logger.info('Cache initialization status', {
       enabled: cache.enabled,
       stateInitialized: !!cache.state,
-      bypassCache: config.cache.bypassCache,
     });
 
     // Fetch products via mesh with pagination
