@@ -11,7 +11,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const ora = require('ora');
 
-const { format, parseArgs } = require('./utils/shared');
+const { format, parseArgs, buildRuntimeUrl } = require('./utils/shared');
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -34,6 +34,22 @@ async function generateFrontendConfig() {
     fs.mkdirSync(configDir, { recursive: true });
   }
 
+  // Determine environment
+  const isProduction = process.env.NODE_ENV === 'production';
+  const environment = isProduction ? 'production' : 'staging';
+
+  // Get package name dynamically from package.json
+  const packageJson = require('../package.json');
+  const packageName = packageJson.name;
+
+  // Build runtime URL dynamically from Adobe I/O environment variables
+  const runtimeUrl = buildRuntimeUrl(isProduction);
+  const namespace = process.env.AIO_runtime_namespace || '285361-188maroonwallaby-stage';
+
+  // For frontend, we use relative URLs when possible (same domain)
+  // But keep the full URL available for debugging/logging
+  const actionPath = `/api/v1/web/${packageName}`;
+
   // Generate config.json for frontend
   const frontendConfig = {
     api: {
@@ -50,17 +66,19 @@ async function generateFrontendConfig() {
       timeout: 30000, // 30 seconds default
     },
     runtime: {
-      url: '/api/v1/web/kukla-integration-service',
+      url: actionPath,
+      fullUrl: runtimeUrl, // Full URL for debugging
+      namespace: namespace,
       actions: {
-        'auth-token': '/api/v1/web/kukla-integration-service/auth-token',
-        'get-products': '/api/v1/web/kukla-integration-service/get-products',
-        'get-products-mesh': '/api/v1/web/kukla-integration-service/get-products-mesh',
-        'browse-files': '/api/v1/web/kukla-integration-service/browse-files',
-        'delete-file': '/api/v1/web/kukla-integration-service/delete-file',
-        'download-file': '/api/v1/web/kukla-integration-service/download-file',
+        'auth-token': `${actionPath}/auth-token`,
+        'get-products': `${actionPath}/get-products`,
+        'get-products-mesh': `${actionPath}/get-products-mesh`,
+        'browse-files': `${actionPath}/browse-files`,
+        'delete-file': `${actionPath}/delete-file`,
+        'download-file': `${actionPath}/download-file`,
       },
     },
-    environment: process.env.NODE_ENV === 'production' ? 'production' : 'staging',
+    environment: environment,
   };
 
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify(frontendConfig, null, 2));

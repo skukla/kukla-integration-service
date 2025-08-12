@@ -7,12 +7,11 @@
 
 const chalk = require('chalk');
 
-async function controlCache(action) {
-  // Get runtime URL from environment or use default staging URL
-  const runtimeUrl =
-    process.env.RUNTIME_URL || 'https://285361-188maroonwallaby-stage.adobeioruntime.net';
+const { buildActionUrl } = require('./utils/shared');
 
-  const url = `${runtimeUrl}/api/v1/web/kukla-integration-service/cache-control`;
+async function controlCache(action) {
+  // Build URL using shared utility with Adobe I/O Runtime environment variables
+  const url = buildActionUrl('cache-control');
 
   try {
     console.log(chalk.blue(`Sending ${action} command to cache control...`));

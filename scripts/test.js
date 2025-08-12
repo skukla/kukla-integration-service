@@ -12,7 +12,7 @@ const path = require('path');
 const chalk = require('chalk');
 const dotenv = require('dotenv');
 
-const { format, parseArgs, withSpinner } = require('./utils/shared');
+const { format, parseArgs, withSpinner, buildActionUrl } = require('./utils/shared');
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -35,20 +35,7 @@ function formatDuration(seconds) {
   return `${hours}h ${minutes}m ${secs}s`;
 }
 
-function buildActionUrl(actionName, params = {}, isProd = false) {
-  const runtimeUrl =
-    process.env.RUNTIME_URL || 'https://285361-188maroonwallaby-stage.adobeioruntime.net';
-  const baseUrl = isProd ? runtimeUrl.replace('-stage', '-production') : runtimeUrl;
-
-  const url = `${baseUrl}/api/v1/web/kukla-integration-service/${actionName}`;
-
-  if (Object.keys(params).length > 0) {
-    const searchParams = new URLSearchParams(params);
-    return `${url}?${searchParams.toString()}`;
-  }
-
-  return url;
-}
+// buildActionUrl is now imported from utils/shared
 
 async function makeRequest(url, method = 'GET') {
   return new Promise((resolve, reject) => {
