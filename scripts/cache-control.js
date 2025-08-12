@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CLI tool for cache kill switch control
+ * CLI tool for cache override control
  * Usage: npm run cache:disable | cache:enable | cache:status
  */
 

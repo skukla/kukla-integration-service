@@ -1,6 +1,6 @@
 /**
  * Adobe App Builder Action: Cache Control Admin Endpoint
- * Emergency kill switch for cache functionality
+ * Runtime cache override for emergency control
  */
 
 const stateLib = require('@adobe/aio-lib-state');
@@ -22,8 +22,8 @@ async function main(params) {
 
     switch (action) {
       case 'disable':
-        await state.put('cache_kill_switch', 'true', { ttl: config.cache.killSwitchTtl });
-        logger.warn('Cache kill switch ACTIVATED - all caching disabled');
+        await state.put('cache_override', 'disabled', { ttl: config.cache.overrideTtl });
+        logger.warn('Cache override ACTIVATED - caching disabled');
         return successResponse({
           success: true,
           cacheEnabled: false,
@@ -31,8 +31,8 @@ async function main(params) {
         });
 
       case 'enable':
-        await state.delete('cache_kill_switch');
-        logger.info('Cache kill switch DEACTIVATED - caching restored');
+        await state.delete('cache_override');
+        logger.info('Cache override REMOVED - normal caching restored');
         return successResponse({
           success: true,
           cacheEnabled: true,
@@ -40,12 +40,12 @@ async function main(params) {
         });
 
       case 'status': {
-        const killSwitch = await state.get('cache_kill_switch');
-        const isDisabled = killSwitch?.value === 'true';
+        const cacheOverride = await state.get('cache_override');
+        const isDisabled = cacheOverride?.value === 'disabled';
         return successResponse({
           success: true,
           cacheEnabled: !isDisabled,
-          killSwitchActive: isDisabled,
+          overrideActive: isDisabled,
           message: isDisabled ? 'Cache is currently DISABLED' : 'Cache is currently ENABLED',
         });
       }

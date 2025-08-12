@@ -74,7 +74,7 @@ function createConfig(params = {}) {
     cache: {
       adminTokenTtl: 900, // 15 minutes
       apiResponseTtl: 1800, // 30 minutes
-      killSwitchTtl: 86400 * 365, // 1 year
+      overrideTtl: 86400 * 365, // 1 year for cache override
       httpCacheMaxAge: 1800, // 30 minutes for HTTP Cache-Control header
     },
   };
