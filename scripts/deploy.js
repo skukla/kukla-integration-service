@@ -54,6 +54,7 @@ function getMeshSourceHash() {
     const sourceFiles = [
       // Templates and config
       'mesh/resolvers.template.js',
+      'mesh/templates/mesh.template.js',
       'mesh/config.js',
       'config.js',
       // GraphQL queries and types
@@ -66,6 +67,9 @@ function getMeshSourceHash() {
       'mesh/schema/products-response.json',
       'mesh/schema/category-batch-resp.json',
       'mesh/schema/inventory-batch-resp.json',
+      // Generated files that affect mesh deployment
+      'mesh/resolvers.js',
+      'mesh/mesh.json',
     ];
 
     let combinedContent = '';
@@ -212,20 +216,27 @@ async function updateMeshWithPolling(isProd = false) {
 async function checkMeshChanges() {
   const oldMeshHash = getStoredMeshHash();
   const spinner = ora({
-    text: format.muted('Checking mesh configuration for changes...'),
+    text: format.muted('Regenerating mesh resolver from templates...'),
     spinner: 'dots',
   }).start();
 
   try {
     execSync('node scripts/build.js --mesh-only', { stdio: 'pipe', cwd: process.cwd() });
+    spinner.stop();
+
+    const checkSpinner = ora({
+      text: format.muted('Checking mesh configuration for changes...'),
+      spinner: 'dots',
+    }).start();
+
     const newMeshHash = getMeshSourceHash();
     const meshChanged = oldMeshHash !== newMeshHash;
 
-    spinner.stop();
+    checkSpinner.stop();
     if (meshChanged) {
-      console.log(format.success('Mesh configuration (updated)'));
+      console.log(format.success('Mesh configuration: updated (deployment required)'));
     } else {
-      console.log(format.success('Mesh configuration (no changes)'));
+      console.log(format.success('Mesh configuration: up-to-date (no deployment needed)'));
     }
 
     return { meshChanged, newMeshHash };
@@ -336,19 +347,19 @@ async function deployMesh(isProd = false) {
   console.log();
   await format.sleep(800);
 
-  // Step 1: Generate mesh resolver
+  // Generate mesh resolver
   if (!(await runBuildCommand('node scripts/build.js --mesh-only', 'Generating mesh resolver'))) {
     return false;
   }
 
-  // Step 2: Update mesh configuration with polling
+  // Update mesh configuration with polling
   const meshUpdateSuccess = await updateMeshWithPolling(isProd);
   if (!meshUpdateSuccess) {
     console.log(format.error('Mesh deployment failed'));
     return false;
   }
 
-  // Step 3: Store the new mesh hash
+  // Store the new mesh hash
   const newMeshHash = getMeshSourceHash();
   if (newMeshHash) {
     storeMeshHash(newMeshHash);

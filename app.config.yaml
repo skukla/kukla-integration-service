@@ -11,7 +11,7 @@ application:
             web: 'yes'
             runtime: nodejs:18
             inputs:
-              LOG_LEVEL: debug
+              LOG_LEVEL: info
               NODE_ENV: staging
               COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               COMMERCE_ADMIN_USERNAME: $COMMERCE_ADMIN_USERNAME
@@ -20,6 +20,7 @@ application:
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               RUNTIME_URL: $RUNTIME_URL
               AIO_runtime_namespace: $AIO_runtime_namespace
+              BYPASS_CACHE: false
             parameters:
               COMMERCE_ADMIN_USERNAME:
                 type: string
@@ -91,6 +92,17 @@ application:
               COMMERCE_ADMIN_PASSWORD:
                 type: string
                 description: Admin password for authentication
+            annotations:
+              require-adobe-auth: false
+              final: true
+          cache-control:
+            function: actions/cache-control/index.js
+            web: 'yes'
+            runtime: nodejs:18
+            inputs:
+              LOG_LEVEL: info
+              NODE_ENV: staging
+              AIO_runtime_namespace: $AIO_runtime_namespace
             annotations:
               require-adobe-auth: false
               final: true

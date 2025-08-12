@@ -23,12 +23,12 @@ async function main(params) {
 
     logger.info('Starting file browse');
 
-    // Step 1: Get list of CSV files from storage (simplified)
+    // Get list of CSV files from storage
     const config = createConfig(params);
     const fileList = await listCsvFiles(config);
     logger.info('Retrieved file list', { count: fileList.length });
 
-    // Step 2: Generate and return HTML for HTMX
+    // Generate and return HTML for HTMX
     const html = generateFileBrowserHTML(fileList, params);
 
     return createHTMLResponse(html);

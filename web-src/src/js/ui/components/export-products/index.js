@@ -26,27 +26,44 @@ function toggleEndpoints(button) {
  * @param {Object} performance - Performance object with detailed metrics
  * @returns {string} HTML for API Mesh metrics
  */
+/**
+ * Format API endpoint display with cache status
+ * @param {string} name - API endpoint name
+ * @param {number} calls - Number of API calls made
+ * @param {number} total - Total number of operations needed
+ * @returns {string} Formatted endpoint display string
+ */
+function formatEndpoint(name, calls, total) {
+  const ratio = `${calls}/${total}`;
+  const cacheStatus = calls === 0 ? ' 100% cached' : '';
+  return `${name} (${ratio})${cacheStatus}`;
+}
+
 function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
-  const productsApiCalls = performance.productsApiCalls || 1;
-  const categoriesApiCalls = performance.categoriesApiCalls || 0;
-  const inventoryApiCalls = performance.inventoryApiCalls || 0;
+  // Extract API call counts - Mesh operations
+  const productsApiCalls =
+    performance.productsApiCalls !== undefined ? performance.productsApiCalls : 1;
+  const categoriesApiCalls =
+    performance.categoriesApiCalls !== undefined ? performance.categoriesApiCalls : 0;
+  const inventoryApiCalls =
+    performance.inventoryApiCalls !== undefined ? performance.inventoryApiCalls : 0;
 
   return `
     <div class="notification-metrics-grid">
       <div class="notification-metric">
         <span class="metric-value">${clientCalls}</span>
-        <span class="metric-label">Calls</span>
+        <span class="metric-label">CLIENT CALLS</span>
       </div>
       <div class="notification-metric highlight">
         <span class="metric-value">${internalApiCalls}</span>
-        <span class="metric-label">Endpoints</span>
+        <span class="metric-label">API ENDPOINTS</span>
       </div>
       ${
         performance.executionTime !== undefined
           ? `
       <div class="notification-metric">
         <span class="metric-value">${formatExecutionTime(performance.executionTime)}</span>
-        <span class="metric-label">Time</span>
+        <span class="metric-label">EXECUTION TIME</span>
       </div>
       `
           : ''
@@ -55,20 +72,24 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
     <div class="notification-endpoints">
       <button class="endpoints-toggle">
         <span class="toggle-icon">▼</span>
-        <span class="toggle-text">API Calls Made</span>
+        <span class="toggle-text">Mesh Operations</span>
       </button>
       <div class="endpoints-list">
         <div class="endpoint-item">
-          <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Products API (${productsApiCalls} calls)</span>
+          <span class="endpoint-method">QUERY</span>
+          <span class="endpoint-url">Products: ${productsApiCalls} ${productsApiCalls === 1 ? 'fetch' : 'fetches'}</span>
         </div>
         <div class="endpoint-item">
-          <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Categories API (${categoriesApiCalls} calls)</span>
+          <span class="endpoint-method">QUERY</span>
+          <span class="endpoint-url">Categories: ${categoriesApiCalls} ${categoriesApiCalls === 1 ? 'lookup' : 'lookups'}</span>
         </div>
         <div class="endpoint-item">
-          <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Inventory API (${inventoryApiCalls} calls)</span>
+          <span class="endpoint-method">QUERY</span>
+          <span class="endpoint-url">Inventory: ${inventoryApiCalls} ${inventoryApiCalls === 1 ? 'batch' : 'batches'}</span>
+        </div>
+        <div class="endpoint-item cache-status">
+          <span class="endpoint-method">INFO</span>
+          <span class="endpoint-url">Backend API calls & caching handled by Mesh</span>
         </div>
       </div>
     </div>
@@ -83,22 +104,42 @@ function createApiMeshMetrics(clientCalls, internalApiCalls, performance = {}) {
  * @returns {string} HTML for REST API metrics
  */
 function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
+  const cacheHits = performance.cacheHits || 0;
+  const cachingEnabled = performance.cachingEnabled || false;
+
+  // Extract API call counts with fallbacks for older responses
+  const adminTokenApiCalls =
+    performance.adminTokenApiCalls !== undefined ? performance.adminTokenApiCalls : 1; // Default to 1 if not provided
+  const productsApiCalls =
+    performance.productsApiCalls !== undefined
+      ? performance.productsApiCalls
+      : Math.ceil(apiCalls * 0.3);
+  const categoriesApiCalls =
+    performance.categoriesApiCalls !== undefined
+      ? performance.categoriesApiCalls
+      : Math.ceil(apiCalls * 0.4);
+  const inventoryApiCalls =
+    performance.inventoryApiCalls !== undefined
+      ? performance.inventoryApiCalls
+      : Math.floor(apiCalls * 0.3);
+  const totalProductPages = performance.totalProductPages || 1;
+
   return `
     <div class="notification-metrics-grid">
       <div class="notification-metric">
         <span class="metric-value">${apiCalls}</span>
-        <span class="metric-label">Calls</span>
+        <span class="metric-label">CLIENT CALLS</span>
       </div>
       <div class="notification-metric">
         <span class="metric-value">${dataSources}</span>
-        <span class="metric-label">Endpoints</span>
+        <span class="metric-label">API ENDPOINTS</span>
       </div>
       ${
         performance.executionTime !== undefined
           ? `
       <div class="notification-metric">
         <span class="metric-value">${formatExecutionTime(performance.executionTime)}</span>
-        <span class="metric-label">Time</span>
+        <span class="metric-label">EXECUTION TIME</span>
       </div>
       `
           : ''
@@ -111,17 +152,31 @@ function createRestApiMetrics(apiCalls, dataSources, performance = {}) {
       </button>
       <div class="endpoints-list">
         <div class="endpoint-item">
-          <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Products API (${Math.ceil(apiCalls * 0.3)} calls)</span>
+          <span class="endpoint-method">POST</span>
+          <span class="endpoint-url">${formatEndpoint('Admin Token', adminTokenApiCalls, 1)}</span>
         </div>
         <div class="endpoint-item">
           <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Categories API (${Math.ceil(apiCalls * 0.4)} calls)</span>
+          <span class="endpoint-url">${formatEndpoint('Products API', productsApiCalls, totalProductPages)}</span>
         </div>
         <div class="endpoint-item">
           <span class="endpoint-method">GET</span>
-          <span class="endpoint-url">Inventory API (${Math.floor(apiCalls * 0.3)} calls)</span>
+          <span class="endpoint-url">${formatEndpoint('Categories API', categoriesApiCalls, 1)}</span>
         </div>
+        <div class="endpoint-item">
+          <span class="endpoint-method">GET</span>
+          <span class="endpoint-url">${formatEndpoint('Inventory API', inventoryApiCalls, 1)}</span>
+        </div>
+        ${
+          cachingEnabled
+            ? `
+        <div class="endpoint-item cache-status">
+          <span class="endpoint-method">CACHE</span>
+          <span class="endpoint-url">Commerce API Caching: ${cacheHits > 0 ? `${cacheHits} hits` : 'Enabled'}</span>
+        </div>
+        `
+            : ''
+        }
       </div>
     </div>
   `;

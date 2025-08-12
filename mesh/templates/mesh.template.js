@@ -6,7 +6,6 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const { getCommerceToken } = require('./auth');
-const { transformMeshProductsToRestFormat } = require('./products');
 
 // GraphQL query for enriched products (build-time inlined from .gql file)
 const GET_ENRICHED_PRODUCTS_QUERY = {{{GET_ENRICHED_PRODUCTS_QUERY}}};
@@ -34,10 +33,11 @@ async function getProductsFromMesh(params, config, logger = null) {
     log.info('Starting mesh product fetch with pagination');
 
     // Generate Commerce admin token using centralized approach
-    const commerceToken = await getCommerceToken(params, config, log);
+    const commerceTokenResult = await getCommerceToken(params, config, log);
+    const commerceToken = commerceTokenResult?.token || commerceTokenResult;
 
-    // Pagination setup from configuration
-    const pageSize = config.mesh.pagination.pageSize;
+    // Pagination setup from configuration with optional override
+    const pageSize = params.pageSize || config.mesh.pagination.pageSize;
     let currentPage = config.mesh.pagination.defaultPage;
     let allProducts = [];
     let apiCallCount = 0;
@@ -50,11 +50,6 @@ async function getProductsFromMesh(params, config, logger = null) {
         pageSize,
         currentPage,
       };
-      
-      // Allow explicit pageSize override for testing
-      if (params.pageSize) {
-        variables.pageSize = params.pageSize;
-      }
 
       log.info('Making GraphQL mesh request', { pageSize: variables.pageSize, currentPage });
       
@@ -113,7 +108,6 @@ async function getProductsFromMesh(params, config, logger = null) {
         currentPage,
         productCount: products.length,
         totalProducts: allProducts.length,
-        totalCount: totalItems,
         hasMorePages,
       });
 
@@ -126,11 +120,8 @@ async function getProductsFromMesh(params, config, logger = null) {
       performance: totalPerformance,
     });
 
-    // Transform mesh response to match REST API format exactly
-    const transformedProducts = transformMeshProductsToRestFormat(allProducts, config);
-
     return {
-      products: transformedProducts,
+      products: allProducts,
       performance: {
         ...totalPerformance,
         meshApiCalls: apiCallCount // Add mesh-specific API call tracking

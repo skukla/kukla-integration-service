@@ -6,6 +6,7 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
+const { createCache } = require('../../lib/cache');
 const { getProductsFromMesh } = require('../../lib/commerce');
 const { createCsv } = require('../../lib/csv');
 const { storeCsv } = require('../../lib/storage');
@@ -28,9 +29,18 @@ async function main(params) {
       return errorResponse(400, missingParams, logger);
     }
 
-    // Fetch products, create CSV, and store
+    // Initialize cache for mesh operations
     const config = createConfig(params);
+    const cache = await createCache(params, config, logger);
+
+    logger.info('Cache initialization status', {
+      enabled: cache.enabled,
+      stateInitialized: !!cache.state,
+    });
+
+    // Fetch products via mesh with pagination
     const meshData = await getProductsFromMesh(params, config, logger);
+
     const csvData = await createCsv(meshData.products);
     const storageResult = await storeCsv(csvData.content, config);
 
@@ -48,14 +58,16 @@ async function main(params) {
         method: 'API Mesh',
         apiCalls: meshData.performance?.apiCalls,
         performance: {
-          method: meshData.performance?.method,
-          productCount: meshData.performance?.productCount,
+          method: meshData.performance?.method || 'API Mesh',
+          productCount: meshData.performance?.productCount || meshData.products.length,
           executionTime: Date.now() - startTime,
-          apiCalls: meshData.performance?.apiCalls,
-          dataSourcesUnified: meshData.performance?.dataSourcesUnified,
-          productsApiCalls: meshData.performance?.productsApiCalls,
-          categoriesApiCalls: meshData.performance?.categoriesApiCalls,
-          inventoryApiCalls: meshData.performance?.inventoryApiCalls,
+          apiCalls: meshData.performance?.apiCalls || meshData.apiCallCount,
+          dataSourcesUnified: meshData.performance?.dataSourcesUnified || 3,
+          productsApiCalls: meshData.performance?.productsApiCalls || 0,
+          categoriesApiCalls: meshData.performance?.categoriesApiCalls || 0,
+          inventoryApiCalls: meshData.performance?.inventoryApiCalls || 0,
+          cacheHits: meshData.cacheHits || 0,
+          cachingEnabled: meshData.performance?.cachingEnabled || cache.enabled,
         },
       },
       'Products exported successfully',

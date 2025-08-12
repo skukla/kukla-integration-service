@@ -6,6 +6,7 @@
   "dependencies": {
     "@adobe/aio-cli": "^10.3.4",
     "@adobe/aio-lib-files": "^4",
+    "@adobe/aio-lib-state": "^5.1.0",
     "@adobe/aio-sdk": "^6",
     "@aws-sdk/client-s3": "^3.825.0",
     "@aws-sdk/s3-request-presigner": "^3.844.0",
@@ -49,7 +50,10 @@
     "test:perf": "node scripts/test.js --type=performance --action=get-products --scenario=quick",
     "test:perf:list": "node scripts/test.js --type=performance --list",
     "test:suite": "node scripts/test.js --type=suite",
-    "test:suite:list": "node scripts/test.js --type=suite --list"
+    "test:suite:list": "node scripts/test.js --type=suite --list",
+    "cache:status": "node scripts/cache-control.js status",
+    "cache:disable": "node scripts/cache-control.js disable",
+    "cache:enable": "node scripts/cache-control.js enable"
   },
   "engines": {
     "node": ">=18"

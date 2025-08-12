@@ -170,27 +170,14 @@ module.exports = {
           try {
             const startTime = Date.now();
 
-            // Use configured pageSize for internal pagination
-            const pageSize = 50;
-            let currentPage = 1;
-            let allProducts = [];
-            let totalCount = 0;
-            let hasMorePages = true;
+            // Use external pagination - return only the requested page
+            const pageSize = args.pageSize || 50;
+            const currentPage = args.currentPage || 1;
 
-            // Pagination loop - fetch all products internally
-            while (hasMorePages) {
-              const productsResult = await fetchProducts(context, pageSize, currentPage);
-              const products = productsResult.items;
-              
-              allProducts = allProducts.concat(products);
-              totalCount = productsResult.total_count;
-              
-              // Check if we have more pages
-              const currentItemCount = currentPage * pageSize;
-              hasMorePages = products.length === pageSize && currentItemCount < totalCount;
-              
-              currentPage++;
-            }
+            // Fetch only the requested page of products
+            const productsResult = await fetchProducts(context, pageSize, currentPage);
+            const allProducts = productsResult.items;
+            const totalCount = productsResult.total_count;
 
             // Extract category IDs and SKUs from all products
             const categoryIds = new Set();
@@ -210,24 +197,30 @@ module.exports = {
             // Enrich products
             const enrichedProducts = enrichProducts(allProducts, categoryResult.categoryMap, inventoryResult.inventoryMap);
 
-            // Simple performance metrics
+            // Calculate metrics
             const executionTime = Date.now() - startTime;
-            const totalApiCalls = (currentPage - 1) + categoryResult.apiCalls + inventoryResult.apiCalls; // Multiple product calls + Categories + Inventory
+            
+            // Count Mesh operations (not actual API calls - Mesh handles caching internally)
+            const productsOperations = 1; // Always 1 products fetch
+            const categoriesOperations = categoryResult.apiCalls; // 0 or 1 depending on if categories exist
+            const inventoryOperations = inventoryResult.apiCalls; // Number of inventory batches
+            const totalOperations = productsOperations + categoriesOperations + inventoryOperations;
 
             return {
               products: enrichedProducts,
               total_count: totalCount,
-              message: "Successfully enriched " + enrichedProducts.length + " products (all pages)",
+              message: "Successfully enriched " + enrichedProducts.length + " products (page " + currentPage + ")",
               performance: {
                 method: 'API Mesh',
                 productCount: enrichedProducts.length,
                 executionTime,
-                apiCalls: totalApiCalls,
+                apiCalls: totalOperations, // These are Mesh operations, not actual API calls
                 dataSourcesUnified: 3,
-                // Backend API call breakdown for toast details
-                productsApiCalls: 1,
-                categoriesApiCalls: categoryResult.apiCalls,
-                inventoryApiCalls: inventoryResult.apiCalls,
+                // Mesh operation counts (not actual backend API calls)
+                productsApiCalls: productsOperations, // Keeping field name for compatibility
+                categoriesApiCalls: categoriesOperations,
+                inventoryApiCalls: inventoryOperations,
+                // Note: Actual API calls and caching are handled internally by Mesh
               },
             };
           } catch (error) {

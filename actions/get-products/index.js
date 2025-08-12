@@ -6,13 +6,14 @@
 const { Core } = require('@adobe/aio-sdk');
 
 const createConfig = require('../../config');
+const { createCache } = require('../../lib/cache');
 const { fetchAndEnrichProducts } = require('../../lib/commerce');
 const { createCsv } = require('../../lib/csv');
 const { storeCsv } = require('../../lib/storage');
 const { errorResponse, successResponse, checkMissingRequestInputs } = require('../../lib/utils');
 
 async function main(params) {
-  const logger = Core.Logger('get-products', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger('get-products', { level: params.LOG_LEVEL || 'debug' });
   const startTime = Date.now();
 
   try {
@@ -23,15 +24,50 @@ async function main(params) {
       return errorResponse(400, missingParams, logger);
     }
 
-    // Fetch products, create CSV, and store
+    // Initialize cache for Commerce API responses
     const config = createConfig(params);
-    const result = await fetchAndEnrichProducts(params, config);
+    const cache = await createCache(params, config, logger);
+
+    logger.info('Cache initialization status', {
+      enabled: cache.enabled,
+      stateInitialized: !!cache.state,
+    });
+
+    // Fetch products with caching, create CSV, and store
+    const result = await fetchAndEnrichProducts(params, config, cache, logger);
+
+    // Debug: Log first product structure for comparison
+    if (result.products && result.products.length > 0) {
+      logger.info('REST API product sample', {
+        productCount: result.products.length,
+        firstProductKeys: Object.keys(result.products[0]),
+        firstProductSample: {
+          sku: result.products[0].sku,
+          name: result.products[0].name,
+          categories: result.products[0].categories?.length || 0,
+          inventory: result.products[0].inventory,
+          customAttributes: result.products[0].custom_attributes?.length || 0,
+        },
+      });
+    }
+
     const csvData = await createCsv(result.products);
     const storageResult = await storeCsv(csvData.content, config);
 
     if (!storageResult.stored) {
       const errorMsg = `Storage failed: ${storageResult.error?.message || 'Unknown error'}`;
       return errorResponse(500, errorMsg, logger);
+    }
+
+    // Prepare response headers for caching
+    const responseHeaders = {};
+
+    // Add HTTP response caching (gateway level) for fair comparison with API Mesh
+    if (cache.enabled) {
+      responseHeaders['Cache-Control'] = `public, max-age=${config.cache.httpCacheMaxAge}`;
+      responseHeaders['Vary'] = 'Authorization'; // Cache per token
+    } else {
+      responseHeaders['Cache-Control'] = 'no-cache, no-store, must-revalidate';
     }
 
     return successResponse(
@@ -48,13 +84,18 @@ async function main(params) {
           executionTime: Date.now() - startTime,
           apiCalls: result.apiCalls.total,
           dataSourcesUnified: 3,
+          adminTokenApiCalls: result.apiCalls.adminToken,
           productsApiCalls: result.apiCalls.products,
           categoriesApiCalls: result.apiCalls.categories,
           inventoryApiCalls: result.apiCalls.inventory,
+          totalProductPages: result.apiCalls.totalProductPages || 1,
+          cacheHits: result.cacheHits || 0,
+          cachingEnabled: cache && cache.enabled,
         },
       },
       'Products exported successfully',
-      logger
+      logger,
+      responseHeaders
     );
   } catch (error) {
     logger.error('Action failed', { error: error.message });
