@@ -90,6 +90,16 @@ application:
             annotations:
               require-adobe-auth: false
               final: true
+          callback:
+            function: actions/auth-callback/index.js
+            web: 'yes'
+            runtime: nodejs:18
+            inputs:
+              LOG_LEVEL: debug
+              NODE_ENV: staging
+            annotations:
+              require-adobe-auth: false
+              final: true
           cache-control:
             function: actions/cache-control/index.js
             web: 'yes'

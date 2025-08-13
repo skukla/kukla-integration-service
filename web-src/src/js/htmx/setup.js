@@ -108,6 +108,8 @@ export function initializeHtmx() {
   initializeComponents();
   // Set up progressive loading
   setupProgressiveLoading();
+  // Set up IMS authentication headers for all requests
+  setupAuthenticationHeaders();
   // Set up component reinitialization after content swaps
   window.htmx.on('htmx:afterSwap', function (evt) {
     const target = evt.detail.target;
@@ -157,6 +159,36 @@ export function configureComponent(element, componentType) {
   // Process the element with HTMX
   window.htmx.process(element);
 }
+/**
+ * Set up authentication headers for all HTMX requests
+ */
+function setupAuthenticationHeaders() {
+  // Add authentication headers to all HTMX requests
+  window.htmx.on('htmx:configRequest', function(evt) {
+    // Use the global auth handler set during bootstrap
+    if (window.authHandler && window.authHandler.getAuthHeaders) {
+      const authHeaders = window.authHandler.getAuthHeaders();
+      Object.assign(evt.detail.headers, authHeaders);
+    }
+  });
+  
+  // Handle 401 unauthorized responses
+  window.htmx.on('htmx:responseError', function(evt) {
+    if (evt.detail.xhr.status === 401) {
+      // Use the auth handler to handle unauthorized
+      if (window.authHandler && window.authHandler.clearAuth) {
+        window.authHandler.clearAuth();
+        if (window.authHandler.redirectToLogin) {
+          window.authHandler.redirectToLogin();
+        } else {
+          // Reload page to trigger auth prompt
+          window.location.reload();
+        }
+      }
+    }
+  });
+}
+
 /**
  * Set up progressive loading functionality
  */

@@ -42,6 +42,14 @@ async function makeRequest(url, method = 'GET') {
     const urlObj = new URL(url);
     const client = urlObj.protocol === 'https:' ? https : http;
 
+    // Get IMS token from stored credentials
+    let authHeaders = {};
+    const { loadTokens } = require('./auth');
+    const tokens = loadTokens();
+    if (tokens && tokens.access_token) {
+      authHeaders = { 'Authorization': `Bearer ${tokens.access_token}` };
+    }
+    
     const options = {
       hostname: urlObj.hostname,
       port: urlObj.port,
@@ -49,6 +57,7 @@ async function makeRequest(url, method = 'GET') {
       method: method,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
     };
 
@@ -258,6 +267,21 @@ async function performanceTest(actionName, scenario = 'quick', isProd = false) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+
+  // Check for authentication unless help is requested
+  if (!args.help) {
+    const { checkStatus } = require('./auth');
+    const hasToken = checkStatus();
+    
+    if (!hasToken) {
+      console.log(format.error('IMS authentication required to run test scripts'));
+      console.log('');
+      console.log('Please authenticate first:');
+      console.log(format.muted('  npm run auth:login'));
+      console.log('');
+      process.exit(1);
+    }
+  }
 
   if (args.help) {
     console.log(`

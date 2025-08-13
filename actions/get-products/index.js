@@ -11,18 +11,32 @@ const { fetchAndEnrichProducts } = require('../../lib/commerce');
 const { createCsv } = require('../../lib/csv');
 const { storeCsv } = require('../../lib/storage');
 const { errorResponse, successResponse, checkMissingRequestInputs } = require('../../lib/utils');
+const { validateAuth } = require('../../lib/auth/ims-validator');
 
 async function main(params) {
   const logger = Core.Logger('get-products', { level: params.LOG_LEVEL || 'debug' });
   const startTime = Date.now();
 
   try {
-    // Validate required parameters
+    // Validate authentication (IMS or service credentials)
+    const authResult = await validateAuth(params, logger);
+    
+    if (!authResult.authenticated) {
+      return errorResponse(401, authResult.error, logger);
+    }
+    
+    // Use Commerce credentials from auth result
+    params.COMMERCE_ADMIN_USERNAME = authResult.commerceAuth.username;
+    params.COMMERCE_ADMIN_PASSWORD = authResult.commerceAuth.password;
+    
+    // Validate we have Commerce credentials from either source
     const requiredParams = ['COMMERCE_ADMIN_USERNAME', 'COMMERCE_ADMIN_PASSWORD'];
     const missingParams = checkMissingRequestInputs(params, requiredParams);
     if (missingParams) {
       return errorResponse(400, missingParams, logger);
     }
+    
+    logger.info('Authentication successful', { method: authResult.method });
 
     // Initialize cache for Commerce API responses
     const config = createConfig(params);

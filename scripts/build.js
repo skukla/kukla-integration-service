@@ -79,6 +79,24 @@ async function generateFrontendConfig() {
       },
     },
     environment: environment,
+    // Authentication configuration
+    auth: {
+      // IMS authentication
+      ims: {
+        enabled: process.env.IMS_AUTH_ENABLED !== 'false',
+        // Use explicit IMS_CLIENT_ID that you set in .env
+        // This avoids dependency on Adobe's auto-generated variable names
+        clientId: process.env.IMS_CLIENT_ID || '',
+        scope: process.env.IMS_SCOPE || 'openid,AdobeID',
+        orgId: process.env.IMS_ORG_ID || '',
+      },
+      // Custom app password
+      appPassword: {
+        enabled: !!process.env.APP_PASSWORD,
+        // Don't expose the actual password to frontend
+        // Frontend will validate against backend
+      }
+    },
   };
 
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify(frontendConfig, null, 2));

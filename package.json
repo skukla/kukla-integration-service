@@ -53,7 +53,10 @@
     "test:suite:list": "node scripts/test.js --type=suite --list",
     "cache:status": "node scripts/cache-control.js status",
     "cache:disable": "node scripts/cache-control.js disable",
-    "cache:enable": "node scripts/cache-control.js enable"
+    "cache:enable": "node scripts/cache-control.js enable",
+    "auth:login": "node scripts/auth.js login",
+    "auth:logout": "node scripts/auth.js logout",
+    "auth:status": "node scripts/auth.js status"
   },
   "engines": {
     "node": ">=18"
